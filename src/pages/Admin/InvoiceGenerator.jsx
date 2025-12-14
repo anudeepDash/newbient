@@ -63,10 +63,10 @@ const InvoiceGenerator = () => {
         return subtotal + (subtotal * (formData.taxRate / 100));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const newInvoice = {
-            id: `NEWBI-${Math.floor(100000 + Math.random() * 900000)}`,
+            invoiceNumber: `NEWBI-${Math.floor(100000 + Math.random() * 900000)}`,
             ...formData,
             items: lineItems,
             amount: calculateTotal(),
@@ -75,13 +75,13 @@ const InvoiceGenerator = () => {
         };
 
         try {
-            addInvoice(newInvoice);
+            const docRef = await addInvoice(newInvoice);
 
-            const invoiceLink = `${window.location.origin}/invoice/${newInvoice.id}`;
+            const invoiceLink = `${window.location.origin}/invoice/${docRef.id}`;
 
             // Allow time for state update before determining next steps
             // Using confirm instead of alert so user acknowledges before navigation
-            if (window.confirm(`Invoice Generated Successfully!\n\nID: ${newInvoice.id}\nClick OK to return to the invoice list, or Cancel to stay here.`)) {
+            if (window.confirm(`Invoice Generated Successfully!\n\nReference: ${newInvoice.invoiceNumber}\nClick OK to return to the invoice list, or Cancel to stay here.`)) {
                 // Ensure navigation happens
                 setTimeout(() => navigate('/admin/invoices'), 50);
             }

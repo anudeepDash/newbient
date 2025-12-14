@@ -121,7 +121,7 @@ const Invoice = () => {
 
                             <div className="text-left md:text-right">
                                 <h1 className="text-4xl font-bold text-white mb-2 print:text-black tracking-wide">INVOICE</h1>
-                                <p className="text-neon-blue font-mono text-lg print:text-blue-600 mb-4">#{displayInvoice.id}</p>
+                                <p className="text-neon-blue font-mono text-lg print:text-blue-600 mb-4">#{displayInvoice.invoiceNumber || displayInvoice.id}</p>
                                 <div className="space-y-1">
                                     <div className="flex justify-between md:justify-end gap-4">
                                         <span className="text-gray-500 font-semibold uppercase text-xs tracking-wider">Date:</span>
