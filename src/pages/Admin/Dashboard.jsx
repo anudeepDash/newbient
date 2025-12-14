@@ -17,10 +17,24 @@ const Dashboard = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        const envUsername = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
-        const envPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
 
-        if (username === envUsername && password === envPassword) {
+        // In Development: Allow defaults if env vars are missing
+        // In Production: REQUIRE env vars. Defaults will be ignored/undefined if not set.
+        const isDev = import.meta.env.DEV;
+
+        const envUsername = import.meta.env.VITE_ADMIN_USERNAME;
+        const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+
+        // Fallback only in development
+        const finalUsername = envUsername || (isDev ? 'admin' : null);
+        const finalPassword = envPassword || (isDev ? 'admin123' : null);
+
+        if (!finalUsername || !finalPassword) {
+            alert('Security Error: Admin functionality is disabled because environment variables are missing in this production environment.');
+            return;
+        }
+
+        if (username === finalUsername && password === finalPassword) {
             setIsAuthenticated(true);
             localStorage.setItem('adminAuth', 'true');
         } else {

@@ -27,10 +27,11 @@ Vercel is the best platform for React/Vite apps.
 3. Select your `newbi-entertainments` repository from the list.
 4. **Configure Project**:
    - **Framework Preset**: Vite (should be auto-detected).
-   - **Environment Variables**:
+   - **Environment Variables** (REQUIRED for Admin Access):
      - Click to expand "Environment Variables".
      - Add `VITE_ADMIN_USERNAME` with value `admin` (or your preferred username).
      - Add `VITE_ADMIN_PASSWORD` with value `newbi2024!` (or your preferred password).
+     - **Note**: If you do not set these, the Admin login will show a security error in production.
 5. Click **Deploy**.
 
 ## 3. Connect Custom Domain (newbi.live)
