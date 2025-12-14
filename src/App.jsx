@@ -13,6 +13,10 @@ import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
 import ConcertManager from './pages/Admin/ConcertManager';
 import SiteContentManager from './pages/Admin/SiteContentManager';
 import GalleryManager from './pages/Admin/GalleryManager';
+import FormManager from './pages/Admin/FormManager';
+import FormBuilder from './pages/Admin/FormBuilder';
+import FormViewer from './pages/FormViewer';
+import CommunityJoin from './pages/CommunityJoin';
 
 function App() {
   return (
@@ -24,6 +28,8 @@ function App() {
           <Route path="concerts" element={<ConcertZone />} />
           <Route path="contact" element={<Contact />} />
           <Route path="invoice/:id" element={<Invoice />} />
+          <Route path="join" element={<CommunityJoin />} />
+          <Route path="forms/:id" element={<FormViewer />} />
 
           {/* Admin Routes */}
           <Route path="admin" element={<Dashboard />} />
@@ -33,6 +39,9 @@ function App() {
           <Route path="admin/concerts" element={<ConcertManager />} />
           <Route path="admin/site-content" element={<SiteContentManager />} />
           <Route path="admin/gallery-manager" element={<GalleryManager />} />
+          <Route path="admin/forms" element={<FormManager />} />
+          <Route path="admin/forms/create" element={<FormBuilder />} />
+          <Route path="admin/forms/edit/:id" element={<FormBuilder />} />
         </Route>
       </Routes>
     </Router>

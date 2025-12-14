@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 
 const InvoiceManagement = () => {
-    const { invoices, updateInvoiceStatus } = useStore();
+    const { invoices, updateInvoiceStatus, deleteInvoice } = useStore();
     const [filter, setFilter] = useState('All');
 
     const filteredInvoices = filter === 'All'
@@ -15,16 +15,14 @@ const InvoiceManagement = () => {
         : invoices.filter(inv => inv.status === filter);
 
     const handleCopyLink = (id) => {
-        const link = `${window.location.origin}/portal`;
+        const link = `${window.location.origin}/invoice/${id}`;
         navigator.clipboard.writeText(link);
-        alert(`Portal link copied! Share ID: ${id} with the client.`);
+        alert(`Invoice link copied! Share ID: ${id}`);
     };
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
-            // In a real app, we would call a delete action
-            console.log('Delete invoice:', id);
-            alert('Invoice deleted (mock action)');
+            deleteInvoice(id);
         }
     };
 
