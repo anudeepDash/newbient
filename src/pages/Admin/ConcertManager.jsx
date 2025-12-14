@@ -7,9 +7,10 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 const ConcertManager = () => {
-    const { concerts, addConcert, deleteConcert, portfolio, addPortfolioItem, deletePortfolioItem } = useStore();
+    const { concerts, addConcert, updateConcert, deleteConcert, portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = useStore();
     const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' or 'past'
     const [isAdding, setIsAdding] = useState(false);
+    const [editingId, setEditingId] = useState(null);
 
     // State for Concert (Upcoming)
     const [newConcert, setNewConcert] = useState({
@@ -21,27 +22,52 @@ const ConcertManager = () => {
         title: '', category: 'music', image: ''
     });
 
+    const resetForms = () => {
+        setNewConcert({ artist: '', city: '', date: '', venue: '', image: '', ticketLink: '' });
+        setNewPortfolio({ title: '', category: 'music', image: '' });
+        setIsAdding(false);
+        setEditingId(null);
+    };
+
+    const handleEdit = (item) => {
+        setEditingId(item.id);
+        setIsAdding(true);
+        if (activeTab === 'upcoming') {
+            setNewConcert({ ...item });
+        } else {
+            setNewPortfolio({ ...item });
+        }
+    };
+
     const handleSaveConcert = (e) => {
         e.preventDefault();
         try {
-            addConcert({ id: Date.now(), ...newConcert });
-            alert("Concert added!");
-            setIsAdding(false);
-            setNewConcert({ artist: '', city: '', date: '', venue: '', image: '', ticketLink: '' });
+            if (editingId) {
+                updateConcert(editingId, newConcert);
+                alert("Concert updated!");
+            } else {
+                addConcert({ id: Date.now(), ...newConcert });
+                alert("Concert added!");
+            }
+            resetForms();
         } catch (err) {
-            alert("Error adding concert");
+            alert("Error saving concert");
         }
     };
 
     const handleSavePortfolio = (e) => {
         e.preventDefault();
         try {
-            addPortfolioItem({ id: `p-${Date.now()}`, ...newPortfolio });
-            alert("Event added!");
-            setIsAdding(false);
-            setNewPortfolio({ title: '', category: 'music', image: '' });
+            if (editingId) {
+                updatePortfolioItem(editingId, newPortfolio);
+                alert("Event updated!");
+            } else {
+                addPortfolioItem({ id: `p-${Date.now()}`, ...newPortfolio });
+                alert("Event added!");
+            }
+            resetForms();
         } catch (err) {
-            alert("Error adding event");
+            alert("Error saving event");
         }
     };
 
@@ -58,28 +84,28 @@ const ConcertManager = () => {
 
                     <div className="flex bg-white/5 rounded-lg p-1">
                         <button
-                            onClick={() => setActiveTab('upcoming')}
+                            onClick={() => { setActiveTab('upcoming'); resetForms(); }}
                             className={`px-4 py-2 rounded-md transition-all ${activeTab === 'upcoming' ? 'bg-neon-green text-black font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             Upcoming Concerts
                         </button>
                         <button
-                            onClick={() => setActiveTab('past')}
+                            onClick={() => { setActiveTab('past'); resetForms(); }}
                             className={`px-4 py-2 rounded-md transition-all ${activeTab === 'past' ? 'bg-neon-green text-black font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
                             Past Events / Portfolio
                         </button>
                     </div>
 
-                    <Button variant="primary" onClick={() => setIsAdding(!isAdding)}>
+                    <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewConcert({ artist: '', city: '', date: '', venue: '', image: '', ticketLink: '' }); setNewPortfolio({ title: '', category: 'music', image: '' }); }}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add {activeTab === 'upcoming' ? 'Concert' : 'Past Event'}
+                        {isAdding && !editingId ? 'Cancel' : `Add ${activeTab === 'upcoming' ? 'Concert' : 'Past Event'}`}
                     </Button>
                 </div>
 
                 {isAdding && (
                     <Card className="p-6 mb-8 border-neon-green/30">
-                        <h2 className="text-xl font-bold text-white mb-4">Add {activeTab === 'upcoming' ? 'Concert' : 'Past Event'}</h2>
+                        <h2 className="text-xl font-bold text-white mb-4">{editingId ? 'Edit' : 'Add'} {activeTab === 'upcoming' ? 'Concert' : 'Past Event'}</h2>
 
                         {activeTab === 'upcoming' ? (
                             <form onSubmit={handleSaveConcert} className="space-y-4">
@@ -94,8 +120,8 @@ const ConcertManager = () => {
                                 <Input placeholder="Image URL" value={newConcert.image} onChange={e => setNewConcert({ ...newConcert, image: e.target.value })} required />
                                 <Input placeholder="Ticket Link" value={newConcert.ticketLink} onChange={e => setNewConcert({ ...newConcert, ticketLink: e.target.value })} required />
                                 <div className="flex justify-end gap-4 pt-4">
-                                    <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
-                                    <Button type="submit" variant="primary">Save Concert</Button>
+                                    <Button type="button" variant="outline" onClick={resetForms}>Cancel</Button>
+                                    <Button type="submit" variant="primary">{editingId ? 'Update' : 'Save'} Concert</Button>
                                 </div>
                             </form>
                         ) : (
@@ -119,8 +145,8 @@ const ConcertManager = () => {
                                 <p className="text-xs text-gray-500">Image appears when user hovers over the card.</p>
 
                                 <div className="flex justify-end gap-4 pt-4">
-                                    <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
-                                    <Button type="submit" variant="primary">Save Past Event</Button>
+                                    <Button type="button" variant="outline" onClick={resetForms}>Cancel</Button>
+                                    <Button type="submit" variant="primary">{editingId ? 'Update' : 'Save'} Past Event</Button>
                                 </div>
                             </form>
                         )}
@@ -140,9 +166,14 @@ const ConcertManager = () => {
                                     <h3 className="text-lg font-bold text-white">{concert.artist}</h3>
                                     <p className="text-gray-400 text-sm">{concert.date} • {concert.city}</p>
                                 </div>
-                                <button onClick={() => deleteConcert(concert.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                    <Trash2 size={18} />
-                                </button>
+                                <div className="flex flex-col gap-2">
+                                    <button onClick={() => handleEdit(concert)} className="p-2 text-gray-400 hover:text-white transition-colors">
+                                        <Edit size={18} />
+                                    </button>
+                                    <button onClick={() => deleteConcert(concert.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
                             </Card>
                         ))
                     ) : (
@@ -159,9 +190,14 @@ const ConcertManager = () => {
                                     <h3 className="text-lg font-bold text-white">{item.title}</h3>
                                     <p className="text-gray-400 text-sm capitalize">{item.category}</p>
                                 </div>
-                                <button onClick={() => deletePortfolioItem(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                    <Trash2 size={18} />
-                                </button>
+                                <div className="flex flex-col gap-2">
+                                    <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-white transition-colors">
+                                        <Edit size={18} />
+                                    </button>
+                                    <button onClick={() => deletePortfolioItem(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
                             </Card>
                         ))
                     )}

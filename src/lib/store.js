@@ -110,6 +110,9 @@ export const useStore = create(
             addPortfolioItem: (item) => set((state) => ({
                 portfolio: [...state.portfolio, item]
             })),
+            updatePortfolioItem: (id, updates) => set((state) => ({
+                portfolio: state.portfolio.map(i => i.id === id ? { ...i, ...updates } : i)
+            })),
             deletePortfolioItem: (id) => set((state) => ({
                 portfolio: state.portfolio.filter(i => i.id !== id)
             })),
