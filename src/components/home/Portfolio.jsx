@@ -79,12 +79,12 @@ const Portfolio = () => {
                             {portfolio.filter(item => item.category === activeTab).map((item) => (
                                 <div
                                     key={item.id}
-                                    className="group relative bg-white/5 border border-white/10 p-4 rounded-xl hover:border-neon-green/50 transition-all overflow-hidden aspect-video flex items-center justify-center text-center"
+                                    className="group relative bg-white/5 border border-white/10 p-4 rounded-xl hover:border-neon-green/50 transition-all overflow-hidden aspect-square flex items-center justify-center text-center"
                                 >
                                     {/* Hover Image Background */}
                                     {item.image && (
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                            className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-100 transition-opacity duration-500"
                                             style={{ backgroundImage: `url(${item.image})` }}
                                         />
                                     )}
