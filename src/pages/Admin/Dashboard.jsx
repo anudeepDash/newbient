@@ -102,24 +102,7 @@ const Dashboard = () => {
                     </Button>
                 </div>
 
-                {/* Temporary Seed Button */}
-                <div className="mb-8 p-4 border border-yellow-500/30 bg-yellow-500/10 rounded-lg flex justify-between items-center">
-                    <div>
-                        <h3 className="text-yellow-400 font-bold">First Time Setup?</h3>
-                        <p className="text-gray-400 text-sm">Your database is empty. Click here to add the demo data back.</p>
-                    </div>
-                    <Button
-                        variant="secondary"
-                        onClick={async () => {
-                            if (window.confirm("This will add demo data to your database. Continue?")) {
-                                const { seedDatabase } = await import('../../lib/seed');
-                                seedDatabase();
-                            }
-                        }}
-                    >
-                        Restore Demo Data
-                    </Button>
-                </div>
+
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
