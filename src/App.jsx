@@ -1,24 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useStore } from './lib/store'; // Import store
 import Layout from './components/Layout';
-import Home from './pages/Home';
-import MediaGallery from './pages/MediaGallery';
-import ConcertZone from './pages/ConcertZone';
-import Contact from './pages/Contact';
-import Invoice from './pages/Invoice';
-import Dashboard from './pages/Admin/Dashboard';
-import InvoiceGenerator from './pages/Admin/InvoiceGenerator';
-import InvoiceManagement from './pages/Admin/InvoiceManagement';
-import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
-import ConcertManager from './pages/Admin/ConcertManager';
-import SiteContentManager from './pages/Admin/SiteContentManager';
-import GalleryManager from './pages/Admin/GalleryManager';
-import FormManager from './pages/Admin/FormManager';
-import FormBuilder from './pages/Admin/FormBuilder';
-import FormViewer from './pages/FormViewer';
-import CommunityJoin from './pages/CommunityJoin';
+// ... imports
 
 function App() {
+  const subscribeToData = useStore((state) => state.subscribeToData);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToData();
+    return () => unsubscribe();
+  }, [subscribeToData]);
+
   return (
     <Router>
       <Routes>
