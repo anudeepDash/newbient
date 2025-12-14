@@ -27,7 +27,11 @@ export const useStore = create((set, get) => ({
         const sub = (colName, stateKey) => {
             const q = query(collection(db, colName));
             return onSnapshot(q, (snapshot) => {
-                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Fix: Ensure Firestore Document ID overwrites any "id" field inside the data
+                const data = snapshot.docs.map(doc => {
+                    const d = doc.data();
+                    return { ...d, id: doc.id };
+                });
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
             }, (error) => {
