@@ -10,12 +10,18 @@ import { Button } from '../components/ui/Button';
 
 const Invoice = () => {
     const { id } = useParams();
-    const { invoices, updateInvoiceStatus } = useStore();
+    const { invoices, updateInvoiceStatus, loading } = useStore();
     const invoiceRef = useRef(null);
 
     const invoice = invoices.find(inv => inv.id === id);
 
-    console.log("Invoice Debug:", { requestedId: id, allInvoices: invoices, foundInvoice: invoice });
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
+            </div>
+        );
+    }
 
     const getSymbol = (currencyCode) => {
         const symbols = {
