@@ -212,12 +212,6 @@ const Invoice = () => {
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                         </Button>
-                        {displayInvoice.status !== 'Paid' && (
-                            <Button variant="primary" onClick={handlePayment} className="shadow-[0_0_20px_rgba(0,230,168,0.3)] hover:shadow-[0_0_30px_rgba(0,230,168,0.5)]">
-                                <CreditCard className="mr-2 h-4 w-4" />
-                                PAY NOW
-                            </Button>
-                        )}
                     </div>
                 </motion.div>
             </div>
