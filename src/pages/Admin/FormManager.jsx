@@ -6,7 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
 const FormManager = () => {
-    const { forms, deleteForm, addAnnouncement, siteDetails } = useStore();
+    const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
 
     const handleDelete = (id) => {
@@ -48,7 +48,7 @@ const FormManager = () => {
                     <Link to="/admin/forms/create">
                         <Button variant="primary">
                             <Plus className="mr-2 h-4 w-4" />
-                            Create New Form
+                            Add Google Form
                         </Button>
                     </Link>
                 </div>
@@ -80,15 +80,12 @@ const FormManager = () => {
                                     </Button>
                                 </Link>
                             </div>
-                            <div className="mt-4 text-xs text-gray-500">
-                                {form.submissions?.length || 0} Submissions
-                            </div>
                         </Card>
                     ))}
 
                     {forms.length === 0 && (
                         <div className="col-span-full text-center py-12 text-gray-500">
-                            No forms created yet. Click "Create New Form" to get started.
+                            No forms created yet. Click "Add Google Form" to get started.
                         </div>
                     )}
                 </div>
