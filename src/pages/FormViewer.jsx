@@ -8,6 +8,8 @@ const FormViewer = ({ formIdOverride }) => {
     const { forms } = useStore();
     const formId = formIdOverride || (id ? parseInt(id) : null);
 
+    console.log('FormViewer Debug:', { id, formId, availableForms: forms });
+
     const form = forms.find(f => f.id === formId);
 
     if (!form) {
@@ -28,8 +30,24 @@ const FormViewer = ({ formIdOverride }) => {
                     <h1 className="text-3xl font-bold text-white mb-2">{form.title}</h1>
                     <p className="text-gray-400 mb-8">{form.description}</p>
 
-                    <div className="w-full relative bg-white/5 rounded-lg overflow-hidden">
-                        {form.formUrl ? (
+                    <div className="w-full relative bg-white/5 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
+                        {!form.formUrl ? (
+                            <div className="p-8 text-center text-red-400">
+                                Invalid or missing Google Form URL.
+                            </div>
+                        ) : form.requiresExternal ? (
+                            <div className="text-center p-8">
+                                <p className="text-gray-300 mb-6">This form requires Google Sign-in or File Uploads, so it must be opened in a new tab.</p>
+                                <a
+                                    href={form.formUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-black bg-neon-blue hover:bg-cyan-400 transition-colors"
+                                >
+                                    Open Form
+                                </a>
+                            </div>
+                        ) : (
                             <iframe
                                 src={form.formUrl}
                                 width="100%"
@@ -42,10 +60,6 @@ const FormViewer = ({ formIdOverride }) => {
                             >
                                 Loading…
                             </iframe>
-                        ) : (
-                            <div className="p-8 text-center text-red-400">
-                                Invalid or missing Google Form URL.
-                            </div>
                         )}
                     </div>
                 </Card>

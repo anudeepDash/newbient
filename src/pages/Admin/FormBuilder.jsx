@@ -15,6 +15,7 @@ const FormBuilder = () => {
     const [description, setDescription] = useState('');
     const [formUrl, setFormUrl] = useState('');
     const [isCommunityForm, setIsCommunityForm] = useState(false);
+    const [requiresExternal, setRequiresExternal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -24,6 +25,7 @@ const FormBuilder = () => {
                 setDescription(form.description);
                 setFormUrl(form.formUrl || '');
                 setIsCommunityForm(form.isCommunityForm || false);
+                setRequiresExternal(form.requiresExternal || false);
             }
         }
     }, [id, forms]);
@@ -35,7 +37,8 @@ const FormBuilder = () => {
             title,
             description,
             formUrl,
-            isCommunityForm
+            isCommunityForm,
+            requiresExternal
         };
 
         if (id) {
@@ -101,6 +104,17 @@ const FormBuilder = () => {
                                 className="w-4 h-4 rounded border-gray-300 text-neon-blue focus:ring-neon-blue bg-black/50"
                             />
                             <label htmlFor="isCommunity" className="text-gray-300 text-sm">Use as Community Welcome Form</label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="requiresExternal"
+                                checked={requiresExternal}
+                                onChange={(e) => setRequiresExternal(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-neon-blue focus:ring-neon-blue bg-black/50"
+                            />
+                            <label htmlFor="requiresExternal" className="text-gray-300 text-sm">Form requires File Upload / Google Sign-in (Opens in new tab)</label>
                         </div>
 
                         <div className="flex justify-end pt-8">
