@@ -9,6 +9,8 @@ const CommunityJoin = () => {
     // Find the first form marked as community form
     const communityForm = forms.find(f => f.isCommunityForm);
 
+    console.log('CommunityJoin Debug:', { communityForm, allForms: forms });
+
     if (!communityForm) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center text-white p-4 text-center">
