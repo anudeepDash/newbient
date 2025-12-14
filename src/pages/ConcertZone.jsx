@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, Instagram } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 const ConcertZone = () => {
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'https://w.behold.so/widget.js';
+        document.head.appendChild(script);
+
+        return () => {
+            // Cleanup not strictly necessary for script but good practice
+            document.head.removeChild(script);
+        };
+    }, []);
+
     return (
         <div className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
             {/* Background */}
@@ -48,18 +60,14 @@ const ConcertZone = () => {
                     transition={{ delay: 0.6 }}
                     className="mt-20 w-full max-w-4xl"
                 >
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm min-h-[400px]">
                         <div className="flex items-center justify-center mb-6 text-neon-pink">
                             <Instagram size={40} className="mr-3" />
                             <h3 className="text-2xl font-bold">Latest Vibes</h3>
                         </div>
-                        <div className="aspect-video w-full rounded-lg bg-black/50 flex items-center justify-center border border-white/5">
-                            <p className="text-gray-400">
-                                <span className="block text-center mb-4">Instagram Feed Loading...</span>
-                                <a href="https://instagram.com/concert.zone" target="_blank" rel="noopener noreferrer" className="text-neon-pink hover:underline">
-                                    View on Instagram
-                                </a>
-                            </p>
+                        {/* Behold Widget */}
+                        <div className="w-full">
+                            <behold-widget feed-id="GIVp2cgj7qbBGl85DK4U"></behold-widget>
                         </div>
                     </div>
                 </motion.div>
