@@ -158,6 +158,17 @@ const Dashboard = () => {
                             <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Forms</Button>
                         </Card>
                     </Link>
+
+                    <Link to="/admin/concerts" className="group">
+                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center">
+                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
+                                <Music size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Events Manager</h3>
+                            <p className="text-gray-400 text-sm mb-6">Manage upcoming concerts and past events.</p>
+                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Events</Button>
+                        </Card>
+                    </Link>
                 </div>
 
                 <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>
