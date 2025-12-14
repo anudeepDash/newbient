@@ -122,12 +122,7 @@ export const useStore = create(
             deleteForm: (id) => set((state) => ({
                 forms: state.forms.filter(f => f.id !== id)
             })),
-            addSubmission: (formId, submission) => set((state) => ({
-                forms: state.forms.map(f => f.id === formId ? {
-                    ...f,
-                    submissions: [...(f.submissions || []), { ...submission, submittedAt: new Date().toISOString() }]
-                } : f)
-            })),
+            // Submissions are now handled by Google Forms, so we don't need local storage for them.
 
             // CMS Actions
             siteDetails: initialSiteDetails,
