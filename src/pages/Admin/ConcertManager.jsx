@@ -79,7 +79,7 @@ const ConcertManager = () => {
                         <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-white">Events Manager</h1>
+                        <h1 className="text-3xl font-bold text-white">Events Manager (Admin)</h1>
                     </div>
 
                     <div className="flex bg-white/5 rounded-lg p-1">
