@@ -18,8 +18,21 @@ const InvoiceGenerator = () => {
         issueDate: new Date().toISOString().split('T')[0],
         dueDate: '',
         notes: '',
+        currency: 'USD',
         taxRate: 18
     });
+
+    const currencies = [
+        { code: 'USD', symbol: '$', label: 'US Dollar' },
+        { code: 'INR', symbol: '₹', label: 'Indian Rupee' },
+        { code: 'EUR', symbol: '€', label: 'Euro' },
+        { code: 'GBP', symbol: '£', label: 'British Pound' }
+    ];
+
+    const getSymbol = () => {
+        const curr = currencies.find(c => c.code === formData.currency);
+        return curr ? curr.symbol : '$';
+    };
 
     const [lineItems, setLineItems] = useState([
         { id: 1, description: '', quantity: 1, price: 0 }
@@ -129,6 +142,20 @@ const InvoiceGenerator = () => {
                             </div>
                         </div>
 
+                        {/* Currency Selection */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Currency</label>
+                            <select
+                                className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                                value={formData.currency}
+                                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                            >
+                                {currencies.map(c => (
+                                    <option key={c.code} value={c.code}>{c.label} ({c.symbol})</option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* Dates */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -215,7 +242,7 @@ const InvoiceGenerator = () => {
                             <div className="space-y-4">
                                 <div className="flex justify-between text-gray-400">
                                     <span>Subtotal</span>
-                                    <span>${calculateSubtotal().toLocaleString()}</span>
+                                    <span>{getSymbol()}{calculateSubtotal().toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-gray-400">
                                     <div className="flex items-center gap-2">
@@ -227,11 +254,11 @@ const InvoiceGenerator = () => {
                                             onChange={(e) => setFormData({ ...formData, taxRate: parseFloat(e.target.value) })}
                                         />
                                     </div>
-                                    <span>${(calculateSubtotal() * (formData.taxRate / 100)).toLocaleString()}</span>
+                                    <span>{getSymbol()}{(calculateSubtotal() * (formData.taxRate / 100)).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-white text-xl font-bold pt-4 border-t border-white/10">
                                     <span>Total</span>
-                                    <span className="text-neon-green">${calculateTotal().toLocaleString()}</span>
+                                    <span className="text-neon-green">{getSymbol()}{calculateTotal().toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>

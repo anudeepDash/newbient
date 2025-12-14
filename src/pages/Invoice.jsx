@@ -15,6 +15,16 @@ const Invoice = () => {
 
     const invoice = invoices.find(inv => inv.id === id);
 
+    const getSymbol = (currencyCode) => {
+        const symbols = {
+            'USD': '$',
+            'INR': '₹',
+            'EUR': '€',
+            'GBP': '£'
+        };
+        return symbols[currencyCode] || '$';
+    };
+
     if (!invoice) {
         return (
             <div className="min-h-screen flex items-center justify-center text-white">
@@ -48,7 +58,8 @@ const Invoice = () => {
 
     const handlePayment = () => {
         // Simulate payment processing
-        const confirmPayment = window.confirm(`Proceed to pay $${invoice.amount.toLocaleString()}?`);
+        const currencySymbol = getSymbol(invoice.currency || 'USD');
+        const confirmPayment = window.confirm(`Proceed to pay ${currencySymbol}${invoice.amount.toLocaleString()}?`);
         if (confirmPayment) {
             updateInvoiceStatus(invoice.id, 'Paid');
             alert('Payment Successful! Thank you.');
@@ -59,6 +70,8 @@ const Invoice = () => {
     const subtotal = invoice.amount; // Simplified for now as we might not have line items in old mock data
     const tax = subtotal * 0.18; // Mock 18% tax
     const total = subtotal + tax;
+
+    const currencySymbol = getSymbol(invoice.currency || 'USD');
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
@@ -124,8 +137,8 @@ const Invoice = () => {
                                     <tr className="border-b border-white/5 print:border-gray-200">
                                         <td className="py-4 text-white print:text-black">Event Services / Consultation</td>
                                         <td className="py-4 text-gray-400 text-center print:text-black">1</td>
-                                        <td className="py-4 text-gray-400 text-right print:text-black">${subtotal.toLocaleString()}</td>
-                                        <td className="py-4 text-white text-right font-medium print:text-black">${subtotal.toLocaleString()}</td>
+                                        <td className="py-4 text-gray-400 text-right print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
+                                        <td className="py-4 text-white text-right font-medium print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -136,15 +149,15 @@ const Invoice = () => {
                             <div className="w-full md:w-1/3 space-y-3">
                                 <div className="flex justify-between text-gray-400 print:text-gray-600">
                                     <span>Subtotal</span>
-                                    <span>${subtotal.toLocaleString()}</span>
+                                    <span>{currencySymbol}{subtotal.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-400 print:text-gray-600">
                                     <span>Tax (18%)</span>
-                                    <span>${tax.toLocaleString()}</span>
+                                    <span>{currencySymbol}{tax.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-white text-xl font-bold pt-4 border-t border-white/10 print:text-black print:border-gray-300">
                                     <span>Total</span>
-                                    <span className="text-neon-green print:text-black">${total.toLocaleString()}</span>
+                                    <span className="text-neon-green print:text-black">{currencySymbol}{total.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>

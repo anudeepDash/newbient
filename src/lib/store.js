@@ -73,6 +73,7 @@ const initialInvoices = [
         id: "INV-001",
         clientName: "Acme Corp",
         email: "client@example.com",
+        currency: "USD",
         amount: 5000,
         status: "Pending",
         dueDate: "2025-12-01",
