@@ -159,8 +159,12 @@ const Dashboard = () => {
                         </Card>
                     </Link>
 
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <Link to="/admin/concerts" className="group">
-                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center">
+                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center bg-white/5">
                             <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
                                 <Music size={32} />
                             </div>
@@ -169,10 +173,6 @@ const Dashboard = () => {
                             <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Events</Button>
                         </Card>
                     </Link>
-                </div>
-
-                <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <Link to="/admin/site-content" className="group">
                         <Card className="p-8 h-full hover:border-white transition-colors flex flex-col items-center text-center bg-white/5">
                             <div className="p-4 rounded-full bg-white/10 text-white mb-4 group-hover:scale-110 transition-transform">
