@@ -8,8 +8,14 @@ function App() {
   const subscribeToData = useStore((state) => state.subscribeToData);
 
   useEffect(() => {
-    const unsubscribe = subscribeToData();
-    return () => unsubscribe();
+    try {
+      const unsubscribe = subscribeToData();
+      if (typeof unsubscribe === 'function') {
+        return () => unsubscribe();
+      }
+    } catch (error) {
+      console.error("Failed to subscribe to real-time data:", error);
+    }
   }, [subscribeToData]);
 
   return (
