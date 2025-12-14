@@ -48,7 +48,7 @@ const CallToAction = () => {
                     </a>
 
                     <a href="https://www.linkedin.com/company/newbi-ent/" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" className="px-8 py-4 text-lg border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white rounded-full flex items-center gap-2">
+                        <Button variant="outline" className="px-8 py-4 text-lg rounded-full flex items-center gap-2 !bg-neon-blue !shadow-neon-blue !text-black !border-neon-blue">
                             <Linkedin size={20} /> LinkedIn
                         </Button>
                     </a>
