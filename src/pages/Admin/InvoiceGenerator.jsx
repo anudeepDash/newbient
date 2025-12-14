@@ -74,23 +74,21 @@ const InvoiceGenerator = () => {
             createdAt: new Date().toISOString()
         };
 
-        addInvoice(newInvoice);
+        try {
+            addInvoice(newInvoice);
 
-        const invoiceLink = `${window.location.origin}/invoice/${newInvoice.id}`;
+            const invoiceLink = `${window.location.origin}/invoice/${newInvoice.id}`;
 
-        // Use a more user-friendly confirmation (could be a modal, but for now a prompt/alert with the link)
-        // In a real app we'd use a dedicated UI component for this.
-        alert(`Invoice Generated Successfully!\n\nLink to share:\n${invoiceLink}`);
-        console.log("Invoice Link:", invoiceLink); // Backup for dev
-
-        // Optional: Auto-copy to clipboard if supported
-        navigator.clipboard.writeText(invoiceLink).then(() => {
-            alert('Link copied to clipboard!');
-        }).catch(() => {
-            // Fallback if auto-copy fails
-        });
-
-        navigate('/admin/invoices');
+            // Allow time for state update before determining next steps
+            // Using confirm instead of alert so user acknowledges before navigation
+            if (window.confirm(`Invoice Generated Successfully!\n\nID: ${newInvoice.id}\nClick OK to return to the invoice list, or Cancel to stay here.`)) {
+                // Ensure navigation happens
+                setTimeout(() => navigate('/admin/invoices'), 50);
+            }
+        } catch (error) {
+            console.error("Failed to generate invoice:", error);
+            alert("An error occurred while generating the invoice. Please try again.");
+        }
     };
 
     return (

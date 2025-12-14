@@ -87,29 +87,29 @@ const Invoice = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <Card className="p-8 md:p-12 print:shadow-none print:border-none print:text-black bg-dark/50 backdrop-blur-xl" ref={invoiceRef}>
+                    <Card className="p-5 md:p-12 print:shadow-none print:border-none print:text-black bg-dark/50 backdrop-blur-xl" ref={invoiceRef}>
                         {/* Header */}
-                        <div className="flex justify-between items-start mb-12 border-b border-white/10 pb-8 print:border-gray-300">
+                        <div className="flex flex-col md:flex-row justify-between items-start mb-8 md:mb-12 border-b border-white/10 pb-8 print:border-gray-300 gap-6 md:gap-0">
                             <div>
-                                <h1 className="text-4xl font-bold text-white mb-2 print:text-black">INVOICE</h1>
+                                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 print:text-black">INVOICE</h1>
                                 <p className="text-neon-blue font-mono text-lg print:text-blue-600">ID: {invoice.id}</p>
                             </div>
-                            <div className="text-right">
-                                <h2 className="text-2xl font-bold text-white mb-1 print:text-black">Newbi Entertainments</h2>
+                            <div className="text-left md:text-right">
+                                <h2 className="text-xl md:text-2xl font-bold text-white mb-1 print:text-black">Newbi Entertainments</h2>
                                 <p className="text-gray-400 text-sm print:text-gray-600">Entertainment. Events. Energy.</p>
                                 <p className="text-gray-400 text-sm print:text-gray-600">hello@newbi.com</p>
                             </div>
                         </div>
 
                         {/* Client & Dates */}
-                        <div className="grid grid-cols-2 gap-8 mb-12">
+                        <div className="flex flex-col md:flex-row gap-8 mb-12 justify-between">
                             <div>
                                 <h3 className="text-gray-500 text-sm uppercase tracking-wider mb-2 font-semibold">Bill To</h3>
                                 <p className="text-white text-xl font-bold print:text-black">{invoice.clientName}</p>
                                 <p className="text-gray-400 print:text-gray-600">client@example.com</p>
                                 <p className="text-gray-400 print:text-gray-600">+1 234 567 890</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left md:text-right">
                                 <div className="mb-4">
                                     <h3 className="text-gray-500 text-sm uppercase tracking-wider mb-1 font-semibold">Issue Date</h3>
                                     <p className="text-white font-mono print:text-black">{new Date().toLocaleDateString()}</p>
@@ -122,8 +122,8 @@ const Invoice = () => {
                         </div>
 
                         {/* Line Items */}
-                        <div className="mb-12">
-                            <table className="w-full">
+                        <div className="mb-12 overflow-x-auto">
+                            <table className="w-full min-w-[500px]">
                                 <thead>
                                     <tr className="border-b border-white/10 text-left print:border-gray-300">
                                         <th className="py-4 text-gray-500 font-medium w-1/2 print:text-gray-700">Description</th>
@@ -133,13 +133,25 @@ const Invoice = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {/* Mock Line Item since old data structure was simple */}
-                                    <tr className="border-b border-white/5 print:border-gray-200">
-                                        <td className="py-4 text-white print:text-black">Event Services / Consultation</td>
-                                        <td className="py-4 text-gray-400 text-center print:text-black">1</td>
-                                        <td className="py-4 text-gray-400 text-right print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
-                                        <td className="py-4 text-white text-right font-medium print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
-                                    </tr>
+                                    {/* Line Items Logic */}
+                                    {invoice.items && invoice.items.length > 0 ? (
+                                        invoice.items.map((item, idx) => (
+                                            <tr key={idx} className="border-b border-white/5 print:border-gray-200">
+                                                <td className="py-4 text-white print:text-black">{item.description}</td>
+                                                <td className="py-4 text-gray-400 text-center print:text-black">{item.quantity}</td>
+                                                <td className="py-4 text-gray-400 text-right print:text-black">{currencySymbol}{item.price.toLocaleString()}</td>
+                                                <td className="py-4 text-white text-right font-medium print:text-black">{currencySymbol}{(item.quantity * item.price).toLocaleString()}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        // Fallback for old mock data
+                                        <tr className="border-b border-white/5 print:border-gray-200">
+                                            <td className="py-4 text-white print:text-black">Event Services / Consultation</td>
+                                            <td className="py-4 text-gray-400 text-center print:text-black">1</td>
+                                            <td className="py-4 text-gray-400 text-right print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
+                                            <td className="py-4 text-white text-right font-medium print:text-black">{currencySymbol}{subtotal.toLocaleString()}</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
