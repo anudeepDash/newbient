@@ -45,6 +45,18 @@ Once deployed on Vercel:
    - *OR* use Nameservers if you want Vercel to manage DNS.
 4. Log in to your domain registrar (GoDaddy, Namecheap, etc.) and add these records.
 
+## 3.5 Troubleshooting "Reviewing / Not Secure" (SSL)
+If your site says "Not Secure" or "Your connection is not private":
+1. **Wait**: SSL generation on Vercel takes time after DNS connects. It typically takes **15 minutes to 1 hour**, but can take up to 24 hours.
+2. **Check Status**: 
+   - Go to Vercel Dashboard -> Settings -> Domains.
+   - Look at `newbi.live`. It should have a blue checkmark.
+   - If it says "Invalid Configuration" or "Pending", check your DNS records again.
+3. **Force HTTPS**:
+   - Ensure you are visiting `https://newbi.live` (not `http`).
+   - Try a different browser or Incognito window to clear cached "Not Secure" states.
+
+
 ## 4. Admin Access for Core Team
 - **Credentials**: Share the username and password you set in the Environment Variables with your core team.
 - **Login URL**: `https://newbi.live/admin` (or just click "Admin" in the footer).
