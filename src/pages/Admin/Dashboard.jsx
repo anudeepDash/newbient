@@ -148,16 +148,16 @@ const Dashboard = () => {
                         </Card>
                     </Link>
 
-                    <div className="group opacity-70 cursor-not-allowed">
-                        <Card className="p-8 h-full border-white/10 flex flex-col items-center text-center">
-                            <div className="p-4 rounded-full bg-white/5 text-gray-400 mb-4">
-                                <Music size={32} />
+                    <Link to="/admin/forms" className="group">
+                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center">
+                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
+                                <Users size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-400 mb-2">Concert Manager</h3>
-                            <p className="text-gray-500 text-sm mb-6">Coming Soon</p>
-                            <Button variant="outline" disabled className="w-full border-white/20 text-gray-500">Coming Soon</Button>
+                            <h3 className="text-xl font-bold text-white mb-2">Forms & Volunteers</h3>
+                            <p className="text-gray-400 text-sm mb-6">Manage volunteer forms, RSVPs, and guestlists.</p>
+                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Forms</Button>
                         </Card>
-                    </div>
+                    </Link>
                 </div>
 
                 <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>

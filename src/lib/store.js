@@ -2,32 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Mock Data
-const initialAnnouncements = [
-    {
-        id: 1,
-        title: "Neon Nights Festival 2025",
-        date: "2025-03-15",
-        content: "Get ready for the biggest neon-themed festival of the year! Early bird tickets are now available.",
-        isPinned: true,
-        image: "https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9?q=80&w=2070&auto=format&fit=crop"
-    },
-    {
-        id: 2,
-        title: "New Client Portal Launched",
-        date: "2024-11-20",
-        content: "We have launched a new client portal for easier invoice management and payments.",
-        isPinned: false,
-        image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
-    },
-    {
-        id: 3,
-        title: "Summer Concert Series",
-        date: "2025-06-01",
-        content: "Announcing our summer lineup featuring top artists from around the globe.",
-        isPinned: false,
-        image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2070&auto=format&fit=crop"
-    }
-];
+const initialAnnouncements = [];
 
 const initialConcerts = [
     {
@@ -132,6 +107,26 @@ export const useStore = create(
                 invoices: state.invoices.map(inv =>
                     inv.id === id ? { ...inv, status } : inv
                 )
+            })),
+
+            deleteInvoice: (id) => set((state) => ({
+                invoices: state.invoices.filter(inv => inv.id !== id)
+            })),
+
+            // Forms System
+            forms: [],
+            addForm: (form) => set((state) => ({ forms: [...state.forms, form] })),
+            updateForm: (id, updates) => set((state) => ({
+                forms: state.forms.map(f => f.id === id ? { ...f, ...updates } : f)
+            })),
+            deleteForm: (id) => set((state) => ({
+                forms: state.forms.filter(f => f.id !== id)
+            })),
+            addSubmission: (formId, submission) => set((state) => ({
+                forms: state.forms.map(f => f.id === formId ? {
+                    ...f,
+                    submissions: [...(f.submissions || []), { ...submission, submittedAt: new Date().toISOString() }]
+                } : f)
             })),
 
             // CMS Actions
