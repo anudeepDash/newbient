@@ -26,6 +26,16 @@ const InvoiceManagement = () => {
         }
     };
 
+    const getSymbol = (currencyCode) => {
+        const symbols = {
+            'USD': '$',
+            'INR': '₹',
+            'EUR': '€',
+            'GBP': '£'
+        };
+        return symbols[currencyCode] || '$';
+    };
+
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
@@ -79,10 +89,10 @@ const InvoiceManagement = () => {
                             <tbody>
                                 {filteredInvoices.map((invoice) => (
                                     <tr key={invoice.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                        <td className="py-4 px-4 text-white font-mono">{invoice.id}</td>
+                                        <td className="py-4 px-4 text-white font-mono">{invoice.invoiceNumber || invoice.id}</td>
                                         <td className="py-4 px-4 text-white">{invoice.clientName}</td>
-                                        <td className="py-4 px-4 text-gray-400">{new Date().toLocaleDateString()}</td>
-                                        <td className="py-4 px-4 text-white">${invoice.amount.toLocaleString()}</td>
+                                        <td className="py-4 px-4 text-gray-400">{new Date(invoice.createdAt || Date.now()).toLocaleDateString()}</td>
+                                        <td className="py-4 px-4 text-white">{getSymbol(invoice.currency)}{invoice.amount.toLocaleString()}</td>
                                         <td className="py-4 px-4">
                                             <span className={cn(
                                                 "px-2 py-1 rounded-full text-xs font-medium",
