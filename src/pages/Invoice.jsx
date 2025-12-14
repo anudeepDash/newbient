@@ -15,6 +15,8 @@ const Invoice = () => {
 
     const invoice = invoices.find(inv => inv.id === id);
 
+    console.log("Invoice Debug:", { requestedId: id, allInvoices: invoices, foundInvoice: invoice });
+
     const getSymbol = (currencyCode) => {
         const symbols = {
             'USD': '$',
