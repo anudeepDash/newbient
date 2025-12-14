@@ -36,14 +36,14 @@ const CallToAction = () => {
                     className="flex flex-col md:flex-row items-center justify-center gap-6"
                 >
                     <a href="https://wa.me/919304372773" target="_blank" rel="noopener noreferrer">
-                        <Button variant="secondary" className="px-8 py-4 text-lg rounded-full flex items-center gap-2">
-                            <MessageSquare size={20} /> WhatsApp
+                        <Button variant="secondary" className="px-8 py-4 text-lg rounded-full flex items-center gap-2 !bg-neon-green !shadow-neon-green text-black">
+                            <MessageSquare size={20} /> Join WhatsApp
                         </Button>
                     </a>
 
                     <a href="https://www.instagram.com/newbi_ent" target="_blank" rel="noopener noreferrer">
-                        <Button variant="primary" className="px-8 py-4 text-lg rounded-full flex items-center gap-2">
-                            <Instagram size={20} /> Instagram
+                        <Button variant="primary" className="px-8 py-4 text-lg rounded-full flex items-center gap-2 !bg-neon-pink !shadow-neon-pink text-white">
+                            <Instagram size={20} /> Follow Instagram
                         </Button>
                     </a>
 
