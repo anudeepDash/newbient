@@ -99,6 +99,32 @@ export const useStore = create(
                 announcements: state.announcements.filter(a => a.id !== id)
             })),
 
+            // Portfolio / Past Events
+            portfolio: [
+                { id: 'm1', category: 'music', title: "Arijit Singh", image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14" },
+                { id: 'm2', category: 'music', title: "Marshmello", image: "https://images.unsplash.com/photo-1506157786151-b8491531f063" },
+                { id: 'f1', category: 'fests', title: "Kingfisher OctoBeerfest", image: "https://images.unsplash.com/photo-1533174072545-e8d4aa97edf9" },
+                // Add defaults as requested
+                { id: 'c1', category: 'comedy', title: "Anubhav Singh Bassi", image: "https://images.unsplash.com/photo-1585672629633-84f55dbd7c0f" }
+            ],
+            addPortfolioItem: (item) => set((state) => ({
+                portfolio: [...state.portfolio, item]
+            })),
+            deletePortfolioItem: (id) => set((state) => ({
+                portfolio: state.portfolio.filter(i => i.id !== id)
+            })),
+
+            // Upcoming Concerts
+            addConcert: (concert) => set((state) => ({
+                concerts: [...state.concerts, concert]
+            })),
+            updateConcert: (id, updates) => set((state) => ({
+                concerts: state.concerts.map(c => c.id === id ? { ...c, ...updates } : c)
+            })),
+            deleteConcert: (id) => set((state) => ({
+                concerts: state.concerts.filter(c => c.id !== id)
+            })),
+
             addInvoice: (invoice) => set((state) => ({
                 invoices: [...state.invoices, invoice]
             })),

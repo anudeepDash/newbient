@@ -20,18 +20,24 @@ const AnnouncementsManager = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        addAnnouncement({
-            id: Date.now(),
-            ...newAnnouncement
-        });
-        setIsAdding(false);
-        setNewAnnouncement({
-            title: '',
-            date: new Date().toISOString().split('T')[0],
-            content: '',
-            image: '',
-            isPinned: false
-        });
+        try {
+            addAnnouncement({
+                id: Date.now(),
+                ...newAnnouncement
+            });
+            alert("Announcement added successfully!");
+            setIsAdding(false);
+            setNewAnnouncement({
+                title: '',
+                date: new Date().toISOString().split('T')[0],
+                content: '',
+                image: '',
+                isPinned: false
+            });
+        } catch (error) {
+            console.error("Error adding announcement:", error);
+            alert("Failed to add announcement.");
+        }
     };
 
     return (

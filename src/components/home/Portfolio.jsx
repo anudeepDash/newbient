@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useStore } from '../../lib/store';
 
 const Portfolio = () => {
+    const { portfolio } = useStore();
     const categories = [
         {
             id: 'music',
@@ -53,8 +55,8 @@ const Portfolio = () => {
                             key={cat.id}
                             onClick={() => setActiveTab(cat.id)}
                             className={`px-6 py-3 rounded-full font-medium transition-all duration-300 relative ${activeTab === cat.id
-                                    ? 'text-black bg-neon-green shadow-[0_0_20px_rgba(57,255,20,0.4)]'
-                                    : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'
+                                ? 'text-black bg-neon-green shadow-[0_0_20px_rgba(57,255,20,0.4)]'
+                                : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'
                                 }`}
                         >
                             {cat.label}
@@ -65,30 +67,43 @@ const Portfolio = () => {
                 {/* Grid Content */}
                 <div className="min-h-[300px]">
                     <AnimatePresence mode="wait">
-                        {categories.map((cat) => (
-                            cat.id === activeTab && (
-                                <motion.div
-                                    key={cat.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                        >
+                            {/* Filter items by active tab */}
+                            {portfolio.filter(item => item.category === activeTab).map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="group relative bg-white/5 border border-white/10 p-4 rounded-xl hover:border-neon-green/50 transition-all overflow-hidden aspect-video flex items-center justify-center text-center"
                                 >
-                                    {cat.items.map((item, idx) => (
+                                    {/* Hover Image Background */}
+                                    {item.image && (
                                         <div
-                                            key={idx}
-                                            className="group relative bg-white/5 border border-white/10 p-4 rounded-xl hover:border-neon-green/50 transition-colors overflow-hidden"
-                                        >
-                                            <div className="absolute inset-0 bg-neon-green/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            <p className="relative z-10 font-medium text-center text-gray-200 group-hover:text-neon-green transition-colors">
-                                                {item}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            )
-                        ))}
+                                            className="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                            style={{ backgroundImage: `url(${item.image})` }}
+                                        />
+                                    )}
+                                    {/* Overlay for text readability on hover */}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                    {/* Content */}
+                                    <p className="relative z-10 font-medium text-gray-200 group-hover:text-neon-green transition-colors text-lg">
+                                        {item.title}
+                                    </p>
+                                </div>
+                            ))}
+
+                            {portfolio.filter(item => item.category === activeTab).length === 0 && (
+                                <div className="col-span-full text-center text-gray-500 py-12">
+                                    No events added in this category yet.
+                                </div>
+                            )}
+                        </motion.div>
                     </AnimatePresence>
                 </div>
             </div>
