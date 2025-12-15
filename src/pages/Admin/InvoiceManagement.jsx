@@ -45,11 +45,31 @@ const InvoiceManagement = () => {
             return;
         }
 
+        console.log("Starting upload for file:", quickFile.name, "Size:", quickFile.size);
+
         setUploading(true);
         try {
             const storageRef = ref(storage, `invoices/${Date.now()}_${quickFile.name}`);
-            await uploadBytes(storageRef, quickFile);
+
+            // Add metadata
+            const metadata = {
+                contentType: 'application/pdf',
+            };
+
+            console.log("Uploading bytes...");
+
+            // 30s Timeout mechanism
+            const uploadPromise = uploadBytes(storageRef, quickFile, metadata);
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("Upload timed out (30s). Check network or firewall.")), 30000);
+            });
+
+            const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
+            console.log("Upload success!", snapshot);
+
+            console.log("Getting download URL...");
             const pdfUrl = await getDownloadURL(storageRef);
+            console.log("Got URL:", pdfUrl);
 
             const newInvoice = {
                 invoiceNumber: `QUICK-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -76,7 +96,13 @@ const InvoiceManagement = () => {
             setQuickFile(null);
         } catch (error) {
             console.error("Error creating quick invoice:", error);
-            alert("Failed to upload. Please try again.");
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            if (error.code === 'storage/unauthorized') {
+                alert("Permission denied. Check Firebase Storage rules.");
+            } else {
+                alert(`Failed to upload: ${error.message}`);
+            }
         } finally {
             setUploading(false);
         }
