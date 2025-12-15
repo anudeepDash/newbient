@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Trash2, Copy, ArrowLeft, Plus } from 'lucide-react';
+import { Edit, Trash2, Copy, ArrowLeft, Plus, Eye } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -178,6 +178,15 @@ const InvoiceManagement = () => {
                                         </td>
                                         <td className="py-4 px-4 text-right">
                                             <div className="flex justify-end gap-2">
+                                                <a
+                                                    href={`/invoice/${invoice.id}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="p-2 text-gray-400 hover:text-neon-green transition-colors"
+                                                    title="View Invoice"
+                                                >
+                                                    <Eye size={18} />
+                                                </a>
                                                 <button
                                                     onClick={() => handleCopyLink(invoice.id)}
                                                     className="p-2 text-gray-400 hover:text-neon-blue transition-colors"
