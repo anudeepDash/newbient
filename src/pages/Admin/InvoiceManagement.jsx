@@ -156,7 +156,7 @@ const InvoiceManagement = () => {
                                     <th className="py-4 px-4 text-gray-500 font-medium">ID</th>
                                     <th className="py-4 px-4 text-gray-500 font-medium">Client</th>
                                     <th className="py-4 px-4 text-gray-500 font-medium">Date</th>
-                                    <th className="py-4 px-4 text-gray-500 font-medium">Amount</th>
+
                                     <th className="py-4 px-4 text-gray-500 font-medium">Status</th>
                                     <th className="py-4 px-4 text-gray-500 font-medium text-right">Actions</th>
                                 </tr>
@@ -167,7 +167,7 @@ const InvoiceManagement = () => {
                                         <td className="py-4 px-4 text-white font-mono">{invoice.invoiceNumber || invoice.id}</td>
                                         <td className="py-4 px-4 text-white">{invoice.clientName}</td>
                                         <td className="py-4 px-4 text-gray-400">{new Date(invoice.createdAt || Date.now()).toLocaleDateString()}</td>
-                                        <td className="py-4 px-4 text-white">{getSymbol(invoice.currency)}{invoice.amount.toLocaleString()}</td>
+
                                         <td className="py-4 px-4">
                                             <span className={cn(
                                                 "px-2 py-1 rounded-full text-xs font-medium",
