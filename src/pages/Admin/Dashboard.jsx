@@ -159,7 +159,7 @@ const Dashboard = () => {
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Invoice Management</h3>
                             <p className="text-gray-400 text-sm mb-6">Create, view, and manage client invoices.</p>
-                            <Button variant="primary" className="w-full">Manage Invoices</Button>
+                            <Button variant="outline" className="w-full text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black">Manage Invoices</Button>
                         </Card>
                     </Link>
 
@@ -170,7 +170,7 @@ const Dashboard = () => {
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
                             <p className="text-gray-400 text-sm mb-6">Post updates and pin important news.</p>
-                            <Button variant="secondary" className="w-full">Manage Announcements</Button>
+                            <Button variant="outline" className="w-full text-neon-pink border-neon-pink hover:bg-neon-pink hover:text-white">Manage Announcements</Button>
                         </Card>
                     </Link>
 
@@ -219,7 +219,7 @@ const Dashboard = () => {
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Site Details</h3>
                             <p className="text-gray-400 text-sm mb-6">Update contact info, social links, and emails.</p>
-                            <Button variant="outline" className="w-full">Edit Site Content</Button>
+                            <Button variant="outline" className="w-full text-white border-white hover:bg-white hover:text-black">Edit Site Content</Button>
                         </Card>
                     </Link>
 
