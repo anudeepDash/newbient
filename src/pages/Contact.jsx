@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Send, Instagram, Youtube, Mail, Phone } from 'lucide-react'; // Note: Lucide doesn't have WhatsApp, using Phone as placeholder or generic
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -18,11 +20,20 @@ const Contact = () => {
         message: ''
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
-        alert('Message sent! We will get back to you soon.');
-        setFormData({ name: '', email: '', message: '' });
+        try {
+            await addDoc(collection(db, "messages"), {
+                ...formData,
+                createdAt: new Date().toISOString(),
+                status: 'new'
+            });
+            alert('Message sent! We will get back to you soon.');
+            setFormData({ name: '', email: '', message: '' });
+        } catch (error) {
+            console.error("Error sending message: ", error);
+            alert('Failed to send message. Please try again.');
+        }
     };
 
     return (
