@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail } from 'lucide-react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +16,18 @@ const Dashboard = () => {
     });
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const q = query(collection(db, "messages"), where("status", "==", "new"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setUnreadCount(snapshot.size);
+        });
+
+        return () => unsubscribe();
+    }, [isAuthenticated]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -97,9 +111,19 @@ const Dashboard = () => {
                         <h1 className="text-3xl font-bold text-white">Welcome Back, Admin</h1>
                         <p className="text-gray-400">Manage your empire from here.</p>
                     </div>
-                    <Button variant="outline" onClick={handleLogout}>
-                        Logout
-                    </Button>
+                    <div className="flex items-center gap-4">
+                        <Link to="/admin/messages" className="relative text-gray-400 hover:text-white transition-colors">
+                            <Mail size={24} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-black">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </Link>
+                        <Button variant="outline" onClick={handleLogout}>
+                            Logout
+                        </Button>
+                    </div>
                 </div>
 
 
