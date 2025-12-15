@@ -5,8 +5,6 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../lib/firebase';
 import { Input } from '../../components/ui/Input';
 
 const InvoiceManagement = () => {
@@ -45,64 +43,53 @@ const InvoiceManagement = () => {
             return;
         }
 
-        console.log("Starting upload for file:", quickFile.name, "Size:", quickFile.size);
+        // Limit file size to 750KB (to safely fit in Firestore 1MB limit with overhead)
+        if (quickFile.size > 750 * 1024) {
+            alert("Free Plan Limit: Please use a PDF smaller than 750KB.");
+            return;
+        }
+
+        console.log("Starting Base64 conversion for:", quickFile.name);
 
         setUploading(true);
         try {
-            const storageRef = ref(storage, `invoices/${Date.now()}_${quickFile.name}`);
-
-            // Add metadata
-            const metadata = {
-                contentType: 'application/pdf',
-            };
-
-            console.log("Uploading bytes...");
-
-            // 30s Timeout mechanism
-            const uploadPromise = uploadBytes(storageRef, quickFile, metadata);
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error("Upload timed out (30s). Check network or firewall.")), 30000);
+            // Convert file to Base64 string
+            const toBase64 = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
             });
 
-            const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
-            console.log("Upload success!", snapshot);
-
-            console.log("Getting download URL...");
-            const pdfUrl = await getDownloadURL(storageRef);
-            console.log("Got URL:", pdfUrl);
+            const base64Data = await toBase64(quickFile);
+            console.log("Conversion complete. Length:", base64Data.length);
 
             const newInvoice = {
                 invoiceNumber: `QUICK-${Math.floor(1000 + Math.random() * 9000)}`,
                 clientName: quickClientName,
-                email: '', // Optional or dummy
+                email: '',
                 phone: '',
                 serviceDescription: 'Quick Invoice Upload',
                 issueDate: new Date().toISOString().split('T')[0],
                 dueDate: '',
-                notes: 'Uploaded PDF Invoice',
+                notes: 'Uploaded PDF Invoice (Stored Locally)',
                 currency: 'USD',
                 taxRate: 0,
                 items: [],
-                amount: 0, // No amount tracking for quick upload unless added later
+                amount: 0,
                 status: 'Pending',
                 createdAt: new Date().toISOString(),
-                pdfUrl: pdfUrl
+                pdfUrl: base64Data // Storing the actual file data here
             };
 
             await addInvoice(newInvoice);
-            alert("Invoice uploaded successfully!");
+            alert("Invoice uploaded successfully! (Stored in Database)");
             setShowQuickUpload(false);
             setQuickClientName('');
             setQuickFile(null);
         } catch (error) {
             console.error("Error creating quick invoice:", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
-            if (error.code === 'storage/unauthorized') {
-                alert("Permission denied. Check Firebase Storage rules.");
-            } else {
-                alert(`Failed to upload: ${error.message}`);
-            }
+            alert(`Failed to save invoice: ${error.message}`);
         } finally {
             setUploading(false);
         }
