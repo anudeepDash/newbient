@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Printer, CreditCard, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -60,14 +60,21 @@ const Invoice = () => {
         window.print();
     };
 
-    const handlePayment = () => {
-        // Simulate payment processing
-        const currencySymbol = getSymbol(invoice.currency || 'USD');
-        const confirmPayment = window.confirm(`Proceed to pay ${currencySymbol}${invoice.amount.toLocaleString()}?`);
-        if (confirmPayment) {
+    const handleMarkPaid = () => {
+        if (window.confirm('Mark this invoice as PAID?')) {
             updateInvoiceStatus(invoice.id, 'Paid');
-            alert('Payment Successful! Thank you.');
         }
+    };
+
+    const handleShareWhatsApp = () => {
+        const text = `Here is your invoice from Newbi Entertainments: ${window.location.href}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    };
+
+    const handleShareEmail = () => {
+        const subject = `Invoice #${invoice.invoiceNumber || invoice.id} from Newbi Entertainments`;
+        const body = `Hi,\n\nPlease find your invoice attached here: ${window.location.href}\n\nThanks,\nNewbi Entertainments`;
+        window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     };
 
     // Calculate totals (mock logic if items exist, otherwise use total amount)
@@ -117,11 +124,24 @@ const Invoice = () => {
                         className="h-[85vh]"
                     >
                         <Card className="h-full bg-dark/50 backdrop-blur-xl overflow-hidden p-0 border-neon-blue/30">
-                            <div className="flex justify-between items-center p-4 bg-black/40 border-b border-white/10">
-                                <h2 className="text-white font-bold flex items-center gap-2">
+                            <div className="flex flex-wrap gap-2 justify-end items-center p-4 bg-black/40 border-b border-white/10">
+                                <h2 className="text-white font-bold flex items-center gap-2 mr-auto">
                                     <CheckCircle className="text-neon-green h-5 w-5" />
-                                    Invoice #{displayInvoice.invoiceNumber}
+                                    #{displayInvoice.invoiceNumber}
                                 </h2>
+
+                                <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
+                                    <MessageCircle className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
+                                    <Mail className="h-4 w-4" />
+                                </Button>
+                                {displayInvoice.status !== 'Paid' && (
+                                    <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
+                                        <DollarSign className="mr-2 h-4 w-4" />
+                                        Mark Paid
+                                    </Button>
+                                )}
                                 <Button variant="secondary" size="sm" onClick={() => window.open(displayInvoice.pdfUrl, '_blank')}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Download
@@ -242,6 +262,21 @@ const Invoice = () => {
 
                         {/* Actions */}
                         <div className="mt-8 flex flex-col md:flex-row gap-4 justify-end print:hidden">
+                            <div className="flex gap-2 mr-auto">
+                                <Button variant="outline" onClick={handleShareWhatsApp}>
+                                    <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+                                </Button>
+                                <Button variant="outline" onClick={handleShareEmail}>
+                                    <Mail className="mr-2 h-4 w-4" /> Email
+                                </Button>
+                            </div>
+
+                            {displayInvoice.status !== 'Paid' && (
+                                <Button variant="outline" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
+                                    <DollarSign className="mr-2 h-4 w-4" /> Mark Paid
+                                </Button>
+                            )}
+
                             <Button variant="outline" onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" />
                                 Print
