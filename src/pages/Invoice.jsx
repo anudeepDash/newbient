@@ -14,6 +14,8 @@ const Invoice = () => {
     const invoiceRef = useRef(null);
 
     const invoice = invoices.find(inv => inv.id === id);
+    const isAdmin = localStorage.getItem('adminAuth') === 'true';
+    const isAdmin = localStorage.getItem('adminAuth') === 'true';
 
     if (loading) {
         return (
@@ -130,17 +132,21 @@ const Invoice = () => {
                                     #{displayInvoice.invoiceNumber}
                                 </h2>
 
-                                <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
-                                    <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
-                                    <Mail className="h-4 w-4" />
-                                </Button>
-                                {displayInvoice.status !== 'Paid' && (
+                                {isAdmin && displayInvoice.status !== 'Paid' && (
                                     <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
                                         <DollarSign className="mr-2 h-4 w-4" />
                                         Mark Paid
                                     </Button>
+                                )}
+                                {isAdmin && (
+                                    <>
+                                        <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
+                                            <MessageCircle className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
+                                            <Mail className="h-4 w-4" />
+                                        </Button>
+                                    </>
                                 )}
                                 <Button variant="secondary" size="sm" onClick={() => window.open(displayInvoice.pdfUrl, '_blank')}>
                                     <Download className="mr-2 h-4 w-4" />
