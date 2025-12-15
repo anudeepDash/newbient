@@ -132,6 +132,14 @@ const Invoice = () => {
                                     #{displayInvoice.invoiceNumber}
                                 </h2>
 
+                                {/* Status Badge for Clients/Admins */}
+                                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
+                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                        : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                    }`}>
+                                    {displayInvoice.status}
+                                </div>
+
                                 {isAdmin && displayInvoice.status !== 'Paid' && (
                                     <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
                                         <DollarSign className="mr-2 h-4 w-4" />
