@@ -52,7 +52,6 @@ const WhyChooseUs = () => {
 };
 
 const Card = ({ reason, index }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
 
     return (
         <motion.div
@@ -61,7 +60,6 @@ const Card = ({ reason, index }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.2 }}
             className="bg-black border border-white/5 rounded-2xl p-8 hover:border-gray-700 transition-colors group relative overflow-hidden"
-            onClick={() => setIsExpanded(!isExpanded)}
         >
             <div className="w-16 h-16 bg-[#0B2406] rounded-2xl flex items-center justify-center mb-6 text-neon-green group-hover:scale-110 transition-transform duration-300">
                 <reason.icon size={32} />
@@ -74,12 +72,7 @@ const Card = ({ reason, index }) => {
                 {reason.desc}
             </p>
 
-            <motion.div
-                animate={{ opacity: isExpanded ? 0 : 1 }}
-                className="text-xs font-mono text-gray-600 uppercase tracking-widest mt-auto group-hover:text-neon-green transition-colors cursor-pointer"
-            >
-                Click to expand
-            </motion.div>
+
 
             {/* Glow effect on hover */}
             <div className="absolute -inset-px border border-transparent group-hover:border-neon-green/20 rounded-2xl transition-all duration-500 pointer-events-none" />

@@ -84,14 +84,14 @@ const NotificationBell = () => {
                         {recentAnnouncements.length > 0 && (
                             <div className="p-2 bg-white/5 border-t border-white/5 text-center">
                                 <Link to="/" className="text-xs text-gray-400 hover:text-white transition-colors" onClick={() => setIsOpen(false)}>
-                                    View all in generic modal if needed
+                                    View All
                                 </Link>
                             </div>
                         )}
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
 
