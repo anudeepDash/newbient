@@ -15,7 +15,7 @@ const Invoice = () => {
 
     const invoice = invoices.find(inv => inv.id === id);
     const isAdmin = localStorage.getItem('adminAuth') === 'true';
-    const isAdmin = localStorage.getItem('adminAuth') === 'true';
+
 
     if (loading) {
         return (
