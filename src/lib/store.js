@@ -34,8 +34,16 @@ export const useStore = create((set, get) => ({
                 });
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
+
+                // Specific fix for loading state: 
+                // We consider the app "loaded" once the critical data (invoices) arrives.
+                if (stateKey === 'invoices') {
+                    set({ loading: false });
+                }
             }, (error) => {
                 console.error(`Error fetching ${stateKey}:`, error);
+                // Even on error, stop loading so we don't hang
+                if (stateKey === 'invoices') set({ loading: false });
             });
         };
 
@@ -47,8 +55,7 @@ export const useStore = create((set, get) => ({
 
         // Site details is a single doc usually, but for simplicity treating as collection or skipping for now.
         // For this version, let's keep siteDetails local or fetch if needed. 
-        // We'll mark loading false after listeners attach
-        set({ loading: false });
+
 
         return () => {
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5();

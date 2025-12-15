@@ -5,6 +5,8 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 
 const InvoiceGenerator = () => {
     const navigate = useNavigate();
@@ -21,6 +23,8 @@ const InvoiceGenerator = () => {
         currency: 'USD',
         taxRate: 18
     });
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     const currencies = [
         { code: 'USD', symbol: '$', label: 'US Dollar' },
@@ -65,13 +69,28 @@ const InvoiceGenerator = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setUploading(true);
+
+        let pdfUrl = null;
+        if (file) {
+            try {
+                const storageRef = ref(storage, `invoices/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                pdfUrl = await getDownloadURL(storageRef);
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                alert("Failed to upload PDF. Continuing without it.");
+            }
+        }
+
         const newInvoice = {
             invoiceNumber: `NEWBI-${Math.floor(100000 + Math.random() * 900000)}`,
             ...formData,
             items: lineItems,
             amount: calculateTotal(),
             status: 'Pending',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            pdfUrl: pdfUrl
         };
 
         try {
@@ -138,6 +157,18 @@ const InvoiceGenerator = () => {
                                     placeholder="e.g. Event Production"
                                 />
                             </div>
+                        </div>
+
+                        {/* File Upload */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Attach Existing PDF (Optional)</label>
+                            <Input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) => setFile(e.target.files[0])}
+                                className="bg-transparent border-white/20"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">If uploaded, this PDF will be served to the client instead of the generated one.</p>
                         </div>
 
                         {/* Currency Selection */}
@@ -262,9 +293,9 @@ const InvoiceGenerator = () => {
                         </div>
 
                         <div className="flex justify-end gap-4 pt-8">
-                            <Button type="submit" variant="primary" className="w-full md:w-auto">
+                            <Button type="submit" variant="primary" className="w-full md:w-auto" disabled={uploading}>
                                 <Save className="mr-2 h-4 w-4" />
-                                Generate Invoice
+                                {uploading ? 'Generating...' : 'Generate Invoice'}
                             </Button>
                         </div>
                     </form>

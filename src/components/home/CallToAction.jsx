@@ -37,7 +37,7 @@ const CallToAction = () => {
                 >
                     <a href="https://wa.me/919304372773" target="_blank" rel="noopener noreferrer">
                         <Button variant="secondary" className="px-8 py-4 text-lg rounded-full flex items-center gap-2 !bg-neon-green !shadow-neon-green text-black">
-                            <MessageSquare size={20} /> Join WhatsApp
+                            <MessageSquare size={20} /> Message Now
                         </Button>
                     </a>
 

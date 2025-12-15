@@ -53,7 +53,7 @@ const Hero = () => {
                     transition={{ duration: 0.5, delay: 0.4 }}
                 >
                     <a
-                        href="#contact"
+                        href="/contact"
                         className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-black transition-all duration-200 bg-neon-green font-heading hover:bg-[#2eff0a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-green focus:ring-offset-gray-900 rounded-full"
                     >
                         Work With Us

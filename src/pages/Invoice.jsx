@@ -36,6 +36,11 @@ const Invoice = () => {
 
 
     const handleDownloadPDF = async () => {
+        if (invoice?.pdfUrl) {
+            window.open(invoice.pdfUrl, '_blank');
+            return;
+        }
+
         const element = invoiceRef.current;
         const canvas = await html2canvas(element, {
             scale: 2,
@@ -218,7 +223,7 @@ const Invoice = () => {
                         </Button>
                         <Button variant="secondary" onClick={handleDownloadPDF}>
                             <Download className="mr-2 h-4 w-4" />
-                            Download PDF
+                            {displayInvoice.pdfUrl ? 'View PDF' : 'Download PDF'}
                         </Button>
                     </div>
                 </motion.div>
