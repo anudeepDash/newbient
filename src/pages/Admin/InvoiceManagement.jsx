@@ -65,7 +65,7 @@ const InvoiceManagement = () => {
             console.log("Conversion complete. Length:", base64Data.length);
 
             const newInvoice = {
-                invoiceNumber: `QUICK-${Math.floor(1000 + Math.random() * 9000)}`,
+                invoiceNumber: `NEWBI-${Math.floor(100000 + Math.random() * 900000)}`,
                 clientName: quickClientName,
                 email: '',
                 phone: '',
