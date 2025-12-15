@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music } from 'lucide-react';
+import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -161,6 +161,19 @@ const Dashboard = () => {
                         </Card>
                     </Link>
 
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+                    <Link to="/admin/messages" className="group">
+                        <Card className="p-8 h-full hover:border-neon-blue transition-colors flex flex-col items-center text-center bg-white/5">
+                            <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-4 group-hover:scale-110 transition-transform">
+                                <Mail size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Inbox</h3>
+                            <p className="text-gray-400 text-sm mb-6">Read messages from the contact form.</p>
+                            <Button variant="outline" className="w-full text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black">View Messages</Button>
+                        </Card>
+                    </Link>
                 </div>
 
                 <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>

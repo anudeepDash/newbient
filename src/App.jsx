@@ -13,6 +13,7 @@ import InvoiceManagement from './pages/Admin/InvoiceManagement';
 import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
 import ConcertManager from './pages/Admin/ConcertManager';
 import SiteContentManager from './pages/Admin/SiteContentManager';
+import MessageManager from './pages/Admin/MessageManager';
 import GalleryManager from './pages/Admin/GalleryManager';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
@@ -51,6 +52,7 @@ function App() {
           <Route path="admin/create-invoice" element={<InvoiceGenerator />} />
           <Route path="admin/announcements" element={<AnnouncementsManager />} />
           <Route path="admin/concerts" element={<ConcertManager />} />
+          <Route path="admin/messages" element={<MessageManager />} />
           <Route path="admin/site-content" element={<SiteContentManager />} />
           <Route path="admin/gallery-manager" element={<GalleryManager />} />
           <Route path="admin/forms" element={<FormManager />} />

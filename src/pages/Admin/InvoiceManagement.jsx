@@ -5,10 +5,19 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
+import { Input } from '../../components/ui/Input';
 
 const InvoiceManagement = () => {
-    const { invoices, updateInvoiceStatus, deleteInvoice } = useStore();
+    const { invoices, updateInvoiceStatus, deleteInvoice, addInvoice } = useStore();
     const [filter, setFilter] = useState('All');
+
+    // Quick Upload State
+    const [showQuickUpload, setShowQuickUpload] = useState(false);
+    const [quickClientName, setQuickClientName] = useState('');
+    const [quickFile, setQuickFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     const filteredInvoices = filter === 'All'
         ? invoices
@@ -23,6 +32,53 @@ const InvoiceManagement = () => {
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
+        }
+        if (window.confirm('Are you sure you want to delete this invoice?')) {
+            deleteInvoice(id);
+        }
+    };
+
+    const handleQuickUpload = async (e) => {
+        e.preventDefault();
+        if (!quickClientName || !quickFile) {
+            alert("Please provide both client name and a PDF file.");
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const storageRef = ref(storage, `invoices/${Date.now()}_${quickFile.name}`);
+            await uploadBytes(storageRef, quickFile);
+            const pdfUrl = await getDownloadURL(storageRef);
+
+            const newInvoice = {
+                invoiceNumber: `QUICK-${Math.floor(1000 + Math.random() * 9000)}`,
+                clientName: quickClientName,
+                email: '', // Optional or dummy
+                phone: '',
+                serviceDescription: 'Quick Invoice Upload',
+                issueDate: new Date().toISOString().split('T')[0],
+                dueDate: '',
+                notes: 'Uploaded PDF Invoice',
+                currency: 'USD',
+                taxRate: 0,
+                items: [],
+                amount: 0, // No amount tracking for quick upload unless added later
+                status: 'Pending',
+                createdAt: new Date().toISOString(),
+                pdfUrl: pdfUrl
+            };
+
+            await addInvoice(newInvoice);
+            alert("Invoice uploaded successfully!");
+            setShowQuickUpload(false);
+            setQuickClientName('');
+            setQuickFile(null);
+        } catch (error) {
+            console.error("Error creating quick invoice:", error);
+            alert("Failed to upload. Please try again.");
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -46,12 +102,18 @@ const InvoiceManagement = () => {
                         </Link>
                         <h1 className="text-3xl font-bold text-white">Invoice Management</h1>
                     </div>
-                    <Link to="/admin/create-invoice">
-                        <Button variant="primary">
+                    <div className="flex gap-4">
+                        <Button variant="outline" onClick={() => setShowQuickUpload(true)}>
                             <Plus className="mr-2 h-4 w-4" />
-                            Create New
+                            Quick Upload
                         </Button>
-                    </Link>
+                        <Link to="/admin/create-invoice">
+                            <Button variant="primary">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Create New
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 <Card className="p-8">
@@ -132,6 +194,45 @@ const InvoiceManagement = () => {
                     </div>
                 </Card>
             </div>
+
+            {/* Quick Upload Modal */}
+            {showQuickUpload && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <Card className="w-full max-w-md p-6 relative border-neon-blue">
+                        <button
+                            onClick={() => setShowQuickUpload(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            ✕
+                        </button>
+                        <h2 className="text-2xl font-bold text-white mb-6">Quick Invoice Upload</h2>
+                        <form onSubmit={handleQuickUpload} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Client Name</label>
+                                <Input
+                                    value={quickClientName}
+                                    onChange={(e) => setQuickClientName(e.target.value)}
+                                    placeholder="Enter client name"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Upload PDF Invoice</label>
+                                <Input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={(e) => setQuickFile(e.target.files[0])}
+                                    className="bg-transparent border-white/20"
+                                    required
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full" disabled={uploading}>
+                                {uploading ? 'Uploading...' : 'Upload & Create'}
+                            </Button>
+                        </form>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };
