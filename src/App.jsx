@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useStore } from './lib/store'; // Import store
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -35,9 +36,10 @@ function App() {
   }, [subscribeToData]);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
+    <>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="gallery" element={<MediaGallery />} />
           <Route path="concerts" element={<ConcertZone />} />
@@ -61,6 +63,8 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    <Analytics />
+  </>
   );
 }
 
