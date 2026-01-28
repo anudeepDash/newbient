@@ -100,29 +100,18 @@ const CommunityJoin = () => {
                                     key={gig.id}
                                     id={`gig-${gig.id}`}
                                     className={`bg-zinc-900/50 border rounded-xl p-6 transition-all group relative ${new URLSearchParams(location.search).get('gig') === gig.id
-                                            ? 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.2)]'
-                                            : 'border-white/10 hover:border-neon-blue/50'
+                                        ? 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.2)]'
+                                        : 'border-white/10 hover:border-neon-blue/50'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors pr-8">{gig.title}</h3>
-                                        <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
-                                            {gig.status}
-                                        </span>
+                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors pr-2">{gig.title}</h3>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
+                                                {gig.status}
+                                            </span>
+                                        </div>
                                     </div>
-
-                                    {/* Share Button */}
-                                    <button
-                                        onClick={() => {
-                                            const url = `${window.location.origin}/community-join?gig=${gig.id}`;
-                                            navigator.clipboard.writeText(url);
-                                            alert('Link copied to clipboard!');
-                                        }}
-                                        className="absolute top-6 right-16 p-2 text-gray-400 hover:text-white transition-colors"
-                                        title="Share Gig"
-                                    >
-                                        <Share2 size={18} />
-                                    </button>
 
                                     <div className="space-y-3 mb-6 text-gray-400">
                                         <div className="flex items-center gap-3">
@@ -148,27 +137,41 @@ const CommunityJoin = () => {
                                     </div>
 
 
-                                    {
-                                        gig.applyType === 'whatsapp' ? (
+                                    {/* Action Row */}
+                                    <div className="flex gap-3 mt-auto">
+                                        <button
+                                            onClick={() => {
+                                                const url = `${window.location.origin}/community-join?gig=${gig.id}`;
+                                                navigator.clipboard.writeText(url);
+                                                alert('Link copied to clipboard!');
+                                            }}
+                                            className="p-3 bg-zinc-800 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-700 transition-colors"
+                                            title="Share Gig"
+                                        >
+                                            <Share2 size={20} />
+                                        </button>
+
+                                        {gig.applyType === 'whatsapp' ? (
                                             <a
                                                 href={`https://wa.me/${gig.applyLink || ''}?text=${encodeURIComponent(`Hi, I'd like to apply for the volunteer gig: ${gig.title}`)}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
+                                                className="flex-1"
                                             >
-                                                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white border-none transition-all shadow-lg shadow-green-500/20">
+                                                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white border-none transition-all shadow-lg shadow-green-500/20 h-full">
                                                     <div className="flex items-center justify-center gap-2">
                                                         Apply via WhatsApp
                                                     </div>
                                                 </Button>
                                             </a>
                                         ) : (
-                                            <a href={gig.applyLink || "#"} target="_blank" rel="noopener noreferrer">
-                                                <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all">
+                                            <a href={gig.applyLink || "#"} target="_blank" rel="noopener noreferrer" className="flex-1">
+                                                <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all h-full">
                                                     Apply for Gig
                                                 </Button>
                                             </a>
-                                        )
-                                    }
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
