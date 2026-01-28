@@ -206,14 +206,31 @@ const Dashboard = () => {
                     <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
                     <p className="text-gray-400 mb-6">
                         You do not have permission to access the admin dashboard.
-                        Please contact a Super Admin to request access.
                     </p>
-                    <div className="bg-white/5 p-3 rounded mb-6 text-sm text-gray-300 break-all">
-                        Logged in as: <span className="text-white font-mono">{user.email}</span>
+
+                    <div className="bg-white/5 p-4 rounded mb-6 text-left">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Troubleshooting</h3>
+                        <p className="text-sm text-gray-400 mb-1">We checked the database for:</p>
+                        <div className="font-mono text-neon-blue bg-black/50 p-2 rounded mb-3 break-all select-all">
+                            {user.email}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            <strong>Tip:</strong> Ensure the <code>email</code> field in your Firestore <code>admins</code> collection matches this exactly (case-sensitive).
+                        </p>
                     </div>
-                    <Button onClick={logout} variant="outline" className="w-full text-white border-white hover:bg-white hover:text-black">
-                        Logout
-                    </Button>
+
+                    <div className="flex gap-4">
+                        <Button onClick={logout} variant="outline" className="flex-1 text-white border-white hover:bg-white hover:text-black">
+                            Logout
+                        </Button>
+                        <Button
+                            onClick={() => checkUserRole(user)}
+                            variant="primary"
+                            className="flex-1 bg-neon-blue/20 text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black"
+                        >
+                            Refresh Status
+                        </Button>
+                    </div>
                 </Card>
             </div>
         );

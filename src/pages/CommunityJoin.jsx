@@ -117,11 +117,28 @@ const CommunityJoin = () => {
                                         )}
                                     </div>
 
-                                    <a href={gig.applyLink || "#"} target="_blank" rel="noopener noreferrer">
-                                        <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all">
-                                            Apply for Gig
-                                        </Button>
-                                    </a>
+
+                                    {
+                                        gig.applyType === 'whatsapp' ? (
+                                            <a
+                                                href={`https://wa.me/${gig.applyLink || ''}?text=${encodeURIComponent(`Hi, I'd like to apply for the volunteer gig: ${gig.title}`)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white border-none transition-all shadow-lg shadow-green-500/20">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        Apply via WhatsApp
+                                                    </div>
+                                                </Button>
+                                            </a>
+                                        ) : (
+                                            <a href={gig.applyLink || "#"} target="_blank" rel="noopener noreferrer">
+                                                <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all">
+                                                    Apply for Gig
+                                                </Button>
+                                            </a>
+                                        )
+                                    }
                                 </div>
                             ))}
                         </div>
@@ -139,6 +156,38 @@ const CommunityJoin = () => {
                                     <span className="text-neon-green block mt-2 font-bold">Join the WhatsApp Community to get alerted the moment a gig drops.</span>
                                 </p>
                             </div>
+                        </div>
+                    )}
+                </section>
+
+                {/* Section 4: Community Forms & Applications */}
+                <section>
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="h-10 w-1 bg-yellow-400 rounded-full"></div>
+                        <h2 className="text-3xl font-bold font-heading">Active Forms & Surveys</h2>
+                    </div>
+
+                    {forms && forms.length > 0 ? (
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {forms.map((form) => (
+                                <div key={form.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 hover:border-yellow-400/50 transition-colors group flex flex-col justify-between h-full">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">{form.title}</h3>
+                                        <p className="text-gray-400 text-sm mb-6 line-clamp-3">{form.description}</p>
+                                    </div>
+                                    <div className="mt-auto">
+                                        <Link to={`/forms/${form.id}`} target="_blank">
+                                            <Button className="w-full bg-none border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all">
+                                                Open Form
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-white/5">
+                            <p>No active forms or surveys at the moment.</p>
                         </div>
                     )}
                 </section>
@@ -170,8 +219,8 @@ const CommunityJoin = () => {
                     </div>
                 </section>
 
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

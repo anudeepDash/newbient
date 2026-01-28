@@ -18,11 +18,12 @@ const VolunteerGigManager = () => {
         location: '',
         roles: '', // Comma separated for input
         status: 'Open',
-        applyLink: '' // Optional external link override
+        applyType: 'link', // 'link' | 'whatsapp'
+        applyLink: '' // URL or Phone Number
     });
 
     const resetForm = () => {
-        setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyLink: '' });
+        setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyType: 'link', applyLink: '' });
         setIsAdding(false);
         setEditingId(null);
         setSaving(false);
@@ -35,6 +36,7 @@ const VolunteerGigManager = () => {
             location: gig.location,
             roles: Array.isArray(gig.roles) ? gig.roles.join(', ') : gig.roles,
             status: gig.status || 'Open',
+            applyType: gig.applyType || 'link',
             applyLink: gig.applyLink || ''
         });
         setEditingId(gig.id);
@@ -53,7 +55,9 @@ const VolunteerGigManager = () => {
                 date: formData.date,
                 location: formData.location,
                 roles: rolesArray,
+                roles: rolesArray,
                 status: formData.status,
+                applyType: formData.applyType,
                 applyLink: formData.applyLink
             };
 
@@ -115,6 +119,30 @@ const VolunteerGigManager = () => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Application Method</label>
+                                <select
+                                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue"
+                                    value={formData.applyType}
+                                    onChange={e => setFormData({ ...formData, applyType: e.target.value })}
+                                >
+                                    <option value="link">Website Link / Form</option>
+                                    <option value="whatsapp">WhatsApp DM</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">
+                                    {formData.applyType === 'whatsapp' ? 'WhatsApp Number (e.g. 919304372773)' : 'Application Link URL'}
+                                </label>
+                                <Input
+                                    value={formData.applyLink}
+                                    onChange={e => setFormData({ ...formData, applyLink: e.target.value })}
+                                    placeholder={formData.applyType === 'whatsapp' ? '919304372773' : 'https://forms.google.com/...'}
+                                />
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Roles (comma separated)</label>
                             <Input
@@ -145,6 +173,7 @@ const VolunteerGigManager = () => {
                                     <span className={`px-2 py-0.5 text-xs rounded-full ${gig.status === 'Open' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
                                         {gig.status}
                                     </span>
+                                    {gig.applyType === 'whatsapp' && <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-green-400">WA</span>}
                                 </div>
                                 <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
                                     <span className="flex items-center gap-1"><Calendar size={14} /> {gig.date}</span>
