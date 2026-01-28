@@ -17,8 +17,9 @@ import MessageManager from './pages/Admin/MessageManager';
 import GalleryManager from './pages/Admin/GalleryManager';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
-import FormViewer from './pages/FormViewer';
-import CommunityJoin from './pages/CommunityJoin';
+import AdminManager from './pages/Admin/AdminManager';
+
+// ... (imports)
 
 function App() {
   const subscribeToData = useStore((state) => state.subscribeToData);
@@ -48,6 +49,7 @@ function App() {
 
           {/* Admin Routes */}
           <Route path="admin" element={<Dashboard />} />
+          <Route path="admin/manage-admins" element={<AdminManager />} />
           <Route path="admin/invoices" element={<InvoiceManagement />} />
           <Route path="admin/create-invoice" element={<InvoiceGenerator />} />
           <Route path="admin/announcements" element={<AnnouncementsManager />} />

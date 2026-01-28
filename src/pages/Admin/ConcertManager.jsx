@@ -5,8 +5,8 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../lib/firebase';
+import { db } from '../../lib/firebase'; // Keep db, removed storage
+// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Removed
 
 const ConcertManager = () => {
     const { concerts, addConcert, updateConcert, deleteConcert, portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder } = useStore();
@@ -63,11 +63,26 @@ const ConcertManager = () => {
         await updatePortfolioOrder(newItems);
     };
 
-    const handleFileUpload = async (file, pathPrefix) => {
+    const handleFileUpload = async (file) => {
         if (!file) return null;
-        const storageRef = ref(storage, `${pathPrefix}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        return await getDownloadURL(storageRef);
+
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "maw1e4ud");
+        data.append("cloud_name", "dgtalrz4n");
+
+        try {
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", {
+                method: "POST",
+                body: data
+            });
+
+            const uploadedImage = await res.json();
+            return uploadedImage.secure_url;
+        } catch (error) {
+            console.error("Error uploading to Cloudinary:", error);
+            throw new Error("Image upload failed");
+        }
     };
 
     const handleSaveConcert = async (e) => {
@@ -76,7 +91,7 @@ const ConcertManager = () => {
         try {
             let imageUrl = newConcert.image;
             if (selectedFile) {
-                imageUrl = await handleFileUpload(selectedFile, 'concerts');
+                imageUrl = await handleFileUpload(selectedFile);
             }
 
             const concertData = { ...newConcert, image: imageUrl };
@@ -103,7 +118,7 @@ const ConcertManager = () => {
         try {
             let imageUrl = newPortfolio.image;
             if (selectedFile) {
-                imageUrl = await handleFileUpload(selectedFile, 'portfolio');
+                imageUrl = await handleFileUpload(selectedFile);
             }
 
             const portfolioData = { ...newPortfolio, image: imageUrl };

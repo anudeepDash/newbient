@@ -1,15 +1,16 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
 // Validated Config from User
 const firebaseConfig = {
-    apiKey: "AIzaSyCkUE7AGHTTxLZfNexcUN8mLG48y2ZVauY",
-    authDomain: "newbi-ent.firebaseapp.com",
-    projectId: "newbi-ent",
-    storageBucket: "newbi-ent.firebasestorage.app",
-    messagingSenderId: "598546904200",
-    appId: "1:598546904200:web:3db054f2b539d1adc5db3d"
+    apiKey: "AIzaSyBnl7hSfXXUj4khyV3yrhT5oUtMQfdoH_A",
+    authDomain: "newbi-ent-v2.firebaseapp.com",
+    projectId: "newbi-ent-v2",
+    storageBucket: "newbi-ent-v2.firebasestorage.app",
+    messagingSenderId: "860370467784",
+    appId: "1:860370467784:web:d7b4dfc66336f6da50defd"
 };
 
 // Initialize Firebase
@@ -18,5 +19,6 @@ const app = initializeApp(firebaseConfig);
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
 const storage = getStorage(app);
+const auth = getAuth(app);
 
-export { db, storage };
+export { db, storage, auth };

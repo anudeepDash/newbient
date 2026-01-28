@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Loader } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -16,8 +16,27 @@ const GalleryManager = () => {
         title: '',
         category: 'Event'
     });
+    const [uploading, setUploading] = useState(false);
 
-    const handleAdd = (e) => {
+    const handleFileUpload = async (file) => {
+        if (!file) return null;
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "maw1e4ud");
+        data.append("cloud_name", "dgtalrz4n");
+
+        try {
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
+            const uploadedImage = await res.json();
+            return uploadedImage.secure_url;
+        } catch (error) {
+            console.error("Error uploading:", error);
+            alert("Upload failed");
+            return null;
+        }
+    };
+
+    const handleAdd = async (e) => {
         e.preventDefault();
         if (!newImage.src) return;
         addGalleryImage(newImage);
@@ -40,6 +59,27 @@ const GalleryManager = () => {
                     <div className="lg:col-span-1">
                         <Card className="p-6 sticky top-24">
                             <h2 className="text-xl font-bold text-white mb-4">Add New Media</h2>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Upload Image</label>
+                                <div className="flex gap-2 items-center">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            if (e.target.files[0]) {
+                                                setUploading(true);
+                                                const url = await handleFileUpload(e.target.files[0]);
+                                                if (url) setNewImage({ ...newImage, src: url });
+                                                setUploading(false);
+                                            }
+                                        }}
+                                        className="text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-green/10 file:text-neon-green hover:file:bg-neon-green/20"
+                                    />
+                                    {uploading && <Loader className="animate-spin text-neon-green" size={20} />}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Or paste URL below</p>
+                            </div>
+
                             <form onSubmit={handleAdd} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Image URL</label>
@@ -48,6 +88,7 @@ const GalleryManager = () => {
                                         onChange={(e) => setNewImage({ ...newImage, src: e.target.value })}
                                         placeholder="https://..."
                                         required
+                                        disabled={uploading}
                                     />
                                 </div>
                                 <div>

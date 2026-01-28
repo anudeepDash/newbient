@@ -1,64 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield } from 'lucide-react';
+import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 const Dashboard = () => {
-    const { invoices, concerts, announcements } = useStore();
-    const [isAuthenticated, setIsAuthenticated] = useState(() => {
-        return localStorage.getItem('adminAuth') === 'true';
-    });
-    const [username, setUsername] = useState('');
+    const { invoices, concerts, announcements, user, checkUserRole, logout } = useStore();
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [isFirstRun, setIsFirstRun] = useState(false);
 
+    // Check if system is uninitialized (no admins yet)
     useEffect(() => {
-        if (!isAuthenticated) return;
+        const checkInit = async () => {
+            if (!user) return;
+            // Only check if we are logged in but have no role
+            if (user.role === 'viewer') {
+                const snapshot = await getDocs(collection(db, 'admins'));
+                if (snapshot.empty) {
+                    setIsFirstRun(true);
+                }
+            }
+        };
+        checkInit();
+    }, [user]);
 
+    const handleClaimOwnership = async () => {
+        if (!user) return;
+        try {
+            await addDoc(collection(db, 'admins'), {
+                email: user.email,
+                role: 'super_admin',
+                addedBy: 'SYSTEM_BOOTSTRAP',
+                createdAt: new Date().toISOString()
+            });
+            alert("Ownership Claimed! You are now the Super Admin. Refreshing profile...");
+            checkUserRole(user); // Refresh role
+            setIsFirstRun(false);
+        } catch (error) {
+            console.error("Error claiming ownership:", error);
+            alert("Failed to claim ownership.");
+        }
+    };
+
+    // Auth Listener
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                checkUserRole(currentUser);
+            } else {
+                checkUserRole(null);
+            }
+            setAuthLoading(false);
+        });
+        return () => unsubscribe();
+    }, [checkUserRole]);
+
+    // Message Count Listener
+    useEffect(() => {
+        if (!user) return;
         const q = query(collection(db, "messages"), where("status", "==", "new"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setUnreadCount(snapshot.size);
         });
-
         return () => unsubscribe();
-    }, [isAuthenticated]);
+    }, [user]);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-
-        // In Development: Allow defaults if env vars are missing
-        // In Production: REQUIRE env vars. Defaults will be ignored/undefined if not set.
-        const isDev = import.meta.env.DEV;
-
-        const envUsername = import.meta.env.VITE_ADMIN_USERNAME;
-        const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-
-        // Fallback only in development
-        const finalUsername = envUsername || (isDev ? 'admin' : null);
-        const finalPassword = envPassword || (isDev ? 'admin123' : null);
-
-        if (!finalUsername || !finalPassword) {
-            alert('Security Error: Admin functionality is disabled because environment variables are missing in this production environment.');
-            return;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            console.error(error);
+            alert("Login Failed: " + error.message);
         }
-
-        if (username === finalUsername && password === finalPassword) {
-            setIsAuthenticated(true);
-            localStorage.setItem('adminAuth', 'true');
-        } else {
-            alert('Invalid credentials');
-        }
-    };
-
-    const handleLogout = () => {
-        setIsAuthenticated(false);
-        localStorage.removeItem('adminAuth');
     };
 
     const totalRevenue = invoices.reduce((acc, inv) => acc + inv.amount, 0);
@@ -71,19 +94,23 @@ const Dashboard = () => {
         { label: 'Latest Announcements', value: announcements.length, icon: Megaphone, color: 'text-yellow-400' },
     ];
 
-    if (!isAuthenticated) {
+    if (authLoading) {
+        return <div className="min-h-screen flex items-center justify-center text-white">Loading Security...</div>;
+    }
+
+    if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center px-4">
                 <Card className="p-8 w-full max-w-md border-neon-pink/30 shadow-neon-pink/20">
-                    <h1 className="text-2xl font-bold text-white mb-6 text-center">Admin Login</h1>
+                    <h1 className="text-2xl font-bold text-white mb-6 text-center">Admin Access</h1>
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                             <Input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter username"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="name@newbi.live"
                             />
                         </div>
                         <div>
@@ -92,11 +119,10 @@ const Dashboard = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter password"
+                                placeholder="••••••••"
                             />
                         </div>
-                        <Button type="submit" variant="primary" className="w-full">Login</Button>
-                        <p className="text-xs text-gray-500 text-center mt-4">Contact admin for access</p>
+                        <Button type="submit" variant="primary" className="w-full">Sign In</Button>
                     </form>
                 </Card>
             </div>
@@ -106,10 +132,13 @@ const Dashboard = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-12">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-white">Welcome Back, Admin</h1>
-                        <p className="text-gray-400">Manage your empire from here.</p>
+                        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+                        <p className="text-gray-400">
+                            Logged in as <span className="text-neon-blue">{user.email}</span>
+                            <span className="ml-2 text-xs bg-white/10 px-2 py-1 rounded uppercase tracking-wider">{user.role?.replace('_', ' ')}</span>
+                        </p>
                     </div>
                     <div className="flex items-center gap-4">
                         <Link to="/admin/messages" className="relative text-gray-400 hover:text-white transition-colors">
@@ -120,13 +149,47 @@ const Dashboard = () => {
                                 </span>
                             )}
                         </Link>
-                        <Button variant="outline" onClick={handleLogout}>
+                        <Button variant="outline" onClick={logout}>
                             Logout
                         </Button>
                     </div>
                 </div>
 
+                {isFirstRun && (
+                    <div className="mb-8 p-6 bg-gradient-to-r from-neon-green/20 to-black border border-neon-green rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Shield className="text-neon-green" /> System Uninitialized
+                            </h2>
+                            <p className="text-gray-300 mt-1">
+                                No admins found in database. Since you are the first user, you can claim <strong>Super Admin</strong> ownership.
+                            </p>
+                        </div>
+                        <Button onClick={handleClaimOwnership} variant="primary" className="whitespace-nowrap">
+                            Claim Super Admin Access
+                        </Button>
+                    </div>
+                )}
 
+                {/* SUPER ADMIN ONLY SECTION */}
+                {user.role === 'super_admin' && (
+                    <div className="mb-8">
+                        <Link to="/admin/manage-admins">
+                            <div className="bg-gradient-to-r from-neon-purple/20 to-neon-blue/20 border border-neon-purple/50 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-neon-purple/20 rounded-full text-neon-purple">
+                                        <Shield size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white group-hover:text-neon-purple transition-colors">Manage Admins</h3>
+                                        <p className="text-sm text-gray-400">Add or remove other administrators and editors.</p>
+                                    </div>
+                                </div>
+                                <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
+                            </div>
+                        </Link>
+                    </div>
+                )}
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
