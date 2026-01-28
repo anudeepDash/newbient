@@ -9,7 +9,7 @@ import VolunteerGigManager from './VolunteerGigManager';
 const FormManager = () => {
     const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('forms'); // 'forms' | 'gigs'
+    const [activeTab, setActiveTab] = useState('gigs'); // 'forms' | 'gigs'
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this form?')) {
