@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 const GalleryManager = () => {
+    console.log("Gallery Manager Loaded");
     const { galleryImages, addGalleryImage, deleteGalleryImage } = useStore();
     const navigate = useNavigate();
 
