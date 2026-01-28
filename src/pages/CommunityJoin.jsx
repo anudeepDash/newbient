@@ -1,16 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '../lib/store';
 import FormViewer from './FormViewer';
 import { Button } from '../components/ui/Button';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2 } from 'lucide-react';
 
 const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs } = useStore();
-    // const communityForm = forms.find(f => f.isCommunityForm); // Not used currently
+    const location = useLocation();
 
-    // Hardcoded gigs moved to store (volunteerGigs)
+    // Auto-scroll to gig if query param exists
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const gigId = params.get('gig');
+        if (gigId && volunteerGigs.length > 0) {
+            const element = document.getElementById(`gig-${gigId}`);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500); // Small delay to ensure render
+            }
+        }
+    }, [location.search, volunteerGigs]);
 
     return (
         <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4">
@@ -84,13 +96,33 @@ const CommunityJoin = () => {
                     {volunteerGigs && volunteerGigs.length > 0 ? (
                         <div className="grid md:grid-cols-2 gap-6">
                             {volunteerGigs.map((gig) => (
-                                <div key={gig.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 hover:border-neon-blue/50 transition-colors group">
+                                <div
+                                    key={gig.id}
+                                    id={`gig-${gig.id}`}
+                                    className={`bg-zinc-900/50 border rounded-xl p-6 transition-all group relative ${new URLSearchParams(location.search).get('gig') === gig.id
+                                            ? 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.2)]'
+                                            : 'border-white/10 hover:border-neon-blue/50'
+                                        }`}
+                                >
                                     <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors">{gig.title}</h3>
+                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors pr-8">{gig.title}</h3>
                                         <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
                                             {gig.status}
                                         </span>
                                     </div>
+
+                                    {/* Share Button */}
+                                    <button
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/community-join?gig=${gig.id}`;
+                                            navigator.clipboard.writeText(url);
+                                            alert('Link copied to clipboard!');
+                                        }}
+                                        className="absolute top-6 right-16 p-2 text-gray-400 hover:text-white transition-colors"
+                                        title="Share Gig"
+                                    >
+                                        <Share2 size={18} />
+                                    </button>
 
                                     <div className="space-y-3 mb-6 text-gray-400">
                                         <div className="flex items-center gap-3">

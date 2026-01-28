@@ -45,16 +45,17 @@ const VolunteerGigManager = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        console.log("Starting handleSave...");
         setSaving(true);
         try {
             // Parse roles
             const rolesArray = formData.roles.split(',').map(r => r.trim()).filter(r => r);
+            console.log("Parsed roles:", rolesArray);
 
             const gigData = {
                 title: formData.title,
                 date: formData.date,
                 location: formData.location,
-                roles: rolesArray,
                 roles: rolesArray,
                 status: formData.status,
                 applyType: formData.applyType,
@@ -69,7 +70,7 @@ const VolunteerGigManager = () => {
             resetForm();
         } catch (error) {
             console.error(error);
-            alert("Error saving gig: " + error.message);
+            alert(`Error saving gig: ${error.code || error.message}`);
         } finally {
             setSaving(false);
         }
@@ -79,9 +80,13 @@ const VolunteerGigManager = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-white">Volunteer Opportunities</h2>
-                <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); resetForm(); }}>
+                <Button variant="primary" onClick={() => {
+                    setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyType: 'link', applyLink: '' });
+                    setIsAdding(true);
+                    setEditingId(null);
+                }}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {isAdding ? 'Cancel' : 'Add New Gig'}
+                    Add New Gig
                 </Button>
             </div>
 
