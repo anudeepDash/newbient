@@ -17,6 +17,34 @@ const Dashboard = () => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [authLoading, setAuthLoading] = useState(true);
     const [isFirstRun, setIsFirstRun] = useState(false);
+    const [showDevTools, setShowDevTools] = useState(false);
+    const [devEmail, setDevEmail] = useState('');
+
+    const handleForceAdmin = async () => {
+        if (!devEmail) return;
+        try {
+            // Check if already exists to avoid duplicates
+            const q = query(collection(db, 'admins'), where('email', '==', devEmail));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                alert("This user is already an admin!");
+                return;
+            }
+
+            await addDoc(collection(db, 'admins'), {
+                email: devEmail,
+                role: 'super_admin',
+                addedBy: 'DEV_FORCE_TOOL',
+                createdAt: new Date().toISOString()
+            });
+            alert(`Success! ${devEmail} is now a Super Admin. Please login again.`);
+            setDevEmail('');
+        } catch (error) {
+            console.error("Error forcing admin:", error);
+            alert("Failed: " + error.message + "\n\nIf this fails with 'Permission Denied', you must manually add the document in Firebase Console.");
+        }
+    };
 
     // Check if system is uninitialized (no admins yet)
     useEffect(() => {
@@ -98,34 +126,10 @@ const Dashboard = () => {
         return <div className="min-h-screen flex items-center justify-center text-white">Loading Security...</div>;
     }
 
-    const [showDevTools, setShowDevTools] = useState(false);
-    const [devEmail, setDevEmail] = useState('');
 
-    const handleForceAdmin = async () => {
-        if (!devEmail) return;
-        try {
-            // Check if already exists to avoid duplicates
-            const q = query(collection(db, 'admins'), where('email', '==', devEmail));
-            const snapshot = await getDocs(q);
 
-            if (!snapshot.empty) {
-                alert("This user is already an admin!");
-                return;
-            }
 
-            await addDoc(collection(db, 'admins'), {
-                email: devEmail,
-                role: 'super_admin',
-                addedBy: 'DEV_FORCE_TOOL',
-                createdAt: new Date().toISOString()
-            });
-            alert(`Success! ${devEmail} is now a Super Admin. Please login again.`);
-            setDevEmail('');
-        } catch (error) {
-            console.error("Error forcing admin:", error);
-            alert("Failed: " + error.message + "\n\nIf this fails with 'Permission Denied', you must manually add the document in Firebase Console.");
-        }
-    };
+
 
     if (!user) {
         return (
