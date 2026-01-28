@@ -46,9 +46,9 @@ const ConcertZone = () => {
                     transition={{ delay: 0.4 }}
                     className="flex flex-col sm:flex-row gap-6"
                 >
-                    <a href="https://concert.zone" target="_blank" rel="noopener noreferrer">
+                    <a href="https://www.instagram.com/concert.zone/" target="_blank" rel="noopener noreferrer">
                         <Button variant="primary" className="text-lg px-8 py-4 bg-neon-pink hover:bg-neon-pink/80 border-neon-pink text-white rounded-full">
-                            Visit Concert.zone <ExternalLink className="ml-2 h-5 w-5" />
+                            Visit Concert.zone <Instagram className="ml-2 h-5 w-5" />
                         </Button>
                     </a>
                 </motion.div>
