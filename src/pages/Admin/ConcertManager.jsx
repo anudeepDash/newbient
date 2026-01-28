@@ -7,11 +7,12 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 const ConcertManager = () => {
-    const { concerts, addConcert, updateConcert, deleteConcert, portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = useStore();
+    const { concerts, addConcert, updateConcert, deleteConcert, portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder } = useStore();
     const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' or 'past'
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
+    // ... (rest of state definitions) ...
     // State for Concert (Upcoming)
     const [newConcert, setNewConcert] = useState({
         artist: '', city: '', date: '', venue: '', image: '', ticketLink: ''
@@ -37,6 +38,23 @@ const ConcertManager = () => {
         } else {
             setNewPortfolio({ ...item });
         }
+    };
+
+    const moveItem = async (index, direction) => {
+        if (activeTab !== 'past') return; // Only for portfolio for now
+
+        const newItems = [...portfolio];
+        if (direction === 'up' && index > 0) {
+            [newItems[index], newItems[index - 1]] = [newItems[index - 1], newItems[index]];
+        } else if (direction === 'down' && index < newItems.length - 1) {
+            [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+        } else {
+            return;
+        }
+
+        // Optimistic UI update could happen here if store wasn't subscribing directly
+        // But since we have real-time subscription, we just send update to DB
+        await updatePortfolioOrder(newItems);
     };
 
     const handleSaveConcert = (e) => {
@@ -177,8 +195,24 @@ const ConcertManager = () => {
                             </Card>
                         ))
                     ) : (
-                        portfolio.map((item) => (
+                        portfolio.map((item, index) => (
                             <Card key={item.id} className="p-4 flex items-center gap-4 hover:border-white/20 transition-colors">
+                                <div className="flex flex-col gap-1 mr-2">
+                                    <button
+                                        onClick={() => moveItem(index, 'up')}
+                                        disabled={index === 0}
+                                        className={`p-1 hover:text-neon-green transition-colors ${index === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400'}`}
+                                    >
+                                        ▲
+                                    </button>
+                                    <button
+                                        onClick={() => moveItem(index, 'down')}
+                                        disabled={index === portfolio.length - 1}
+                                        className={`p-1 hover:text-neon-green transition-colors ${index === portfolio.length - 1 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400'}`}
+                                    >
+                                        ▼
+                                    </button>
+                                </div>
                                 <div className="w-16 h-16 rounded bg-white/5 flex items-center justify-center overflow-hidden">
                                     {item.image ? (
                                         <img src={item.image} alt={item.title} className="w-full h-full object-cover" />

@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 const GalleryManager = () => {
-    const { galleryImages, addGalleryImage, removeGalleryImage } = useStore();
+    const { galleryImages, addGalleryImage, deleteGalleryImage } = useStore();
     const navigate = useNavigate();
 
     const [newImage, setNewImage] = useState({
@@ -84,7 +84,7 @@ const GalleryManager = () => {
                                         <p className="text-xs text-gray-400">{item.category}</p>
                                     </div>
                                     <button
-                                        onClick={() => removeGalleryImage(index)}
+                                        onClick={() => deleteGalleryImage(item.id)}
                                         className="absolute top-2 right-2 p-2 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                                     >
                                         <Trash2 size={16} />
