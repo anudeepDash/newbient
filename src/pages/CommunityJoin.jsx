@@ -54,16 +54,18 @@ const CommunityJoin = () => {
                         <h2 className="text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
                     </div>
 
-                    {communityForm ? (
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
-                            <FormViewer formIdOverride={communityForm.id} />
-                        </div>
-                    ) : (
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
-                            <h3 className="text-2xl font-bold text-gray-300 mb-2">Registration Closed</h3>
-                            <p className="text-gray-500">We are currently updating our onboarding process. Please check back later.</p>
-                        </div>
-                    )}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden aspect-video relative">
+                        <iframe
+                            src="https://docs.google.com/forms/d/e/1FAIpQLScsX8qX8qX8qX8qX8qX8qX8q/viewform?embedded=true"
+                            className="absolute inset-0 w-full h-full"
+                            frameBorder="0"
+                            marginHeight="0"
+                            marginWidth="0"
+                            title="Registration Form"
+                        >
+                            Loading…
+                        </iframe>
+                    </div>
                 </section>
 
                 {/* Section 2: Whatsapp Community */}
