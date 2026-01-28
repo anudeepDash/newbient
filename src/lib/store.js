@@ -15,7 +15,7 @@ export const useStore = create((set, get) => ({
         email: 'partnership@newbi.live',
         instagram: 'https://www.instagram.com/newbi_ent',
         linkedin: 'https://www.linkedin.com/company/newbi-ent/',
-        whatsapp: 'https://wa.me/919304372773',
+        whatsapp: 'https://chat.whatsapp.com/LrFw6AmrfwNCPyi95cTnNv',
         description: "India's premier entertainment company."
     },
     loading: true,

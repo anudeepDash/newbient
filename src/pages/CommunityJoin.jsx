@@ -37,22 +37,20 @@ const CommunityJoin = () => {
                         <h2 className="text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-32 bg-neon-green/5 blur-[100px] rounded-full pointer-events-none"></div>
-                        <h3 className="text-2xl font-bold text-white mb-4">Official Registration</h3>
-                        <p className="text-gray-300 mb-8 max-w-2xl mx-auto text-lg">
-                            To become a verified volunteer, you need to fill out our official Google Form.
-                            This adds you to our database for all future events.
-                        </p>
-                        <a
-                            href="https://forms.gle/MJxXFeYWHxXFatqr6"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                    <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg border border-white/10">
+                        <iframe
+                            src="https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true"
+                            width="100%"
+                            height="1600"
+                            frameBorder="0"
+                            marginHeight="0"
+                            marginWidth="0"
+                            className="w-full bg-transparent"
+                            style={{ filter: 'invert(1) hue-rotate(180deg)' }}
+                            title="NewBi Tribe Registration"
                         >
-                            <Button className="bg-neon-green text-black hover:bg-neon-green/90 text-xl px-10 py-4 h-auto font-bold shadow-lg shadow-neon-green/20 hover:scale-105 transition-transform">
-                                Open Registration Form
-                            </Button>
-                        </a>
+                            Loading…
+                        </iframe>
                     </div>
                 </section>
 
