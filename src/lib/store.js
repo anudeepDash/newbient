@@ -32,6 +32,12 @@ export const useStore = create((set, get) => ({
                     const d = doc.data();
                     return { ...d, id: doc.id };
                 });
+
+                // Sort by 'order' field if available (ascending)
+                if (colName === 'portfolio') {
+                    data.sort((a, b) => (a.order || 0) - (b.order || 0));
+                }
+
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
@@ -52,13 +58,14 @@ export const useStore = create((set, get) => ({
         const unsub3 = sub('portfolio', 'portfolio');
         const unsub4 = sub('invoices', 'invoices');
         const unsub5 = sub('forms', 'forms');
+        const unsub6 = sub('gallery', 'galleryImages');
 
         // Site details is a single doc usually, but for simplicity treating as collection or skipping for now.
         // For this version, let's keep siteDetails local or fetch if needed. 
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6();
         };
     },
 
@@ -89,13 +96,24 @@ export const useStore = create((set, get) => ({
 
     // Portfolio
     addPortfolioItem: async (item) => {
-        await addDoc(collection(db, 'portfolio'), item);
+        // Assign a default order if not present (put at end)
+        const currentItems = get().portfolio;
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        await addDoc(collection(db, 'portfolio'), { ...item, order: maxOrder + 1 });
     },
     updatePortfolioItem: async (id, updates) => {
         await updateDoc(doc(db, 'portfolio', id), updates);
     },
     deletePortfolioItem: async (id) => {
         await deleteDoc(doc(db, 'portfolio', id));
+    },
+    updatePortfolioOrder: async (items) => {
+        // Batch update is ideal, but for simplicity/now just parallel updates
+        // In a clearer implementation, we'd use a WriteBatch
+        const updates = items.map((item, index) =>
+            updateDoc(doc(db, 'portfolio', item.id), { order: index })
+        );
+        await Promise.all(updates);
     },
 
     // Invoices
@@ -120,14 +138,18 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'forms', id));
     },
 
-    // Local-only for now (or move to DB later)
+    // Gallery (Moved to DB)
+    addGalleryImage: async (image) => {
+        await addDoc(collection(db, 'gallery'), image);
+    },
+    deleteGalleryImage: async (id) => {
+        await deleteDoc(doc(db, 'gallery', id));
+    },
+    // Retired local actions (kept for API surface compatibility if needed, but implementation changed to warn or no-op if necessary, 
+    // actually better to remove 'removeGalleryImage' to force usage of 'deleteGalleryImage' with ID)
+
+    // Local-only
     updateSiteDetails: (details) => set((state) => ({
         siteDetails: { ...state.siteDetails, ...details }
-    })),
-    addGalleryImage: (image) => set((state) => ({
-        galleryImages: [image, ...state.galleryImages]
-    })),
-    removeGalleryImage: (index) => set((state) => ({
-        galleryImages: state.galleryImages.filter((_, i) => i !== index)
     })),
 }));

@@ -28,7 +28,7 @@ const MediaGallery = () => {
                 <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
                     {mediaItems.map((item, index) => (
                         <motion.div
-                            key={index}
+                            key={item.id || index}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}

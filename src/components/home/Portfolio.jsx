@@ -79,22 +79,29 @@ const Portfolio = () => {
                             {portfolio.filter(item => item.category === activeTab).map((item) => (
                                 <div
                                     key={item.id}
-                                    className="group relative bg-white/5 border border-white/10 p-4 rounded-xl hover:border-neon-green/50 transition-all overflow-hidden aspect-square flex items-center justify-center text-center"
+                                    className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden aspect-square flex items-center justify-center text-center shadow-lg transition-transform hover:scale-[1.02] duration-300"
                                 >
-                                    {/* Hover Image Background */}
-                                    {item.image && (
+                                    {/* Image Background - Full Visibility */}
+                                    {item.image ? (
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-100 transition-opacity duration-500"
+                                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                                             style={{ backgroundImage: `url(${item.image})` }}
                                         />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
+                                            No Image
+                                        </div>
                                     )}
-                                    {/* Overlay for text readability on hover */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                                    {/* Content */}
-                                    <p className="relative z-10 font-medium text-gray-200 group-hover:text-neon-green transition-colors text-lg">
-                                        {item.title}
-                                    </p>
+                                    {/* Gradient Overlay & Text - Visible by default, hidden on hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-all duration-300 flex flex-col justify-end p-6">
+                                        <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                                            {categories.find(c => c.id === item.category)?.label}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
 

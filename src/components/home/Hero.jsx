@@ -51,14 +51,23 @@ const Hero = () => {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
+                    className="flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
                     <a
                         href="/contact"
-                        className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-black transition-all duration-200 bg-neon-green font-heading hover:bg-[#2eff0a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-green focus:ring-offset-gray-900 rounded-full"
+                        className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-black transition-all duration-200 bg-neon-green font-heading hover:bg-[#2eff0a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-green focus:ring-offset-gray-900 rounded-full w-full sm:w-auto"
                     >
                         Work With Us
                         <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         <div className="absolute -inset-3 rounded-full bg-neon-green/30 opacity-0 group-hover:opacity-100 transition-opacity blur-lg" />
+                    </a>
+
+                    <a
+                        href="/community-join"
+                        className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 border-2 border-white/20 hover:border-neon-blue hover:bg-neon-blue/10 font-heading focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue focus:ring-offset-gray-900 rounded-full w-full sm:w-auto"
+                    >
+                        Join Us
+                        <div className="absolute -inset-3 rounded-full bg-neon-blue/20 opacity-0 group-hover:opacity-100 transition-opacity blur-lg" />
                     </a>
                 </motion.div>
             </div>
