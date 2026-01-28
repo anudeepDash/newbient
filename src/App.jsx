@@ -18,6 +18,8 @@ import GalleryManager from './pages/Admin/GalleryManager';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
+import FormViewer from './pages/FormViewer';
+import CommunityJoin from './pages/CommunityJoin';
 
 // ... (imports)
 
