@@ -168,8 +168,8 @@ export const useStore = create((set, get) => ({
             return;
         }
 
-        // Default role is 'viewer' until fetched
-        let role = 'viewer';
+        // Default role is 'unauthorized' until fetched
+        let role = 'unauthorized';
         try {
             // Check 'admins' collection for this email
             // Doc ID should be the email for easy lookup, or query by field
@@ -182,7 +182,7 @@ export const useStore = create((set, get) => ({
 
             if (!snapshot.empty) {
                 const adminDoc = snapshot.docs[0].data();
-                role = adminDoc.role || 'viewer';
+                role = adminDoc.role || 'unauthorized';
             } else {
                 console.warn("User logged in but not found in admins collection.");
             }
