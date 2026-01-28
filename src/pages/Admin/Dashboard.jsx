@@ -98,9 +98,38 @@ const Dashboard = () => {
         return <div className="min-h-screen flex items-center justify-center text-white">Loading Security...</div>;
     }
 
+    const [showDevTools, setShowDevTools] = useState(false);
+    const [devEmail, setDevEmail] = useState('');
+
+    const handleForceAdmin = async () => {
+        if (!devEmail) return;
+        try {
+            // Check if already exists to avoid duplicates
+            const q = query(collection(db, 'admins'), where('email', '==', devEmail));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                alert("This user is already an admin!");
+                return;
+            }
+
+            await addDoc(collection(db, 'admins'), {
+                email: devEmail,
+                role: 'super_admin',
+                addedBy: 'DEV_FORCE_TOOL',
+                createdAt: new Date().toISOString()
+            });
+            alert(`Success! ${devEmail} is now a Super Admin. Please login again.`);
+            setDevEmail('');
+        } catch (error) {
+            console.error("Error forcing admin:", error);
+            alert("Failed: " + error.message + "\n\nIf this fails with 'Permission Denied', you must manually add the document in Firebase Console.");
+        }
+    };
+
     if (!user) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="min-h-screen flex items-center justify-center px-4 flex-col">
                 <Card className="p-8 w-full max-w-md border-neon-pink/30 shadow-neon-pink/20">
                     <h1 className="text-2xl font-bold text-white mb-6 text-center">Admin Access</h1>
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -124,6 +153,40 @@ const Dashboard = () => {
                         </div>
                         <Button type="submit" variant="primary" className="w-full">Sign In</Button>
                     </form>
+
+                    <div className="mt-8 border-t border-white/10 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowDevTools(!showDevTools);
+                                if (!devEmail && email) setDevEmail(email);
+                            }}
+                            className="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-2 w-full justify-center"
+                        >
+                            <Shield size={12} /> Developer Options
+                        </button>
+
+                        {showDevTools && (
+                            <div className="mt-4 p-4 bg-white/5 rounded border border-white/10">
+                                <h4 className="text-sm font-bold text-white mb-2">Force Admin Bootstrap</h4>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    Use this if the system is not detecting you as an admin and the automatic claim didn't prompt.
+                                </p>
+                                <div className="flex gap-2 flex-col">
+                                    <Input
+                                        type="email"
+                                        value={devEmail}
+                                        onChange={(e) => setDevEmail(e.target.value)}
+                                        placeholder="Email to promote"
+                                        className="text-sm py-1"
+                                    />
+                                    <Button onClick={handleForceAdmin} size="sm" variant="outline" className="w-full border-neon-green text-neon-green hover:bg-neon-green hover:text-black">
+                                        Make Super Admin
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </Card>
             </div>
         );
@@ -242,9 +305,9 @@ const Dashboard = () => {
                             <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
                                 <Users size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Forms & Volunteers</h3>
-                            <p className="text-gray-400 text-sm mb-6">Manage volunteer forms, RSVPs, and guestlists.</p>
-                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Forms</Button>
+                            <h3 className="text-xl font-bold text-white mb-2">Community Hub</h3>
+                            <p className="text-gray-400 text-sm mb-6">Manage volunteer gigs, forms, and community lists.</p>
+                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Enter Hub</Button>
                         </Card>
                     </Link>
 

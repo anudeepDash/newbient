@@ -9,6 +9,7 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     galleryImages: [],
+    volunteerGigs: [], // New: Volunteer Opportunities
     siteDetails: {
         phone: '+91 93043 72773',
         email: 'partnership@newbi.live',
@@ -59,13 +60,14 @@ export const useStore = create((set, get) => ({
         const unsub4 = sub('invoices', 'invoices');
         const unsub5 = sub('forms', 'forms');
         const unsub6 = sub('gallery', 'galleryImages');
+        const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
 
         // Site details is a single doc usually, but for simplicity treating as collection or skipping for now.
         // For this version, let's keep siteDetails local or fetch if needed. 
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7();
         };
     },
 
@@ -145,8 +147,17 @@ export const useStore = create((set, get) => ({
     deleteGalleryImage: async (id) => {
         await deleteDoc(doc(db, 'gallery', id));
     },
-    // Retired local actions (kept for API surface compatibility if needed, but implementation changed to warn or no-op if necessary, 
-    // actually better to remove 'removeGalleryImage' to force usage of 'deleteGalleryImage' with ID)
+
+    // Volunteer Gigs
+    addVolunteerGig: async (gig) => {
+        await addDoc(collection(db, 'volunteer_gigs'), { ...gig, createdAt: new Date().toISOString() });
+    },
+    updateVolunteerGig: async (id, updates) => {
+        await updateDoc(doc(db, 'volunteer_gigs', id), updates);
+    },
+    deleteVolunteerGig: async (id) => {
+        await deleteDoc(doc(db, 'volunteer_gigs', id));
+    },
 
     // Auth & Roles
     user: null, // { email, uid, role }

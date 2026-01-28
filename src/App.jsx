@@ -20,6 +20,7 @@ import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
 import CommunityJoin from './pages/CommunityJoin';
+import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
 
 // ... (imports)
 
@@ -46,7 +47,7 @@ function App() {
           <Route path="concerts" element={<ConcertZone />} />
           <Route path="contact" element={<Contact />} />
           <Route path="invoice/:id" element={<Invoice />} />
-          <Route path="join" element={<CommunityJoin />} />
+          <Route path="community-join" element={<CommunityJoin />} />
           <Route path="forms/:id" element={<FormViewer />} />
 
           {/* Admin Routes */}
@@ -62,6 +63,7 @@ function App() {
           <Route path="admin/forms" element={<FormManager />} />
           <Route path="admin/forms/create" element={<FormBuilder />} />
           <Route path="admin/forms/edit/:id" element={<FormBuilder />} />
+          <Route path="admin/volunteer-gigs" element={<VolunteerGigManager />} />
         </Route>
       </Routes>
     </Router>
