@@ -51,7 +51,7 @@ const Dashboard = () => {
         const checkInit = async () => {
             if (!user) return;
             // Only check if we are logged in but have no role
-            if (user.role === 'viewer') {
+            if (user.role === 'unauthorized') {
                 const snapshot = await getDocs(collection(db, 'admins'));
                 if (snapshot.empty) {
                     setIsFirstRun(true);
@@ -191,6 +191,29 @@ const Dashboard = () => {
                             </div>
                         )}
                     </div>
+                </Card>
+            </div>
+        );
+    }
+
+    if (user.role === 'unauthorized' && !isFirstRun) {
+        return (
+            <div className="min-h-screen flex items-center justify-center px-4">
+                <Card className="p-8 w-full max-w-md border-red-500/30 shadow-red-500/20 text-center">
+                    <div className="mb-4 flex justify-center">
+                        <Shield size={48} className="text-red-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+                    <p className="text-gray-400 mb-6">
+                        You do not have permission to access the admin dashboard.
+                        Please contact a Super Admin to request access.
+                    </p>
+                    <div className="bg-white/5 p-3 rounded mb-6 text-sm text-gray-300 break-all">
+                        Logged in as: <span className="text-white font-mono">{user.email}</span>
+                    </div>
+                    <Button onClick={logout} variant="outline" className="w-full text-white border-white hover:bg-white hover:text-black">
+                        Logout
+                    </Button>
                 </Card>
             </div>
         );
