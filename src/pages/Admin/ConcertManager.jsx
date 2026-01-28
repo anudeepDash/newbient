@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Edit } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Edit, Upload, Save, Loader } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 
 const ConcertManager = () => {
     const { concerts, addConcert, updateConcert, deleteConcert, portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder } = useStore();
     const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' or 'past'
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
-    // ... (rest of state definitions) ...
     // State for Concert (Upcoming)
     const [newConcert, setNewConcert] = useState({
         artist: '', city: '', date: '', venue: '', image: '', ticketLink: ''
@@ -28,11 +31,14 @@ const ConcertManager = () => {
         setNewPortfolio({ title: '', category: 'music', image: '' });
         setIsAdding(false);
         setEditingId(null);
+        setSelectedFile(null);
+        setUploading(false);
     };
 
     const handleEdit = (item) => {
         setEditingId(item.id);
         setIsAdding(true);
+        setSelectedFile(null);
         if (activeTab === 'upcoming') {
             setNewConcert({ ...item });
         } else {
@@ -57,35 +63,64 @@ const ConcertManager = () => {
         await updatePortfolioOrder(newItems);
     };
 
-    const handleSaveConcert = (e) => {
+    const handleFileUpload = async (file, pathPrefix) => {
+        if (!file) return null;
+        const storageRef = ref(storage, `${pathPrefix}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        return await getDownloadURL(storageRef);
+    };
+
+    const handleSaveConcert = async (e) => {
         e.preventDefault();
+        setUploading(true);
         try {
+            let imageUrl = newConcert.image;
+            if (selectedFile) {
+                imageUrl = await handleFileUpload(selectedFile, 'concerts');
+            }
+
+            const concertData = { ...newConcert, image: imageUrl };
+
             if (editingId) {
-                updateConcert(editingId, newConcert);
+                await updateConcert(editingId, concertData);
                 alert("Concert updated!");
             } else {
-                addConcert({ id: Date.now(), ...newConcert });
+                await addConcert({ id: Date.now(), ...concertData });
                 alert("Concert added!");
             }
             resetForms();
         } catch (err) {
-            alert("Error saving concert");
+            console.error(err);
+            alert("Error saving concert: " + err.message);
+        } finally {
+            setUploading(false);
         }
     };
 
-    const handleSavePortfolio = (e) => {
+    const handleSavePortfolio = async (e) => {
         e.preventDefault();
+        setUploading(true);
         try {
+            let imageUrl = newPortfolio.image;
+            if (selectedFile) {
+                imageUrl = await handleFileUpload(selectedFile, 'portfolio');
+            }
+
+            const portfolioData = { ...newPortfolio, image: imageUrl };
+
             if (editingId) {
-                updatePortfolioItem(editingId, newPortfolio);
+                await updatePortfolioItem(editingId, portfolioData);
                 alert("Event updated!");
             } else {
-                addPortfolioItem({ id: `p-${Date.now()}`, ...newPortfolio });
+                await addPortfolioItem({ id: `p-${Date.now()}`, ...portfolioData });
                 alert("Event added!");
             }
             resetForms();
         } catch (err) {
-            alert("Error saving event");
+            console.error(err);
+            alert("Error saving event: " + err.message);
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -135,11 +170,34 @@ const ConcertManager = () => {
                                     <Input type="date" value={newConcert.date} onChange={e => setNewConcert({ ...newConcert, date: e.target.value })} required />
                                     <Input placeholder="Venue" value={newConcert.venue} onChange={e => setNewConcert({ ...newConcert, venue: e.target.value })} required />
                                 </div>
-                                <Input placeholder="Image URL" value={newConcert.image} onChange={e => setNewConcert({ ...newConcert, image: e.target.value })} required />
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Concert Image</label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Image URL (or upload below)"
+                                            value={newConcert.image}
+                                            onChange={e => setNewConcert({ ...newConcert, image: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="mt-2">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                                            className="text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-green/10 file:text-neon-green hover:file:bg-neon-green/20"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Uploading a file will override the URL field.</p>
+                                    </div>
+                                </div>
+
                                 <Input placeholder="Ticket Link" value={newConcert.ticketLink} onChange={e => setNewConcert({ ...newConcert, ticketLink: e.target.value })} required />
                                 <div className="flex justify-end gap-4 pt-4">
                                     <Button type="button" variant="outline" onClick={resetForms}>Cancel</Button>
-                                    <Button type="submit" variant="primary">{editingId ? 'Update' : 'Save'} Concert</Button>
+                                    <Button type="submit" variant="primary" disabled={uploading}>
+                                        {uploading ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                                        {editingId ? 'Update' : 'Save'} Concert
+                                    </Button>
                                 </div>
                             </form>
                         ) : (
@@ -159,12 +217,32 @@ const ConcertManager = () => {
                                     </select>
                                 </div>
 
-                                <Input placeholder="Hover Image URL (Optional)" value={newPortfolio.image} onChange={e => setNewPortfolio({ ...newPortfolio, image: e.target.value })} />
-                                <p className="text-xs text-gray-500">Image appears when user hovers over the card.</p>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Event Image</label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Hover Image URL (or upload below)"
+                                            value={newPortfolio.image}
+                                            onChange={e => setNewPortfolio({ ...newPortfolio, image: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="mt-2">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                                            className="text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-green/10 file:text-neon-green hover:file:bg-neon-green/20"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Uploading a file will override the URL field. Image appears on hover.</p>
+                                    </div>
+                                </div>
 
                                 <div className="flex justify-end gap-4 pt-4">
                                     <Button type="button" variant="outline" onClick={resetForms}>Cancel</Button>
-                                    <Button type="submit" variant="primary">{editingId ? 'Update' : 'Save'} Past Event</Button>
+                                    <Button type="submit" variant="primary" disabled={uploading}>
+                                        {uploading ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                                        {editingId ? 'Update' : 'Save'} Past Event
+                                    </Button>
                                 </div>
                             </form>
                         )}
