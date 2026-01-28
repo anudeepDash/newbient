@@ -14,6 +14,7 @@ const Navbar = () => {
         { name: 'Home', path: '/' },
         { name: 'Concert Zone', path: '/concerts' },
         { name: 'Gallery', path: '/gallery' },
+        { name: 'Community', path: '/community-join' },
         { name: 'Contact', path: '/contact' },
     ];
 
