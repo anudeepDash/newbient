@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where } from 'firebase/firestore';
 
 export const useStore = create((set, get) => ({
     announcements: [],
@@ -147,6 +147,53 @@ export const useStore = create((set, get) => ({
     },
     // Retired local actions (kept for API surface compatibility if needed, but implementation changed to warn or no-op if necessary, 
     // actually better to remove 'removeGalleryImage' to force usage of 'deleteGalleryImage' with ID)
+
+    // Auth & Roles
+    user: null, // { email, uid, role }
+
+    checkUserRole: async (user) => {
+        if (!user) {
+            set({ user: null });
+            return;
+        }
+
+        // Default role is 'viewer' until fetched
+        let role = 'viewer';
+        try {
+            // Check 'admins' collection for this email
+            // Doc ID should be the email for easy lookup, or query by field
+            // Let's try direct doc lookup by email first (standardize lowercase)
+            // If we used UID as doc ID, that's better, but email is easier for manual bootstrapping
+
+            // Query by email field to be safe if Doc ID isn't strict
+            const q = query(collection(db, 'admins'), where('email', '==', user.email));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                const adminDoc = snapshot.docs[0].data();
+                role = adminDoc.role || 'viewer';
+            } else {
+                console.warn("User logged in but not found in admins collection.");
+            }
+        } catch (error) {
+            console.error("Error fetching role:", error);
+        }
+
+        set({
+            user: {
+                email: user.email,
+                uid: user.uid,
+                role: role
+            }
+        });
+    },
+
+    logout: async () => {
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        await auth.signOut();
+        set({ user: null });
+    },
 
     // Local-only
     updateSiteDetails: (details) => set((state) => ({
