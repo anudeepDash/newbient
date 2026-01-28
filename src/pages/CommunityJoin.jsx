@@ -7,27 +7,10 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, Users, Lock } from 'lucide-react';
 
 const CommunityJoin = () => {
-    const { forms, siteDetails } = useStore();
-    const communityForm = forms.find(f => f.isCommunityForm);
+    const { forms, siteDetails, volunteerGigs } = useStore();
+    // const communityForm = forms.find(f => f.isCommunityForm); // Not used currently
 
-    const upcomingGigs = [
-        {
-            id: 1,
-            title: "Sunburn Arena ft. Alan Walker",
-            date: "Oct 25, 2025",
-            location: "Jio Gardens, Mumbai",
-            roles: ["Crowd Management", "Artist Hospitality"],
-            status: "Open"
-        },
-        {
-            id: 2,
-            title: "Lollapalooza India",
-            date: "Jan 12-14, 2026",
-            location: "Mahalaxmi Race Course",
-            roles: ["Backstage Crew", "Ticketing"],
-            status: "Filing Fast"
-        }
-    ];
+    // Hardcoded gigs moved to store (volunteerGigs)
 
     return (
         <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4">
@@ -54,17 +37,22 @@ const CommunityJoin = () => {
                         <h2 className="text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden aspect-video relative">
-                        <iframe
-                            src="https://docs.google.com/forms/d/e/1FAIpQLScsX8qX8qX8qX8qX8qX8qX8q/viewform?embedded=true"
-                            className="absolute inset-0 w-full h-full"
-                            frameBorder="0"
-                            marginHeight="0"
-                            marginWidth="0"
-                            title="Registration Form"
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-32 bg-neon-green/5 blur-[100px] rounded-full pointer-events-none"></div>
+                        <h3 className="text-2xl font-bold text-white mb-4">Official Registration</h3>
+                        <p className="text-gray-300 mb-8 max-w-2xl mx-auto text-lg">
+                            To become a verified volunteer, you need to fill out our official Google Form.
+                            This adds you to our database for all future events.
+                        </p>
+                        <a
+                            href="https://forms.gle/MJxXFeYWHxXFatqr6"
+                            target="_blank"
+                            rel="noopener noreferrer"
                         >
-                            Loading…
-                        </iframe>
+                            <Button className="bg-neon-green text-black hover:bg-neon-green/90 text-xl px-10 py-4 h-auto font-bold shadow-lg shadow-neon-green/20 hover:scale-105 transition-transform">
+                                Open Registration Form
+                            </Button>
+                        </a>
                     </div>
                 </section>
 
@@ -95,41 +83,64 @@ const CommunityJoin = () => {
                         <h2 className="text-3xl font-bold font-heading">Upcoming Volunteer Gigs</h2>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {upcomingGigs.map((gig) => (
-                            <div key={gig.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 hover:border-neon-blue/50 transition-colors group">
-                                <div className="flex justify-between items-start mb-4">
-                                    <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors">{gig.title}</h3>
-                                    <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-xs font-bold uppercase tracking-wider rounded-full">
-                                        {gig.status}
-                                    </span>
-                                </div>
+                    {volunteerGigs && volunteerGigs.length > 0 ? (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {volunteerGigs.map((gig) => (
+                                <div key={gig.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 hover:border-neon-blue/50 transition-colors group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors">{gig.title}</h3>
+                                        <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
+                                            {gig.status}
+                                        </span>
+                                    </div>
 
-                                <div className="space-y-3 mb-6 text-gray-400">
-                                    <div className="flex items-center gap-3">
-                                        <Calendar className="w-5 h-5 text-gray-500" />
-                                        <span>{gig.date}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <MapPin className="w-5 h-5 text-gray-500" />
-                                        <span>{gig.location}</span>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <Users className="w-5 h-5 text-gray-500 mt-1" />
-                                        <div className="flex flex-wrap gap-2">
-                                            {gig.roles.map(role => (
-                                                <span key={role} className="bg-white/5 px-2 py-1 rounded text-sm text-gray-300">{role}</span>
-                                            ))}
+                                    <div className="space-y-3 mb-6 text-gray-400">
+                                        <div className="flex items-center gap-3">
+                                            <Calendar className="w-5 h-5 text-gray-500" />
+                                            <span>{gig.date}</span>
                                         </div>
+                                        <div className="flex items-center gap-3">
+                                            <MapPin className="w-5 h-5 text-gray-500" />
+                                            <span>{gig.location}</span>
+                                        </div>
+                                        {gig.roles && (
+                                            <div className="flex items-start gap-3">
+                                                <Users className="w-5 h-5 text-gray-500 mt-1" />
+                                                <div className="flex flex-wrap gap-2">
+                                                    {Array.isArray(gig.roles) ? gig.roles.map((role, idx) => (
+                                                        <span key={idx} className="bg-white/5 px-2 py-1 rounded text-sm text-gray-300">{role}</span>
+                                                    )) : (
+                                                        <span className="bg-white/5 px-2 py-1 rounded text-sm text-gray-300">{gig.roles}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
 
-                                <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all">
-                                    Apply for Gig
-                                </Button>
+                                    <a href={gig.applyLink || "#"} target="_blank" rel="noopener noreferrer">
+                                        <Button className="w-full bg-none border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all">
+                                            Apply for Gig
+                                        </Button>
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-zinc-900/30 border border-white/10 rounded-2xl p-12 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
+                            <div className="relative z-10">
+                                <div className="bg-white/5 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Users className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-3">No Open Gigs Currently</h3>
+                                <p className="text-gray-400 max-w-lg mx-auto">
+                                    We don't have any active volunteer listings right now, but things move fast here!
+                                    <br />
+                                    <span className="text-neon-green block mt-2 font-bold">Join the WhatsApp Community to get alerted the moment a gig drops.</span>
+                                </p>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    )}
                 </section>
 
                 {/* Section 4: Secret Store */}
