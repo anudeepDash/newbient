@@ -43,14 +43,14 @@ const AnnouncementsManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
                         <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-white">Announcements Manager</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-white">Announcements Manager</h1>
                     </div>
-                    <Button variant="primary" onClick={() => setIsAdding(!isAdding)}>
+                    <Button variant="primary" onClick={() => setIsAdding(!isAdding)} className="w-full sm:w-auto">
                         <Plus className="mr-2 h-4 w-4" />
                         Add New
                     </Button>
