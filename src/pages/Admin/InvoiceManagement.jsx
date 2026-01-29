@@ -108,20 +108,20 @@ const InvoiceManagement = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
                         <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-white">Invoice Management</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-white">Invoice Management</h1>
                     </div>
-                    <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setShowQuickUpload(true)}>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                        <Button variant="outline" onClick={() => setShowQuickUpload(true)} className="w-full sm:w-auto justify-center">
                             <Plus className="mr-2 h-4 w-4" />
                             Quick Upload
                         </Button>
-                        <Link to="/admin/create-invoice">
-                            <Button variant="primary">
+                        <Link to="/admin/create-invoice" className="w-full sm:w-auto">
+                            <Button variant="primary" className="w-full justify-center">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create New
                             </Button>
@@ -131,7 +131,7 @@ const InvoiceManagement = () => {
 
                 <Card className="p-8">
                     {/* Filters */}
-                    <div className="flex gap-4 mb-8">
+                    <div className="flex flex-wrap gap-4 mb-8">
                         {['All', 'Paid', 'Pending'].map((status) => (
                             <button
                                 key={status}
