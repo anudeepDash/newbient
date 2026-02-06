@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Trash2, Shield } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Card } from '../../components/ui/Card';
@@ -61,8 +61,19 @@ const AdminManager = () => {
         }
     };
 
+    const handleApprove = async (id, role) => {
+        try {
+            await updateDoc(doc(db, "admins", id), { role: role });
+            fetchAdmins();
+            alert(`User approved as ${role}!`);
+        } catch (error) {
+            console.error("Error approving admin:", error);
+            alert("Failed to approve user.");
+        }
+    };
+
     const handleRemoveAdmin = async (id) => {
-        if (window.confirm('Are you sure you want to remove this admin? They will lose access immediately.')) {
+        if (window.confirm('Are you sure you want to remove/deny this user? They will lose access immediately.')) {
             try {
                 await deleteDoc(doc(db, "admins", id));
                 fetchAdmins();
@@ -128,12 +139,64 @@ const AdminManager = () => {
                     </p>
                 </Card>
 
-                {/* Admin List */}
+                {/* Pending Requests Section */}
+                {admins.filter(a => a.role === 'pending').length > 0 && (
+                    <div className="mb-12">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 text-yellow-500">
+                            <Clock size={20} />
+                            Pending Access Requests
+                        </h2>
+                        <div className="grid gap-4">
+                            {admins.filter(a => a.role === 'pending').map((admin) => (
+                                <Card key={admin.id} className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-yellow-500/30 bg-yellow-500/5">
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-white">{admin.email}</h3>
+                                        <div className="flex gap-2 text-sm">
+                                            <span className="text-gray-400">Requested: {new Date(admin.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-yellow-500 font-bold uppercase text-xs px-2 py-0.5 bg-yellow-500/20 rounded-full">Pending Approval</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleRemoveAdmin(admin.id)}
+                                            className="bg-red-500/10 text-red-500 border-red-500/50 hover:bg-red-500 hover:text-white"
+                                        >
+                                            <Trash2 size={16} className="mr-2" /> Deny
+                                        </Button>
+                                        <div className="flex gap-2 bg-black/30 p-1 rounded-lg border border-white/10">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleApprove(admin.id, 'editor')}
+                                                className="bg-neon-green/10 text-neon-green border-transparent hover:bg-neon-green hover:text-black"
+                                            >
+                                                <CheckCircle size={16} className="mr-2" /> Editor
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleApprove(admin.id, 'super_admin')}
+                                                className="bg-neon-purple/10 text-neon-purple border-transparent hover:bg-neon-purple hover:text-white"
+                                            >
+                                                <Shield size={16} className="mr-2" /> Super Admin
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Active Admin List */}
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Shield size={20} className="text-neon-blue" />
+                    Current Administrators
+                </h2>
                 <div className="grid gap-4">
                     {loading ? (
                         <div className="text-center text-gray-500">Loading admins...</div>
                     ) : (
-                        admins.map((admin) => (
+                        admins.filter(a => a.role !== 'pending').map((admin) => (
                             <Card key={admin.id} className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
                                 <div>
                                     <h3 className="font-bold text-white">{admin.email}</h3>
