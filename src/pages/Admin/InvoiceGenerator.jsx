@@ -9,7 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../lib/firebase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-// import logo from '../../assets/logo.png'; // Keeping commented until verified if needed
+import logo from '../../assets/logo.png';
 
 const InvoiceGenerator = () => {
     const navigate = useNavigate();
@@ -114,20 +114,27 @@ const InvoiceGenerator = () => {
 
     const handleSaveToDB = async () => {
         setGenerating(true);
+        console.log("Starting Invoice Save Process...");
         try {
             // 1. Generate PDF Blob
+            console.log("Step 1: Generating PDF...");
             const pdf = await generatePDF();
             if (!pdf) throw new Error("PDF generation failed");
 
             const pdfBlob = pdf.output('blob');
             const pdfFile = new File([pdfBlob], `invoice_${Date.now()}.pdf`, { type: 'application/pdf' });
+            console.log("PDF Blob created size:", pdfBlob.size);
 
             // 2. Upload to Firebase
+            console.log("Step 2: Uploading to Firebase Storage...");
             const storageRef = ref(storage, `invoices/${Date.now()}_generated.pdf`);
-            await uploadBytes(storageRef, pdfFile);
+            const uploadResult = await uploadBytes(storageRef, pdfFile);
+            console.log("Undo result:", uploadResult);
             const downloadURL = await getDownloadURL(storageRef);
+            console.log("Download URL:", downloadURL);
 
             // 3. Sanitize Data for Firestore (No undefined allowed)
+            console.log("Step 3: Sanitizing Data...");
             const cleanItems = items.map(item => {
                 const cleanCustom = {};
                 if (item.customValues) {
@@ -147,6 +154,7 @@ const InvoiceGenerator = () => {
             });
 
             // 4. Save to Firestore
+            console.log("Step 4: Saving to Firestore...");
             const newInvoice = {
                 invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
                 clientName: formData.clientName || 'Unknown Client',
@@ -163,6 +171,7 @@ const InvoiceGenerator = () => {
             };
 
             await addInvoice(newInvoice);
+            console.log("Firestore save complete!");
 
             if (window.confirm("Invoice Saved Successfully! \n\nClick OK to Create Another Invoice.\nClick Cancel to View All Invoices.")) {
                 // Reset Form
@@ -178,19 +187,12 @@ const InvoiceGenerator = () => {
                 navigate('/admin/invoices');
             }
         } catch (error) {
-            console.error(error);
-            alert("Error saving invoice: " + error.message);
+            console.error("SAVE ERROR:", error);
+            alert("Error saving invoice: " + error.message + "\n\nSee console for details.");
         } finally {
             setGenerating(false);
         }
     };
-
-    // Grid columns template for PDF logic
-    // Standard: Desc(3) | [Custom(2) * N] | Qty(1) | Price(1) | Total(2)
-    // We need to calculate col classes dynamically based on customColumns count
-    // But Tailwind classes need to be full strings.
-    // Let's use simple flex or fixed widths for PDF consistency.
-    // Actually, CSS Grid with style={{ gridTemplateColumns: ... }} is best.
 
     const getGridTemplate = () => {
         // Base: 40% Desc, 10% Qty, 15% Price, 15% Total = 80%
@@ -367,9 +369,12 @@ const InvoiceGenerator = () => {
                         >
                             {/* Header */}
                             <div className="p-12 pb-8 flex justify-between items-start">
-                                <div>
-                                    <h1 className="text-5xl font-black tracking-tighter uppercase mb-0">NEWBI</h1>
-                                    <p className="text-xl font-bold text-[#84CC16] tracking-widest uppercase">ENTERTAINMENT</p>
+                                <div className="flex items-start gap-4">
+                                    <img src={logo} alt="NewBi Logo" className="w-20 h-20 object-contain" />
+                                    <div>
+                                        <h1 className="text-5xl font-black tracking-tighter uppercase mb-0">NEWBI</h1>
+                                        <p className="text-xl font-bold text-[#84CC16] tracking-widest uppercase">ENTERTAINMENT</p>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold text-gray-600 uppercase text-sm tracking-wider mb-1">DATE: {new Date(formData.invoiceDate).toLocaleDateString()}</p>

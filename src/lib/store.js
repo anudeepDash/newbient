@@ -31,6 +31,11 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => (a.order || 0) - (b.order || 0));
                 }
 
+                // Sort upcoming events by date (ascending)
+                if (colName === 'upcoming_events') {
+                    data.sort((a, b) => new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31'));
+                }
+
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
