@@ -6,10 +6,13 @@ import Portfolio from '../components/home/Portfolio';
 import WhyChooseUs from '../components/home/WhyChooseUs';
 import CallToAction from '../components/home/CallToAction';
 
+import UpcomingEvents from '../components/home/UpcomingEvents';
+
 const Home = () => {
     return (
         <main className="bg-dark min-h-screen">
             <Hero />
+            <UpcomingEvents />
             <WhyChooseUs />
             <About />
             <Services />

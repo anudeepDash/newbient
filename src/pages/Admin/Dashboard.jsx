@@ -403,9 +403,20 @@ const Dashboard = () => {
                             <Button variant="outline" className="w-full text-neon-pink border-neon-pink hover:bg-neon-pink hover:text-white">Manage Photos</Button>
                         </Card>
                     </Link>
+
+                    <Link to="/admin/upcoming-events" className="group">
+                        <Card className="p-8 h-full hover:border-yellow-400 transition-colors flex flex-col items-center text-center bg-white/5">
+                            <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-4 group-hover:scale-110 transition-transform">
+                                <Calendar size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Upcoming Events</h3>
+                            <p className="text-gray-400 text-sm mb-6">Manage homepage events section.</p>
+                            <Button variant="outline" className="w-full text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black">Manage Upcoming</Button>
+                        </Card>
+                    </Link>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

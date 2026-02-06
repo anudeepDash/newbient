@@ -8,16 +8,8 @@ export const useStore = create((set, get) => ({
     portfolio: [],
     invoices: [],
     forms: [], // Forms config
-    galleryImages: [],
-    volunteerGigs: [], // New: Volunteer Opportunities
-    siteDetails: {
-        phone: '+91 93043 72773',
-        email: 'partnership@newbi.live',
-        instagram: 'https://www.instagram.com/newbi_ent',
-        linkedin: 'https://www.linkedin.com/company/newbi-ent/',
-        whatsapp: 'https://chat.whatsapp.com/LrFw6AmrfwNCPyi95cTnNv',
-        description: "India's premier entertainment company."
-    },
+    upcomingEvents: [],
+    siteSettings: { showUpcomingEvents: true },
     loading: true,
 
     // Real-time Subscription Init
@@ -28,7 +20,6 @@ export const useStore = create((set, get) => ({
         const sub = (colName, stateKey) => {
             const q = query(collection(db, colName));
             return onSnapshot(q, (snapshot) => {
-                // Fix: Ensure Firestore Document ID overwrites any "id" field inside the data
                 const data = snapshot.docs.map(doc => {
                     const d = doc.data();
                     return { ...d, id: doc.id };
@@ -42,14 +33,11 @@ export const useStore = create((set, get) => ({
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
-                // Specific fix for loading state: 
-                // We consider the app "loaded" once the critical data (invoices) arrives.
                 if (stateKey === 'invoices') {
                     set({ loading: false });
                 }
             }, (error) => {
                 console.error(`Error fetching ${stateKey}:`, error);
-                // Even on error, stop loading so we don't hang
                 if (stateKey === 'invoices') set({ loading: false });
             });
         };
@@ -61,17 +49,59 @@ export const useStore = create((set, get) => ({
         const unsub5 = sub('forms', 'forms');
         const unsub6 = sub('gallery', 'galleryImages');
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
+        const unsub8 = sub('upcoming_events', 'upcomingEvents');
 
-        // Site details is a single doc usually, but for simplicity treating as collection or skipping for now.
-        // For this version, let's keep siteDetails local or fetch if needed. 
+        // Site Settings Subscription (Single Doc)
+        const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
+            if (docSnap.exists()) {
+                set({ siteSettings: docSnap.data() });
+            } else {
+                // Initialize if missing
+                console.log("Initializing site_settings/general");
+                const initialSettings = { showUpcomingEvents: true };
+                set({ siteSettings: initialSettings });
+                // Create it strictly speaking we should setDoc here but let's avoid side effect in sub if possible, 
+                // but for now relying on default state is fine, or we can lazy create on toggle.
+            }
+        }, (error) => console.error("Error fetching site settings:", error));
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9();
         };
     },
 
     // --- Actions (Write to DB) ---
+
+    // Upcoming Events
+    addUpcomingEvent: async (event, alsoAddToAnnouncements = false) => {
+        const docRef = await addDoc(collection(db, 'upcoming_events'), event);
+
+        if (alsoAddToAnnouncements) {
+            await addDoc(collection(db, 'announcements'), {
+                title: event.title || 'New Upcoming Event',
+                content: event.description || `Check out our regular event on ${event.date}!`,
+                date: event.date || new Date().toISOString().split('T')[0],
+                image: event.image || '',
+                isPinned: false,
+                linkedEventId: docRef.id
+            });
+        }
+    },
+    updateUpcomingEvent: async (id, updates) => {
+        await updateDoc(doc(db, 'upcoming_events', id), updates);
+    },
+    deleteUpcomingEvent: async (id) => {
+        await deleteDoc(doc(db, 'upcoming_events', id));
+    },
+
+    // Site Settings
+    toggleUpcomingSectionVisibility: async (currentValue) => {
+        // Create if doesn't exist using setDoc with merge would be safer but updateDoc works if it exists.
+        // Let's safe-guard with setDoc to ensure 'general' doc exists.
+        const { setDoc } = await import('firebase/firestore'); // dynamic import or add to top imports
+        await setDoc(doc(db, 'site_settings', 'general'), { showUpcomingEvents: !currentValue }, { merge: true });
+    },
 
     // Announcements
     addAnnouncement: async (announcement) => {

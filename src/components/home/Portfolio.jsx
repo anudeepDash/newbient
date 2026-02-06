@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { useStore } from '../../lib/store';
 
 const Portfolio = () => {
@@ -7,36 +7,33 @@ const Portfolio = () => {
     const categories = [
         {
             id: 'music',
-            label: 'Music Concerts',
-            items: [
-                "Arijit Singh", "Marshmello", "Shreya Ghoshal", "Armaan Malik",
-                "Seedhe Maut", "Darshan Raval", "Divine", "Nikhita Gandhi",
-                "Papon", "Prateek Kuhad", "The Yellow Diary", "Sanam",
-                "Hanumankind", "Kailash Kher", "Swarthama", "Iqlipse Nova"
-            ]
+            label: 'Music Concerts'
         },
         {
             id: 'fests',
-            label: 'Fests & IPs',
-            items: [
-                "Kingfisher OctoBeerfest", "The Big Feed", "Bangr Carnival",
-                "Sun Downer", "McDowell's Yaari Jam", "TATA WPL", "Rivaayat"
-            ]
+            label: 'Fests & IPs'
         },
         {
             id: 'comedy',
-            label: 'Stand-Up Shows',
-            items: [
-                "Anubhav Singh Bassi", "Ashish Vidyarthi", "Atul Khatri",
-                "Amit Tandon", "Harsh Gujral", "Ravi Gupta", "Jaspreet Singh"
-            ]
+            label: 'Stand-Up Shows'
         }
     ];
 
     const [activeTab, setActiveTab] = useState(categories[0].id);
+    const [width, setWidth] = useState(0);
+    const carouselRef = useRef();
+    const x = useMotionValue(0);
+
+    const filteredItems = portfolio.filter(item => item.category === activeTab);
+
+    useEffect(() => {
+        if (carouselRef.current) {
+            setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
+        }
+    }, [filteredItems, activeTab]);
 
     return (
-        <section className="py-20 bg-black text-white relative">
+        <section className="py-20 bg-black text-white relative overflow-hidden">
             {/* Neon Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -64,54 +61,71 @@ const Portfolio = () => {
                     ))}
                 </div>
 
-                {/* Grid Content */}
-                <div className="min-h-[300px]">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                        >
-                            {/* Filter items by active tab */}
-                            {portfolio.filter(item => item.category === activeTab).map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden aspect-square flex items-center justify-center text-center shadow-lg transition-transform hover:scale-[1.02] duration-300"
-                                >
-                                    {/* Image Background - Full Visibility */}
-                                    {item.image ? (
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                            style={{ backgroundImage: `url(${item.image})` }}
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
-                                            No Image
+                {/* Carousel Content */}
+                <div className="min-h-[300px] relative">
+                    <motion.div
+                        ref={carouselRef}
+                        className="cursor-grab active:cursor-grabbing overflow-hidden"
+                        whileTap={{ cursor: "grabbing" }}
+                    >
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab} // Re-mount carousel on tab change to reset position
+                                drag="x"
+                                dragConstraints={{ right: 0, left: -width }}
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -50 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex gap-6"
+                            >
+                                {filteredItems.map((item) => (
+                                    <motion.div
+                                        key={item.id}
+                                        className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg"
+                                    >
+                                        {/* Image Background */}
+                                        {item.image ? (
+                                            <div
+                                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                                                style={{ backgroundImage: `url(${item.image})` }}
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
+                                                No Image
+                                            </div>
+                                        )}
+
+                                        {/* Gradient Overlay & Text */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
+                                            <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                                                {categories.find(c => c.id === item.category)?.label}
+                                            </p>
                                         </div>
-                                    )}
 
-                                    {/* Gradient Overlay & Text - Visible by default, hidden on hover */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-all duration-300 flex flex-col justify-end p-6">
-                                        <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
-                                            {item.title}
-                                        </h3>
-                                        <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300">
-                                            {categories.find(c => c.id === item.category)?.label}
-                                        </p>
+                                        {/* Hover Revealed Text (optional alternative style) */}
+                                        <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
+                                            <div>
+                                                <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
+                                                <span className="text-neon-green font-bold uppercase tracking-wider text-sm">
+                                                    {categories.find(c => c.id === item.category)?.label}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+
+                                {filteredItems.length === 0 && (
+                                    <div className="w-full text-center text-gray-500 py-12 flex-shrink-0">
+                                        No events added in this category yet.
                                     </div>
-                                </div>
-                            ))}
-
-                            {portfolio.filter(item => item.category === activeTab).length === 0 && (
-                                <div className="col-span-full text-center text-gray-500 py-12">
-                                    No events added in this category yet.
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </motion.div>
                 </div>
             </div>
         </section>

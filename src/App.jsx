@@ -21,6 +21,7 @@ import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
 import CommunityJoin from './pages/CommunityJoin';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
+import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 
 // ... (imports)
 
@@ -64,6 +65,7 @@ function App() {
           <Route path="admin/forms/create" element={<FormBuilder />} />
           <Route path="admin/forms/edit/:id" element={<FormBuilder />} />
           <Route path="admin/volunteer-gigs" element={<VolunteerGigManager />} />
+          <Route path="admin/upcoming-events" element={<UpcomingEventsManager />} />
         </Route>
       </Routes>
     </Router>
