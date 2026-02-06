@@ -388,11 +388,11 @@ const InvoiceGenerator = () => {
                                 </div>
 
                                 {/* Engraved Invoice Number */}
-                                <div className="absolute top-8 right-8 text-right pointer-events-none">
-                                    <h1 className="text-6xl font-black text-gray-200/50 tracking-tighter" style={{ textShadow: '-1px -1px 1px rgba(255,255,255,0.8), 1px 1px 1px rgba(0,0,0,0.1)' }}>
+                                <div className="absolute top-6 right-8 text-right pointer-events-none">
+                                    <h1 className="text-4xl font-black text-gray-300 tracking-tight opacity-60">
                                         #{Math.floor(1000 + Math.random() * 9000)}
                                     </h1>
-                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mr-2">INVOICE ID</p>
+                                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mr-1">INVOICE ID</p>
                                 </div>
                             </div>
 
