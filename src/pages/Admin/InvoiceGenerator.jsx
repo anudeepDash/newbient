@@ -235,8 +235,25 @@ const InvoiceGenerator = () => {
         } catch (error) {
             console.error("SAVE ERROR:", error);
             alert("Error saving invoice: " + error.message + "\n\nSee console for details.");
-        } finally {
-            setGenerating(false);
+        }
+    };
+
+    const handleReset = () => {
+        if (window.confirm("Start a new invoice? Current form data will be cleared.")) {
+            // Reset Form (Keep sender defaults)
+            setFormData(prev => ({
+                ...prev,
+                clientName: '',
+                clientAddress: '',
+                clientGst: '',
+                invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`, // Generate NEW ID for next invoice
+                invoiceDate: new Date().toISOString().split('T')[0],
+                dueDate: '',
+                advancePaid: 0,
+                note: '',
+                paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
+            }));
+            setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
         }
     };
 
