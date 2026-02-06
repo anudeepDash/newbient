@@ -12,10 +12,11 @@ const Home = () => {
     return (
         <main className="bg-dark min-h-screen">
             <Hero />
-            <UpcomingEvents />
+
             <WhyChooseUs />
             <About />
             <Services />
+            <UpcomingEvents />
             <Portfolio />
             <CallToAction />
         </main>

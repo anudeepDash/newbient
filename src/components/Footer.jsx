@@ -21,8 +21,8 @@ const Footer = () => {
                         <div className="flex items-center space-x-6 text-sm font-medium text-gray-300">
                             <Link to="/contact" className="hover:text-neon-green transition-colors hover:underline decoration-neon-green underline-offset-4">Contact</Link>
                             <span className="text-gray-600">|</span>
-                            <a href={siteDetails.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">Instagram</a>
-                            <a href={siteDetails.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">LinkedIn</a>
+                            <a href={siteDetails?.instagram || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">Instagram</a>
+                            <a href={siteDetails?.linkedin || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">LinkedIn</a>
                             <span className="text-gray-600">|</span>
                             <Link to="/admin" className="text-gray-600 hover:text-white transition-colors text-xs">Admin</Link>
                         </div>

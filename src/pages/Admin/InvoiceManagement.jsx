@@ -31,9 +31,6 @@ const InvoiceManagement = () => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
         }
-        if (window.confirm('Are you sure you want to delete this invoice?')) {
-            deleteInvoice(id);
-        }
     };
 
     const handleQuickUpload = async (e) => {
