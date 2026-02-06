@@ -22,6 +22,7 @@ import FormViewer from './pages/FormViewer';
 import CommunityJoin from './pages/CommunityJoin';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
+import Maintenance from './pages/Admin/Maintenance';
 
 // ... (imports)
 
@@ -54,8 +55,8 @@ function App() {
           {/* Admin Routes */}
           <Route path="admin" element={<Dashboard />} />
           <Route path="admin/manage-admins" element={<AdminManager />} />
-          <Route path="admin/invoices" element={<InvoiceManagement />} />
-          <Route path="admin/create-invoice" element={<InvoiceGenerator />} />
+          <Route path="admin/invoices" element={<Maintenance />} />
+          <Route path="admin/create-invoice" element={<Maintenance />} />
           <Route path="admin/announcements" element={<AnnouncementsManager />} />
           <Route path="admin/concerts" element={<ConcertManager />} />
           <Route path="admin/messages" element={<MessageManager />} />

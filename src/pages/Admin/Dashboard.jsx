@@ -340,20 +340,26 @@ const Dashboard = () => {
 
                 {/* Quick Actions Carousel */}
                 <AdminCarousel title="Quick Actions">
-                    <Link to="/admin/invoices" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-blue bg-gradient-to-br from-white/5 to-transparent hover:from-neon-blue/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                    <div
+                        onClick={() => alert("Bruh, we lowkey down right now. Fixing stuff FR FR! 💀")}
+                        className="group block h-full cursor-not-allowed"
+                    >
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 opacity-75 bg-gradient-to-br from-white/5 to-transparent transition-all duration-300 relative overflow-hidden">
+                            <div className="absolute top-4 right-4 px-2 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-[10px] font-bold text-neon-pink uppercase tracking-widest animate-pulse">
+                                Maintenance 💀
+                            </div>
                             <div>
-                                <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+                                <div className="p-4 rounded-full bg-white/5 text-gray-500 mb-6 w-16 h-16 flex items-center justify-center grayscale">
                                     <FileText size={32} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Invoices</h3>
-                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Create and track client payments securely.</p>
+                                <h3 className="text-xl font-bold text-gray-400 mb-2">Invoices</h3>
+                                <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Lowkey down for maintenance...</p>
                             </div>
-                            <span className="text-neon-blue text-sm font-bold flex items-center gap-2">
-                                Open Manager <span className="text-lg">→</span>
+                            <span className="text-gray-600 text-sm font-bold flex items-center gap-2">
+                                System Offline <span className="text-lg">×</span>
                             </span>
                         </Card>
-                    </Link>
+                    </div>
 
                     <Link to="/admin/announcements" className="group block h-full">
                         <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
