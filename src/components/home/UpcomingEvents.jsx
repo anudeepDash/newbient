@@ -31,22 +31,20 @@ const UpcomingEvents = () => {
     }, [x, width, upcomingEvents.length]);
 
 
-    if (!siteSettings?.showUpcomingEvents || upcomingEvents.length === 0) {
+    if (!siteSettings?.showUpcomingEvents) {
         return null;
     }
 
     return (
         <section className="py-20 bg-black text-white overflow-hidden relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-                <div className="flex justify-between items-end">
-                    <div>
-                        <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
-                            Upcoming <span className="text-neon-blue">Events</span>
-                        </h2>
-                        <p className="text-gray-400 max-w-xl">
-                            Don't miss out on what's coming next. Book your tickets now!
-                        </p>
-                    </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
+                <div className="inline-block">
+                    <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
+                        Upcoming <span className="text-neon-green">Events</span>
+                    </h2>
+                    <p className="text-gray-400 max-w-xl mx-auto">
+                        Stay tuned for what we are working on next.
+                    </p>
                 </div>
             </div>
 
@@ -81,13 +79,13 @@ const UpcomingEvents = () => {
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
 
-                                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-neon-blue">
+                                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-neon-green">
                                     Upcoming
                                 </div>
 
                                 <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                                     {event.date && (
-                                        <div className="flex items-center gap-2 text-neon-blue mb-2 text-sm font-bold">
+                                        <div className="flex items-center gap-2 text-neon-green mb-2 text-sm font-bold">
                                             <Calendar size={14} />
                                             {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                         </div>
@@ -104,7 +102,7 @@ const UpcomingEvents = () => {
                                             href={event.link}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="inline-flex items-center gap-2 text-white font-bold hover:text-neon-blue transition-colors"
+                                            className="inline-flex items-center gap-2 text-white font-bold hover:text-neon-green transition-colors"
                                         >
                                             Get Tickets <ArrowRight size={16} />
                                         </a>
