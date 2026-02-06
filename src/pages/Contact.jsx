@@ -70,19 +70,39 @@ const Contact = () => {
                             <span className="ml-4 text-lg text-gray-300 group-hover:text-white">NewBi Entertainment</span>
                         </a>
 
-                        <a href={siteDetails.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                            <div className="p-3 rounded-full bg-green-500/10 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
-                                <Phone size={24} />
-                            </div>
-                            <span className="ml-4 text-lg text-gray-300 group-hover:text-white">+91 93043 72773</span>
-                        </a>
+                        {siteDetails.phone && (
+                            <a
+                                href={`https://wa.me/${siteDetails.phone.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group"
+                            >
+                                <div className="p-3 rounded-full bg-green-500/10 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                                    <Phone size={24} />
+                                </div>
+                                <span className="ml-4 text-lg text-gray-300 group-hover:text-white">
+                                    {siteDetails.phone}
+                                </span>
+                            </a>
+                        )}
 
-                        <a href={`mailto:${siteDetails.email}`} className="flex items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                            <div className="p-3 rounded-full bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-white transition-colors">
-                                <Mail size={24} />
+                        {siteDetails.email && (
+                            <a href={`mailto:${siteDetails.email}`} className="flex items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                                <div className="p-3 rounded-full bg-neon-blue/10 text-neon-blue group-hover:bg-neon-blue group-hover:text-white transition-colors">
+                                    <Mail size={24} />
+                                </div>
+                                <span className="ml-4 text-lg text-gray-300 group-hover:text-white">{siteDetails.email}</span>
+                            </a>
+                        )}
+
+                        {siteDetails.address && (
+                            <div className="flex items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                                <div className="p-3 rounded-full bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                                    <Send size={24} className="rotate-[-45deg]" />{/* Using Send as generic location/direction icon or MapPin if imported */}
+                                </div>
+                                <span className="ml-4 text-lg text-gray-300 group-hover:text-white">{siteDetails.address}</span>
                             </div>
-                            <span className="ml-4 text-lg text-gray-300 group-hover:text-white">{siteDetails.email}</span>
-                        </a>
+                        )}
                     </div>
                 </motion.div>
 
