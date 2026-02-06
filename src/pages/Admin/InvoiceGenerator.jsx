@@ -24,10 +24,12 @@ const InvoiceGenerator = () => {
         senderContact: '+91 93043 72773',
         senderEmail: 'partnership@newbi.live',
         senderPan: 'ETXPA9107A',
+        senderGst: '',
 
         // Client Details
         clientName: '',
         clientAddress: '',
+        clientGst: '',
         invoiceDate: new Date().toISOString().split('T')[0],
 
         advancePaid: 0,
@@ -197,12 +199,14 @@ const InvoiceGenerator = () => {
                 // Client
                 clientName: formData.clientName || 'Unknown Client',
                 clientAddress: formData.clientAddress || '',
+                clientGst: formData.clientGst || '',
 
                 // Sender
                 senderName: formData.senderName,
                 senderContact: formData.senderContact,
                 senderEmail: formData.senderEmail,
                 senderPan: formData.senderPan,
+                senderGst: formData.senderGst,
 
                 issueDate: formData.invoiceDate,
                 amount: totalAmount,
@@ -225,6 +229,7 @@ const InvoiceGenerator = () => {
                     ...prev,
                     clientName: '',
                     clientAddress: '',
+                    clientGst: '',
                     invoiceDate: new Date().toISOString().split('T')[0],
                     advancePaid: 0,
                     note: ''
@@ -283,6 +288,10 @@ const InvoiceGenerator = () => {
                                     <label className="text-xs text-gray-400">PAN / Tax ID</label>
                                     <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="h-9" />
                                 </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">GSTIN (Optional)</label>
+                                    <Input value={formData.senderGst} onChange={e => setFormData({ ...formData, senderGst: e.target.value })} className="h-9" />
+                                </div>
                             </div>
                         </div>
 
@@ -297,6 +306,10 @@ const InvoiceGenerator = () => {
                                 <div className="md:col-span-2">
                                     <label className="text-xs text-gray-400">Client Address (Optional)</label>
                                     <Input value={formData.clientAddress} onChange={e => setFormData({ ...formData, clientAddress: e.target.value })} placeholder="City, State" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">Client GSTIN (Optional)</label>
+                                    <Input value={formData.clientGst} onChange={e => setFormData({ ...formData, clientGst: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="text-xs text-gray-400">Invoice Date</label>
@@ -463,10 +476,10 @@ const InvoiceGenerator = () => {
 
                                 {/* Engraved Invoice Number */}
                                 <div className="absolute top-6 right-8 text-right pointer-events-none">
-                                    <h1 className="text-4xl font-black text-gray-300 tracking-tight opacity-60">
+                                    <h1 className="text-4xl font-black text-gray-800 tracking-tight opacity-70">
                                         #{Math.floor(1000 + Math.random() * 9000)}
                                     </h1>
-                                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mr-1">INVOICE ID</p>
+                                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mr-1">INVOICE ID</p>
                                 </div>
                             </div>
 
@@ -482,6 +495,7 @@ const InvoiceGenerator = () => {
                                         <p>Contact: {formData.senderContact}</p>
                                         <p>Email: {formData.senderEmail}</p>
                                         <p>PAN: {formData.senderPan}</p>
+                                        {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
                                     </div>
                                 </div>
 
@@ -494,7 +508,8 @@ const InvoiceGenerator = () => {
                                         <p className="font-black text-lg text-black mb-2">{formData.clientName || 'Client Name'}</p>
                                         <p>Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
                                         {/* Placeholder for address if we add it later */}
-                                        <p className="text-gray-400 italic">{formData.clientAddress || 'Client Address...'}</p>
+                                        <p className="text-gray-500 italic mb-1">{formData.clientAddress || 'Client Address...'}</p>
+                                        {formData.clientGst && <p className="font-bold">GSTIN: {formData.clientGst}</p>}
                                     </div>
                                 </div>
                             </div>
