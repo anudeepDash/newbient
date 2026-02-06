@@ -215,23 +215,8 @@ const InvoiceGenerator = () => {
             await addInvoice(newInvoice);
             console.log("Firestore save complete!");
 
-            if (window.confirm("Invoice Saved Successfully!" + (downloadURL ? "" : " (PDF Upload Failed)") + " \n\nClick OK to Create Another Invoice.\nClick Cancel to View All Invoices.")) {
-                // Reset Form for next invoice
-                setFormData(prev => ({
-                    ...prev,
-                    clientName: '',
-                    clientAddress: '',
-                    clientGst: '',
-                    invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`, // Generate new ID
-                    invoiceDate: new Date().toISOString().split('T')[0],
-                    dueDate: '',
-                    advancePaid: 0,
-                    note: '',
-                }));
-                setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
-            } else {
-                navigate('/admin/invoices');
-            }
+            alert("Invoice Saved Successfully!" + (downloadURL ? "" : " (Note: PDF Upload Failed, but data is saved)"));
+            navigate('/admin/invoices');
         } catch (error) {
             console.error("SAVE ERROR:", error);
             alert("Error saving invoice: " + error.message + "\n\nSee console for details.");
