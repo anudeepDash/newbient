@@ -463,21 +463,24 @@ const InvoiceGenerator = () => {
 
                             {/* Actions */}
                             <div className="flex flex-col gap-2 pt-6">
-                                <div className="flex gap-4">
+                                <div className="flex gap-2">
                                     <Button onClick={handleDownload} variant="outline" className="flex-1" disabled={generating}>
-                                        <Download className="mr-2 h-4 w-4" /> Download PDF
+                                        <Download className="mr-2 h-4 w-4" /> PDF
                                     </Button>
                                     <Button onClick={() => handleSaveToDB(false)} variant="primary" className="flex-1 bg-neon-green text-black hover:bg-neon-green/90" disabled={generating}>
-                                        <Save className="mr-2 h-4 w-4" /> Save & Create
+                                        <Save className="mr-2 h-4 w-4" /> Save
                                     </Button>
                                 </div>
-                                <div className="text-center">
+                                <Button onClick={handleReset} variant="ghost" className="w-full text-xs text-gray-500 hover:text-white border border-white/10" disabled={generating}>
+                                    + Create New Invoice
+                                </Button>
+                                <div className="text-center mt-1">
                                     <button
                                         onClick={() => handleSaveToDB(true)}
                                         disabled={generating}
                                         className="text-gray-500 text-xs underline hover:text-white"
                                     >
-                                        Scanning Trouble? Click here to Save Data Only (Skip PDF)
+                                        Scanning Trouble? Save Data Only (Skip PDF)
                                     </button>
                                 </div>
                             </div>
