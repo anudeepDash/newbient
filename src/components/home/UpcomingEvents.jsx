@@ -9,6 +9,39 @@ const UpcomingEvents = () => {
     const carouselRef = useRef();
     const x = useMotionValue(0);
 
+    // Component for reusable card content
+    const CardContent = ({ event }) => (
+        <>
+            <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+
+            {/* Gradient - stronger at bottom for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />
+
+            <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-neon-green">
+                Upcoming
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                {event.date && (
+                    <div className="flex items-center gap-2 text-neon-green mb-2 text-sm font-bold">
+                        <Calendar size={14} />
+                        {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </div>
+                )}
+                <h3 className="text-xl font-bold text-white mb-2 leading-tight">{event.title}</h3>
+                {event.description && (
+                    <p className="text-gray-400 text-sm line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                        {event.description}
+                    </p>
+                )}
+            </div>
+        </>
+    );
+
     useEffect(() => {
         if (carouselRef.current) {
             setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
@@ -69,45 +102,18 @@ const UpcomingEvents = () => {
                         {upcomingEvents.map((event) => (
                             <motion.div
                                 key={event.id}
-                                className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] aspect-[4/5] relative rounded-2xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0"
+                                className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-2xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0"
                             >
-                                <img
-                                    src={event.image}
-                                    alt={event.title}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
-
-                                <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-neon-green">
-                                    Upcoming
-                                </div>
-
-                                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                                    {event.date && (
-                                        <div className="flex items-center gap-2 text-neon-green mb-2 text-sm font-bold">
-                                            <Calendar size={14} />
-                                            {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                        </div>
-                                    )}
-                                    <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{event.title}</h3>
-                                    {event.description && (
-                                        <p className="text-gray-400 text-sm mb-4 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                                            {event.description}
-                                        </p>
-                                    )}
-
-                                    {event.link && (
-                                        <a
-                                            href={event.link}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center gap-2 text-white font-bold hover:text-neon-green transition-colors"
-                                        >
-                                            Get Tickets <ArrowRight size={16} />
-                                        </a>
-                                    )}
-                                </div>
+                                {/* Wrap content in link if available */}
+                                {event.link ? (
+                                    <a href={event.link} target="_blank" rel="noreferrer" className="block w-full h-full">
+                                        <CardContent event={event} />
+                                    </a>
+                                ) : (
+                                    <div className="w-full h-full">
+                                        <CardContent event={event} />
+                                    </div>
+                                )}
                             </motion.div>
                         ))}
                     </motion.div>
