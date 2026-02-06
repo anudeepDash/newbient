@@ -258,98 +258,115 @@ const InvoiceGenerator = () => {
             <div className="max-w-[1920px] mx-auto grid grid-cols-1 xl:grid-cols-2 gap-8">
 
                 {/* LEFT: EDITOR */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 mb-6">
+                <div className="space-y-8">
+                    <div className="flex items-center gap-4 mb-2">
                         <Link to="/admin/invoices" className="text-gray-400 hover:text-white">
                             <ArrowLeft />
                         </Link>
                         <h1 className="text-3xl font-bold">Invoice Generator</h1>
                     </div>
 
-                    <Card className="p-6 space-y-6 border-white/10 bg-white/5">
-
-                        {/* 1. Sender Details (Collapse/Expand could be nice but let's keep visible for now) */}
-                        <div className="space-y-4 border-b border-white/10 pb-6">
-                            <h3 className="font-bold text-neon-green text-sm uppercase tracking-wider">Invoice By (From)</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs text-gray-400">Company Name</label>
-                                    <Input value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} className="h-9" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">Contact No.</label>
-                                    <Input value={formData.senderContact} onChange={e => setFormData({ ...formData, senderContact: e.target.value })} className="h-9" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">Email</label>
-                                    <Input value={formData.senderEmail} onChange={e => setFormData({ ...formData, senderEmail: e.target.value })} className="h-9" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">PAN / Tax ID</label>
-                                    <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="h-9" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">GSTIN (Optional)</label>
-                                    <Input value={formData.senderGst} onChange={e => setFormData({ ...formData, senderGst: e.target.value })} className="h-9" />
-                                </div>
+                    {/* SECTION 1: INVOICE BY (SENDER) */}
+                    <Card className="p-6 border-white/10 bg-white/5">
+                        <h3 className="text-neon-green font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                            1. Invoice By (From)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-400">Company Name</label>
+                                <Input value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} className="h-9" placeholder="Leave empty to hide" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400">Contact No.</label>
+                                <Input value={formData.senderContact} onChange={e => setFormData({ ...formData, senderContact: e.target.value })} className="h-9" placeholder="Leave empty to hide" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400">Email</label>
+                                <Input value={formData.senderEmail} onChange={e => setFormData({ ...formData, senderEmail: e.target.value })} className="h-9" placeholder="Leave empty to hide" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400">PAN / Tax ID</label>
+                                <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="h-9" placeholder="Leave empty to hide" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400">GSTIN</label>
+                                <Input value={formData.senderGst} onChange={e => setFormData({ ...formData, senderGst: e.target.value })} className="h-9" placeholder="Leave empty to hide" />
                             </div>
                         </div>
+                    </Card>
 
-                        {/* 2. Client Details */}
-                        <div className="space-y-4 border-b border-white/10 pb-6">
-                            <h3 className="font-bold text-neon-blue text-sm uppercase tracking-wider">Invoice To (Client)</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="md:col-span-2">
-                                    <label className="text-xs text-gray-400">Client Name</label>
-                                    <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="text-xs text-gray-400">Client Address (Optional)</label>
-                                    <Input value={formData.clientAddress} onChange={e => setFormData({ ...formData, clientAddress: e.target.value })} placeholder="City, State" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">Client GSTIN (Optional)</label>
-                                    <Input value={formData.clientGst} onChange={e => setFormData({ ...formData, clientGst: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-gray-400">Invoice Date</label>
-                                    <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} />
-                                </div>
+                    {/* SECTION 2: INVOICE TO (CLIENT) */}
+                    <Card className="p-6 border-white/10 bg-white/5">
+                        <h3 className="text-neon-blue font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                            2. Invoice To (Client)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-gray-400">Client Name</label>
+                                <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} placeholder="Client Name" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-gray-400">Client Address</label>
+                                <Input value={formData.clientAddress} onChange={e => setFormData({ ...formData, clientAddress: e.target.value })} placeholder="City, State (Leave empty to hide)" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-gray-400">Client GSTIN</label>
+                                <Input value={formData.clientGst} onChange={e => setFormData({ ...formData, clientGst: e.target.value })} placeholder="Leave empty to hide" />
                             </div>
                         </div>
+                    </Card>
+
+                    {/* SECTION 3: INVOICE DETAILS */}
+                    <Card className="p-6 border-white/10 bg-white/5">
+                        <h3 className="text-gray-400 font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                            3. Invoice Details
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-400">Invoice Date</label>
+                                <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} />
+                            </div>
+                            {/* Potential spot for Manual Invoice ID in future */}
+                        </div>
+                    </Card>
+
+                    {/* SECTION 4: ITEMS & COLUMNS */}
+                    <Card className="p-6 border-white/10 bg-white/5">
+                        <h3 className="text-gray-400 font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                            4. Items & Pricing
+                        </h3>
 
                         {/* Column Manager */}
-                        <div className="bg-black/40 p-4 rounded-lg border border-white/5">
-                            <h4 className="text-sm font-bold text-gray-400 mb-3">Custom Columns</h4>
+                        <div className="bg-black/40 p-4 rounded-lg border border-white/5 mb-6">
+                            <h4 className="text-xs font-bold text-gray-500 mb-2">Custom Columns (e.g. Vehicle Type)</h4>
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {customColumns.map(col => (
-                                    <div key={col.id} className="bg-neon-blue/20 text-neon-blue px-3 py-1 rounded text-sm flex items-center gap-2 border border-neon-blue/30">
+                                    <div key={col.id} className="bg-neon-blue/20 text-neon-blue px-3 py-1 rounded text-xs flex items-center gap-2 border border-neon-blue/30">
                                         {col.label}
                                         <button onClick={() => handleRemoveColumn(col.id)} className="hover:text-white"><X size={12} /></button>
                                     </div>
                                 ))}
-                                {customColumns.length === 0 && <span className="text-xs text-gray-600 italic py-1">No custom columns (e.g., Vehicle Type)</span>}
                             </div>
                             <div className="flex gap-2">
                                 <Input
-                                    placeholder="Add Column (e.g. Vehicle Type)"
+                                    placeholder="Add Column Name"
                                     value={newColumnName}
                                     onChange={e => setNewColumnName(e.target.value)}
-                                    className="h-9 text-sm"
+                                    className="h-8 text-xs"
                                     onKeyDown={e => e.key === 'Enter' && handleAddColumn()}
                                 />
-                                <Button size="sm" variant="outline" onClick={handleAddColumn}>Add</Button>
+                                <Button size="sm" variant="outline" onClick={handleAddColumn} className="h-8">Add</Button>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-bold">Line Items</h3>
-                                <Button size="sm" variant="outline" onClick={handleAddItem}><Plus size={16} /> Add Item</Button>
+                                <h3 className="font-bold text-sm">Line Items</h3>
+                                <Button size="sm" variant="outline" onClick={handleAddItem}><Plus size={16} /> Add Row</Button>
                             </div>
 
-                            {/* Editor Headers */}
-                            <div className="grid gap-2 items-center px-2 text-xs font-bold text-gray-500 uppercase"
+                            {/* Headers */}
+                            <div className="grid gap-2 px-2 text-[10px] font-bold text-gray-500 uppercase"
                                 style={{ gridTemplateColumns: `3fr ${customColumns.map(() => '2fr').join(' ')} 1fr 1.5fr 0.5fr` }}>
                                 <div>Description</div>
                                 {customColumns.map(col => <div key={col.id}>{col.label}</div>)}
@@ -358,6 +375,7 @@ const InvoiceGenerator = () => {
                                 <div></div>
                             </div>
 
+                            {/* Item Rows */}
                             {items.map((item) => (
                                 <div key={item.id} className="grid gap-2 items-center bg-black/20 p-2 rounded"
                                     style={{ gridTemplateColumns: `3fr ${customColumns.map(() => '2fr').join(' ')} 1fr 1.5fr 0.5fr` }}>
@@ -366,72 +384,73 @@ const InvoiceGenerator = () => {
                                         placeholder="Description"
                                         value={item.description}
                                         onChange={e => handleItemChange(item.id, 'description', e.target.value)}
-                                        className="text-sm h-9"
+                                        className="text-xs h-8"
                                     />
-
                                     {customColumns.map(col => (
                                         <Input
                                             key={col.id}
                                             placeholder={col.label}
                                             value={item.customValues[col.id] || ''}
                                             onChange={e => handleCustomValueChange(item.id, col.id, e.target.value)}
-                                            className="text-sm h-9"
+                                            className="text-xs h-8"
                                         />
                                     ))}
-
                                     <Input
                                         type="number"
-                                        placeholder="Qty"
                                         value={item.quantity}
                                         min="1"
                                         onChange={e => handleItemChange(item.id, 'qty', parseInt(e.target.value) || 0)}
-                                        className="text-sm h-9 text-center p-1"
+                                        className="text-xs h-8 text-center"
                                     />
-
                                     <Input
                                         type="number"
-                                        placeholder="Price"
                                         value={item.price}
                                         min="0"
                                         onChange={e => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                        className="text-sm h-9 p-2"
+                                        className="text-xs h-8"
                                     />
-
-                                    <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-400 flex justify-center"><Trash2 size={16} /></button>
+                                    <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-400 flex justify-center"><Trash2 size={14} /></button>
                                 </div>
                             ))}
                         </div>
+                    </Card>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* SECTION 5: PAYMENTS & NOTES */}
+                    <Card className="p-6 border-white/10 bg-white/5">
+                        <h3 className="text-gray-400 font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/10 pb-2">
+                            5. Payment & Notes
+                        </h3>
+                        <div className="grid grid-cols-1 gap-6">
                             <div>
-                                <label className="text-sm text-gray-400">Additional Notes</label>
+                                <label className="text-xs text-gray-400 mb-1 block">Additional Notes / Terms</label>
                                 <textarea
-                                    className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-sm text-white h-32"
+                                    className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-sm text-white h-24 focus:outline-none focus:border-neon-green/50"
                                     value={formData.note}
                                     onChange={e => setFormData({ ...formData, note: e.target.value })}
+                                    placeholder="Thank you for your business..."
                                 />
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400">Payment Details</label>
+                                <label className="text-xs text-gray-400 mb-1 block">Payment Details / Bank Info</label>
                                 <textarea
-                                    className="w-full bg-black/50 border border-white/10 rounded-md p-2 text-sm text-white h-32 font-mono"
+                                    className="w-full bg-black/50 border border-white/10 rounded-md p-3 text-sm text-white h-32 font-mono focus:outline-none focus:border-neon-green/50"
                                     value={formData.paymentDetails}
                                     onChange={e => setFormData({ ...formData, paymentDetails: e.target.value })}
                                 />
                             </div>
+                            <div>
+                                <label className="text-xs text-gray-400">Advance Paid (₹)</label>
+                                <Input
+                                    type="number"
+                                    value={formData.advancePaid}
+                                    onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 })}
+                                    className="max-w-[200px]"
+                                />
+                            </div>
                         </div>
 
-                        <div className="pt-4 border-t border-white/10">
-                            <label className="text-sm text-gray-400">Advance Paid (₹)</label>
-                            <Input
-                                type="number"
-                                value={formData.advancePaid}
-                                onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 })}
-                                className="max-w-[200px]"
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-2 pt-4">
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2 pt-6">
                             <div className="flex gap-4">
                                 <Button onClick={handleDownload} variant="outline" className="flex-1" disabled={generating}>
                                     <Download className="mr-2 h-4 w-4" /> Download PDF
@@ -454,27 +473,22 @@ const InvoiceGenerator = () => {
                 </div>
 
                 {/* RIGHT: LIVE PREVIEW */}
-                <div className="bg-gray-900 rounded-xl overflow-hidden relative flex items-center justify-center min-h-[500px]">
-                    {/* ZOOM CONTROL */}
+                <div className="bg-gray-900 rounded-xl overflow-hidden relative flex items-start justify-center min-h-[500px] sticky top-8 max-h-screen">
                     <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/50 p-2 rounded-lg text-xs text-white">
-                        Preview Fit
+                        Live Preview
                     </div>
 
-                    {/* SCALED WRAPPER */}
-                    <div className="transform scale-[0.55] lg:scale-[0.65] xl:scale-[0.6] 2xl:scale-[0.75] origin-center transition-transform">
+                    <div className="transform scale-[0.55] lg:scale-[0.55] xl:scale-[0.55] 2xl:scale-[0.65] mt-8 origin-top transition-transform">
                         <div
                             ref={invoiceRef}
                             className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl"
                             style={{ fontFamily: 'Inter, sans-serif' }}
                         >
-                            {/* Header */}
+                            {/* PDF Header */}
                             <div className="p-8 pb-4 flex justify-between items-start relative">
-                                {/* Logo */}
                                 <div className="z-10">
                                     <img src="/logo_full.png" alt="NewBi Entertainment" className="h-14 object-contain" />
                                 </div>
-
-                                {/* Engraved Invoice Number */}
                                 <div className="absolute top-6 right-8 text-right pointer-events-none">
                                     <h1 className="text-4xl font-black text-gray-800 tracking-tight opacity-70">
                                         #{Math.floor(1000 + Math.random() * 9000)}
@@ -483,7 +497,7 @@ const InvoiceGenerator = () => {
                                 </div>
                             </div>
 
-                            {/* Info Cards Row */}
+                            {/* Info Cards Row with Conditional Rendering */}
                             <div className="px-8 py-4 grid grid-cols-2 gap-8">
                                 {/* INVOICE BY */}
                                 <div className="bg-[#E5E7EB] rounded-xl overflow-hidden border border-gray-300">
@@ -491,10 +505,10 @@ const InvoiceGenerator = () => {
                                         Invoice By
                                     </div>
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
-                                        <p className="font-black text-lg text-black mb-2">{formData.senderName}</p>
-                                        <p>Contact: {formData.senderContact}</p>
-                                        <p>Email: {formData.senderEmail}</p>
-                                        <p>PAN: {formData.senderPan}</p>
+                                        {formData.senderName && <p className="font-black text-lg text-black mb-2">{formData.senderName}</p>}
+                                        {formData.senderContact && <p>Contact: {formData.senderContact}</p>}
+                                        {formData.senderEmail && <p>Email: {formData.senderEmail}</p>}
+                                        {formData.senderPan && <p>PAN: {formData.senderPan}</p>}
                                         {formData.senderGst && <p>GSTIN: {formData.senderGst}</p>}
                                     </div>
                                 </div>
@@ -506,18 +520,17 @@ const InvoiceGenerator = () => {
                                     </div>
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
                                         <p className="font-black text-lg text-black mb-2">{formData.clientName || 'Client Name'}</p>
-                                        <p>Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
-                                        {/* Placeholder for address if we add it later */}
-                                        <p className="text-gray-500 italic mb-1">{formData.clientAddress || 'Client Address...'}</p>
-                                        {formData.clientGst && <p className="font-bold">GSTIN: {formData.clientGst}</p>}
+                                        <p className="mb-2">Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
+
+                                        {formData.clientAddress && <p className="text-gray-600 italic mb-1">{formData.clientAddress}</p>}
+                                        {formData.clientGst && <p className="font-bold border-t border-gray-300 pt-1 mt-1 inline-block">GSTIN: {formData.clientGst}</p>}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Main Table */}
+                            {/* Main Grid Table */}
                             <div className="px-8 mt-4">
                                 <div className="w-full">
-                                    {/* Header Row */}
                                     <div className="grid bg-[#86EFAC] rounded-t-xl text-center font-bold text-xs uppercase py-3 border-b-2 border-dashed border-gray-400/30"
                                         style={{ gridTemplateColumns: getGridTemplate() }}>
                                         <div className="text-left pl-4">Service Description</div>
@@ -529,30 +542,24 @@ const InvoiceGenerator = () => {
                                         <div className="border-l border-dashed border-gray-400/50">Total</div>
                                     </div>
 
-                                    {/* Items */}
                                     <div className="bg-[#E5E7EB]">
                                         {items.map((item, idx) => (
                                             <div key={idx} className="grid text-center text-sm font-bold py-4 border-b border-dashed border-gray-400 items-center"
                                                 style={{ gridTemplateColumns: getGridTemplate() }}>
                                                 <div className="text-left pl-4 break-words font-extrabold pr-2">{item.description || 'Service'}</div>
-
                                                 {customColumns.map(col => (
                                                     <div key={col.id} className="border-l border-dashed border-gray-400 h-full flex items-center justify-center px-1 break-all">
                                                         {item.customValues[col.id] || '-'}
                                                     </div>
                                                 ))}
-
                                                 <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">{item.qty}</div>
                                                 <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">₹{item.price.toLocaleString()}</div>
                                                 <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">₹{(item.qty * item.price).toLocaleString()}</div>
                                             </div>
                                         ))}
-
-                                        {/* Empty rows filler */}
                                         <div className="h-24 bg-[#E5E7EB] border-b border-dashed border-gray-400"></div>
                                     </div>
 
-                                    {/* Totals Section */}
                                     <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
                                         <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Total</div>
                                         <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{totalAmount.toLocaleString()}</div>
@@ -568,32 +575,33 @@ const InvoiceGenerator = () => {
                                 </div>
                             </div>
 
-                            {/* Footer Notes & Payment */}
+                            {/* Footer Notes */}
                             <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-20">
-                                {/* Additional Note */}
-                                <div className="rounded-xl overflow-hidden">
-                                    <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
-                                    <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
-                                        {formData.note}
+                                {formData.note && (
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
+                                        <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
+                                            {formData.note}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Payment Details */}
-                                <div className="rounded-xl overflow-hidden">
-                                    <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Payment Details:</div>
-                                    <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
-                                        {formData.paymentDetails}
+                                {formData.paymentDetails && (
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Payment Details:</div>
+                                        <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
+                                            {formData.paymentDetails}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
-                            {/* Bottom Bar */}
+                            {/* Footer Branding */}
                             <div className="absolute bottom-12 left-8 right-8 bg-[#86EFAC] rounded-xl py-3 px-6 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
                                 <div>+91 93043 72773</div>
                                 <div className="lowercase tracking-normal">partnership@newbi.live</div>
                                 <div className="lowercase tracking-normal">www.newbi.live</div>
                             </div>
-
                         </div>
                     </div>
                 </div>
