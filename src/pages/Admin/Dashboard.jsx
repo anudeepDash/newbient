@@ -341,12 +341,14 @@ const Dashboard = () => {
                 {/* Quick Actions Carousel */}
                 <AdminCarousel title="Quick Actions">
                     <Link to="/admin/invoices" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-neon-blue bg-gradient-to-br from-white/5 to-transparent hover:from-neon-blue/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,243,255,0.2)]">
-                                <FileText size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-blue bg-gradient-to-br from-white/5 to-transparent hover:from-neon-blue/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+                                    <FileText size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Invoices</h3>
+                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Create and track client payments securely.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Invoices</h3>
-                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Create and track client payments securely.</p>
                             <span className="text-neon-blue text-sm font-bold flex items-center gap-2">
                                 Open Manager <span className="text-lg">→</span>
                             </span>
@@ -354,12 +356,14 @@ const Dashboard = () => {
                     </Link>
 
                     <Link to="/admin/announcements" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,0,255,0.2)]">
-                                <Megaphone size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,0,255,0.2)]">
+                                    <Megaphone size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
+                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Post news updates and pin important info.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
-                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Post news updates and pin important info.</p>
                             <span className="text-neon-pink text-sm font-bold flex items-center gap-2">
                                 Manage Posts <span className="text-lg">→</span>
                             </span>
@@ -367,12 +371,14 @@ const Dashboard = () => {
                     </Link>
 
                     <Link to="/admin/forms" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,255,102,0.2)]">
-                                <Users size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,255,102,0.2)]">
+                                    <Users size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Community Hub</h3>
+                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Volunteer gigs, forms, and sign-ups.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Community Hub</h3>
-                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Volunteer gigs, forms, and sign-ups.</p>
                             <span className="text-neon-green text-sm font-bold flex items-center gap-2">
                                 Enter Hub <span className="text-lg">→</span>
                             </span>
@@ -384,45 +390,53 @@ const Dashboard = () => {
                 {/* Content Management Carousel */}
                 <AdminCarousel title="Content Management">
                     <Link to="/admin/concerts" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Music size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Music size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Past Events</h3>
+                                <p className="text-gray-400 text-sm mb-6">Manage portfolio and past event records.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Past Events</h3>
-                            <p className="text-gray-400 text-sm mb-6">Manage portfolio and past event records.</p>
                             <span className="text-neon-green text-sm font-bold flex items-center gap-2">Manage Past Events →</span>
                         </Card>
                     </Link>
 
                     <Link to="/admin/upcoming-events" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-yellow-400 bg-gradient-to-br from-white/5 to-transparent hover:from-yellow-400/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Calendar size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-yellow-400 bg-gradient-to-br from-white/5 to-transparent hover:from-yellow-400/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Calendar size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Upcoming</h3>
+                                <p className="text-gray-400 text-sm mb-6">Homepage pinned events.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Upcoming</h3>
-                            <p className="text-gray-400 text-sm mb-6">Homepage pinned events.</p>
                             <span className="text-yellow-400 text-sm font-bold flex items-center gap-2">Manage →</span>
                         </Card>
                     </Link>
 
                     <Link to="/admin/gallery-manager" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Users size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Users size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Gallery</h3>
+                                <p className="text-gray-400 text-sm mb-6">Photos and media uploads.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Gallery</h3>
-                            <p className="text-gray-400 text-sm mb-6">Photos and media uploads.</p>
                             <span className="text-neon-pink text-sm font-bold flex items-center gap-2">Edit Photos →</span>
                         </Card>
                     </Link>
 
                     <Link to="/admin/site-content" className="group block h-full">
-                        <Card className="p-8 h-full border-white/10 hover:border-white bg-gradient-to-br from-white/5 to-transparent hover:from-white/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div className="p-4 rounded-full bg-white/10 text-white mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FileText size={32} />
+                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-white bg-gradient-to-br from-white/5 to-transparent hover:from-white/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div>
+                                <div className="p-4 rounded-full bg-white/10 text-white mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <FileText size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Site Info</h3>
+                                <p className="text-gray-400 text-sm mb-6">Contact details and footer links.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Site Info</h3>
-                            <p className="text-gray-400 text-sm mb-6">Contact details and footer links.</p>
                             <span className="text-white text-sm font-bold flex items-center gap-2">Update Info →</span>
                         </Card>
                     </Link>

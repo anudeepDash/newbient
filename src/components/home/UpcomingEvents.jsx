@@ -10,47 +10,59 @@ const UpcomingEvents = () => {
     const x = useMotionValue(0);
 
     // Component for reusable card content
-    const CardContent = ({ event }) => (
+    // Component for reusable card content matching Portfolio style
+    const InnerCardContent = ({ event }) => (
         <>
-            <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
+            {/* Image Background */}
+            {event.image ? (
+                <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${event.image})` }}
+                />
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
+                    No Image
+                </div>
+            )}
 
-            {/* Gradient - stronger at bottom for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />
-
-            <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-neon-green">
-                Upcoming
+            {/* Gradient Overlay & Text (Idle State) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
+                <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300 line-clamp-2">
+                    {event.title}
+                </h3>
+                <div className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex items-center gap-2 mt-1">
+                    <Calendar size={14} />
+                    {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
+                </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                {event.date && (
-                    <div className="flex items-center gap-2 text-neon-green mb-2 text-sm font-bold">
-                        <Calendar size={14} />
-                        {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </div>
-                )}
-                <h3 className="text-xl font-bold text-white mb-2 leading-tight">{event.title}</h3>
-                {event.description && (
-                    <p className="text-gray-400 text-sm line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                        {event.description}
-                    </p>
-                )}
+            {/* Hover Revealed Text (Hover State) */}
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
+                <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">{event.title}</h3>
+                    <span className="text-neon-green font-bold uppercase tracking-wider text-sm">
+                        {event.date ? new Date(event.date).toLocaleDateString() : 'See Details'}
+                    </span>
+                    {event.description && (
+                        <p className="text-gray-300 text-xs mt-3 line-clamp-3 max-w-[250px] mx-auto">
+                            {event.description}
+                        </p>
+                    )}
+                </div>
             </div>
         </>
     );
 
     useEffect(() => {
         if (carouselRef.current) {
-            setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
+            // Ensure width is not negative (if content is smaller than screen)
+            setWidth(Math.max(0, carouselRef.current.scrollWidth - carouselRef.current.offsetWidth));
         }
     }, [upcomingEvents]);
 
     // Auto-scroll animation
     useEffect(() => {
-        if (upcomingEvents.length <= 1) return; // Don't scroll if too few items
+        if (upcomingEvents.length <= 1 || width <= 0) return; // Don't scroll if too few items or fits screen
 
         const controls = animate(x, [-width, 0], {
             ease: "linear",
@@ -62,7 +74,6 @@ const UpcomingEvents = () => {
 
         return controls.stop;
     }, [x, width, upcomingEvents.length]);
-
 
     if (!siteSettings?.showUpcomingEvents) {
         return null;
@@ -97,22 +108,20 @@ const UpcomingEvents = () => {
                     <motion.div
                         drag="x"
                         dragConstraints={{ right: 0, left: -width }}
-                        className="flex gap-6"
+                        className={`flex gap-6 ${width === 0 ? 'justify-center' : ''}`}
                     >
                         {upcomingEvents.map((event) => (
                             <motion.div
                                 key={event.id}
-                                className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-2xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0"
+                                className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg"
                             >
-                                {/* Wrap content in link if available */}
+                                {/* Link Wrapper if needed */}
                                 {event.link ? (
-                                    <a href={event.link} target="_blank" rel="noreferrer" className="block w-full h-full">
-                                        <CardContent event={event} />
+                                    <a href={event.link} target="_blank" rel="noreferrer" className="block w-full h-full relative cursor-pointer">
+                                        <InnerCardContent event={event} />
                                     </a>
                                 ) : (
-                                    <div className="w-full h-full">
-                                        <CardContent event={event} />
-                                    </div>
+                                    <InnerCardContent event={event} />
                                 )}
                             </motion.div>
                         ))}
