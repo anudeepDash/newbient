@@ -87,7 +87,7 @@ const InvoiceGenerator = () => {
 
         // Timeout Promise
         const timeout = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("PDF Generation timed out (5s)")), 5000);
+            setTimeout(() => reject(new Error("PDF Generation timed out (8s)")), 8000);
         });
 
         // Generation Promise
@@ -98,7 +98,7 @@ const InvoiceGenerator = () => {
                 useCORS: true,
                 allowTaint: true,
                 logging: true,
-                imageTimeout: 5000, // Reduced from 15000
+                imageTimeout: 8000, // Reduced from 15000
                 backgroundColor: '#E5E7EB'
             });
             const imgData = canvas.toDataURL('image/png');
@@ -406,7 +406,7 @@ const InvoiceGenerator = () => {
                             <div className="p-8 pb-4 flex justify-between items-start relative">
                                 {/* Logo */}
                                 <div className="z-10">
-                                    <img src="/logo_full.png" crossOrigin="anonymous" alt="NewBi Entertainment" className="h-24 object-contain" />
+                                    <img src="/logo_full.png" alt="NewBi Entertainment" className="h-14 object-contain" />
                                 </div>
 
                                 {/* Engraved Invoice Number */}
