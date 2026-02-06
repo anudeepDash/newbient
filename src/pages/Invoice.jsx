@@ -46,15 +46,16 @@ const Invoice = () => {
         const element = invoiceRef.current;
         const canvas = await html2canvas(element, {
             scale: 2,
-            backgroundColor: '#0B0F17', // Match dark theme
-            logging: false
+            backgroundColor: '#E5E7EB',
+            logging: false,
+            useCORS: true
         });
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`Invoice-${invoice.id}.pdf`);
     };
 
@@ -101,207 +102,208 @@ const Invoice = () => {
     const demoSubtotal = displayInvoice.items?.reduce((acc, item) => acc + (item.price * item.quantity), 0) || displayInvoice.amount || 0;
     const demoTax = demoSubtotal * 0.18;
     const demoTotal = demoSubtotal + demoTax;
-    const activeCurrency = getSymbol(displayInvoice.currency || 'USD');
+    const getGridTemplate = () => {
+        const columns = displayInvoice.customColumns || [];
+        const customFr = columns.map(() => '1.5fr').join(' ');
+        return `3fr ${customFr} 0.8fr 1.2fr 1.2fr`;
+    };
+
+    const toBePaid = displayInvoice.amount - (displayInvoice.advancePaid || 0);
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 print:hidden">
-                    <Link to="/portal" className="text-gray-400 hover:text-white flex items-center transition-colors">
+                    <Link to="/admin/invoices" className="text-gray-400 hover:text-white flex items-center transition-colors">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Portal
+                        Back to Manager
                     </Link>
                 </div>
 
                 {!invoice && (
                     <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-200 text-sm print:hidden">
-                        <strong>Demo Mode:</strong> The requested invoice ID was not found on this device. Showing a sample layout.
+                        <strong>Demo Mode:</strong> The requested invoice ID was not found. Showing a sample layout.
                     </div>
                 )}
 
-                {displayInvoice.pdfUrl ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="h-[85vh]"
-                    >
-                        <Card className="h-full bg-dark/50 backdrop-blur-xl overflow-hidden p-0 border-neon-blue/30">
-                            <div className="flex flex-wrap gap-2 justify-end items-center p-4 bg-black/40 border-b border-white/10">
-                                <h2 className="text-white font-bold flex items-center gap-2 mr-auto">
-                                    <CheckCircle className="text-neon-green h-5 w-5" />
-                                    #{displayInvoice.invoiceNumber}
-                                </h2>
+                <div className="flex flex-col gap-8">
+                    {/* TOP ACTIONS BAR */}
+                    <Card className="p-4 bg-black/40 border-white/10 flex flex-wrap gap-4 items-center print:hidden">
+                        <h2 className="text-white font-bold flex items-center gap-2 mr-auto">
+                            <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} h-5 w-5 />
+                            #{displayInvoice.invoiceNumber || displayInvoice.id}
+                        </h2>
 
-                                {/* Status Badge for Clients/Admins */}
-                                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
-                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                        : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                    }`}>
-                                    {displayInvoice.status}
-                                </div>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
+                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                            }`}>
+                            {displayInvoice.status}
+                        </div>
 
-                                {isAdmin && displayInvoice.status !== 'Paid' && (
+                        {isAdmin && (
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
+                                    <MessageCircle className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
+                                    <Mail className="h-4 w-4" />
+                                </Button>
+                                {displayInvoice.status !== 'Paid' && (
                                     <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
                                         <DollarSign className="mr-2 h-4 w-4" />
                                         Mark Paid
                                     </Button>
                                 )}
-                                {isAdmin && (
-                                    <>
-                                        <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
-                                            <MessageCircle className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
-                                            <Mail className="h-4 w-4" />
-                                        </Button>
-                                    </>
+                            </div>
+                        )}
+
+                        <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
+                            <Printer className="mr-2 h-4 w-4" /> Print
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
+                            <Download className="mr-2 h-4 w-4" /> Download
+                        </Button>
+                    </Card>
+
+                    {/* MAIN INVOICE CONTENT */}
+                    <div className="flex justify-center overflow-x-auto bg-[#1a1a1a] p-8 rounded-xl border border-white/5">
+                        <div
+                            ref={invoiceRef}
+                            className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl overflow-hidden shrink-0"
+                            style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                            {/* PDF Header */}
+                            <div className="p-8 pb-4 flex justify-between items-start relative">
+                                <div className="z-10">
+                                    <img src="/logo_full.png" alt="NewBi Entertainment" className="h-14 object-contain" />
+                                </div>
+                                <div className="absolute top-6 right-8 text-right pointer-events-none">
+                                    <h1 className="text-4xl font-black text-gray-800 opacity-70">
+                                        #{displayInvoice.invoiceNumber}
+                                    </h1>
+                                    <p className="text-gray-500 text-[10px] font-bold uppercase mr-1">INVOICE ID</p>
+                                </div>
+                            </div>
+
+                            {/* Info Cards Row */}
+                            <div className="px-8 py-4 grid grid-cols-2 gap-8">
+                                {/* INVOICE BY */}
+                                <div className="bg-[#E5E7EB] rounded-xl overflow-hidden border border-gray-300">
+                                    <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-800 tracking-wider text-sm border-b border-gray-400/20">
+                                        Invoice By
+                                    </div>
+                                    <div className="p-4 text-sm text-gray-700 space-y-1">
+                                        <p className="font-black text-lg text-black mb-2">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                        <p>Contact: {displayInvoice.senderContact || '+91 93043 72773'}</p>
+                                        <p>Email: {displayInvoice.senderEmail || 'partnership@newbi.live'}</p>
+                                        {displayInvoice.senderPan && <p>PAN: {displayInvoice.senderPan}</p>}
+                                        {displayInvoice.senderGst && <p>GSTIN: {displayInvoice.senderGst}</p>}
+                                    </div>
+                                </div>
+
+                                {/* INVOICE TO */}
+                                <div className="bg-[#E5E7EB] rounded-xl overflow-hidden border border-gray-300">
+                                    <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-800 tracking-wider text-sm border-b border-gray-400/20">
+                                        Invoice To
+                                    </div>
+                                    <div className="p-4 text-sm text-gray-700 space-y-1">
+                                        <p className="font-black text-lg text-black mb-2">{displayInvoice.clientName || 'Client Name'}</p>
+                                        <p className="mb-1">Date: {new Date(displayInvoice.issueDate || displayInvoice.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
+                                        {displayInvoice.dueDate && <p className="mb-2 text-red-600 font-bold text-xs">Due: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
+
+                                        {displayInvoice.clientAddress && <p className="text-gray-600 italic mb-1">{displayInvoice.clientAddress}</p>}
+                                        {displayInvoice.clientGst && <p className="font-bold border-t border-gray-300 pt-1 mt-1 inline-block">GSTIN: {displayInvoice.clientGst}</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Main Grid Table */}
+                            <div className="px-8 mt-4">
+                                <div className="w-full">
+                                    <div className="grid bg-[#86EFAC] rounded-t-xl text-center font-bold text-xs uppercase py-3 border-b-2 border-dashed border-gray-400/30"
+                                        style={{ gridTemplateColumns: getGridTemplate() }}>
+                                        <div className="text-left pl-4">Service Description</div>
+                                        {(displayInvoice.customColumns || []).map(col => (
+                                            <div key={col.id} className="border-l border-dashed border-gray-400/50">{col.label}</div>
+                                        ))}
+                                        <div className="border-l border-dashed border-gray-400/50">Qty.</div>
+                                        <div className="border-l border-dashed border-gray-400/50">Price</div>
+                                        <div className="border-l border-dashed border-gray-400/50">Total</div>
+                                    </div>
+
+                                    <div className="bg-[#E5E7EB]">
+                                        {(displayInvoice.items || []).map((item, idx) => (
+                                            <div key={idx} className="grid text-center text-sm font-bold py-4 border-b border-dashed border-gray-400 items-center"
+                                                style={{ gridTemplateColumns: getGridTemplate() }}>
+                                                <div className="text-left pl-4 break-words font-extrabold pr-2">{item.description || 'Service'}</div>
+                                                {(displayInvoice.customColumns || []).map(col => (
+                                                    <div key={col.id} className="border-l border-dashed border-gray-400 h-full flex items-center justify-center px-1 break-all text-[10px]">
+                                                        {item.customValues?.[col.id] || '-'}
+                                                    </div>
+                                                ))}
+                                                <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">{item.qty || item.quantity || 1}</div>
+                                                <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">₹{(item.price || 0).toLocaleString()}</div>
+                                                <div className="border-l border-dashed border-gray-400 h-full flex items-center justify-center">₹{((item.qty || item.quantity || 1) * (item.price || 0)).toLocaleString()}</div>
+                                            </div>
+                                        ))}
+                                        <div className="h-24 bg-[#E5E7EB] border-b border-dashed border-gray-400"></div>
+                                    </div>
+
+                                    <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                        <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Total</div>
+                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{(displayInvoice.amount || 0).toLocaleString()}</div>
+                                    </div>
+                                    <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                        <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
+                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{(displayInvoice.advancePaid || 0).toLocaleString()}</div>
+                                    </div>
+                                    <div className="grid grid-cols-12 bg-[#86EFAC] rounded-b-xl text-lg font-bold">
+                                        <div className="col-span-10 text-right pr-4 py-3 text-[#DC2626] uppercase">To Be Paid</div>
+                                        <div className="col-span-2 text-center py-3 border-l border-dashed border-gray-400 text-[#DC2626]">₹{toBePaid.toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer Notes */}
+                            <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-4">
+                                {displayInvoice.note && (
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
+                                        <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
+                                            {displayInvoice.note}
+                                        </div>
+                                    </div>
                                 )}
-                                <Button variant="secondary" size="sm" onClick={() => window.open(displayInvoice.pdfUrl, '_blank')}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download
-                                </Button>
-                            </div>
-                            <iframe
-                                src={displayInvoice.pdfUrl}
-                                className="w-full h-[calc(100%-60px)] border-none bg-white"
-                                title="Invoice PDF"
-                            />
-                        </Card>
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <Card className="p-8 md:p-12 print:shadow-none print:border-none print:text-black bg-dark/50 backdrop-blur-xl" ref={invoiceRef}>
-                            {/* Header: Logo Top Left, Title Top Right */}
-                            <div className="flex flex-col md:flex-row justify-between items-start mb-12 border-b border-white/10 pb-8 print:border-gray-300 gap-8">
 
-                                {/* Logo Section (Top Left) */}
-                                <div className="flex flex-col">
-                                    <div className="mb-4">
-                                        <img src="/favicon.png" alt="Newbi Logo" className="h-16 w-auto" onError={(e) => e.target.style.display = 'none'} />
-                                    </div>
-                                    <div className="text-white font-bold text-xl print:text-black">Newbi Entertainments</div>
-                                    <div className="text-gray-400 text-sm print:text-gray-600 space-y-1 mt-2">
-                                        <p>Entertainment. Events. Energy.</p>
-                                        <p>hello@newbi.live</p>
-                                        <p>+91 93043 72773</p>
-                                    </div>
-                                </div>
-
-                                {/* Invoice Details (Top Right) */}
-                                <div className="text-left md:text-right">
-                                    <h1 className="text-5xl font-bold text-white mb-2 print:text-black tracking-wide">INVOICE</h1>
-                                    <p className="text-neon-blue font-mono text-xl print:text-blue-600 mb-6 font-bold">#{displayInvoice.invoiceNumber || displayInvoice.id}</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between md:justify-end gap-6">
-                                            <span className="text-gray-500 font-bold uppercase text-xs tracking-wider">Date Issued:</span>
-                                            <span className="text-white font-mono print:text-black">{displayInvoice.createdAt ? new Date(displayInvoice.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
-                                        </div>
-                                        <div className="flex justify-between md:justify-end gap-6">
-                                            <span className="text-gray-500 font-bold uppercase text-xs tracking-wider">Due Date:</span>
-                                            <span className="text-white font-mono print:text-black">{displayInvoice.dueDate || 'Due on Receipt'}</span>
+                                {displayInvoice.paymentDetails && (
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Payment Details:</div>
+                                        <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
+                                            {displayInvoice.paymentDetails}
                                         </div>
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Signatory Box */}
+                            <div className="px-8 mt-2 mb-20 flex justify-end">
+                                <div className="text-center">
+                                    <div className="h-12 w-32 border-b-2 border-gray-600 mb-1"></div>
+                                    <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
+                                    <p className="text-[8px] text-gray-500">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
                                 </div>
                             </div>
 
-                            {/* Bill To */}
-                            <div className="mb-12">
-                                <h3 className="text-gray-500 text-xs uppercase tracking-wider mb-3 font-bold">Bill To:</h3>
-                                <div className="text-white print:text-black space-y-1">
-                                    <p className="text-xl font-bold">{displayInvoice.clientName}</p>
-                                    <p className="text-gray-400 print:text-gray-600">client@example.com</p>
-                                </div>
+                            {/* Footer Branding */}
+                            <div className="absolute bottom-12 left-8 right-8 bg-[#86EFAC] rounded-xl py-3 px-6 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+                                <div>+91 93043 72773</div>
+                                <div className="lowercase tracking-normal">partnership@newbi.live</div>
+                                <div className="lowercase tracking-normal">www.newbi.live</div>
                             </div>
-
-                            {/* Line Items Table */}
-                            <div className="mb-10 overflow-x-auto">
-                                <table className="w-full min-w-[500px]">
-                                    <thead>
-                                        <tr className="border-b-2 border-white/20 text-left print:border-gray-800">
-                                            <th className="py-3 text-gray-400 font-bold uppercase text-xs tracking-wider print:text-gray-700 w-1/2">Description</th>
-                                            <th className="py-3 text-gray-400 font-bold uppercase text-xs tracking-wider text-center print:text-gray-700">Qty</th>
-                                            <th className="py-3 text-gray-400 font-bold uppercase text-xs tracking-wider text-right print:text-gray-700">Price</th>
-                                            <th className="py-3 text-gray-400 font-bold uppercase text-xs tracking-wider text-right print:text-gray-700">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {displayInvoice.items && displayInvoice.items.length > 0 ? (
-                                            displayInvoice.items.map((item, idx) => (
-                                                <tr key={idx} className="border-b border-white/5 print:border-gray-200">
-                                                    <td className="py-4 text-white print:text-black font-medium">{item.description}</td>
-                                                    <td className="py-4 text-gray-400 text-center print:text-black">{item.quantity}</td>
-                                                    <td className="py-4 text-gray-400 text-right print:text-black">{activeCurrency}{item.price.toLocaleString()}</td>
-                                                    <td className="py-4 text-white text-right font-medium print:text-black">{activeCurrency}{(item.quantity * item.price).toLocaleString()}</td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr className="border-b border-white/5 print:border-gray-200">
-                                                <td className="py-4 text-gray-500 italic text-center" colSpan="4">No items listed</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Totals Section */}
-                            <div className="flex flex-col md:flex-row justify-end border-t border-white/10 pt-8 print:border-gray-300">
-                                <div className="w-full md:w-1/2 lg:w-1/3">
-                                    <div className="flex justify-between mb-3 text-gray-400 print:text-gray-600">
-                                        <span>Subtotal</span>
-                                        <span>{activeCurrency}{demoSubtotal.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between mb-3 text-gray-400 print:text-gray-600">
-                                        <span>Tax (18%)</span>
-                                        <span>{activeCurrency}{demoTax.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between text-2xl font-bold text-white mt-4 pt-4 border-t-2 border-white/20 print:text-black print:border-black">
-                                        <span>Total</span>
-                                        <span className="text-neon-green print:text-black">{activeCurrency}{demoTotal.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Footer / Status */}
-                            <div className="mt-12 pt-8 border-t border-white/10 text-center print:border-gray-300">
-                                <p className="text-gray-500 text-sm mb-2">Thank you for your business!</p>
-                                <div className="inline-flex items-center px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-white/5 text-gray-400 border-white/10 print:border-gray-400 print:text-black">
-                                    Status: {displayInvoice.status}
-                                </div>
-                            </div>
-
-                        </Card>
-
-                        {/* Actions */}
-                        <div className="mt-8 flex flex-col md:flex-row gap-4 justify-end print:hidden">
-                            <div className="flex gap-2 mr-auto">
-                                <Button variant="outline" onClick={handleShareWhatsApp}>
-                                    <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
-                                </Button>
-                                <Button variant="outline" onClick={handleShareEmail}>
-                                    <Mail className="mr-2 h-4 w-4" /> Email
-                                </Button>
-                            </div>
-
-                            {displayInvoice.status !== 'Paid' && (
-                                <Button variant="outline" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
-                                    <DollarSign className="mr-2 h-4 w-4" /> Mark Paid
-                                </Button>
-                            )}
-
-                            <Button variant="outline" onClick={handlePrint}>
-                                <Printer className="mr-2 h-4 w-4" />
-                                Print
-                            </Button>
-                            <Button variant="secondary" onClick={handleDownloadPDF}>
-                                <Download className="mr-2 h-4 w-4" />
-                                {displayInvoice.pdfUrl ? 'View PDF' : 'Download PDF'}
-                            </Button>
                         </div>
-                    </motion.div>
-                )}
+                    </div>
+                </div>
             </div>
         </div>
     );
