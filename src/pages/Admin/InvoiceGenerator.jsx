@@ -143,6 +143,14 @@ const InvoiceGenerator = () => {
             }
         };
 
+        const handleDownload = async () => {
+            if (!invoiceRef.current) return;
+            const pdf = await generatePDF();
+            if (pdf) {
+                pdf.save(`Newbi_INV-${formData.invoiceNumber}.pdf`);
+            }
+        };
+
         const handleSaveToDB = async (skipPdf = false) => {
             setGenerating(true);
             console.log("Starting Invoice Save Process...");
