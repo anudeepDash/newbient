@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc } from 'firebase/firestore';
 
 export const useStore = create((set, get) => ({
     announcements: [],
@@ -57,18 +57,22 @@ export const useStore = create((set, get) => ({
             if (docSnap.exists()) {
                 set({ siteSettings: docSnap.data() });
             } else {
-                // Initialize if missing
                 console.log("Initializing site_settings/general");
                 const initialSettings = { showUpcomingEvents: true };
                 set({ siteSettings: initialSettings });
-                // Create it strictly speaking we should setDoc here but let's avoid side effect in sub if possible, 
-                // but for now relying on default state is fine, or we can lazy create on toggle.
             }
         }, (error) => console.error("Error fetching site settings:", error));
 
+        // Site Details (Contact Info) Subscription
+        const unsub10 = onSnapshot(doc(db, 'site_settings', 'contact_info'), (docSnap) => {
+            if (docSnap.exists()) {
+                set({ siteDetails: docSnap.data() });
+            }
+        }, (error) => console.error("Error fetching site details:", error));
+
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10();
         };
     },
 
@@ -98,9 +102,6 @@ export const useStore = create((set, get) => ({
 
     // Site Settings
     toggleUpcomingSectionVisibility: async (currentValue) => {
-        // Create if doesn't exist using setDoc with merge would be safer but updateDoc works if it exists.
-        // Let's safe-guard with setDoc to ensure 'general' doc exists.
-        const { setDoc } = await import('firebase/firestore'); // dynamic import or add to top imports
         await setDoc(doc(db, 'site_settings', 'general'), { showUpcomingEvents: !currentValue }, { merge: true });
     },
 
@@ -237,8 +238,10 @@ export const useStore = create((set, get) => ({
         set({ user: null });
     },
 
-    // Local-only
-    updateSiteDetails: (details) => set((state) => ({
-        siteDetails: { ...state.siteDetails, ...details }
-    })),
+    // Actions
+    updateSiteDetails: async (details) => {
+        // Persist to Firebase
+        await setDoc(doc(db, 'site_settings', 'contact_info'), details, { merge: true });
+        // State update handled by subscription 'unsub10'
+    },
 }));
