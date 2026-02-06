@@ -85,6 +85,15 @@ const SiteContentManager = () => {
                                     onChange={handleChange}
                                 />
                             </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Physical Address</label>
+                                <Input
+                                    name="address"
+                                    value={formData.address || ''}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 123 Music Lane, Creative City"
+                                />
+                            </div>
                         </div>
 
                         <div className="pt-6 border-t border-white/10">

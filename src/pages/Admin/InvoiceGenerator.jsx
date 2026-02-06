@@ -127,7 +127,26 @@ const InvoiceGenerator = () => {
             await uploadBytes(storageRef, pdfFile);
             const downloadURL = await getDownloadURL(storageRef);
 
-            // 3. Save to Firestore
+            // 3. Sanitize Data for Firestore (No undefined allowed)
+            const cleanItems = items.map(item => {
+                const cleanCustom = {};
+                if (item.customValues) {
+                    Object.keys(item.customValues).forEach(key => {
+                        if (item.customValues[key] !== undefined) {
+                            cleanCustom[key] = item.customValues[key];
+                        }
+                    });
+                }
+                return {
+                    ...item,
+                    customValues: cleanCustom,
+                    // Ensure numbers
+                    qty: Number(item.qty) || 0,
+                    price: Number(item.price) || 0
+                };
+            });
+
+            // 4. Save to Firestore
             const newInvoice = {
                 invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
                 clientName: formData.clientName || 'Unknown Client',
@@ -135,14 +154,27 @@ const InvoiceGenerator = () => {
                 amount: totalAmount,
                 status: toBePaid <= 0 ? 'Paid' : 'Pending',
                 pdfUrl: downloadURL,
-                items: items, // Note: items now contain customValues
-                customColumns: customColumns, // Save column structure
+                items: cleanItems,
+                customColumns: customColumns || [],
+                note: formData.note || '',
+                paymentDetails: formData.paymentDetails || '',
+                advancePaid: Number(formData.advancePaid) || 0,
                 createdAt: new Date().toISOString()
             };
 
             await addInvoice(newInvoice);
 
-            if (window.confirm("Invoice Saved! Redirect to list?")) {
+            if (window.confirm("Invoice Saved Successfully! \n\nClick OK to Create Another Invoice.\nClick Cancel to View All Invoices.")) {
+                // Reset Form
+                setFormData({
+                    clientName: '',
+                    invoiceDate: new Date().toISOString().split('T')[0],
+                    advancePaid: 0,
+                    note: '',
+                    paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
+                });
+                setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
+            } else {
                 navigate('/admin/invoices');
             }
         } catch (error) {

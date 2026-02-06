@@ -10,7 +10,7 @@ export const useStore = create((set, get) => ({
     forms: [], // Forms config
     upcomingEvents: [],
     siteSettings: { showUpcomingEvents: true },
-    siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '' },
+    siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
     loading: true,
 
     // Real-time Subscription Init
