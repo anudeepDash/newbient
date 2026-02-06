@@ -9,6 +9,7 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import AdminCarousel from '../../components/admin/AdminCarousel';
 
 const Dashboard = () => {
     const { invoices, concerts, announcements, user, checkUserRole, logout } = useStore();
@@ -316,7 +317,7 @@ const Dashboard = () => {
                 )}
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
                     {stats.map((stat, index) => (
                         <motion.div
                             key={index}
@@ -324,114 +325,108 @@ const Dashboard = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <Card className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
-                                <div>
-                                    <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-                                    <h3 className={`text-3xl font-bold ${stat.color}`}>{stat.value}</h3>
+                            <Card className="p-5 flex flex-col justify-between h-full bg-white/5 border-white/10 hover:border-white/20 transition-all">
+                                <div className={`self-start p-2 rounded-lg bg-black/30 mb-4 ${stat.color}`}>
+                                    <stat.icon size={20} />
                                 </div>
-                                <div className={`p-3 rounded-full bg-white/5 ${stat.color}`}>
-                                    <stat.icon size={24} />
+                                <div>
+                                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-1">{stat.value}</h3>
+                                    <p className="text-gray-400 text-xs md:text-sm font-medium">{stat.label}</p>
                                 </div>
                             </Card>
                         </motion.div>
                     ))}
                 </div>
 
-                {/* Quick Actions / Navigation */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <Link to="/admin/invoices" className="group">
-                        <Card className="p-8 h-full hover:border-neon-blue transition-colors flex flex-col items-center text-center">
-                            <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-4 group-hover:scale-110 transition-transform">
+                {/* Quick Actions Carousel */}
+                <AdminCarousel title="Quick Actions">
+                    <Link to="/admin/invoices" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-neon-blue bg-gradient-to-br from-white/5 to-transparent hover:from-neon-blue/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,243,255,0.2)]">
                                 <FileText size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Invoice Management</h3>
-                            <p className="text-gray-400 text-sm mb-6">Create, view, and manage client invoices.</p>
-                            <Button variant="outline" className="w-full text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black">Manage Invoices</Button>
+                            <h3 className="text-xl font-bold text-white mb-2">Invoices</h3>
+                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Create and track client payments securely.</p>
+                            <span className="text-neon-blue text-sm font-bold flex items-center gap-2">
+                                Open Manager <span className="text-lg">→</span>
+                            </span>
                         </Card>
                     </Link>
 
-                    <Link to="/admin/announcements" className="group">
-                        <Card className="p-8 h-full hover:border-neon-pink transition-colors flex flex-col items-center text-center">
-                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-4 group-hover:scale-110 transition-transform">
+                    <Link to="/admin/announcements" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,0,255,0.2)]">
                                 <Megaphone size={32} />
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
-                            <p className="text-gray-400 text-sm mb-6">Post updates and pin important news.</p>
-                            <Button variant="outline" className="w-full text-neon-pink border-neon-pink hover:bg-neon-pink hover:text-white">Manage Announcements</Button>
+                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Post news updates and pin important info.</p>
+                            <span className="text-neon-pink text-sm font-bold flex items-center gap-2">
+                                Manage Posts <span className="text-lg">→</span>
+                            </span>
                         </Card>
                     </Link>
 
-                    <Link to="/admin/forms" className="group">
-                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center">
-                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
+                    <Link to="/admin/forms" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,255,102,0.2)]">
                                 <Users size={32} />
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Community Hub</h3>
-                            <p className="text-gray-400 text-sm mb-6">Manage volunteer gigs, forms, and community lists.</p>
-                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Enter Hub</Button>
+                            <p className="text-gray-400 text-sm mb-6 line-clamp-2">Volunteer gigs, forms, and sign-ups.</p>
+                            <span className="text-neon-green text-sm font-bold flex items-center gap-2">
+                                Enter Hub <span className="text-lg">→</span>
+                            </span>
                         </Card>
                     </Link>
+                </AdminCarousel>
 
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-                    <Link to="/admin/messages" className="group">
-                        <Card className="p-8 h-full hover:border-neon-blue transition-colors flex flex-col items-center text-center bg-white/5">
-                            <div className="p-4 rounded-full bg-neon-blue/10 text-neon-blue mb-4 group-hover:scale-110 transition-transform">
-                                <Mail size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Inbox</h3>
-                            <p className="text-gray-400 text-sm mb-6">Read messages from the contact form.</p>
-                            <Button variant="outline" className="w-full text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black">View Messages</Button>
-                        </Card>
-                    </Link>
-                </div>
-
-                <h2 className="text-2xl font-bold text-white mb-6 mt-12">Content Management</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <Link to="/admin/concerts" className="group">
-                        <Card className="p-8 h-full hover:border-neon-green transition-colors flex flex-col items-center text-center bg-white/5">
-                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-4 group-hover:scale-110 transition-transform">
+                {/* Content Management Carousel */}
+                <AdminCarousel title="Content Management">
+                    <Link to="/admin/concerts" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Music size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Events Manager</h3>
-                            <p className="text-gray-400 text-sm mb-6">Manage upcoming concerts and past events.</p>
-                            <Button variant="outline" className="w-full text-neon-green border-neon-green hover:bg-neon-green hover:text-black">Manage Events</Button>
-                        </Card>
-                    </Link>
-                    <Link to="/admin/site-content" className="group">
-                        <Card className="p-8 h-full hover:border-white transition-colors flex flex-col items-center text-center bg-white/5">
-                            <div className="p-4 rounded-full bg-white/10 text-white mb-4 group-hover:scale-110 transition-transform">
-                                <FileText size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Site Details</h3>
-                            <p className="text-gray-400 text-sm mb-6">Update contact info, social links, and emails.</p>
-                            <Button variant="outline" className="w-full text-white border-white hover:bg-white hover:text-black">Edit Site Content</Button>
+                            <h3 className="text-xl font-bold text-white mb-2">Past Events</h3>
+                            <p className="text-gray-400 text-sm mb-6">Manage portfolio and past event records.</p>
+                            <span className="text-neon-green text-sm font-bold flex items-center gap-2">Manage Past Events →</span>
                         </Card>
                     </Link>
 
-                    <Link to="/admin/gallery-manager" className="group">
-                        <Card className="p-8 h-full hover:border-neon-pink transition-colors flex flex-col items-center text-center bg-white/5">
-                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-4 group-hover:scale-110 transition-transform">
-                                <Users size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Gallery Manager</h3>
-                            <p className="text-gray-400 text-sm mb-6">Add or remove photos from the media gallery.</p>
-                            <Button variant="outline" className="w-full text-neon-pink border-neon-pink hover:bg-neon-pink hover:text-white">Manage Photos</Button>
-                        </Card>
-                    </Link>
-
-                    <Link to="/admin/upcoming-events" className="group">
-                        <Card className="p-8 h-full hover:border-yellow-400 transition-colors flex flex-col items-center text-center bg-white/5">
-                            <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-4 group-hover:scale-110 transition-transform">
+                    <Link to="/admin/upcoming-events" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-yellow-400 bg-gradient-to-br from-white/5 to-transparent hover:from-yellow-400/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Calendar size={32} />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Upcoming Events</h3>
-                            <p className="text-gray-400 text-sm mb-6">Manage homepage events section.</p>
-                            <Button variant="outline" className="w-full text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black">Manage Upcoming</Button>
+                            <h3 className="text-xl font-bold text-white mb-2">Upcoming</h3>
+                            <p className="text-gray-400 text-sm mb-6">Homepage pinned events.</p>
+                            <span className="text-yellow-400 text-sm font-bold flex items-center gap-2">Manage →</span>
                         </Card>
                     </Link>
-                </div>
+
+                    <Link to="/admin/gallery-manager" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Users size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Gallery</h3>
+                            <p className="text-gray-400 text-sm mb-6">Photos and media uploads.</p>
+                            <span className="text-neon-pink text-sm font-bold flex items-center gap-2">Edit Photos →</span>
+                        </Card>
+                    </Link>
+
+                    <Link to="/admin/site-content" className="group block h-full">
+                        <Card className="p-8 h-full border-white/10 hover:border-white bg-gradient-to-br from-white/5 to-transparent hover:from-white/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
+                            <div className="p-4 rounded-full bg-white/10 text-white mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Site Info</h3>
+                            <p className="text-gray-400 text-sm mb-6">Contact details and footer links.</p>
+                            <span className="text-white text-sm font-bold flex items-center gap-2">Update Info →</span>
+                        </Card>
+                    </Link>
+                </AdminCarousel>
             </div>
         </div >
     );

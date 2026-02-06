@@ -84,6 +84,13 @@ const AdminManager = () => {
         }
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isInviteOpen, setIsInviteOpen] = useState(false);
+
+    const filteredAdmins = admins.filter(a =>
+        a.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (user?.role !== 'super_admin') {
         return (
             <div className="min-h-screen flex items-center justify-center text-white">
@@ -99,45 +106,76 @@ const AdminManager = () => {
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="flex items-center gap-4 mb-8">
-                    <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
-                        <ArrowLeft className="h-6 w-6" />
-                    </Link>
-                    <h1 className="text-3xl font-bold text-white">Manage Admins</h1>
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-4">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
+                            <ArrowLeft className="h-6 w-6" />
+                        </Link>
+                        <div>
+                            <h1 className="text-3xl font-bold text-white">Manage Admins</h1>
+                            <p className="text-gray-400 text-sm">Control access and permissions</p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setIsInviteOpen(!isInviteOpen)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all ${isInviteOpen ? 'bg-white/10 text-white' : 'bg-neon-blue text-black hover:bg-neon-blue/80'}`}
+                    >
+                        <UserPlus size={18} />
+                        {isInviteOpen ? 'Close Invite' : 'Invite New Admin'}
+                    </button>
                 </div>
 
-                {/* Add Admin Form */}
-                <Card className="p-6 mb-8 border-neon-blue/30">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <UserPlus size={20} className="text-neon-blue" />
-                        Invite New Admin
-                    </h2>
-                    <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-4">
-                        <Input
-                            type="email"
-                            placeholder="Email Address"
-                            value={newAdminEmail}
-                            onChange={(e) => setNewAdminEmail(e.target.value)}
-                            required
-                            className="flex-grow"
-                        />
-                        <select
-                            value={newAdminRole}
-                            onChange={(e) => setNewAdminRole(e.target.value)}
-                            className="bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue"
-                        >
-                            <option value="editor">Editor (Content Only)</option>
-                            <option value="super_admin">Super Admin (Full Access)</option>
-                        </select>
-                        <Button type="submit" variant="primary">Add Access</Button>
-                    </form>
-                    <p className="text-xs text-gray-500 mt-2">
-                        Note: Dealing with auth in V1. Adding them here gives them PERMISSION.
-                        They still need to create an account with this email/password on the login screen (if registration is open)
-                        or you must creating them in the Firebase Console.
-                    </p>
-                </Card>
+                {/* Invite Form (Collapsible) */}
+                {isInviteOpen && (
+                    <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-300">
+                        <Card className="p-6 border-neon-blue/30 bg-neon-blue/5">
+                            <h2 className="text-lg font-bold text-white mb-4">Send Invitation</h2>
+                            <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-4 items-end">
+                                <div className="flex-grow w-full">
+                                    <label className="text-xs text-gray-400 mb-1 block">Email Address</label>
+                                    <Input
+                                        type="email"
+                                        placeholder="colleague@newbi.live"
+                                        value={newAdminEmail}
+                                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                                        required
+                                        className="bg-black/50"
+                                    />
+                                </div>
+                                <div className="w-full md:w-64">
+                                    <label className="text-xs text-gray-400 mb-1 block">Permission Level</label>
+                                    <select
+                                        value={newAdminRole}
+                                        onChange={(e) => setNewAdminRole(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue"
+                                    >
+                                        <option value="editor">Editor (Content Only)</option>
+                                        <option value="super_admin">Super Admin (Full Access)</option>
+                                    </select>
+                                </div>
+                                <Button type="submit" variant="primary" className="w-full md:w-auto">
+                                    Send Invite
+                                </Button>
+                            </form>
+                            <p className="text-xs text-gray-500 mt-2">
+                                * The user must sign up with this email on the login screen to access the account.
+                            </p>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Search Bar */}
+                <div className="mb-6">
+                    <Input
+                        placeholder="Search admins by email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="bg-white/5 border-white/10 focus:border-white/30 max-w-md"
+                    />
+                </div>
 
                 {/* Pending Requests Section */}
                 {admins.filter(a => a.role === 'pending').length > 0 && (
@@ -151,9 +189,9 @@ const AdminManager = () => {
                                 <Card key={admin.id} className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-yellow-500/30 bg-yellow-500/5">
                                     <div className="flex-grow">
                                         <h3 className="font-bold text-white">{admin.email}</h3>
-                                        <div className="flex gap-2 text-sm">
-                                            <span className="text-gray-400">Requested: {new Date(admin.createdAt).toLocaleDateString()}</span>
-                                            <span className="text-yellow-500 font-bold uppercase text-xs px-2 py-0.5 bg-yellow-500/20 rounded-full">Pending Approval</span>
+                                        <div className="flex gap-2 text-sm mt-1">
+                                            <span className="text-gray-400 text-xs">Requested: {new Date(admin.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-yellow-500 font-bold uppercase text-[10px] px-2 py-0.5 bg-yellow-500/20 rounded-full">Pending Approval</span>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
@@ -187,42 +225,92 @@ const AdminManager = () => {
                     </div>
                 )}
 
-                {/* Active Admin List */}
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Shield size={20} className="text-neon-blue" />
-                    Current Administrators
-                </h2>
-                <div className="grid gap-4">
-                    {loading ? (
-                        <div className="text-center text-gray-500">Loading admins...</div>
-                    ) : (
-                        admins.filter(a => a.role !== 'pending').map((admin) => (
-                            <Card key={admin.id} className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                                <div>
-                                    <h3 className="font-bold text-white">{admin.email}</h3>
-                                    <div className="flex gap-2 text-sm">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${admin.role === 'super_admin' ? 'bg-neon-pink/20 text-neon-pink' : 'bg-neon-green/20 text-neon-green'
-                                            }`}>
-                                            {admin.role.replace('_', ' ')}
-                                        </span>
-                                        <span className="text-gray-500">Added: {new Date(admin.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
+                {/* Active Admins List */}
+                <Card className="p-0 overflow-hidden border-white/10 bg-black/40 backdrop-blur-md">
+                    <div className="p-6 border-b border-white/10">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Shield size={20} className="text-neon-blue" />
+                            Current Administrators
+                        </h2>
+                    </div>
 
-                                {admin.email !== user.email && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleRemoveAdmin(admin.id)}
-                                        className="text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20"
-                                    >
-                                        <Trash2 size={16} className="mr-2" /> Remove Access
-                                    </Button>
-                                )}
-                            </Card>
-                        ))
+                    {loading ? (
+                        <div className="p-8 text-center text-gray-500">Loading admins...</div>
+                    ) : (
+                        <div>
+                            {/* Desktop Table Header */}
+                            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <div className="col-span-5">User</div>
+                                <div className="col-span-3">Role</div>
+                                <div className="col-span-3">Added Date</div>
+                                <div className="col-span-1 text-right">Actions</div>
+                            </div>
+
+                            {/* List Items */}
+                            {filteredAdmins.filter(a => a.role !== 'pending').length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">No admins found matching "{searchTerm}"</div>
+                            ) : (
+                                filteredAdmins.filter(a => a.role !== 'pending').map((admin) => (
+                                    <div key={admin.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                                        {/* Desktop Row */}
+                                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 items-center">
+                                            <div className="col-span-5 font-medium text-white break-words">
+                                                {admin.email}
+                                                {admin.email === user.email && <span className="ml-2 text-[10px] bg-white/10 px-1 rounded text-gray-400">(You)</span>}
+                                            </div>
+                                            <div className="col-span-3">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold uppercase inline-flex items-center gap-1 ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
+                                                    }`}>
+                                                    {admin.role === 'super_admin' && <Shield size={10} />}
+                                                    {admin.role.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                            <div className="col-span-3 text-sm text-gray-500">
+                                                {new Date(admin.createdAt).toLocaleDateString()}
+                                            </div>
+                                            <div className="col-span-1 text-right">
+                                                {admin.email !== user.email && (
+                                                    <button
+                                                        onClick={() => handleRemoveAdmin(admin.id)}
+                                                        className="text-gray-500 hover:text-red-500 transition-colors p-2 rounded hover:bg-white/5"
+                                                        title="Revoke Access"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Mobile Card View */}
+                                        <div className="md:hidden p-4 flex justify-between items-center">
+                                            <div>
+                                                <div className="font-bold text-white mb-1">
+                                                    {admin.email}
+                                                    {admin.email === user.email && <span className="ml-2 text-xs text-gray-500">(You)</span>}
+                                                </div>
+                                                <div className="flex gap-2 text-xs mb-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
+                                                        }`}>
+                                                        {admin.role.replace('_', ' ')}
+                                                    </span>
+                                                    <span className="text-gray-500 flex items-center">{new Date(admin.createdAt).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                            {admin.email !== user.email && (
+                                                <button
+                                                    onClick={() => handleRemoveAdmin(admin.id)}
+                                                    className="p-3 text-red-500 bg-red-500/10 rounded-full"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     )}
-                </div>
+                </Card>
             </div>
         </div>
     );
