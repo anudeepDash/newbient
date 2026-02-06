@@ -39,22 +39,33 @@ const SiteContentManager = () => {
                 <Card className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">WhatsApp Number</label>
+                            <div className="md:col-span-2 p-4 border border-white/10 rounded-lg bg-white/5">
+                                <label className="block text-sm font-bold text-neon-green mb-2">Community Page: WhatsApp Group Link</label>
                                 <Input
-                                    name="whatsapp"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })} // Map phone to whatsapp usage or keep separate? Using phone as general contact.
+                                    name="whatsappCommunity"
+                                    value={formData.whatsappCommunity || ''}
+                                    onChange={handleChange}
+                                    placeholder="https://chat.whatsapp.com/..."
+                                />
+                                <p className="text-xs text-gray-500 mt-1">This link is used in Step 2 of the 'Community Join' page.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Contact Phone (WhatsApp)</label>
+                                <Input
+                                    name="phone"
+                                    value={formData.phone || ''}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     placeholder="+91..."
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Used for 'WhatsApp Us' links.</p>
+                                <p className="text-xs text-gray-500 mt-1">General contact number.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
                                 <Input
                                     name="email"
                                     type="email"
-                                    value={formData.email}
+                                    value={formData.email || ''}
                                     onChange={handleChange}
                                 />
                             </div>
@@ -62,7 +73,7 @@ const SiteContentManager = () => {
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Instagram URL</label>
                                 <Input
                                     name="instagram"
-                                    value={formData.instagram}
+                                    value={formData.instagram || ''}
                                     onChange={handleChange}
                                 />
                             </div>
@@ -70,7 +81,7 @@ const SiteContentManager = () => {
                                 <label className="block text-sm font-medium text-gray-400 mb-2">LinkedIn URL</label>
                                 <Input
                                     name="linkedin"
-                                    value={formData.linkedin}
+                                    value={formData.linkedin || ''}
                                     onChange={handleChange}
                                 />
                             </div>

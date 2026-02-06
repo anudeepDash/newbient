@@ -75,8 +75,8 @@ const CommunityJoin = () => {
                         Get instant updates, gig alerts, and connect with fellow volunteers in our exclusive WhatsApp community.
                     </p>
 
-                    {siteDetails.whatsapp ? (
-                        <a href={siteDetails.whatsapp} target="_blank" rel="noopener noreferrer">
+                    {siteDetails.whatsappCommunity ? (
+                        <a href={siteDetails.whatsappCommunity} target="_blank" rel="noopener noreferrer">
                             <Button className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none text-xl px-10 py-6 h-auto shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:shadow-[0_0_35px_rgba(37,211,102,0.6)] rounded-full transition-all hover:scale-105">
                                 <Users className="mr-3 w-6 h-6" /> Join WhatsApp Community
                             </Button>
