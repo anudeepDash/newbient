@@ -36,6 +36,11 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31'));
                 }
 
+                // Sort invoices by createdAt (descending) - Newest First
+                if (colName === 'invoices') {
+                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                }
+
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
