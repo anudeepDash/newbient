@@ -82,29 +82,38 @@ const InvoiceGenerator = () => {
     };
 
     const generatePDF = async () => {
-        if (!invoiceRef.current) return;
+        if (!invoiceRef.current) return null;
         setGenerating(true);
-        try {
+
+        // Timeout Promise
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("PDF Generation timed out (5s)")), 5000);
+        });
+
+        // Generation Promise
+        const generation = (async () => {
             console.log("Generating PDF with html2canvas...");
             const canvas = await html2canvas(invoiceRef.current, {
-                scale: 2, // High resolution
+                scale: 2,
                 useCORS: true,
-                allowTaint: true, // Allow local images
+                allowTaint: true,
                 logging: true,
-                imageTimeout: 15000,
-                backgroundColor: '#E5E7EB' // Match bg color
+                imageTimeout: 5000, // Reduced from 15000
+                backgroundColor: '#E5E7EB'
             });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             return pdf;
+        })();
+
+        try {
+            return await Promise.race([generation, timeout]);
         } catch (error) {
             console.error("PDF Gen Error:", error);
-            // alert("PDF Generator Error: " + error.message); // Don't block flow yet
-            return null;
+            return null; // Return null on timeout or error
         } finally {
             setGenerating(false);
         }
@@ -119,38 +128,40 @@ const InvoiceGenerator = () => {
         }
     };
 
-    const handleSaveToDB = async () => {
+    const handleSaveToDB = async (skipPdf = false) => {
         setGenerating(true);
-        console.log("Starting Invoice Save Process...");
+        console.log("Starting Invoice Save Process...", { skipPdf });
         try {
-            // 1. Generate PDF Blob
-            console.log("Step 1: Generating PDF...");
             let downloadURL = '';
 
-            const pdf = await generatePDF();
+            if (!skipPdf) {
+                // 1. Generate PDF Blob
+                console.log("Step 1: Generating PDF...");
+                const pdf = await generatePDF();
 
-            if (pdf) {
-                const pdfBlob = pdf.output('blob');
-                const pdfFile = new File([pdfBlob], `invoice_${Date.now()}.pdf`, { type: 'application/pdf' });
-                console.log("PDF Blob created size:", pdfBlob.size);
+                if (pdf) {
+                    const pdfBlob = pdf.output('blob');
+                    const pdfFile = new File([pdfBlob], `invoice_${Date.now()}.pdf`, { type: 'application/pdf' });
 
-                // 2. Upload to Firebase
-                console.log("Step 2: Uploading to Firebase Storage...");
-                const storageRef = ref(storage, `invoices/${Date.now()}_generated.pdf`);
-                const uploadResult = await uploadBytes(storageRef, pdfFile);
-                console.log("Undo result:", uploadResult);
-                downloadURL = await getDownloadURL(storageRef);
-                console.log("Download URL:", downloadURL);
-            } else {
-                const proceedWithoutPdf = window.confirm("PDF Generation Failed! \n\nDo you want to SAVE the invoice data anyway? (The PDF link will be empty)");
-                if (!proceedWithoutPdf) {
-                    throw new Error("User cancelled because PDF failed.");
+                    // 2. Upload to Firebase
+                    console.log("Step 2: Uploading to Firebase Storage...");
+                    const storageRef = ref(storage, `invoices/${Date.now()}_generated.pdf`);
+                    await uploadBytes(storageRef, pdfFile);
+                    downloadURL = await getDownloadURL(storageRef);
+                    console.log("Download URL:", downloadURL);
+                } else {
+                    const proceedWithoutPdf = window.confirm("PDF Generation Failed or Timed Out! \n\nDo you want to SAVE the invoice data anyway? (The PDF link will be empty)");
+                    if (!proceedWithoutPdf) {
+                        setGenerating(false);
+                        return; // Stop here
+                    }
+                    console.warn("Saving without PDF...");
                 }
-                console.warn("Saving without PDF...");
+            } else {
+                console.log("Skipping PDF Generation as requested.");
             }
 
             // 3. Sanitize Data for Firestore (No undefined allowed)
-            console.log("Step 3: Sanitizing Data...");
             const cleanItems = items.map(item => {
                 const cleanCustom = {};
                 if (item.customValues) {
@@ -355,13 +366,24 @@ const InvoiceGenerator = () => {
                             />
                         </div>
 
-                        <div className="flex gap-4 pt-4">
-                            <Button onClick={handleDownload} variant="outline" className="flex-1" disabled={generating}>
-                                <Download className="mr-2 h-4 w-4" /> Download PDF
-                            </Button>
-                            <Button onClick={handleSaveToDB} variant="primary" className="flex-1 bg-neon-green text-black hover:bg-neon-green/90" disabled={generating}>
-                                <Save className="mr-2 h-4 w-4" /> Save & Create
-                            </Button>
+                        <div className="flex flex-col gap-2 pt-4">
+                            <div className="flex gap-4">
+                                <Button onClick={handleDownload} variant="outline" className="flex-1" disabled={generating}>
+                                    <Download className="mr-2 h-4 w-4" /> Download PDF
+                                </Button>
+                                <Button onClick={() => handleSaveToDB(false)} variant="primary" className="flex-1 bg-neon-green text-black hover:bg-neon-green/90" disabled={generating}>
+                                    <Save className="mr-2 h-4 w-4" /> Save & Create
+                                </Button>
+                            </div>
+                            <div className="text-center">
+                                <button
+                                    onClick={() => handleSaveToDB(true)}
+                                    disabled={generating}
+                                    className="text-gray-500 text-xs underline hover:text-white"
+                                >
+                                    Scanning Trouble? Click here to Save Data Only (Skip PDF)
+                                </button>
+                            </div>
                         </div>
                     </Card>
                 </div>
