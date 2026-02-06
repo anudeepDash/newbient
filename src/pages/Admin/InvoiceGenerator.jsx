@@ -19,8 +19,17 @@ const InvoiceGenerator = () => {
     const [customColumns, setCustomColumns] = useState([]); // [{id: 'col_123', label: 'Vehicle Type'}, ...]
 
     const [formData, setFormData] = useState({
+        // Sender Details (Defaults)
+        senderName: 'NewBi Entertainment',
+        senderContact: '+91 93043 72773',
+        senderEmail: 'partnership@newbi.live',
+        senderPan: 'ETXPA9107A',
+
+        // Client Details
         clientName: '',
+        clientAddress: '',
         invoiceDate: new Date().toISOString().split('T')[0],
+
         advancePaid: 0,
         note: '',
         paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
@@ -184,7 +193,17 @@ const InvoiceGenerator = () => {
             console.log("Step 4: Saving to Firestore...");
             const newInvoice = {
                 invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+
+                // Client
                 clientName: formData.clientName || 'Unknown Client',
+                clientAddress: formData.clientAddress || '',
+
+                // Sender
+                senderName: formData.senderName,
+                senderContact: formData.senderContact,
+                senderEmail: formData.senderEmail,
+                senderPan: formData.senderPan,
+
                 issueDate: formData.invoiceDate,
                 amount: totalAmount,
                 status: toBePaid <= 0 ? 'Paid' : 'Pending',
@@ -201,14 +220,15 @@ const InvoiceGenerator = () => {
             console.log("Firestore save complete!");
 
             if (window.confirm("Invoice Saved Successfully! \n\nClick OK to Create Another Invoice.\nClick Cancel to View All Invoices.")) {
-                // Reset Form
-                setFormData({
+                // Reset Form (Keep sender defaults)
+                setFormData(prev => ({
+                    ...prev,
                     clientName: '',
+                    clientAddress: '',
                     invoiceDate: new Date().toISOString().split('T')[0],
                     advancePaid: 0,
-                    note: '',
-                    paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
-                });
+                    note: ''
+                }));
                 setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
             } else {
                 navigate('/admin/invoices');
@@ -242,14 +262,46 @@ const InvoiceGenerator = () => {
                     </div>
 
                     <Card className="p-6 space-y-6 border-white/10 bg-white/5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm text-gray-400">Client Name</label>
-                                <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
+
+                        {/* 1. Sender Details (Collapse/Expand could be nice but let's keep visible for now) */}
+                        <div className="space-y-4 border-b border-white/10 pb-6">
+                            <h3 className="font-bold text-neon-green text-sm uppercase tracking-wider">Invoice By (From)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-gray-400">Company Name</label>
+                                    <Input value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} className="h-9" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">Contact No.</label>
+                                    <Input value={formData.senderContact} onChange={e => setFormData({ ...formData, senderContact: e.target.value })} className="h-9" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">Email</label>
+                                    <Input value={formData.senderEmail} onChange={e => setFormData({ ...formData, senderEmail: e.target.value })} className="h-9" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">PAN / Tax ID</label>
+                                    <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="h-9" />
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-sm text-gray-400">Date</label>
-                                <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} />
+                        </div>
+
+                        {/* 2. Client Details */}
+                        <div className="space-y-4 border-b border-white/10 pb-6">
+                            <h3 className="font-bold text-neon-blue text-sm uppercase tracking-wider">Invoice To (Client)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <label className="text-xs text-gray-400">Client Name</label>
+                                    <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="text-xs text-gray-400">Client Address (Optional)</label>
+                                    <Input value={formData.clientAddress} onChange={e => setFormData({ ...formData, clientAddress: e.target.value })} placeholder="City, State" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400">Invoice Date</label>
+                                    <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} />
+                                </div>
                             </div>
                         </div>
 
@@ -426,10 +478,10 @@ const InvoiceGenerator = () => {
                                         Invoice By
                                     </div>
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
-                                        <p className="font-black text-lg text-black mb-2">NewBi Entertainment</p>
-                                        <p>Contact: +91 93043 72773</p>
-                                        <p>Email: partnership@newbi.live</p>
-                                        <p>PAN: ETXPA9107A</p>
+                                        <p className="font-black text-lg text-black mb-2">{formData.senderName}</p>
+                                        <p>Contact: {formData.senderContact}</p>
+                                        <p>Email: {formData.senderEmail}</p>
+                                        <p>PAN: {formData.senderPan}</p>
                                     </div>
                                 </div>
 
@@ -442,7 +494,7 @@ const InvoiceGenerator = () => {
                                         <p className="font-black text-lg text-black mb-2">{formData.clientName || 'Client Name'}</p>
                                         <p>Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
                                         {/* Placeholder for address if we add it later */}
-                                        <p className="text-gray-400 italic">Client Address...</p>
+                                        <p className="text-gray-400 italic">{formData.clientAddress || 'Client Address...'}</p>
                                     </div>
                                 </div>
                             </div>
