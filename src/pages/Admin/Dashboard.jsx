@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield } from 'lucide-react';
+import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield, Clock } from 'lucide-react';
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -17,32 +17,29 @@ const Dashboard = () => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [authLoading, setAuthLoading] = useState(true);
     const [isFirstRun, setIsFirstRun] = useState(false);
-    const [showDevTools, setShowDevTools] = useState(false);
-    const [devEmail, setDevEmail] = useState('');
+    const [isRegistering, setIsRegistering] = useState(false);
 
-    const handleForceAdmin = async () => {
-        if (!devEmail) return;
+    const handleSignUp = async (e) => {
+        e.preventDefault();
         try {
-            // Check if already exists to avoid duplicates
-            const q = query(collection(db, 'admins'), where('email', '==', devEmail));
-            const snapshot = await getDocs(q);
+            // 1. Create Auth User
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-            if (!snapshot.empty) {
-                alert("This user is already an admin!");
-                return;
-            }
-
+            // 2. Create 'admins' doc with 'pending' role
             await addDoc(collection(db, 'admins'), {
-                email: devEmail,
-                role: 'super_admin',
-                addedBy: 'DEV_FORCE_TOOL',
+                email: user.email,
+                role: 'pending',
+                addedBy: 'SELF_REGISTRATION',
                 createdAt: new Date().toISOString()
             });
-            alert(`Success! ${devEmail} is now a Super Admin. Please login again.`);
-            setDevEmail('');
+
+            // 3. Force token refresh/role check might happen automatically via onAuthStateChanged, 
+            // but we can ensure checkUserRole is called.
+            alert("Registration successful! Please wait for approval.");
         } catch (error) {
-            console.error("Error forcing admin:", error);
-            alert("Failed: " + error.message + "\n\nIf this fails with 'Permission Denied', you must manually add the document in Firebase Console.");
+            console.error(error);
+            alert("Registration Failed: " + error.message);
         }
     };
 
@@ -135,8 +132,10 @@ const Dashboard = () => {
         return (
             <div className="min-h-screen flex items-center justify-center px-4 flex-col">
                 <Card className="p-8 w-full max-w-md border-neon-pink/30 shadow-neon-pink/20">
-                    <h1 className="text-2xl font-bold text-white mb-6 text-center">Admin Access</h1>
-                    <form onSubmit={handleLogin} className="space-y-4">
+                    <h1 className="text-2xl font-bold text-white mb-6 text-center">
+                        {isRegistering ? 'Request Admin Access' : 'Admin Login'}
+                    </h1>
+                    <form onSubmit={isRegistering ? handleSignUp : handleLogin} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                             <Input
@@ -144,6 +143,7 @@ const Dashboard = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="name@newbi.live"
+                                required
                             />
                         </div>
                         <div>
@@ -153,43 +153,60 @@ const Dashboard = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
+                                required
                             />
                         </div>
-                        <Button type="submit" variant="primary" className="w-full">Sign In</Button>
+                        <Button type="submit" variant="primary" className="w-full">
+                            {isRegistering ? 'Submit Request' : 'Sign In'}
+                        </Button>
                     </form>
 
-                    <div className="mt-8 border-t border-white/10 pt-4">
+                    <div className="mt-6 text-center">
                         <button
-                            type="button"
-                            onClick={() => {
-                                setShowDevTools(!showDevTools);
-                                if (!devEmail && email) setDevEmail(email);
-                            }}
-                            className="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-2 w-full justify-center"
+                            onClick={() => setIsRegistering(!isRegistering)}
+                            className="text-sm text-gray-400 hover:text-white underline transition-colors"
                         >
-                            <Shield size={12} /> Developer Options
+                            {isRegistering ? 'Already have an account? Login' : 'Need access? Request an account'}
                         </button>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
-                        {showDevTools && (
-                            <div className="mt-4 p-4 bg-white/5 rounded border border-white/10">
-                                <h4 className="text-sm font-bold text-white mb-2">Force Admin Bootstrap</h4>
-                                <p className="text-xs text-gray-400 mb-3">
-                                    Use this if the system is not detecting you as an admin and the automatic claim didn't prompt.
-                                </p>
-                                <div className="flex gap-2 flex-col">
-                                    <Input
-                                        type="email"
-                                        value={devEmail}
-                                        onChange={(e) => setDevEmail(e.target.value)}
-                                        placeholder="Email to promote"
-                                        className="text-sm py-1"
-                                    />
-                                    <Button onClick={handleForceAdmin} size="sm" variant="outline" className="w-full border-neon-green text-neon-green hover:bg-neon-green hover:text-black">
-                                        Make Super Admin
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+    // PENDING APPROVAL STATE
+    if (user.role === 'pending') {
+        return (
+            <div className="min-h-screen flex items-center justify-center px-4">
+                <Card className="p-8 w-full max-w-md border-yellow-500/30 shadow-yellow-500/20 text-center">
+                    <div className="mb-4 flex justify-center">
+                        <Clock size={48} className="text-yellow-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Approval Pending</h1>
+                    <p className="text-gray-400 mb-6">
+                        Your account has been created but requires Super Admin approval before you can access the dashboard.
+                    </p>
+
+                    <div className="bg-white/5 p-4 rounded mb-6 text-left">
+                        <p className="text-sm text-gray-300">
+                            <strong>Email:</strong> {user.email}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Please contact a Super Admin to approve your request.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-4">
+                        <Button onClick={logout} variant="outline" className="flex-1 text-white border-white hover:bg-white hover:text-black">
+                            Logout
+                        </Button>
+                        <Button
+                            onClick={() => checkUserRole(user)}
+                            variant="primary"
+                            className="flex-1 bg-yellow-500/20 text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-black"
+                        >
+                            Check Status
+                        </Button>
                     </div>
                 </Card>
             </div>
@@ -210,12 +227,12 @@ const Dashboard = () => {
 
                     <div className="bg-white/5 p-4 rounded mb-6 text-left">
                         <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Troubleshooting</h3>
-                        <p className="text-sm text-gray-400 mb-1">We checked the database for:</p>
+                        <p className="text-sm text-gray-400 mb-1">Your email:</p>
                         <div className="font-mono text-neon-blue bg-black/50 p-2 rounded mb-3 break-all select-all">
                             {user.email}
                         </div>
                         <p className="text-xs text-gray-500">
-                            <strong>Tip:</strong> Ensure the <code>email</code> field in your Firestore <code>admins</code> collection matches this exactly (case-sensitive).
+                            If you believe this is an error, ask a Super Admin to check the "Manage Admins" page.
                         </p>
                     </div>
 
