@@ -30,7 +30,11 @@ const InvoiceGenerator = () => {
         clientName: '',
         clientAddress: '',
         clientGst: '',
+
+        // Invoice Details
+        invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`, // Persistent ID
         invoiceDate: new Date().toISOString().split('T')[0],
+        dueDate: '', // New field
 
         advancePaid: 0,
         note: '',
@@ -57,7 +61,6 @@ const InvoiceGenerator = () => {
 
     const handleRemoveColumn = (colId) => {
         setCustomColumns(customColumns.filter(col => col.id !== colId));
-        // Also cleanup items data for this column
         setItems(items.map(item => {
             const newCustomValues = { ...item.customValues };
             delete newCustomValues[colId];
@@ -105,18 +108,19 @@ const InvoiceGenerator = () => {
         const generation = (async () => {
             console.log("Generating PDF with html2canvas...");
             const canvas = await html2canvas(invoiceRef.current, {
-                scale: 2,
+                scale: 1.8, // Reduced scale for size optimization
                 useCORS: true,
                 allowTaint: true,
                 logging: true,
-                imageTimeout: 8000, // Reduced from 15000
+                imageTimeout: 8000,
                 backgroundColor: '#E5E7EB'
             });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            // Use JPEG with 0.75 quality for massive size reduction compared to PNG
+            const imgData = canvas.toDataURL('image/jpeg', 0.75);
+            const pdf = new jsPDF('p', 'mm', 'a4', true); // 'true' enables compression
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
             return pdf;
         })();
 
@@ -124,7 +128,7 @@ const InvoiceGenerator = () => {
             return await Promise.race([generation, timeout]);
         } catch (error) {
             console.error("PDF Gen Error:", error);
-            return null; // Return null on timeout or error
+            return null;
         } finally {
             setGenerating(false);
         }
@@ -133,9 +137,10 @@ const InvoiceGenerator = () => {
     const handleDownload = async () => {
         const pdf = await generatePDF();
         if (pdf) {
-            pdf.save(`Invoice_${formData.clientName.replace(/\s+/g, '_') || 'Draft'}.pdf`);
+            const fileName = `Newbi_INV-${formData.invoiceNumber}.pdf`;
+            pdf.save(fileName);
         } else {
-            alert("Could not generate PDF. Please check console.");
+            alert("Could not generate PDF.");
         }
     };
 
@@ -152,27 +157,26 @@ const InvoiceGenerator = () => {
 
                 if (pdf) {
                     const pdfBlob = pdf.output('blob');
-                    const pdfFile = new File([pdfBlob], `invoice_${Date.now()}.pdf`, { type: 'application/pdf' });
+                    const fileName = `Newbi_INV-${formData.invoiceNumber}.pdf`;
+                    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                    console.log("PDF Blob created size:", pdfBlob.size);
 
                     // 2. Upload to Firebase
                     console.log("Step 2: Uploading to Firebase Storage...");
-                    const storageRef = ref(storage, `invoices/${Date.now()}_generated.pdf`);
-                    await uploadBytes(storageRef, pdfFile);
+                    const storageRef = ref(storage, `invoices/${Date.now()}_${fileName}`);
+                    const uploadResult = await uploadBytes(storageRef, pdfFile);
                     downloadURL = await getDownloadURL(storageRef);
                     console.log("Download URL:", downloadURL);
                 } else {
-                    const proceedWithoutPdf = window.confirm("PDF Generation Failed or Timed Out! \n\nDo you want to SAVE the invoice data anyway? (The PDF link will be empty)");
+                    const proceedWithoutPdf = window.confirm("PDF Generation Failed! Save without PDF?");
                     if (!proceedWithoutPdf) {
                         setGenerating(false);
-                        return; // Stop here
+                        return;
                     }
-                    console.warn("Saving without PDF...");
                 }
-            } else {
-                console.log("Skipping PDF Generation as requested.");
             }
 
-            // 3. Sanitize Data for Firestore (No undefined allowed)
+            // 3. Sanitize Data
             const cleanItems = items.map(item => {
                 const cleanCustom = {};
                 if (item.customValues) {
@@ -185,7 +189,6 @@ const InvoiceGenerator = () => {
                 return {
                     ...item,
                     customValues: cleanCustom,
-                    // Ensure numbers
                     qty: Number(item.qty) || 0,
                     price: Number(item.price) || 0
                 };
@@ -194,7 +197,7 @@ const InvoiceGenerator = () => {
             // 4. Save to Firestore
             console.log("Step 4: Saving to Firestore...");
             const newInvoice = {
-                invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+                invoiceNumber: formData.invoiceNumber, // Use persistent ID
 
                 // Client
                 clientName: formData.clientName || 'Unknown Client',
@@ -209,6 +212,7 @@ const InvoiceGenerator = () => {
                 senderGst: formData.senderGst,
 
                 issueDate: formData.invoiceDate,
+                dueDate: formData.dueDate || '',
                 amount: totalAmount,
                 status: toBePaid <= 0 ? 'Paid' : 'Pending',
                 pdfUrl: downloadURL,
@@ -230,7 +234,9 @@ const InvoiceGenerator = () => {
                     clientName: '',
                     clientAddress: '',
                     clientGst: '',
+                    invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`, // Generate NEW ID for next invoice
                     invoiceDate: new Date().toISOString().split('T')[0],
+                    dueDate: '',
                     advancePaid: 0,
                     note: ''
                 }));
@@ -323,10 +329,17 @@ const InvoiceGenerator = () => {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs text-gray-400">Invoice Date</label>
-                                <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} />
+                                <label className="text-xs text-gray-400">Invoice Number</label>
+                                <Input value={formData.invoiceNumber} onChange={e => setFormData({ ...formData, invoiceNumber: e.target.value })} className="h-9" />
                             </div>
-                            {/* Potential spot for Manual Invoice ID in future */}
+                            <div>
+                                <label className="text-xs text-gray-400">Invoice Date</label>
+                                <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} className="h-9" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400">Due Date (Optional)</label>
+                                <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="h-9" />
+                            </div>
                         </div>
                     </Card>
 
@@ -491,7 +504,7 @@ const InvoiceGenerator = () => {
                                 </div>
                                 <div className="absolute top-6 right-8 text-right pointer-events-none">
                                     <h1 className="text-4xl font-black text-gray-800 tracking-tight opacity-70">
-                                        #{Math.floor(1000 + Math.random() * 9000)}
+                                        #{formData.invoiceNumber}
                                     </h1>
                                     <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mr-1">INVOICE ID</p>
                                 </div>
@@ -520,7 +533,8 @@ const InvoiceGenerator = () => {
                                     </div>
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
                                         <p className="font-black text-lg text-black mb-2">{formData.clientName || 'Client Name'}</p>
-                                        <p className="mb-2">Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                        <p className="mb-1">Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                        {formData.dueDate && <p className="mb-2 text-red-600 font-bold text-xs">Due: {new Date(formData.dueDate).toLocaleDateString('en-GB')}</p>}
 
                                         {formData.clientAddress && <p className="text-gray-600 italic mb-1">{formData.clientAddress}</p>}
                                         {formData.clientGst && <p className="font-bold border-t border-gray-300 pt-1 mt-1 inline-block">GSTIN: {formData.clientGst}</p>}
@@ -576,7 +590,7 @@ const InvoiceGenerator = () => {
                             </div>
 
                             {/* Footer Notes */}
-                            <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-20">
+                            <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-4">
                                 {formData.note && (
                                     <div className="rounded-xl overflow-hidden">
                                         <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
@@ -596,12 +610,22 @@ const InvoiceGenerator = () => {
                                 )}
                             </div>
 
+                            {/* Signatory Box */}
+                            <div className="px-8 mt-2 mb-20 flex justify-end">
+                                <div className="text-center">
+                                    <div className="h-12 w-32 border-b-2 border-gray-600 mb-1"></div>
+                                    <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
+                                    <p className="text-[8px] text-gray-500">{formData.senderName}</p>
+                                </div>
+                            </div>
+
                             {/* Footer Branding */}
                             <div className="absolute bottom-12 left-8 right-8 bg-[#86EFAC] rounded-xl py-3 px-6 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
                                 <div>+91 93043 72773</div>
                                 <div className="lowercase tracking-normal">partnership@newbi.live</div>
                                 <div className="lowercase tracking-normal">www.newbi.live</div>
                             </div>
+
                         </div>
                     </div>
                 </div>
