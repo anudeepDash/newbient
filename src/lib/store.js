@@ -37,9 +37,9 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => (a.order || 0) - (b.order || 0));
                 }
 
-                // Sort upcoming events by date (ascending)
+                // Sort upcoming events by order (ascending)
                 if (colName === 'upcoming_events') {
-                    data.sort((a, b) => new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31'));
+                    data.sort((a, b) => (a.order || 0) - (b.order || 0));
                 }
 
                 // Sort invoices by createdAt (descending) - Newest First
@@ -125,7 +125,11 @@ export const useStore = create((set, get) => ({
 
     // Upcoming Events
     addUpcomingEvent: async (event, alsoAddToAnnouncements = false) => {
-        const docRef = await addDoc(collection(db, 'upcoming_events'), event);
+        // Assign a default order if not present (put at end)
+        const currentItems = get().upcomingEvents;
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+
+        const docRef = await addDoc(collection(db, 'upcoming_events'), { ...event, order: maxOrder + 1 });
 
         if (alsoAddToAnnouncements) {
             await addDoc(collection(db, 'announcements'), {
@@ -143,6 +147,12 @@ export const useStore = create((set, get) => ({
     },
     deleteUpcomingEvent: async (id) => {
         await deleteDoc(doc(db, 'upcoming_events', id));
+    },
+    updateUpcomingEventOrder: async (items) => {
+        const updates = items.map((item, index) =>
+            updateDoc(doc(db, 'upcoming_events', item.id), { order: index })
+        );
+        await Promise.all(updates);
     },
 
     // Site Settings

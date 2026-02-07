@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 const UpcomingEventsManager = () => {
-    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, siteSettings, toggleUpcomingSectionVisibility } = useStore();
+    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -41,6 +41,18 @@ const UpcomingEventsManager = () => {
         setEditingId(item.id);
         setIsAdding(true);
         setNewEvent({ ...item, alsoPostToAnnouncements: false }); // Don't carry over "post to announcements" logic for edits usually, or handled differently
+    };
+
+    const moveItem = async (index, direction) => {
+        const newItems = [...upcomingEvents];
+        if (direction === 'up' && index > 0) {
+            [newItems[index], newItems[index - 1]] = [newItems[index - 1], newItems[index]];
+        } else if (direction === 'down' && index < newItems.length - 1) {
+            [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+        } else {
+            return;
+        }
+        await updateUpcomingEventOrder(newItems);
     };
 
     const handleFileUpload = async (file) => {
@@ -246,8 +258,28 @@ const UpcomingEventsManager = () => {
 
                 {/* List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {upcomingEvents.map((item) => (
+                    {upcomingEvents.map((item, index) => (
                         <Card key={item.id} className="group relative overflow-hidden border-white/10 hover:border-neon-blue/50 transition-colors">
+                            {/* Reordering Controls */}
+                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 bg-black/60 rounded-lg p-1 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); moveItem(index, 'up'); }}
+                                    disabled={index === 0}
+                                    className={`p-1 hover:text-neon-blue transition-colors ${index === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300'}`}
+                                    title="Move Up"
+                                >
+                                    ▲
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); moveItem(index, 'down'); }}
+                                    disabled={index === upcomingEvents.length - 1}
+                                    className={`p-1 hover:text-neon-blue transition-colors ${index === upcomingEvents.length - 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300'}`}
+                                    title="Move Down"
+                                >
+                                    ▼
+                                </button>
+                            </div>
+
                             <div className="aspect-[4/5] relative bg-gray-900">
                                 {item.image ? (
                                     <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
