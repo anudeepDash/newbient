@@ -5,17 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
 import NotificationBell from './NotificationBell';
+import { useStore } from '../lib/store';
 
 const Navbar = () => {
+    const { maintenanceState } = useStore();
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
     const links = [
         { name: 'Home', path: '/' },
-        { name: 'Concert Zone', path: '/concerts' },
-        { name: 'Gallery', path: '/gallery' },
-        { name: 'Community', path: '/community-join' },
-        { name: 'Contact', path: '/contact' },
+        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts' },
+        { name: 'Gallery', path: '/gallery', featureId: 'gallery' },
+        { name: 'Community', path: '/community-join', featureId: 'community' },
+        { name: 'Contact', path: '/contact', featureId: 'contact' },
     ];
 
     const toggleMenu = () => setIsOpen(!isOpen);
@@ -32,8 +34,9 @@ const Navbar = () => {
                     {/* Desktop Menu */}
                     <div className="hidden md:block">
                         <div className="ml-10 flex items-baseline space-x-8">
-                            {links.map((link) => (
-                                link.path.startsWith('http') ? (
+                            {links.map((link) => {
+                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                return link.path.startsWith('http') ? (
                                     <a
                                         key={link.name}
                                         href={link.path}
@@ -51,14 +54,16 @@ const Navbar = () => {
                                         key={link.name}
                                         to={link.path}
                                         className={cn(
-                                            'text-sm font-medium transition-colors duration-300 hover:text-neon-green',
-                                            location.pathname === link.path ? 'text-neon-green' : 'text-gray-300'
+                                            'text-sm font-medium transition-all duration-300 hover:text-neon-green flex items-center gap-1',
+                                            location.pathname === link.path ? 'text-neon-green' : 'text-gray-300',
+                                            isUnderMaintenance && 'opacity-50 grayscale lowercase'
                                         )}
                                     >
+                                        {isUnderMaintenance && <span className="text-[10px]">💀</span>}
                                         {link.name}
                                     </Link>
-                                )
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -90,8 +95,9 @@ const Navbar = () => {
                         className="md:hidden bg-dark border-b border-white/10 overflow-hidden"
                     >
                         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                            {links.map((link) => (
-                                link.path.startsWith('http') ? (
+                            {links.map((link) => {
+                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                return link.path.startsWith('http') ? (
                                     <a
                                         key={link.name}
                                         href={link.path}
@@ -111,14 +117,16 @@ const Navbar = () => {
                                         to={link.path}
                                         onClick={() => setIsOpen(false)}
                                         className={cn(
-                                            'block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5 hover:text-neon-green transition-colors',
-                                            location.pathname === link.path ? 'text-neon-green bg-white/5' : 'text-gray-300'
+                                            'flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium hover:bg-white/5 hover:text-neon-green transition-all',
+                                            location.pathname === link.path ? 'text-neon-green bg-white/5' : 'text-gray-300',
+                                            isUnderMaintenance && 'opacity-50 grayscale lowercase'
                                         )}
                                     >
+                                        {isUnderMaintenance && <span>💀</span>}
                                         {link.name}
                                     </Link>
-                                )
-                            ))}
+                                );
+                            })}
                         </div>
                     </motion.div>
                 )}

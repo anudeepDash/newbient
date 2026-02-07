@@ -17,11 +17,11 @@ const ConcertManager = () => {
 
     // State for Portfolio (Past)
     const [newPortfolio, setNewPortfolio] = useState({
-        title: '', category: 'music', image: ''
+        title: '', category: 'music', image: '', highlightUrl: ''
     });
 
     const resetForms = () => {
-        setNewPortfolio({ title: '', category: 'music', image: '' });
+        setNewPortfolio({ title: '', category: 'music', image: '', highlightUrl: '' });
         setIsAdding(false);
         setEditingId(null);
         setSelectedFile(null);
@@ -107,7 +107,7 @@ const ConcertManager = () => {
                         <h1 className="text-3xl font-bold text-white">Past Events Manager</h1>
                     </div>
 
-                    <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', category: 'music', image: '' }); }}>
+                    <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', category: 'music', image: '', highlightUrl: '' }); }}>
                         <Plus className="mr-2 h-4 w-4" />
                         {isAdding && !editingId ? 'Cancel' : 'Add Past Event'}
                     </Button>
@@ -150,6 +150,16 @@ const ConcertManager = () => {
                                     />
                                     <p className="text-xs text-gray-500 mt-1">Uploading a file will override the URL field. Image appears on hover.</p>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Instagram Highlight/Reel Link (Optional)</label>
+                                <Input
+                                    placeholder="https://www.instagram.com/..."
+                                    value={newPortfolio.highlightUrl || ''}
+                                    onChange={e => setNewPortfolio({ ...newPortfolio, highlightUrl: e.target.value })}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Link to past concert reels or story highlights.</p>
                             </div>
 
                             <div className="flex justify-end gap-4 pt-4">

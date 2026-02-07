@@ -87,11 +87,11 @@ const AdminManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-    const filteredAdmins = admins.filter(a =>
+    const filteredAdmins = displayAdmins.filter(a =>
         a.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (user?.role !== 'super_admin') {
+    if (user?.role !== 'super_admin' && user?.role !== 'developer') {
         return (
             <div className="min-h-screen flex items-center justify-center text-white">
                 <div className="text-center">
@@ -103,6 +103,11 @@ const AdminManager = () => {
             </div>
         );
     }
+
+    const canManageDevelopers = user?.role === 'developer';
+    const displayAdmins = canManageDevelopers
+        ? admins
+        : admins.filter(a => a.role !== 'developer');
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -154,6 +159,7 @@ const AdminManager = () => {
                                     >
                                         <option value="editor">Editor (Content Only)</option>
                                         <option value="super_admin">Super Admin (Full Access)</option>
+                                        {canManageDevelopers && <option value="developer">Developer Admin (System Overlord)</option>}
                                     </select>
                                 </div>
                                 <Button type="submit" variant="primary" className="w-full md:w-auto">
@@ -217,6 +223,15 @@ const AdminManager = () => {
                                             >
                                                 <Shield size={16} className="mr-2" /> Super Admin
                                             </Button>
+                                            {canManageDevelopers && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleApprove(admin.id, 'developer')}
+                                                    className="bg-white/10 text-white border-transparent hover:bg-white hover:text-black"
+                                                >
+                                                    <Shield size={16} className="mr-2" /> Developer
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </Card>
@@ -262,6 +277,7 @@ const AdminManager = () => {
                                                 <span className={`px-2 py-1 rounded text-xs font-bold uppercase inline-flex items-center gap-1 ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
                                                     }`}>
                                                     {admin.role === 'super_admin' && <Shield size={10} />}
+                                                    {admin.role === 'developer' && <Shield size={10} className="text-white fill-white" />}
                                                     {admin.role.replace('_', ' ')}
                                                 </span>
                                             </div>

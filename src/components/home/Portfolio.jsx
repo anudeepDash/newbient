@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { useStore } from '../../lib/store';
+import { ArrowRight } from 'lucide-react';
 
 const Portfolio = () => {
     const { portfolio } = useStore();
@@ -108,11 +109,24 @@ const Portfolio = () => {
 
                                         {/* Hover Revealed Text (optional alternative style) */}
                                         <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
-                                            <div>
+                                            <div className="flex flex-col items-center">
                                                 <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
-                                                <span className="text-neon-green font-bold uppercase tracking-wider text-sm">
+                                                <span className="text-neon-green font-bold uppercase tracking-wider text-sm mb-4">
                                                     {categories.find(c => c.id === item.category)?.label}
                                                 </span>
+
+                                                {item.highlightUrl && (
+                                                    <a
+                                                        href={item.highlightUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium group/link"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        view event highlight
+                                                        <ArrowRight className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" />
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     </motion.div>
