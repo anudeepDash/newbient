@@ -12,6 +12,7 @@ const Invoice = () => {
     const { id } = useParams();
     const { invoices, updateInvoiceStatus, loading } = useStore();
     const invoiceRef = useRef(null);
+    const printFrameRef = useRef(null);
 
     const invoice = invoices.find(inv => inv.id === id);
     const isAdmin = localStorage.getItem('adminAuth') === 'true';
@@ -74,46 +75,56 @@ const Invoice = () => {
     };
 
     const handlePrint = async () => {
-        if (isQuickUpload) {
-            const printWindow = window.open(invoice.pdfUrl, '_blank');
-            if (printWindow) {
-                printWindow.onload = () => printWindow.print();
-            }
-            return;
-        }
-
-        // For generated invoices, generate the PDF first to ensure consistency
-        const element = invoiceRef.current;
-        if (!element) return;
+        const frame = printFrameRef.current;
+        if (!frame) return;
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                backgroundColor: '#E5E7EB',
-                logging: false,
-                useCORS: true,
-                allowTaint: true
-            });
+            let printUrl = invoice?.pdfUrl;
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
-            const pdfWidth = 210;
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+            // For generated invoices, generate a PDF blob first
+            if (!isQuickUpload) {
+                const element = invoiceRef.current;
+                if (!element) {
+                    alert("Invoice content not found.");
+                    return;
+                }
 
-            // Open PDF in new tab and print
-            const blob = pdf.output('blob');
-            const url = URL.createObjectURL(blob);
-            const printWindow = window.open(url, '_blank');
-            if (printWindow) {
-                printWindow.onload = () => {
-                    printWindow.print();
-                    URL.revokeObjectURL(url);
-                };
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    backgroundColor: '#E5E7EB',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdfWidth = 210;
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+
+                const blob = pdf.output('blob');
+                printUrl = URL.createObjectURL(blob);
             }
+
+            // Load into iframe and print
+            frame.src = printUrl;
+            frame.onload = () => {
+                setTimeout(() => {
+                    try {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                        if (!isQuickUpload) URL.revokeObjectURL(printUrl);
+                    } catch (e) {
+                        console.error("Iframe print error:", e);
+                        // Fallback: Open in new window if iframe print fails (e.g. cross-origin)
+                        window.open(printUrl, '_blank').print();
+                    }
+                }, 500);
+            };
         } catch (error) {
-            console.error("Print generation failed:", error);
-            alert("Failed to prepare print. Please try again.");
+            console.error("Print failed:", error);
+            alert("Failed to prepare for printing.");
         }
     };
 
@@ -140,12 +151,22 @@ const Invoice = () => {
         return `3fr ${customFr} 0.8fr 1.2fr 1.2fr`;
     };
 
-    const totalAmount = displayInvoice.amount || 0;
+    const items = displayInvoice.items || [];
+    const subtotal = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.price || 0)), 0);
+    const gstAmount = invoice?.showGst ? (subtotal * (invoice.gstPercentage || 0)) / 100 : 0;
+    const totalAmount = isQuickUpload ? (displayInvoice.amount || 0) : (subtotal + gstAmount);
     const advancePaid = Number(displayInvoice.advancePaid) || 0;
     const toBePaid = totalAmount - advancePaid;
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black bg-black">
+        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-black scroll-smooth">
+            {/* Hidden Iframe for Printing */}
+            <iframe
+                ref={printFrameRef}
+                className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0"
+                title="print-frame"
+            />
+
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 print:hidden flex justify-between items-center">
                     <Link to="/admin/invoices" className="text-gray-400 hover:text-white flex items-center transition-colors">
@@ -207,7 +228,7 @@ const Invoice = () => {
                             />
                         </div>
                     ) : (
-                        <div className="flex justify-center overflow-x-auto bg-gray-900/50 p-4 md:p-8 rounded-2xl border border-white/5 shadow-2xl">
+                        <div className="print-container flex justify-center overflow-x-auto bg-gray-900/50 p-4 md:p-8 rounded-2xl border border-white/5 shadow-2xl">
                             <div
                                 ref={invoiceRef}
                                 className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl overflow-hidden shrink-0"
@@ -292,13 +313,25 @@ const Invoice = () => {
                                         </div>
 
                                         <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                            <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Subtotal</div>
+                                            <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{subtotal.toLocaleString()}</div>
+                                        </div>
+                                        {invoice?.showGst && (
+                                            <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                                <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">GST ({invoice.gstPercentage}%)</div>
+                                                <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{gstAmount.toLocaleString()}</div>
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
                                             <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Total</div>
                                             <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{totalAmount.toLocaleString()}</div>
                                         </div>
-                                        <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
-                                            <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
-                                            <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{advancePaid.toLocaleString()}</div>
-                                        </div>
+                                        {advancePaid > 0 && (
+                                            <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                                <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
+                                                <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{advancePaid.toLocaleString()}</div>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-12 bg-[#86EFAC] rounded-b-xl text-lg font-bold">
                                             <div className="col-span-10 text-right pr-4 py-3 text-[#DC2626] uppercase">To Be Paid</div>
                                             <div className="col-span-2 text-center py-3 border-l border-dashed border-gray-400 text-[#DC2626]">₹{toBePaid.toLocaleString()}</div>
@@ -306,9 +339,9 @@ const Invoice = () => {
                                     </div>
                                 </div>
 
-                                {/* Footer Notes */}
+                                {/* Footer Notes & Payments */}
                                 <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-4">
-                                    {displayInvoice.note && (
+                                    {invoice?.showNotes !== false && displayInvoice.note && (
                                         <div className="rounded-xl overflow-hidden">
                                             <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
                                             <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
@@ -317,7 +350,7 @@ const Invoice = () => {
                                         </div>
                                     )}
 
-                                    {displayInvoice.paymentDetails && (
+                                    {invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails && (
                                         <div className="rounded-xl overflow-hidden">
                                             <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Payment Details:</div>
                                             <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
@@ -327,12 +360,40 @@ const Invoice = () => {
                                     )}
                                 </div>
 
-                                <div className="px-8 mt-2 mb-20 flex justify-end">
-                                    <div className="text-center">
-                                        <div className="h-12 w-32 border-b-2 border-gray-600 mb-1"></div>
-                                        <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
-                                        <p className="text-[8px] text-gray-500">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                {/* UPI QR & Signatory Row */}
+                                <div className="px-8 mt-4 mb-32 flex justify-between items-end gap-8">
+                                    {/* UPI QR */}
+                                    <div className="flex-1">
+                                        {invoice?.showUPI && invoice?.upiId && (
+                                            <div className="flex items-center gap-4 bg-white/50 p-3 rounded-xl border border-gray-300 w-fit">
+                                                <img
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${invoice.upiId}&pn=${displayInvoice.senderName || 'Newbi'}&am=${totalAmount}&cu=INR`)}`}
+                                                    alt="UPI QR"
+                                                    className="w-20 h-20"
+                                                />
+                                                <div className="text-[10px] font-bold text-gray-600">
+                                                    <p className="uppercase mb-1">Scan to Pay</p>
+                                                    <p className="font-mono text-[8px]">{invoice.upiId}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* AUTHORIZED SIGNATORY */}
+                                    {invoice?.showSignatory !== 'none' && (
+                                        <div className="text-center min-w-[200px]">
+                                            <div className="h-20 flex flex-col items-center justify-end mb-1">
+                                                {invoice?.showSignatory === 'image' && invoice?.signatoryImage ? (
+                                                    <img src={invoice.signatoryImage} alt="Signature" className="h-16 object-contain mix-blend-multiply" />
+                                                ) : (
+                                                    <div className="h-10"></div>
+                                                )}
+                                                <div className="w-48 border-b-2 border-gray-600"></div>
+                                            </div>
+                                            <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
+                                            <p className="text-[8px] text-gray-500">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="absolute bottom-12 left-8 right-8 bg-[#86EFAC] rounded-xl py-3 px-6 flex justify-between items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">

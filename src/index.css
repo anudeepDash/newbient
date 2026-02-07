@@ -41,3 +41,40 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide everything except root to avoid issues */
+  #root > *:not(main), 
+  header, 
+  nav, 
+  footer, 
+  .print-hidden,
+  button {
+    display: none !important;
+  }
+
+  /* Ensure the specific invoice content is visible and takes full width */
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Make sure generated PDF elements are shown */
+  [ref="invoiceRef"] {
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
