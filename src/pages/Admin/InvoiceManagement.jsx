@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Edit, Trash2, Copy, ArrowLeft, Plus, Eye } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -8,7 +8,8 @@ import { cn } from '../../lib/utils';
 import { Input } from '../../components/ui/Input';
 
 const InvoiceManagement = () => {
-    const { invoices, updateInvoiceStatus, deleteInvoice, addInvoice } = useStore();
+    const navigate = useNavigate();
+    const { invoices, updateInvoice, deleteInvoice, addInvoice } = useStore();
     const [filter, setFilter] = useState('All');
 
     // Quick Upload State
@@ -16,6 +17,11 @@ const InvoiceManagement = () => {
     const [quickClientName, setQuickClientName] = useState('');
     const [quickFile, setQuickFile] = useState(null);
     const [uploading, setUploading] = useState(false);
+
+    // Edit State (for metadata/quick uploads)
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingInvoice, setEditingInvoice] = useState(null);
+    const [editName, setEditName] = useState('');
 
     const filteredInvoices = filter === 'All'
         ? invoices
@@ -25,6 +31,34 @@ const InvoiceManagement = () => {
         const link = `${window.location.origin}/invoice/${id}`;
         navigator.clipboard.writeText(link);
         alert(`Invoice link copied! Share ID: ${id}`);
+    };
+
+    const handleEdit = (invoice) => {
+        // If it's a generated invoice (has items), go to generator
+        if (invoice.items && invoice.items.length > 0) {
+            navigate(`/admin/edit-invoice/${invoice.id}`);
+        } else {
+            // It's a quick upload or simple invoice - edit name only
+            setEditingInvoice(invoice);
+            setEditName(invoice.clientName);
+            setShowEditModal(true);
+        }
+    };
+
+    const handleSaveEdit = async (e) => {
+        e.preventDefault();
+        if (!editName) return;
+        setUploading(true);
+        try {
+            await updateInvoice(editingInvoice.id, { clientName: editName });
+            alert("Invoice updated successfully!");
+            setShowEditModal(false);
+        } catch (error) {
+            console.error("Error updating invoice:", error);
+            alert("Failed to update invoice.");
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleDelete = (id) => {
@@ -192,6 +226,7 @@ const InvoiceManagement = () => {
                                                     <Copy size={18} />
                                                 </button>
                                                 <button
+                                                    onClick={() => handleEdit(invoice)}
                                                     className="p-2 text-gray-400 hover:text-white transition-colors"
                                                     title="Edit"
                                                 >
@@ -247,6 +282,34 @@ const InvoiceManagement = () => {
                             </div>
                             <Button type="submit" variant="primary" className="w-full" disabled={uploading}>
                                 {uploading ? 'Uploading...' : 'Upload & Create'}
+                            </Button>
+                        </form>
+                    </Card>
+                </div>
+            )}
+            {/* Edit Modal (Quick/Metadata) */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <Card className="w-full max-w-md p-6 relative border-neon-green">
+                        <button
+                            onClick={() => setShowEditModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            ✕
+                        </button>
+                        <h2 className="text-2xl font-bold text-white mb-6">Edit Client Name</h2>
+                        <form onSubmit={handleSaveEdit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Client Name</label>
+                                <Input
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    placeholder="Enter client name"
+                                    required
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full" disabled={uploading}>
+                                {uploading ? 'Saving...' : 'Update Invoice'}
                             </Button>
                         </form>
                     </Card>
