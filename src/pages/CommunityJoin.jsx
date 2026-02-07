@@ -25,28 +25,28 @@ const CommunityJoin = () => {
     }, [location.search, volunteerGigs]);
 
     return (
-        <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4">
-            <div className="max-w-6xl mx-auto space-y-20">
+        <div className="min-h-screen bg-black text-white pt-20 md:pt-24 pb-16 md:pb-20 px-4 scroll-smooth">
+            <div className="max-w-6xl mx-auto space-y-12 md:space-y-20">
 
                 {/* Header */}
                 <div className="text-center">
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-6xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6"
+                        className="text-3xl md:text-6xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-4 md:mb-6"
                     >
                         Volunteer & Community Hub
                     </motion.h1>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto px-2">
                         Join the Newbi Tribe. Get access to exclusive gigs, community perks, and the inner circle.
                     </p>
                 </div>
 
                 {/* Section 1: Registration Form */}
                 <section>
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="h-10 w-1 bg-neon-green rounded-full"></div>
-                        <h2 className="text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
+                    <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className="h-8 md:h-10 w-1 bg-neon-green rounded-full"></div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
                     </div>
 
                     <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg border border-white/10">
@@ -67,18 +67,18 @@ const CommunityJoin = () => {
                 </section>
 
                 {/* Section 2: Whatsapp Community */}
-                <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#25D366]/20 to-green-900/20 border border-[#25D366]/30 p-8 md:p-12 text-center">
-                    <div className="absolute top-0 right-0 p-32 bg-[#25D366]/10 blur-[100px] rounded-full pointer-events-none"></div>
+                <section className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-r from-[#25D366]/20 to-green-900/20 border border-[#25D366]/30 p-6 md:p-12 text-center">
+                    <div className="absolute top-0 right-0 p-24 md:p-32 bg-[#25D366]/10 blur-[80px] md:blur-[100px] rounded-full pointer-events-none"></div>
 
-                    <h2 className="text-3xl font-bold font-heading text-white mb-4">Step 2: Join the Inner Circle</h2>
-                    <p className="text-gray-300 max-w-2xl mx-auto mb-8 text-lg">
+                    <h2 className="text-2xl md:text-3xl font-bold font-heading text-white mb-4">Step 2: Join the Inner Circle</h2>
+                    <p className="text-gray-300 max-w-2xl mx-auto mb-6 md:mb-8 text-base md:text-lg">
                         Get instant updates, gig alerts, and connect with fellow volunteers in our exclusive WhatsApp community.
                     </p>
 
                     {siteDetails.whatsappCommunity ? (
                         <a href={siteDetails.whatsappCommunity} target="_blank" rel="noopener noreferrer">
-                            <Button className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none text-xl px-10 py-6 h-auto shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:shadow-[0_0_35px_rgba(37,211,102,0.6)] rounded-full transition-all hover:scale-105">
-                                <Users className="mr-3 w-6 h-6" /> Join WhatsApp Community
+                            <Button className="bg-[#25D366] hover:bg-[#128C7E] text-white border-none text-lg md:text-xl px-8 md:px-10 py-5 md:py-6 h-auto shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:shadow-[0_0_35px_rgba(37,211,102,0.6)] rounded-full transition-all hover:scale-105 w-full md:w-auto">
+                                <Users className="mr-3 w-5 h-5 md:w-6 md:h-6" /> Join WhatsApp Community
                             </Button>
                         </a>
                     ) : (
@@ -88,26 +88,26 @@ const CommunityJoin = () => {
 
                 {/* Section 3: Open Gigs */}
                 <section>
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="h-10 w-1 bg-neon-blue rounded-full"></div>
-                        <h2 className="text-3xl font-bold font-heading">Upcoming Volunteer Gigs</h2>
+                    <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className="h-8 md:h-10 w-1 bg-neon-blue rounded-full"></div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-heading">Upcoming Volunteer Gigs</h2>
                     </div>
 
                     {volunteerGigs && volunteerGigs.length > 0 ? (
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                             {volunteerGigs.map((gig) => (
                                 <div
                                     key={gig.id}
                                     id={`gig-${gig.id}`}
-                                    className={`bg-zinc-900/50 border rounded-xl p-6 transition-all group relative ${new URLSearchParams(location.search).get('gig') === gig.id
+                                    className={`bg-zinc-900/50 border rounded-xl p-5 md:p-6 transition-all group relative ${new URLSearchParams(location.search).get('gig') === gig.id
                                         ? 'border-neon-blue shadow-[0_0_30px_rgba(0,243,255,0.2)]'
                                         : 'border-white/10 hover:border-neon-blue/50'
                                         }`}
                                 >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-2xl font-bold text-white group-hover:text-neon-blue transition-colors pr-2">{gig.title}</h3>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
+                                        <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-neon-blue transition-colors pr-2">{gig.title}</h3>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
+                                            <span className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider rounded-full ${gig.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
                                                 {gig.status}
                                             </span>
                                         </div>
@@ -195,9 +195,9 @@ const CommunityJoin = () => {
 
                 {/* Section 4: Community Forms & Applications */}
                 <section>
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="h-10 w-1 bg-yellow-400 rounded-full"></div>
-                        <h2 className="text-3xl font-bold font-heading">Active Forms & Surveys</h2>
+                    <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className="h-8 md:h-10 w-1 bg-yellow-400 rounded-full"></div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-heading">Active Forms & Surveys</h2>
                     </div>
 
                     {forms && forms.length > 0 ? (
@@ -227,25 +227,25 @@ const CommunityJoin = () => {
 
                 {/* Section 4: Secret Store */}
                 <section>
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="h-10 w-1 bg-neon-pink rounded-full"></div>
-                        <h2 className="text-3xl font-bold font-heading">Secret Store</h2>
+                    <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className="h-8 md:h-10 w-1 bg-neon-pink rounded-full"></div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-heading">Secret Store</h2>
                     </div>
 
-                    <div className="relative bg-zinc-900/50 border border-white/5 rounded-2xl p-12 overflow-hidden text-center group">
+                    <div className="relative bg-zinc-900/50 border border-white/5 rounded-2xl p-8 md:p-12 overflow-hidden text-center group">
                         <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
 
                         <div className="relative z-10 flex flex-col items-center">
-                            <div className="mb-6 p-6 bg-zinc-800 rounded-full border border-white/10 group-hover:border-neon-pink/50 group-hover:shadow-[0_0_30px_rgba(255,0,255,0.3)] transition-all duration-500">
-                                <Lock className="w-12 h-12 text-gray-400 group-hover:text-neon-pink transition-colors" />
+                            <div className="mb-4 md:mb-6 p-4 md:p-6 bg-zinc-800 rounded-full border border-white/10 group-hover:border-neon-pink/50 group-hover:shadow-[0_0_30px_rgba(255,0,255,0.3)] transition-all duration-500">
+                                <Lock className="w-8 h-8 md:w-12 md:h-12 text-gray-400 group-hover:text-neon-pink transition-colors" />
                             </div>
 
-                            <h3 className="text-3xl font-bold text-white mb-2">Coming Soon</h3>
-                            <p className="text-gray-400 max-w-lg mx-auto mb-8">
+                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Coming Soon</h3>
+                            <p className="text-gray-400 max-w-lg mx-auto mb-6 md:mb-8 text-sm md:text-base">
                                 Exclusive ticket drops, guestlist spots, and flash sales for our community members. Stay tuned!
                             </p>
 
-                            <Button disabled className="bg-zinc-800 text-gray-500 border-zinc-700 cursor-not-allowed uppercase tracking-widest text-xs">
+                            <Button disabled className="bg-zinc-800 text-gray-500 border-zinc-700 cursor-not-allowed uppercase tracking-widest text-[10px] md:text-xs">
                                 Access Locked
                             </Button>
                         </div>
