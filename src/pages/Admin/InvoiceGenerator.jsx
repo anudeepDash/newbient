@@ -39,7 +39,17 @@ const InvoiceGenerator = () => {
 
         advancePaid: 0,
         note: '',
-        paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
+        paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`,
+
+        // Configuration Toggles
+        showSignatory: 'text', // 'none' | 'text' | 'image'
+        signatoryImage: '',
+        showNotes: true,
+        showPaymentDetails: true,
+        showUPI: false,
+        upiId: '6207708566@jupiteraxis',
+        showGst: false,
+        gstPercentage: 18
     });
 
     const [items, setItems] = useState([
@@ -68,7 +78,17 @@ const InvoiceGenerator = () => {
                     dueDate: invoice.dueDate || '',
                     advancePaid: Number(invoice.advancePaid) || 0,
                     note: invoice.note || '',
-                    paymentDetails: invoice.paymentDetails || ''
+                    paymentDetails: invoice.paymentDetails || '',
+
+                    // New Fields
+                    showSignatory: invoice.showSignatory || 'text',
+                    signatoryImage: invoice.signatoryImage || '',
+                    showNotes: invoice.showNotes !== undefined ? invoice.showNotes : true,
+                    showPaymentDetails: invoice.showPaymentDetails !== undefined ? invoice.showPaymentDetails : true,
+                    showUPI: invoice.showUPI || false,
+                    upiId: invoice.upiId || '6207708566@jupiteraxis',
+                    showGst: invoice.showGst || false,
+                    gstPercentage: invoice.gstPercentage || 18
                 });
                 setItems(invoice.items || []);
                 setCustomColumns(invoice.customColumns || []);
@@ -77,7 +97,9 @@ const InvoiceGenerator = () => {
     }, [id, invoices]);
 
     // Calculations
-    const totalAmount = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    const gstAmount = formData.showGst ? (subtotal * formData.gstPercentage) / 100 : 0;
+    const totalAmount = subtotal + gstAmount;
     const toBePaid = totalAmount - formData.advancePaid;
 
     const handleAddColumn = () => {
@@ -208,7 +230,17 @@ const InvoiceGenerator = () => {
                 senderEmail: formData.senderEmail,
                 senderPan: formData.senderPan,
                 senderGst: formData.senderGst,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+
+                // New configuration fields
+                showSignatory: formData.showSignatory,
+                signatoryImage: formData.signatoryImage,
+                showNotes: formData.showNotes,
+                showPaymentDetails: formData.showPaymentDetails,
+                showUPI: formData.showUPI,
+                upiId: formData.upiId,
+                showGst: formData.showGst,
+                gstPercentage: formData.gstPercentage
             };
 
             if (id) {
@@ -242,7 +274,15 @@ const InvoiceGenerator = () => {
                 dueDate: '',
                 advancePaid: 0,
                 note: '',
-                paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`
+                paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`,
+                showSignatory: 'text',
+                signatoryImage: '',
+                showNotes: true,
+                showPaymentDetails: true,
+                showUPI: false,
+                upiId: '6207708566@jupiteraxis',
+                showGst: false,
+                gstPercentage: 18
             }));
             setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
         }
@@ -447,6 +487,121 @@ const InvoiceGenerator = () => {
                                     onChange={e => setFormData({ ...formData, paymentDetails: e.target.value })}
                                 />
                             </div>
+
+                            {/* SIGNATORY OPTIONS */}
+                            <div className="bg-black/40 p-4 rounded-lg border border-white/5 space-y-4">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Authorized Signatory</h4>
+                                <div className="flex gap-4">
+                                    {['none', 'text', 'image'].map(type => (
+                                        <label key={type} className="flex items-center gap-2 cursor-pointer group">
+                                            <input
+                                                type="radio"
+                                                name="signatoryType"
+                                                checked={formData.showSignatory === type}
+                                                onChange={() => setFormData({ ...formData, showSignatory: type })}
+                                                className="accent-neon-green"
+                                            />
+                                            <span className={`text-xs capitalize ${formData.showSignatory === type ? 'text-neon-green font-bold' : 'text-gray-400'}`}>
+                                                {type}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {formData.showSignatory === 'image' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <label className="text-[10px] text-gray-500 uppercase font-bold">Signature Image</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-24 h-12 bg-white/10 rounded border border-dashed border-white/20 flex items-center justify-center overflow-hidden">
+                                                {formData.signatoryImage ? (
+                                                    <img src={formData.signatoryImage} alt="Signature" className="w-full h-full object-contain" />
+                                                ) : (
+                                                    <span className="text-[8px] text-gray-500">No Image</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            setGenerating(true);
+                                                            try {
+                                                                const storageRef = ref(storage, `signatures/${Date.now()}_${file.name}`);
+                                                                await uploadBytes(storageRef, file);
+                                                                const url = await getDownloadURL(storageRef);
+                                                                setFormData({ ...formData, signatoryImage: url });
+                                                            } catch (err) {
+                                                                alert("Failed to upload signature.");
+                                                            } finally {
+                                                                setGenerating(false);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="block w-full text-[10px] text-gray-400 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-neon-green/10 file:text-neon-green hover:file:bg-neon-green/20"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* SECTION VISIBILITY TOGGLES */}
+                            <div className="grid grid-cols-2 gap-4 bg-black/40 p-4 rounded-lg border border-white/5">
+                                <h4 className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Display Settings</h4>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-8 h-4 rounded-full relative transition-colors ${formData.showNotes ? 'bg-neon-green' : 'bg-gray-700'}`}>
+                                        <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked })} className="hidden" />
+                                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${formData.showNotes ? 'left-4.5' : 'left-0.5'}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-300">Show Notes</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-8 h-4 rounded-full relative transition-colors ${formData.showPaymentDetails ? 'bg-neon-green' : 'bg-gray-700'}`}>
+                                        <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked })} className="hidden" />
+                                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${formData.showPaymentDetails ? 'left-4.5' : 'left-0.5'}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-300">Show A/C Info</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-8 h-4 rounded-full relative transition-colors ${formData.showUPI ? 'bg-neon-green' : 'bg-gray-700'}`}>
+                                        <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked })} className="hidden" />
+                                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${formData.showUPI ? 'left-4.5' : 'left-0.5'}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-300 font-bold">Show UPI QR</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-8 h-4 rounded-full relative transition-colors ${formData.showGst ? 'bg-neon-green' : 'bg-gray-700'}`}>
+                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({ ...formData, showGst: e.target.checked })} className="hidden" />
+                                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${formData.showGst ? 'left-4.5' : 'left-0.5'}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-300 font-bold">Add GST</span>
+                                </label>
+                                {formData.showUPI && (
+                                    <div className="col-span-1 mt-2">
+                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">UPI ID for QR</label>
+                                        <Input
+                                            value={formData.upiId}
+                                            onChange={e => setFormData({ ...formData, upiId: e.target.value })}
+                                            className="h-8 text-xs"
+                                            placeholder="yourname@upi"
+                                        />
+                                    </div>
+                                )}
+                                {formData.showGst && (
+                                    <div className="col-span-1 mt-2">
+                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">GST %</label>
+                                        <Input
+                                            type="number"
+                                            value={formData.gstPercentage}
+                                            onChange={e => setFormData({ ...formData, gstPercentage: parseFloat(e.target.value) || 0 })}
+                                            className="h-8 text-xs font-bold"
+                                            placeholder="18"
+                                        />
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <label className="text-xs text-gray-400">Advance Paid (₹)</label>
                                 <Input
@@ -565,13 +720,25 @@ const InvoiceGenerator = () => {
                                     </div>
 
                                     <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                        <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Subtotal</div>
+                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{subtotal.toLocaleString()}</div>
+                                    </div>
+                                    {formData.showGst && (
+                                        <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                            <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">GST ({formData.gstPercentage}%)</div>
+                                            <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{gstAmount.toLocaleString()}</div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
                                         <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Total</div>
                                         <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{totalAmount.toLocaleString()}</div>
                                     </div>
-                                    <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
-                                        <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
-                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{formData.advancePaid.toLocaleString()}</div>
-                                    </div>
+                                    {formData.advancePaid > 0 && (
+                                        <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
+                                            <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
+                                            <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{formData.advancePaid.toLocaleString()}</div>
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-12 bg-[#86EFAC] rounded-b-xl text-lg font-bold">
                                         <div className="col-span-10 text-right pr-4 py-3 text-[#DC2626] uppercase">To Be Paid</div>
                                         <div className="col-span-2 text-center py-3 border-l border-dashed border-gray-400 text-[#DC2626]">₹{toBePaid.toLocaleString()}</div>
@@ -581,7 +748,7 @@ const InvoiceGenerator = () => {
 
                             {/* Footer Notes */}
                             <div className="px-8 mt-12 grid grid-cols-2 gap-8 mb-4">
-                                {formData.note && (
+                                {formData.showNotes && formData.note && (
                                     <div className="rounded-xl overflow-hidden">
                                         <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Additional Note:</div>
                                         <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
@@ -590,7 +757,7 @@ const InvoiceGenerator = () => {
                                     </div>
                                 )}
 
-                                {formData.paymentDetails && (
+                                {formData.showPaymentDetails && formData.paymentDetails && (
                                     <div className="rounded-xl overflow-hidden">
                                         <div className="bg-[#86EFAC] py-2 px-4 font-bold uppercase text-gray-700 tracking-wide text-sm">Payment Details:</div>
                                         <div className="bg-[#C6CBCE] p-4 text-[10px] whitespace-pre-line leading-relaxed font-bold text-black border-t border-gray-400/20 min-h-[100px]">
@@ -600,13 +767,40 @@ const InvoiceGenerator = () => {
                                 )}
                             </div>
 
-                            {/* Signatory Box */}
-                            <div className="px-8 mt-2 mb-20 flex justify-end">
-                                <div className="text-center">
-                                    <div className="h-12 w-32 border-b-2 border-gray-600 mb-1"></div>
-                                    <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
-                                    <p className="text-[8px] text-gray-500">{formData.senderName}</p>
+                            {/* UPI QR & Signatory Row */}
+                            <div className="px-8 mt-4 mb-32 flex justify-between items-end gap-8">
+                                {/* UPI QR */}
+                                <div className="flex-1">
+                                    {formData.showUPI && formData.upiId && (
+                                        <div className="flex items-center gap-4 bg-white/50 p-3 rounded-xl border border-gray-300 w-fit">
+                                            <img
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=${formData.senderName}&am=${totalAmount}&cu=INR`)}`}
+                                                alt="UPI QR"
+                                                className="w-20 h-20"
+                                            />
+                                            <div className="text-[10px] font-bold text-gray-600">
+                                                <p className="uppercase mb-1">Scan to Pay</p>
+                                                <p className="font-mono text-[8px]">{formData.upiId}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* AUTHORIZED SIGNATORY */}
+                                {formData.showSignatory !== 'none' && (
+                                    <div className="text-center min-w-[200px]">
+                                        <div className="h-20 flex flex-col items-center justify-end mb-1">
+                                            {formData.showSignatory === 'image' && formData.signatoryImage ? (
+                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 object-contain mix-blend-multiply" />
+                                            ) : (
+                                                <div className="h-10"></div>
+                                            )}
+                                            <div className="w-48 border-b-2 border-gray-600"></div>
+                                        </div>
+                                        <p className="text-[10px] font-bold uppercase text-gray-600">Authorized Signatory</p>
+                                        <p className="text-[8px] text-gray-500">{formData.senderName || 'Newbi Entertainment'}</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Footer Branding */}
