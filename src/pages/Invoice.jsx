@@ -73,13 +73,48 @@ const Invoice = () => {
         }
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (isQuickUpload) {
             const printWindow = window.open(invoice.pdfUrl, '_blank');
-            if (printWindow) printWindow.print();
+            if (printWindow) {
+                printWindow.onload = () => printWindow.print();
+            }
             return;
         }
-        window.print();
+
+        // For generated invoices, generate the PDF first to ensure consistency
+        const element = invoiceRef.current;
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: '#E5E7EB',
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            const pdfWidth = 210;
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+
+            // Open PDF in new tab and print
+            const blob = pdf.output('blob');
+            const url = URL.createObjectURL(blob);
+            const printWindow = window.open(url, '_blank');
+            if (printWindow) {
+                printWindow.onload = () => {
+                    printWindow.print();
+                    URL.revokeObjectURL(url);
+                };
+            }
+        } catch (error) {
+            console.error("Print generation failed:", error);
+            alert("Failed to prepare print. Please try again.");
+        }
     };
 
     const handleMarkPaid = () => {
@@ -154,11 +189,9 @@ const Invoice = () => {
                             </div>
                         )}
 
-                        {!isQuickUpload && (
-                            <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
-                                <Printer size={16} className="mr-2" /> Print
-                            </Button>
-                        )}
+                        <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
+                            <Printer size={16} className="mr-2" /> Print
+                        </Button>
                         <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="bg-neon-green text-black hover:bg-neon-green/90">
                             <Download size={16} className="mr-2" /> Download PDF
                         </Button>
