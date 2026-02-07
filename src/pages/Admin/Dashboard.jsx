@@ -297,10 +297,10 @@ const Dashboard = () => {
                 )}
 
                 {/* SUPER ADMIN ONLY SECTION */}
-                {user.role === 'super_admin' && (
-                    <div className="mb-8">
-                        <Link to="/admin/manage-admins">
-                            <div className="bg-gradient-to-r from-neon-purple/20 to-neon-blue/20 border border-neon-purple/50 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group">
+                {(user.role === 'super_admin' || user.role === 'developer') && (
+                    <div className="mb-8 flex flex-col md:flex-row gap-4">
+                        <Link to="/admin/manage-admins" className="flex-1">
+                            <div className="bg-gradient-to-r from-neon-purple/20 to-neon-blue/20 border border-neon-purple/50 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-neon-purple/20 rounded-full text-neon-purple">
                                         <Shield size={24} />
@@ -313,6 +313,22 @@ const Dashboard = () => {
                                 <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
                             </div>
                         </Link>
+                        {user.role === 'developer' && (
+                            <Link to="/admin/dev-settings" className="flex-1">
+                                <div className="bg-gradient-to-r from-white/10 to-transparent border border-white/20 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-white/10 rounded-full text-white">
+                                            <Shield size={24} className="fill-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">Dev Settings</h3>
+                                            <p className="text-sm text-gray-400">Maintenance, killswitches & feature flags.</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
+                                </div>
+                            </Link>
+                        )}
                     </div>
                 )}
 
@@ -340,115 +356,126 @@ const Dashboard = () => {
 
                 {/* Quick Actions Carousel */}
                 <AdminCarousel title="Quick Actions">
-                    <div
-                        onClick={() => alert("Bruh, we lowkey down right now. Fixing stuff FR FR! 💀")}
-                        className="group block h-full cursor-not-allowed"
-                    >
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 opacity-75 bg-gradient-to-br from-white/5 to-transparent transition-all duration-300 relative overflow-hidden">
-                            <div className="absolute top-4 right-4 px-2 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-[10px] font-bold text-neon-pink uppercase tracking-widest animate-pulse">
-                                Maintenance 💀
-                            </div>
-                            <div>
-                                <div className="p-4 rounded-full bg-white/5 text-gray-500 mb-6 w-16 h-16 flex items-center justify-center grayscale">
-                                    <FileText size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-400 mb-2">Invoices</h3>
-                                <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Lowkey down for maintenance...</p>
-                            </div>
-                            <span className="text-gray-600 text-sm font-bold flex items-center gap-2">
-                                System Offline <span className="text-lg">×</span>
-                            </span>
-                        </Card>
-                    </div>
+                    {/* Invoices */}
+                    <MaintenanceCard
+                        title="Invoices"
+                        description="Create and track client payments securely."
+                        icon={FileText}
+                        color="neon-blue"
+                        link="/admin/invoices"
+                        isUnderMaintenance={maintenanceState.features?.invoices}
+                    />
 
-                    <Link to="/admin/announcements" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,0,255,0.2)]">
-                                    <Megaphone size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
-                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Post news updates and pin important info.</p>
-                            </div>
-                            <span className="text-neon-pink text-sm font-bold flex items-center gap-2">
-                                Manage Posts <span className="text-lg">→</span>
-                            </span>
-                        </Card>
-                    </Link>
+                    {/* Announcements */}
+                    <MaintenanceCard
+                        title="Announcements"
+                        description="Post news updates and pin important info."
+                        icon={Megaphone}
+                        color="neon-pink"
+                        link="/admin/announcements"
+                        isUnderMaintenance={maintenanceState.features?.announcements}
+                    />
 
-                    <Link to="/admin/forms" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,255,102,0.2)]">
-                                    <Users size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Community Hub</h3>
-                                <p className="text-gray-400 text-sm mb-6 line-clamp-2">Volunteer gigs, forms, and sign-ups.</p>
-                            </div>
-                            <span className="text-neon-green text-sm font-bold flex items-center gap-2">
-                                Enter Hub <span className="text-lg">→</span>
-                            </span>
-                        </Card>
-                    </Link>
+                    {/* Forms / Community */}
+                    <MaintenanceCard
+                        title="Community Hub"
+                        description="Volunteer gigs, forms, and sign-ups."
+                        icon={Users}
+                        color="neon-green"
+                        link="/admin/forms"
+                        isUnderMaintenance={maintenanceState.features?.forms}
+                    />
                 </AdminCarousel>
-
 
                 {/* Content Management Carousel */}
                 <AdminCarousel title="Content Management">
-                    <Link to="/admin/concerts" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-green bg-gradient-to-br from-white/5 to-transparent hover:from-neon-green/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-neon-green/10 text-neon-green mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Music size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Past Events</h3>
-                                <p className="text-gray-400 text-sm mb-6">Manage portfolio and past event records.</p>
-                            </div>
-                            <span className="text-neon-green text-sm font-bold flex items-center gap-2">Manage Past Events →</span>
-                        </Card>
-                    </Link>
+                    {/* Concerts Manager */}
+                    <MaintenanceCard
+                        title="Past Events"
+                        description="Manage portfolio and past event records."
+                        icon={Music}
+                        color="neon-green"
+                        link="/admin/concerts"
+                        isUnderMaintenance={maintenanceState.features?.concerts}
+                    />
 
-                    <Link to="/admin/upcoming-events" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-yellow-400 bg-gradient-to-br from-white/5 to-transparent hover:from-yellow-400/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-yellow-400/10 text-yellow-400 mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Calendar size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Upcoming</h3>
-                                <p className="text-gray-400 text-sm mb-6">Homepage pinned events.</p>
-                            </div>
-                            <span className="text-yellow-400 text-sm font-bold flex items-center gap-2">Manage →</span>
-                        </Card>
-                    </Link>
+                    {/* Upcoming Events */}
+                    <MaintenanceCard
+                        title="Upcoming"
+                        description="Homepage pinned events."
+                        icon={Calendar}
+                        color="yellow-400"
+                        link="/admin/upcoming-events"
+                        isUnderMaintenance={maintenanceState.features?.upcoming_events}
+                    />
 
-                    <Link to="/admin/gallery-manager" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-neon-pink bg-gradient-to-br from-white/5 to-transparent hover:from-neon-pink/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-neon-pink/10 text-neon-pink mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Users size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Gallery</h3>
-                                <p className="text-gray-400 text-sm mb-6">Photos and media uploads.</p>
-                            </div>
-                            <span className="text-neon-pink text-sm font-bold flex items-center gap-2">Edit Photos →</span>
-                        </Card>
-                    </Link>
+                    {/* Gallery Manager */}
+                    <MaintenanceCard
+                        title="Gallery"
+                        description="Photos and media uploads."
+                        icon={Users}
+                        color="neon-pink"
+                        link="/admin/gallery-manager"
+                        isUnderMaintenance={maintenanceState.features?.gallery_manager}
+                    />
 
-                    <Link to="/admin/site-content" className="group block h-full">
-                        <Card className="p-8 h-full flex flex-col justify-between border-white/10 hover:border-white bg-gradient-to-br from-white/5 to-transparent hover:from-white/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300">
-                            <div>
-                                <div className="p-4 rounded-full bg-white/10 text-white mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileText size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Site Info</h3>
-                                <p className="text-gray-400 text-sm mb-6">Contact details and footer links.</p>
-                            </div>
-                            <span className="text-white text-sm font-bold flex items-center gap-2">Update Info →</span>
-                        </Card>
-                    </Link>
+                    {/* Site Info */}
+                    <MaintenanceCard
+                        title="Site Info"
+                        description="Contact details and footer links."
+                        icon={FileText}
+                        color="white"
+                        link="/admin/site-content"
+                        isUnderMaintenance={maintenanceState.features?.site_content}
+                    />
                 </AdminCarousel>
             </div>
         </div >
+    );
+};
+
+// Sub-component for maintenance-aware cards
+const MaintenanceCard = ({ title, description, icon: Icon, color, link, isUnderMaintenance }) => {
+    if (isUnderMaintenance) {
+        return (
+            <div
+                onClick={() => alert(`Bruh, ${title} is lowkey down right now. Fixing stuff FR FR! 💀`)}
+                className="group block h-full cursor-not-allowed"
+            >
+                <Card className="p-8 h-full flex flex-col justify-between border-white/10 opacity-75 bg-gradient-to-br from-white/5 to-transparent transition-all duration-300 relative overflow-hidden">
+                    <div className="absolute top-4 right-4 px-2 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-[10px] font-bold text-neon-pink uppercase tracking-widest animate-pulse">
+                        Maintenance 💀
+                    </div>
+                    <div>
+                        <div className="p-4 rounded-full bg-white/5 text-gray-500 mb-6 w-16 h-16 flex items-center justify-center grayscale">
+                            <Icon size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-400 mb-2">{title}</h3>
+                        <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Lowkey down for maintenance...</p>
+                    </div>
+                    <span className="text-gray-600 text-sm font-bold flex items-center gap-2">
+                        System Offline <span className="text-lg">×</span>
+                    </span>
+                </Card>
+            </div>
+        );
+    }
+
+    return (
+        <Link to={link} className="group block h-full">
+            <Card className={`p-8 h-full flex flex-col justify-between border-white/10 hover:border-${color} bg-gradient-to-br from-white/5 to-transparent hover:from-${color}/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300`}>
+                <div>
+                    <div className={`p-4 rounded-full bg-${color}/10 text-${color} mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,0,0,0.1)]`}>
+                        <Icon size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+                    <p className="text-gray-400 text-sm mb-6 line-clamp-2">{description}</p>
+                </div>
+                <span className={`text-${color} text-sm font-bold flex items-center gap-2`}>
+                    Open Manager <span className="text-lg">→</span>
+                </span>
+            </Card>
+        </Link>
     );
 };
 

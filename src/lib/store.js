@@ -9,6 +9,12 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     upcomingEvents: [],
+    maintenanceState: {
+        global: false,
+        pages: {}, // e.g., gallery, concerts
+        features: {}, // e.g., invoices, announcements
+        sections: {}, // e.g., home_upcoming, home_portfolio
+    },
     siteSettings: { showUpcomingEvents: true },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
     loading: true,
@@ -81,8 +87,30 @@ export const useStore = create((set, get) => ({
         }, (error) => console.error("Error fetching site details:", error));
 
 
+        // Detect environment for maintenance isolation
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
+
+        // Maintenance State Subscription
+        const unsub11 = onSnapshot(doc(db, 'app_state', maintenanceDocId), (docSnap) => {
+            if (docSnap.exists()) {
+                set({ maintenanceState: docSnap.data() });
+            } else {
+                // Initialize if missing
+                const initialState = {
+                    global: false,
+                    pages: { gallery: false, concerts: false, contact: false, community: false },
+                    features: { invoices: false, announcements: false, messages: false, gallery_manager: false, forms: false },
+                    sections: { home_upcoming: false, home_portfolio: false }
+                };
+                setDoc(doc(db, 'app_state', maintenanceDocId), initialState);
+                set({ maintenanceState: initialState });
+            }
+        }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
+
+
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11();
         };
     },
 
@@ -225,6 +253,8 @@ export const useStore = create((set, get) => ({
             if (!snapshot.empty) {
                 const adminDoc = snapshot.docs[0].data();
                 role = adminDoc.role || 'unauthorized';
+                // Standardize 'developer' role
+                if (role === 'developer') role = 'developer';
             } else {
                 console.warn("User logged in but not found in admins collection.");
             }
@@ -246,6 +276,30 @@ export const useStore = create((set, get) => ({
         const auth = getAuth();
         await auth.signOut();
         set({ user: null });
+    },
+
+    // Maintenance Actions
+    toggleMaintenanceFeature: async (category, key) => {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
+
+        const current = get().maintenanceState;
+        const newState = {
+            ...current,
+            [category]: {
+                ...current[category],
+                [key]: !current[category]?.[key]
+            }
+        };
+        await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+    },
+
+    toggleGlobalMaintenance: async () => {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
+
+        const current = get().maintenanceState;
+        await setDoc(doc(db, 'app_state', maintenanceDocId), { global: !current.global }, { merge: true });
     },
 
     // Actions

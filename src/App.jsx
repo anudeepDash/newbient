@@ -23,8 +23,8 @@ import CommunityJoin from './pages/CommunityJoin';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
-
-// ... (imports)
+import DevSettings from './pages/Admin/DevSettings';
+import MaintenanceGuard from './components/MaintenanceGuard';
 
 function App() {
   const subscribeToData = useStore((state) => state.subscribeToData);
@@ -45,19 +45,20 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="gallery" element={<MediaGallery />} />
-          <Route path="concerts" element={<ConcertZone />} />
-          <Route path="contact" element={<Contact />} />
+          <Route path="gallery" element={<MaintenanceGuard isPage featureId="gallery"><MediaGallery /></MaintenanceGuard>} />
+          <Route path="concerts" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZone /></MaintenanceGuard>} />
+          <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
           <Route path="invoice/:id" element={<Invoice />} />
-          <Route path="community-join" element={<CommunityJoin />} />
+          <Route path="community-join" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
 
           {/* Admin Routes */}
           <Route path="admin" element={<Dashboard />} />
+          <Route path="admin/dev-settings" element={<DevSettings />} />
           <Route path="admin/manage-admins" element={<AdminManager />} />
-          <Route path="admin/invoices" element={<Maintenance />} />
-          <Route path="admin/create-invoice" element={<Maintenance />} />
-          <Route path="admin/announcements" element={<AnnouncementsManager />} />
+          <Route path="admin/invoices" element={<MaintenanceGuard featureId="invoices"><Maintenance /></MaintenanceGuard>} />
+          <Route path="admin/create-invoice" element={<MaintenanceGuard featureId="invoices"><Maintenance /></MaintenanceGuard>} />
+          <Route path="admin/announcements" element={<MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard>} />
           <Route path="admin/concerts" element={<ConcertManager />} />
           <Route path="admin/messages" element={<MessageManager />} />
           <Route path="admin/site-content" element={<SiteContentManager />} />

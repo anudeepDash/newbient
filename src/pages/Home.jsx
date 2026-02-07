@@ -8,6 +8,8 @@ import CallToAction from '../components/home/CallToAction';
 
 import UpcomingEvents from '../components/home/UpcomingEvents';
 
+import MaintenanceGuard from '../components/MaintenanceGuard';
+
 const Home = () => {
     return (
         <main className="bg-dark min-h-screen">
@@ -16,8 +18,12 @@ const Home = () => {
             <WhyChooseUs />
             <About />
             <Services />
-            <UpcomingEvents />
-            <Portfolio />
+            <MaintenanceGuard isSection featureId="home_upcoming">
+                <UpcomingEvents />
+            </MaintenanceGuard>
+            <MaintenanceGuard isSection featureId="home_portfolio">
+                <Portfolio />
+            </MaintenanceGuard>
             <CallToAction />
         </main>
     );
