@@ -43,16 +43,16 @@ const AnnouncementsManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-white">Announcements Manager</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Announcements</h1>
                     </div>
-                    <Button variant="primary" onClick={() => setIsAdding(!isAdding)} className="w-full sm:w-auto">
+                    <Button variant="primary" onClick={() => setIsAdding(!isAdding)} className="w-full md:w-auto px-8 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-neon-pink/20">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add New
+                        {isAdding ? 'Cancel' : 'Add New'}
                     </Button>
                 </div>
 
@@ -120,16 +120,16 @@ const AnnouncementsManager = () => {
                                 <button
                                     onClick={() => togglePinAnnouncement(item.id)}
                                     className={cn(
-                                        "p-2 rounded-full transition-colors",
-                                        item.isPinned ? "bg-neon-pink/20 text-neon-pink" : "text-gray-500 hover:text-white"
+                                        "p-3 md:p-2 rounded-full transition-colors",
+                                        item.isPinned ? "bg-neon-pink/20 text-neon-pink" : "text-gray-500 hover:text-white bg-white/5"
                                     )}
                                     title={item.isPinned ? "Unpin" : "Pin"}
                                 >
-                                    <Pin size={20} />
+                                    <Pin size={20} className={item.isPinned ? "fill-current" : ""} />
                                 </button>
                                 <button
                                     onClick={() => deleteAnnouncement(item.id)}
-                                    className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+                                    className="p-3 md:p-2 text-gray-500 hover:text-red-500 transition-colors bg-white/5 md:bg-transparent rounded-full"
                                     title="Delete"
                                 >
                                     <Trash2 size={20} />

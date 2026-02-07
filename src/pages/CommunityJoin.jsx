@@ -49,19 +49,14 @@ const CommunityJoin = () => {
                         <h2 className="text-2xl md:text-3xl font-bold font-heading">Step 1: Join the Tribe</h2>
                     </div>
 
-                    <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg border border-white/10">
+                    <div className="w-full max-w-4xl mx-auto aspect-[1/2] sm:aspect-[4/5] bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
                         <iframe
                             src="https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true"
-                            width="100%"
-                            height="1600"
-                            frameBorder="0"
-                            marginHeight="0"
-                            marginWidth="0"
-                            className="w-full bg-transparent"
-                            style={{ filter: 'invert(1) hue-rotate(180deg)' }}
+                            className="w-full h-full border-0"
+                            style={{ filter: 'invert(1) hue-rotate(180deg)', background: 'transparent' }}
                             title="NewBi Tribe Registration"
                         >
-                            Loading…
+                            Loading form...
                         </iframe>
                     </div>
                 </section>

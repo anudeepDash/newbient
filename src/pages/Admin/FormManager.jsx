@@ -40,12 +40,12 @@ const FormManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-white">Community & Forms</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Community & Forms</h1>
                     </div>
                 </div>
 
