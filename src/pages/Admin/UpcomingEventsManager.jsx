@@ -102,25 +102,25 @@ const UpcomingEventsManager = () => {
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 md:gap-4">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors shrink-0">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold text-white">Upcoming Events</h1>
-                            <p className="text-sm text-gray-400">Manage the 'Upcoming Events' section on the home page.</p>
+                            <h1 className="text-2xl md:text-3xl font-bold text-white">Upcoming Events</h1>
+                            <p className="text-xs md:text-sm text-gray-400">Manage home page events.</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                        <div className="flex items-center justify-between gap-4 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
                             <span className="text-sm text-gray-300">Home Section:</span>
                             <button
                                 onClick={() => toggleUpcomingSectionVisibility(siteSettings?.showUpcomingEvents)}
-                                className={`flex items-center gap-2 px-3 py-1 rounded-md text-xs font-bold transition-all ${siteSettings?.showUpcomingEvents
-                                        ? 'bg-neon-green text-black'
-                                        : 'bg-red-500/20 text-red-500'
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${siteSettings?.showUpcomingEvents
+                                    ? 'bg-neon-green text-black'
+                                    : 'bg-red-500/20 text-red-500'
                                     }`}
                             >
                                 {siteSettings?.showUpcomingEvents ? (
@@ -131,7 +131,7 @@ const UpcomingEventsManager = () => {
                             </button>
                         </div>
 
-                        <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); }}>
+                        <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); }} className="w-full sm:w-auto">
                             <Plus className="mr-2 h-4 w-4" />
                             {isAdding ? 'Cancel' : 'Add New Event'}
                         </Button>
@@ -257,11 +257,11 @@ const UpcomingEventsManager = () => {
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
 
-                                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleEdit(item)} className="p-2 bg-black/50 text-white rounded-full hover:bg-neon-blue hover:text-black transition-colors">
+                                <div className="absolute top-2 right-2 flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => handleEdit(item)} className="p-2.5 md:p-2 bg-black/60 md:bg-black/50 text-white rounded-full hover:bg-neon-blue hover:text-black transition-colors backdrop-blur-sm">
                                         <Edit size={16} />
                                     </button>
-                                    <button onClick={() => deleteUpcomingEvent(item.id)} className="p-2 bg-black/50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors">
+                                    <button onClick={() => deleteUpcomingEvent(item.id)} className="p-2.5 md:p-2 bg-black/60 md:bg-black/50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors backdrop-blur-sm">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>

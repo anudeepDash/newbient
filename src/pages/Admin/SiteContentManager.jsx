@@ -28,12 +28,12 @@ const SiteContentManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="mb-8 flex items-center justify-between">
-                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors">
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors text-sm">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold text-white">Site Content</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">Site Content</h1>
                 </div>
 
                 <Card className="p-8">
