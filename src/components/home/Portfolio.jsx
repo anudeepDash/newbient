@@ -6,35 +6,16 @@ import { ArrowRight } from 'lucide-react';
 const Portfolio = () => {
     const { portfolio } = useStore();
     const categories = [
-        {
-            id: 'music',
-            label: 'Music Concerts'
-        },
-        {
-            id: 'fests',
-            label: 'Fests & IPs'
-        },
-        {
-            id: 'comedy',
-            label: 'Stand-Up Shows'
-        }
+        { id: 'music', label: 'Music Concerts' },
+        { id: 'fests', label: 'Fests & IPs' },
+        { id: 'comedy', label: 'Stand-Up Shows' }
     ];
 
     const [activeTab, setActiveTab] = useState(categories[0].id);
-    const [width, setWidth] = useState(0);
-    const carouselRef = useRef();
-    const x = useMotionValue(0);
-
     const filteredItems = portfolio.filter(item => item.category === activeTab);
 
-    useEffect(() => {
-        if (carouselRef.current) {
-            setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
-        }
-    }, [filteredItems, activeTab]);
-
     return (
-        <section className="py-20 bg-black text-white relative overflow-hidden">
+        <section className="py-20 bg-black text-white relative overflow-hidden border-t border-white/5">
             {/* Neon Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -64,26 +45,21 @@ const Portfolio = () => {
 
                 {/* Carousel Content */}
                 <div className="min-h-[300px] relative">
-                    <motion.div
-                        ref={carouselRef}
-                        className="cursor-grab active:cursor-grabbing overflow-hidden"
-                        whileTap={{ cursor: "grabbing" }}
-                    >
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeTab} // Re-mount carousel on tab change to reset position
-                                drag="x"
-                                dragConstraints={{ right: 0, left: -width }}
-                                initial={{ opacity: 0, x: 50 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -50 }}
-                                transition={{ duration: 0.3 }}
-                                className="flex gap-6"
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {filteredItems.map((item) => (
-                                    <motion.div
+                                    <div
                                         key={item.id}
-                                        className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg"
+                                        className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg snap-start"
                                     >
                                         {/* Image Background */}
                                         {item.image ? (
@@ -107,7 +83,7 @@ const Portfolio = () => {
                                             </p>
                                         </div>
 
-                                        {/* Hover Revealed Text (optional alternative style) */}
+                                        {/* Hover Revealed Text */}
                                         <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
                                             <div className="flex flex-col items-center">
                                                 <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
@@ -129,7 +105,7 @@ const Portfolio = () => {
                                                 )}
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 ))}
 
                                 {filteredItems.length === 0 && (
@@ -137,9 +113,9 @@ const Portfolio = () => {
                                         No events added in this category yet.
                                     </div>
                                 )}
-                            </motion.div>
-                        </AnimatePresence>
-                    </motion.div>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </div>
         </section>

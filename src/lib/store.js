@@ -87,24 +87,31 @@ export const useStore = create((set, get) => ({
         }, (error) => console.error("Error fetching site details:", error));
 
 
-        // Detect environment for maintenance isolation
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
-        // Maintenance State Subscription
         const unsub11 = onSnapshot(doc(db, 'app_state', maintenanceDocId), (docSnap) => {
             if (docSnap.exists()) {
-                set({ maintenanceState: docSnap.data() });
+                // Merge with initial structure to ensure all keys exist
+                const data = docSnap.data();
+                set({
+                    maintenanceState: {
+                        global: data.global ?? false,
+                        pages: data.pages ?? {},
+                        features: data.features ?? {},
+                        sections: data.sections ?? {}
+                    }
+                });
             } else {
-                // Initialize if missing
-                const initialState = {
-                    global: false,
-                    pages: { gallery: false, concerts: false, contact: false, community: false },
-                    features: { invoices: false, announcements: false, messages: false, gallery_manager: false, forms: false },
-                    sections: { home_upcoming: false, home_portfolio: false }
-                };
-                setDoc(doc(db, 'app_state', maintenanceDocId), initialState);
-                set({ maintenanceState: initialState });
+                // If doc doesn't exist, use defaults but don't force write yet
+                set({
+                    maintenanceState: {
+                        global: false,
+                        pages: {},
+                        features: {},
+                        sections: {}
+                    }
+                });
             }
         }, (error) => console.error(`Error fetching maintenance state (${maintenanceDocId}):`, error));
 
@@ -283,23 +290,40 @@ export const useStore = create((set, get) => ({
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
-        const current = get().maintenanceState;
-        const newState = {
-            ...current,
-            [category]: {
-                ...current[category],
-                [key]: !current[category]?.[key]
-            }
-        };
-        await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+        console.log(`[Maintenance] Toggling ${category}.${key} in ${maintenanceDocId}`);
+
+        try {
+            const current = get().maintenanceState;
+            const newState = {
+                ...current,
+                [category]: {
+                    ...current[category],
+                    [key]: !current[category]?.[key]
+                }
+            };
+            console.log(`[Maintenance] New State:`, newState);
+            await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+        } catch (error) {
+            console.error(`[Maintenance] Failed to update ${maintenanceDocId}:`, error);
+            alert(`Firestore Update Failed: ${error.message}`);
+        }
     },
 
     toggleGlobalMaintenance: async () => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const maintenanceDocId = isLocal ? 'maintenance_local' : 'maintenance';
 
-        const current = get().maintenanceState;
-        await setDoc(doc(db, 'app_state', maintenanceDocId), { global: !current.global }, { merge: true });
+        console.log(`[Maintenance] Toggling GLOBAL in ${maintenanceDocId}`);
+
+        try {
+            const current = get().maintenanceState;
+            const newState = { global: !current.global };
+            console.log(`[Maintenance] New Global State:`, newState);
+            await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+        } catch (error) {
+            console.error(`[Maintenance] Failed to update global in ${maintenanceDocId}:`, error);
+            alert(`Firestore Global Update Failed: ${error.message}`);
+        }
     },
 
     // Actions

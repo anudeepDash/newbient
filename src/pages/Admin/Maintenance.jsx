@@ -5,12 +5,17 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
+import { useStore } from '../../lib/store';
+
 const Maintenance = () => {
     const navigate = useNavigate();
+    const { user } = useStore();
+
+    const isAdmin = ['developer', 'super_admin', 'editor', 'admin'].includes(user?.role);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Decor */}
+            {/* ... background decor ... */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 <motion.div
                     animate={{
@@ -63,14 +68,14 @@ const Maintenance = () => {
                         </motion.div>
                     </motion.div>
 
-                    {/* Gen Z Messaging */}
+                    {/* Professional Messaging */}
                     <div className="space-y-4">
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="text-4xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500 uppercase"
                         >
-                            Lowkey Down FR FR 💀
+                            Under Maintenance
                         </motion.h1>
 
                         <motion.div
@@ -80,10 +85,10 @@ const Maintenance = () => {
                             className="space-y-2"
                         >
                             <p className="text-xl text-gray-300 font-medium">
-                                No cap, the invoice manager is currently in its villain era.
+                                We are currently performing scheduled maintenance to improve our system.
                             </p>
                             <p className="text-gray-400">
-                                We're fixing some L's to make it a total W. Be back soon, bestie! ✨
+                                We expect to be back online shortly. Thank you for your patience.
                             </p>
                         </motion.div>
                     </div>
@@ -91,10 +96,10 @@ const Maintenance = () => {
                     {/* Status Badge */}
                     <div className="flex flex-wrap justify-center gap-3">
                         <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest text-gray-400">
-                            Status: Cookin' 👨‍🍳
+                            Status: Updating
                         </span>
                         <span className="px-4 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30 text-xs font-bold uppercase tracking-widest text-neon-green">
-                            Vibe check: Passed ✅
+                            System: Secure ✅
                         </span>
                     </div>
 
@@ -107,13 +112,13 @@ const Maintenance = () => {
                     >
                         <Button
                             variant="outline"
-                            onClick={() => navigate('/admin')}
+                            onClick={() => navigate(isAdmin ? '/admin' : '/')}
                             className="w-full py-6 group relative overflow-hidden bg-transparent border-white/20 hover:border-white text-white transition-all duration-500"
                         >
                             <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                             <span className="relative z-10 flex items-center justify-center gap-2 group-hover:text-black transition-colors">
                                 <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                                RETURN TO DASHBOARD
+                                {isAdmin ? 'RETURN TO DASHBOARD' : 'RETURN TO HOME'}
                             </span>
                         </Button>
                     </motion.div>

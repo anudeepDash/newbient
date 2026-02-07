@@ -12,7 +12,7 @@ import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
 
 const Dashboard = () => {
-    const { invoices, concerts, announcements, user, checkUserRole, logout } = useStore();
+    const { invoices, concerts, announcements, user, checkUserRole, logout, maintenanceState } = useStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
@@ -313,7 +313,7 @@ const Dashboard = () => {
                                 <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
                             </div>
                         </Link>
-                        {user.role === 'developer' && (
+                        {(user.role === 'developer' || user.role === 'super_admin') && (
                             <Link to="/admin/dev-settings" className="flex-1">
                                 <div className="bg-gradient-to-r from-white/10 to-transparent border border-white/20 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
                                     <div className="flex items-center gap-4">
@@ -439,22 +439,22 @@ const MaintenanceCard = ({ title, description, icon: Icon, color, link, isUnderM
     if (isUnderMaintenance) {
         return (
             <div
-                onClick={() => alert(`Bruh, ${title} is lowkey down right now. Fixing stuff FR FR! 💀`)}
+                onClick={() => alert(`The ${title} module is currently undergoing maintenance. Please check back later.`)}
                 className="group block h-full cursor-not-allowed"
             >
                 <Card className="p-8 h-full flex flex-col justify-between border-white/10 opacity-75 bg-gradient-to-br from-white/5 to-transparent transition-all duration-300 relative overflow-hidden">
                     <div className="absolute top-4 right-4 px-2 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-[10px] font-bold text-neon-pink uppercase tracking-widest animate-pulse">
-                        Maintenance 💀
+                        Maintenance 🔧
                     </div>
                     <div>
                         <div className="p-4 rounded-full bg-white/5 text-gray-500 mb-6 w-16 h-16 flex items-center justify-center grayscale">
                             <Icon size={32} />
                         </div>
                         <h3 className="text-xl font-bold text-gray-400 mb-2">{title}</h3>
-                        <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Lowkey down for maintenance...</p>
+                        <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Scheduled update in progress...</p>
                     </div>
                     <span className="text-gray-600 text-sm font-bold flex items-center gap-2">
-                        System Offline <span className="text-lg">×</span>
+                        Module Offline <span className="text-lg">×</span>
                     </span>
                 </Card>
             </div>
