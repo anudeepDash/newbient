@@ -257,15 +257,15 @@ const UpcomingEventsManager = () => {
                 )}
 
                 {/* List */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex flex-col gap-4">
                     {upcomingEvents.map((item, index) => (
-                        <Card key={item.id} className="group relative overflow-hidden border-white/10 hover:border-neon-blue/50 transition-colors">
+                        <Card key={item.id} className="p-4 flex items-center gap-4 hover:border-white/20 transition-colors">
                             {/* Reordering Controls */}
-                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 bg-black/60 rounded-lg p-1 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex flex-col gap-1 mr-2">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); moveItem(index, 'up'); }}
                                     disabled={index === 0}
-                                    className={`p-1 hover:text-neon-blue transition-colors ${index === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300'}`}
+                                    className={`p-1 hover:text-neon-blue transition-colors ${index === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400'}`}
                                     title="Move Up"
                                 >
                                     ▲
@@ -273,43 +273,62 @@ const UpcomingEventsManager = () => {
                                 <button
                                     onClick={(e) => { e.stopPropagation(); moveItem(index, 'down'); }}
                                     disabled={index === upcomingEvents.length - 1}
-                                    className={`p-1 hover:text-neon-blue transition-colors ${index === upcomingEvents.length - 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300'}`}
+                                    className={`p-1 hover:text-neon-blue transition-colors ${index === upcomingEvents.length - 1 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400'}`}
                                     title="Move Down"
                                 >
                                     ▼
                                 </button>
                             </div>
 
-                            <div className="aspect-[4/5] relative bg-gray-900">
+                            {/* Image Thumbnail */}
+                            <div className="w-16 h-16 rounded bg-white/5 flex items-center justify-center overflow-hidden shrink-0">
                                 {item.image ? (
                                     <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-600">No Image</div>
+                                    <span className="text-[10px] text-gray-500 text-center px-1">No Img</span>
                                 )}
+                            </div>
 
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-
-                                <div className="absolute top-2 right-2 flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleEdit(item)} className="p-2.5 md:p-2 bg-black/60 md:bg-black/50 text-white rounded-full hover:bg-neon-blue hover:text-black transition-colors backdrop-blur-sm">
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => deleteUpcomingEvent(item.id)} className="p-2.5 md:p-2 bg-black/60 md:bg-black/50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors backdrop-blur-sm">
-                                        <Trash2 size={16} />
-                                    </button>
+                            {/* Details */}
+                            <div className="flex-grow min-w-0">
+                                <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                    <h3 className="text-lg font-bold text-white truncate">{item.title || 'Untitled Event'}</h3>
+                                    {item.date && (
+                                        <span className="text-neon-blue text-xs font-bold uppercase border border-neon-blue/30 px-2 py-0.5 rounded">
+                                            {item.date}
+                                        </span>
+                                    )}
                                 </div>
+                                <p className="text-gray-400 text-sm truncate">{item.description}</p>
+                                {item.link && (
+                                    <a href={item.link} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-white truncate block mt-1">
+                                        {item.link}
+                                    </a>
+                                )}
+                            </div>
 
-                                <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    {item.date && <p className="text-neon-blue text-xs font-bold uppercase mb-1">{item.date}</p>}
-                                    <h3 className="text-lg font-bold text-white leading-tight mb-1">{item.title || 'Untitled Event'}</h3>
-                                    {item.description && <p className="text-gray-400 text-xs line-clamp-2">{item.description}</p>}
-                                    {item.link && <a href={item.link} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-white mt-2 block truncate">{item.link}</a>}
-                                </div>
+                            {/* Actions */}
+                            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                                <button
+                                    onClick={() => handleEdit(item)}
+                                    className="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg hover:bg-white/10"
+                                    title="Edit"
+                                >
+                                    <Edit size={18} />
+                                </button>
+                                <button
+                                    onClick={() => deleteUpcomingEvent(item.id)}
+                                    className="p-2 text-gray-400 hover:text-red-500 transition-colors bg-white/5 rounded-lg hover:bg-red-500/20"
+                                    title="Delete"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
                             </div>
                         </Card>
                     ))}
 
                     {upcomingEvents.length === 0 && !isAdding && (
-                        <div className="col-span-full text-center py-16 text-gray-500">
+                        <div className="text-center py-16 text-gray-500 bg-white/5 rounded-2xl border border-white/5">
                             <p className="text-lg">No upcoming events found.</p>
                             <Button variant="link" onClick={() => setIsAdding(true)} className="text-neon-blue">
                                 Add your first event
