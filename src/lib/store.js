@@ -199,6 +199,9 @@ export const useStore = create((set, get) => ({
     addInvoice: async (invoice) => {
         return await addDoc(collection(db, 'invoices'), invoice);
     },
+    updateInvoice: async (id, updates) => {
+        await updateDoc(doc(db, 'invoices', id), updates);
+    },
     updateInvoiceStatus: async (id, status) => {
         await updateDoc(doc(db, 'invoices', id), { status });
     },

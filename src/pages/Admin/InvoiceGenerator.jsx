@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { Plus, Trash2, Save, ArrowLeft, Download, RefreshCw, X } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -11,8 +11,9 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const InvoiceGenerator = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
-    const { addInvoice } = useStore();
+    const { addInvoice, updateInvoice, invoices } = useStore();
     const invoiceRef = useRef(null);
 
     // Dynamic Columns State
@@ -47,6 +48,33 @@ const InvoiceGenerator = () => {
 
     const [generating, setGenerating] = useState(false);
     const [newColumnName, setNewColumnName] = useState('');
+
+    // Load invoice data if ID exists
+    useEffect(() => {
+        if (id && invoices.length > 0) {
+            const invoice = invoices.find(inv => inv.id === id);
+            if (invoice) {
+                setFormData({
+                    senderName: invoice.senderName || '',
+                    senderContact: invoice.senderContact || '',
+                    senderEmail: invoice.senderEmail || '',
+                    senderPan: invoice.senderPan || '',
+                    senderGst: invoice.senderGst || '',
+                    clientName: invoice.clientName || '',
+                    clientAddress: invoice.clientAddress || '',
+                    clientGst: invoice.clientGst || '',
+                    invoiceNumber: invoice.invoiceNumber || '',
+                    invoiceDate: invoice.issueDate || '',
+                    dueDate: invoice.dueDate || '',
+                    advancePaid: Number(invoice.advancePaid) || 0,
+                    note: invoice.note || '',
+                    paymentDetails: invoice.paymentDetails || ''
+                });
+                setItems(invoice.items || []);
+                setCustomColumns(invoice.customColumns || []);
+            }
+        }
+    }, [id, invoices]);
 
     // Calculations
     const totalAmount = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
@@ -183,10 +211,15 @@ const InvoiceGenerator = () => {
                 createdAt: new Date().toISOString()
             };
 
-            await addInvoice(newInvoice);
-            console.log("Firestore save complete!");
-
-            alert("Invoice Saved Successfully!");
+            if (id) {
+                await updateInvoice(id, newInvoice);
+                console.log("Firestore update complete!");
+                alert("Invoice Updated Successfully!");
+            } else {
+                await addInvoice(newInvoice);
+                console.log("Firestore save complete!");
+                alert("Invoice Saved Successfully!");
+            }
             navigate('/admin/invoices');
         } catch (error) {
             console.error("SAVE ERROR:", error);
