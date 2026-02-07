@@ -47,12 +47,13 @@ const GalleryManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors text-sm">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">Gallery Manager</h1>
+                <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
+                            <ArrowLeft className="h-6 w-6" />
+                        </Link>
+                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Gallery Manager</h1>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

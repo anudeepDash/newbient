@@ -52,12 +52,12 @@ const FormBuilder = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="mb-8 flex items-center justify-between">
-                    <Link to="/admin/forms" className="text-gray-400 hover:text-white flex items-center transition-colors">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                    <Link to="/admin/forms" className="text-gray-400 hover:text-white flex items-center transition-colors p-2 hover:bg-white/10 rounded-full w-fit">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Manager
+                        <span className="font-bold uppercase text-[10px] tracking-widest">Back to Manager</span>
                     </Link>
-                    <h1 className="text-3xl font-bold text-white">{id ? 'Edit Google Form Integration' : 'Add New Google Form'}</h1>
+                    <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">{id ? 'Edit Form Integration' : 'Add Google Form'}</h1>
                 </div>
 
                 <Card className="p-8">
