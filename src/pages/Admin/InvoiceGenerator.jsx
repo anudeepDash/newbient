@@ -15,6 +15,25 @@ const InvoiceGenerator = () => {
     const navigate = useNavigate();
     const { addInvoice, updateInvoice, invoices } = useStore();
     const invoiceRef = useRef(null);
+    const [previewScale, setPreviewScale] = useState(0.65);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1280) { // Stacked mode (below xl)
+                const containerWidth = window.innerWidth - 32;
+                const newScale = Math.min(0.9, containerWidth / 794);
+                setPreviewScale(newScale);
+            } else if (window.innerWidth < 1536) { // Large desktops
+                setPreviewScale(0.55);
+            } else {
+                setPreviewScale(0.65);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Dynamic Columns State
     const [customColumns, setCustomColumns] = useState([]); // [{id: 'col_123', label: 'Vehicle Type'}, ...]
@@ -415,7 +434,7 @@ const InvoiceGenerator = () => {
                             </div>
 
                             {/* Headers */}
-                            <div className="grid gap-2 px-2 text-[10px] font-bold text-gray-500 uppercase"
+                            <div className="hidden sm:grid gap-2 px-2 text-[10px] font-bold text-gray-500 uppercase"
                                 style={{ gridTemplateColumns: `3fr ${customColumns.map(() => '2fr').join(' ')} 1fr 1.5fr 0.5fr` }}>
                                 <div>Description</div>
                                 {customColumns.map(col => <div key={col.id}>{col.label}</div>)}
@@ -426,39 +445,58 @@ const InvoiceGenerator = () => {
 
                             {/* Item Rows */}
                             {items.map((item) => (
-                                <div key={item.id} className="grid gap-2 items-center bg-black/20 p-2 rounded"
-                                    style={{ gridTemplateColumns: `3fr ${customColumns.map(() => '2fr').join(' ')} 1fr 1.5fr 0.5fr` }}>
+                                <div key={item.id} className="space-y-3 sm:space-y-0 sm:grid gap-2 items-center bg-black/20 p-3 sm:p-2 rounded border border-white/5 sm:border-none"
+                                    style={{ gridTemplateColumns: window.innerWidth > 640 ? `3fr ${customColumns.map(() => '2fr').join(' ')} 1fr 1.5fr 0.5fr` : 'none' }}>
 
+                                    <div className="sm:hidden text-[10px] font-bold text-gray-500 uppercase">Description</div>
                                     <Input
                                         placeholder="Description"
                                         value={item.description}
                                         onChange={e => handleItemChange(item.id, 'description', e.target.value)}
                                         className="text-xs h-8"
                                     />
-                                    {customColumns.map(col => (
-                                        <Input
-                                            key={col.id}
-                                            placeholder={col.label}
-                                            value={item.customValues[col.id] || ''}
-                                            onChange={e => handleCustomValueChange(item.id, col.id, e.target.value)}
-                                            className="text-xs h-8"
-                                        />
-                                    ))}
-                                    <Input
-                                        type="number"
-                                        value={item.qty}
-                                        min="1"
-                                        onChange={e => handleItemChange(item.id, 'qty', parseInt(e.target.value) || 0)}
-                                        className="text-xs h-8 text-center"
-                                    />
-                                    <Input
-                                        type="number"
-                                        value={item.price}
-                                        min="0"
-                                        onChange={e => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                        className="text-xs h-8"
-                                    />
-                                    <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-400 flex justify-center"><Trash2 size={14} /></button>
+
+                                    <div className="sm:contents grid grid-cols-2 gap-3">
+                                        {customColumns.map(col => (
+                                            <div key={col.id} className="sm:contents">
+                                                <div className="sm:hidden text-[10px] font-bold text-gray-500 uppercase mb-1">{col.label}</div>
+                                                <Input
+                                                    placeholder={col.label}
+                                                    value={item.customValues[col.id] || ''}
+                                                    onChange={e => handleCustomValueChange(item.id, col.id, e.target.value)}
+                                                    className="text-xs h-8"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:contents gap-3">
+                                        <div>
+                                            <div className="sm:hidden text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</div>
+                                            <Input
+                                                type="number"
+                                                value={item.qty}
+                                                min="1"
+                                                onChange={e => handleItemChange(item.id, 'qty', parseInt(e.target.value) || 0)}
+                                                className="text-xs h-8 text-center"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="sm:hidden text-[10px] font-bold text-gray-500 uppercase mb-1">Price</div>
+                                            <Input
+                                                type="number"
+                                                value={item.price}
+                                                min="0"
+                                                onChange={e => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                                className="text-xs h-8"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-2 sm:pt-0 border-t border-white/5 sm:border-none">
+                                        <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-400 flex items-center gap-1 text-xs sm:justify-center">
+                                            <Trash2 size={14} /><span className="sm:hidden">Remove</span>
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -636,7 +674,13 @@ const InvoiceGenerator = () => {
                         Live Preview
                     </div>
 
-                    <div className="transform scale-[0.55] lg:scale-[0.55] xl:scale-[0.55] 2xl:scale-[0.65] mt-8 origin-top transition-transform">
+                    <div
+                        className="mt-8 origin-top transition-all duration-300 ease-in-out"
+                        style={{
+                            transform: `scale(${previewScale})`,
+                            marginBottom: window.innerWidth < 1280 ? `-${(1 - previewScale) * 1123}px` : '0'
+                        }}
+                    >
                         <div
                             ref={invoiceRef}
                             className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl"
