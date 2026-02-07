@@ -44,7 +44,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
+          <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
           <Route path="gallery" element={<MaintenanceGuard isPage featureId="gallery"><MediaGallery /></MaintenanceGuard>} />
           <Route path="concerts" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZone /></MaintenanceGuard>} />
           <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
@@ -56,18 +56,18 @@ function App() {
           <Route path="admin" element={<Dashboard />} />
           <Route path="admin/dev-settings" element={<DevSettings />} />
           <Route path="admin/manage-admins" element={<AdminManager />} />
-          <Route path="admin/invoices" element={<MaintenanceGuard featureId="invoices"><Maintenance /></MaintenanceGuard>} />
-          <Route path="admin/create-invoice" element={<MaintenanceGuard featureId="invoices"><Maintenance /></MaintenanceGuard>} />
+          <Route path="admin/invoices" element={<MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard>} />
+          <Route path="admin/create-invoice" element={<MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard>} />
           <Route path="admin/announcements" element={<MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard>} />
-          <Route path="admin/concerts" element={<ConcertManager />} />
-          <Route path="admin/messages" element={<MessageManager />} />
-          <Route path="admin/site-content" element={<SiteContentManager />} />
-          <Route path="admin/gallery-manager" element={<GalleryManager />} />
-          <Route path="admin/forms" element={<FormManager />} />
-          <Route path="admin/forms/create" element={<FormBuilder />} />
-          <Route path="admin/forms/edit/:id" element={<FormBuilder />} />
-          <Route path="admin/volunteer-gigs" element={<VolunteerGigManager />} />
-          <Route path="admin/upcoming-events" element={<UpcomingEventsManager />} />
+          <Route path="admin/concerts" element={<MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard>} />
+          <Route path="admin/messages" element={<MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard>} />
+          <Route path="admin/site-content" element={<MaintenanceGuard featureId="site_content"><SiteContentManager /></MaintenanceGuard>} />
+          <Route path="admin/gallery-manager" element={<MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard>} />
+          <Route path="admin/forms" element={<MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard>} />
+          <Route path="admin/forms/create" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
+          <Route path="admin/forms/edit/:id" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
+          <Route path="admin/volunteer-gigs" element={<MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard>} />
+          <Route path="admin/upcoming-events" element={<MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard>} />
         </Route>
       </Routes>
     </Router>

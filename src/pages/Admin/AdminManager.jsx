@@ -72,7 +72,22 @@ const AdminManager = () => {
         }
     };
 
-    const handleRemoveAdmin = async (id) => {
+    const handleUpdateRole = async (id, newRole) => {
+        try {
+            await updateDoc(doc(db, "admins", id), { role: newRole });
+            fetchAdmins();
+        } catch (error) {
+            console.error("Error updating role:", error);
+            alert("Failed to update role.");
+        }
+    };
+
+    const handleRemoveAdmin = async (id, targetRole) => {
+        if (!canEditRoles(targetRole)) {
+            alert("You do not have permission to remove this user.");
+            return;
+        }
+
         if (window.confirm('Are you sure you want to remove/deny this user? They will lose access immediately.')) {
             try {
                 await deleteDoc(doc(db, "admins", id));
@@ -87,9 +102,16 @@ const AdminManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-    const filteredAdmins = displayAdmins.filter(a =>
-        a.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const canManageDevelopers = user?.role === 'developer';
+    const displayAdmins = canManageDevelopers
+        ? admins
+        : admins.filter(a => a.role !== 'developer');
+
+    const canEditRoles = (targetRole) => {
+        if (user.role === 'developer') return true;
+        if (user.role === 'super_admin' && (targetRole === 'editor' || targetRole === 'pending')) return true;
+        return false;
+    };
 
     if (user?.role !== 'super_admin' && user?.role !== 'developer') {
         return (
@@ -104,10 +126,9 @@ const AdminManager = () => {
         );
     }
 
-    const canManageDevelopers = user?.role === 'developer';
-    const displayAdmins = canManageDevelopers
-        ? admins
-        : admins.filter(a => a.role !== 'developer');
+    const filteredAdmins = displayAdmins.filter(a =>
+        a.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -155,14 +176,20 @@ const AdminManager = () => {
                                     <select
                                         value={newAdminRole}
                                         onChange={(e) => setNewAdminRole(e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue"
+                                        className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 py-2 pr-10 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue appearance-none cursor-pointer"
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'right 1rem center',
+                                            backgroundSize: '1.25rem'
+                                        }}
                                     >
                                         <option value="editor">Editor (Content Only)</option>
                                         <option value="super_admin">Super Admin (Full Access)</option>
                                         {canManageDevelopers && <option value="developer">Developer Admin (System Overlord)</option>}
                                     </select>
                                 </div>
-                                <Button type="submit" variant="primary" className="w-full md:w-auto">
+                                <Button type="submit" variant="primary" className="w-full md:w-auto h-12 rounded-lg">
                                     Send Invite
                                 </Button>
                             </form>
@@ -203,7 +230,7 @@ const AdminManager = () => {
                                     <div className="flex gap-3">
                                         <Button
                                             size="sm"
-                                            onClick={() => handleRemoveAdmin(admin.id)}
+                                            onClick={() => handleRemoveAdmin(admin.id, admin.role)}
                                             className="bg-red-500/10 text-red-500 border-red-500/50 hover:bg-red-500 hover:text-white"
                                         >
                                             <Trash2 size={16} className="mr-2" /> Deny
@@ -274,20 +301,33 @@ const AdminManager = () => {
                                                 {admin.email === user.email && <span className="ml-2 text-[10px] bg-white/10 px-1 rounded text-gray-400">(You)</span>}
                                             </div>
                                             <div className="col-span-3">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold uppercase inline-flex items-center gap-1 ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
-                                                    }`}>
-                                                    {admin.role === 'super_admin' && <Shield size={10} />}
-                                                    {admin.role === 'developer' && <Shield size={10} className="text-white fill-white" />}
-                                                    {admin.role.replace('_', ' ')}
-                                                </span>
+                                                {canManageDevelopers ? (
+                                                    <select
+                                                        value={admin.role}
+                                                        onChange={(e) => handleUpdateRole(admin.id, e.target.value)}
+                                                        disabled={admin.email === user.email}
+                                                        className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-bold uppercase text-neon-green focus:outline-none focus:border-neon-blue"
+                                                    >
+                                                        <option value="editor">Editor</option>
+                                                        <option value="super_admin">Super Admin</option>
+                                                        <option value="developer">Developer</option>
+                                                    </select>
+                                                ) : (
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase inline-flex items-center gap-1 ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
+                                                        }`}>
+                                                        {admin.role === 'super_admin' && <Shield size={10} />}
+                                                        {admin.role === 'developer' && <Shield size={10} className="text-white fill-white" />}
+                                                        {admin.role.replace('_', ' ')}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="col-span-3 text-sm text-gray-500">
                                                 {new Date(admin.createdAt).toLocaleDateString()}
                                             </div>
                                             <div className="col-span-1 text-right">
-                                                {admin.email !== user.email && (
+                                                {(admin.email !== user.email && canEditRoles(admin.role)) && (
                                                     <button
-                                                        onClick={() => handleRemoveAdmin(admin.id)}
+                                                        onClick={() => handleRemoveAdmin(admin.id, admin.role)}
                                                         className="text-gray-500 hover:text-red-500 transition-colors p-2 rounded hover:bg-white/5"
                                                         title="Revoke Access"
                                                     >
@@ -312,9 +352,9 @@ const AdminManager = () => {
                                                     <span className="text-gray-500 flex items-center">{new Date(admin.createdAt).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
-                                            {admin.email !== user.email && (
+                                            {(admin.email !== user.email && canEditRoles(admin.role)) && (
                                                 <button
-                                                    onClick={() => handleRemoveAdmin(admin.id)}
+                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
                                                     className="p-3 text-red-500 bg-red-500/10 rounded-full"
                                                 >
                                                     <Trash2 size={16} />

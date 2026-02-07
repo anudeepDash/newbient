@@ -2,12 +2,17 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import { useStore } from '../lib/store';
+import { cn } from '../lib/utils';
 
 const Layout = () => {
+    const { maintenanceState, user } = useStore();
+    const isBypassing = maintenanceState.global && user?.role === 'developer';
+
     return (
         <div className="flex flex-col min-h-screen bg-dark text-white selection:bg-neon-pink selection:text-white">
             <Navbar />
-            <main className="flex-grow pt-20">
+            <main className={cn("flex-grow transition-all duration-300", isBypassing ? "pt-28" : "pt-20")}>
                 <Outlet />
             </main>
             <Footer />
