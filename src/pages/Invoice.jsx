@@ -13,6 +13,22 @@ const Invoice = () => {
     const { invoices, updateInvoiceStatus, loading } = useStore();
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
+    const [scale, setScale] = React.useState(1);
+
+    React.useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 850) {
+                const newScale = (window.innerWidth - 32) / 794;
+                setScale(newScale);
+            } else {
+                setScale(1);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const invoice = invoices.find(inv => inv.id === id);
     const isAdmin = localStorage.getItem('adminAuth') === 'true';
@@ -180,42 +196,47 @@ const Invoice = () => {
 
                 <div className="flex flex-col gap-8">
                     {/* TOP ACTIONS BAR */}
-                    <Card className="p-4 bg-white/5 border-white/10 flex flex-wrap gap-4 items-center print:hidden backdrop-blur-xl">
-                        <h2 className="text-white font-bold flex items-center gap-2 mr-auto">
-                            <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} size={20} />
-                            #{displayInvoice.invoiceNumber || displayInvoice.id}
-                        </h2>
+                    <Card className="p-3 sm:p-4 bg-white/5 border-white/10 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center print:hidden backdrop-blur-xl">
+                        <div className="flex items-center justify-between sm:justify-start gap-4">
+                            <h2 className="text-white font-bold flex items-center gap-2">
+                                <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} size={20} />
+                                <span className="truncate max-w-[150px] sm:max-w-none">#{displayInvoice.invoiceNumber || displayInvoice.id}</span>
+                            </h2>
 
-                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
-                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                            }`}>
-                            {displayInvoice.status}
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
+                                ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                }`}>
+                                {displayInvoice.status}
+                            </div>
                         </div>
 
-                        {isAdmin && (
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
-                                    <MessageCircle size={16} />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
-                                    <Mail size={16} />
-                                </Button>
-                                {displayInvoice.status !== 'Paid' && (
-                                    <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
-                                        <DollarSign size={16} />
-                                        Mark Paid
+                        <div className="flex flex-wrap gap-2 sm:ml-auto">
+                            {isAdmin && (
+                                <>
+                                    <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp" className="flex-1 sm:flex-none">
+                                        <MessageCircle size={16} />
                                     </Button>
-                                )}
-                            </div>
-                        )}
+                                    <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email" className="flex-1 sm:flex-none">
+                                        <Mail size={16} />
+                                    </Button>
+                                    {displayInvoice.status !== 'Paid' && (
+                                        <Button variant="outline" size="sm" onClick={handleMarkPaid} className="flex-[2] sm:flex-none text-green-400 border-green-400/50 hover:bg-green-400/10">
+                                            <DollarSign size={16} />
+                                            <span className="sm:inline hidden">Mark Paid</span>
+                                            <span className="inline sm:hidden">Paid</span>
+                                        </Button>
+                                    )}
+                                </>
+                            )}
 
-                        <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
-                            <Printer size={16} className="mr-2" /> Print
-                        </Button>
-                        <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="bg-neon-green text-black hover:bg-neon-green/90">
-                            <Download size={16} className="mr-2" /> Download PDF
-                        </Button>
+                            <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden flex-1 sm:flex-none">
+                                <Printer size={16} /> <span className="sm:inline hidden ml-2">Print</span>
+                            </Button>
+                            <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="bg-neon-green text-black hover:bg-neon-green/90 flex-[2] sm:flex-none">
+                                <Download size={16} /> <span className="ml-2 font-bold uppercase text-[10px]">Download</span>
+                            </Button>
+                        </div>
                     </Card>
 
                     {/* MAIN CONTENT AREA */}
@@ -228,11 +249,15 @@ const Invoice = () => {
                             />
                         </div>
                     ) : (
-                        <div className="print-container flex justify-center overflow-x-auto bg-gray-900/50 p-4 md:p-8 rounded-2xl border border-white/5 shadow-2xl">
+                        <div className="print-container flex justify-center bg-gray-900/50 p-2 sm:p-4 md:p-8 rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
                             <div
                                 ref={invoiceRef}
-                                className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl overflow-hidden shrink-0"
-                                style={{ fontFamily: 'Inter, sans-serif' }}
+                                className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl shrink-0 origin-top"
+                                style={{
+                                    fontFamily: 'Inter, sans-serif',
+                                    transform: `scale(${scale})`,
+                                    marginBottom: `${(scale - 1) * 1123}px`
+                                }}
                             >
                                 {/* PDF Header */}
                                 <div className="p-8 pb-4 flex justify-between items-start relative">

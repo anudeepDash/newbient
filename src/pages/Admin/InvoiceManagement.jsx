@@ -179,8 +179,66 @@ const InvoiceManagement = () => {
                         ))}
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {filteredInvoices.map((invoice) => (
+                            <div key={invoice.id} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="text-white font-mono text-sm leading-none mb-1">{invoice.invoiceNumber || invoice.id}</div>
+                                        <div className="text-white font-bold text-lg">{invoice.clientName}</div>
+                                        <div className="text-gray-400 text-xs">{new Date(invoice.createdAt || Date.now()).toLocaleDateString()}</div>
+                                    </div>
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                                        invoice.status === 'Paid' ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
+                                    )}>
+                                        {invoice.status}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                    <div className="flex gap-1">
+                                        <a
+                                            href={`/invoice/${invoice.id}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="p-2 text-gray-400 hover:text-neon-green transition-colors"
+                                            title="View"
+                                        >
+                                            <Eye size={18} />
+                                        </a>
+                                        <button
+                                            onClick={() => handleCopyLink(invoice.id)}
+                                            className="p-2 text-gray-400 hover:text-neon-blue transition-colors"
+                                            title="Copy Link"
+                                        >
+                                            <Copy size={18} />
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => handleEdit(invoice)}
+                                            className="p-2 text-gray-400 hover:text-white transition-colors"
+                                            title="Edit"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(invoice.id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-white/10 text-left">
