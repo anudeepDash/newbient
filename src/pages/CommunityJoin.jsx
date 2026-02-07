@@ -4,7 +4,7 @@ import FormViewer from './FormViewer';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock, Share2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink } from 'lucide-react';
 
 const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs } = useStore();
@@ -196,17 +196,28 @@ const CommunityJoin = () => {
                     </div>
 
                     {forms && forms.length > 0 ? (
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {forms.map((form) => (
-                                <div key={form.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 hover:border-yellow-400/50 transition-colors group flex flex-col justify-between h-full">
+                                <div key={form.id} className="bg-zinc-900/50 border border-white/10 rounded-xl p-5 md:p-6 hover:border-yellow-400/50 transition-colors group flex flex-col justify-between h-full hover:bg-zinc-900/80">
                                     <div>
-                                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">{form.title}</h3>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="p-2 bg-yellow-400/10 rounded-lg text-yellow-400 group-hover:scale-110 transition-transform duration-300">
+                                                <ClipboardList size={24} />
+                                            </div>
+                                            {form.deadline && (
+                                                <span className="text-[10px] uppercase font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded">
+                                                    Due: {form.deadline}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors leading-tight">{form.title}</h3>
                                         <p className="text-gray-400 text-sm mb-6 line-clamp-3">{form.description}</p>
                                     </div>
-                                    <div className="mt-auto">
+                                    <div className="mt-auto pt-4 border-t border-white/5">
                                         <Link to={`/forms/${form.id}`} target="_blank">
-                                            <Button className="w-full bg-none border border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all">
-                                                Open Form
+                                            <Button className="w-full bg-transparent border border-white/20 text-white hover:border-yellow-400 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all font-medium flex items-center justify-center gap-2 group-hover:border-yellow-400">
+                                                <span>Take Survey</span>
+                                                <ExternalLink size={16} />
                                             </Button>
                                         </Link>
                                     </div>
