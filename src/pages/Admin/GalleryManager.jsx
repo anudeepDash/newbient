@@ -47,18 +47,18 @@ const GalleryManager = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-8 flex items-center justify-between">
-                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors">
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors text-sm">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold text-white">Gallery Manager</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">Gallery Manager</h1>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Add New Image Form */}
                     <div className="lg:col-span-1">
-                        <Card className="p-6 sticky top-24">
+                        <Card className="p-6 md:sticky md:top-24">
                             <h2 className="text-xl font-bold text-white mb-4">Add New Media</h2>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Upload Image</label>
@@ -127,7 +127,7 @@ const GalleryManager = () => {
                                     </div>
                                     <button
                                         onClick={() => deleteGalleryImage(item.id)}
-                                        className="absolute top-2 right-2 p-2 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                        className="absolute top-2 right-2 p-2.5 md:p-2 bg-red-500/80 md:bg-red-500/80 text-white rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-sm"
                                     >
                                         <Trash2 size={16} />
                                     </button>
