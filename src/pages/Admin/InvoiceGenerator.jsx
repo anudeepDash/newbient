@@ -109,11 +109,14 @@ const InvoiceGenerator = () => {
                 backgroundColor: '#E5E7EB'
             });
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.8);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+
+            // Calculate height for a single page PDF
+            // A4 width is 210mm
+            const pdfWidth = 210;
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
+            const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
             pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
             return pdf;
         } catch (error) {
@@ -132,44 +135,12 @@ const InvoiceGenerator = () => {
         }
     };
 
-    const handleSaveToDB = async (skipPdf = false) => {
+    const handleSaveToDB = async () => {
         setGenerating(true);
         console.log("Starting Invoice Save Process...");
         try {
-            let downloadURL = '';
-
-            if (!skipPdf) {
-                // 1. Generate PDF
-                console.log("Step 1: Generating PDF...");
-                const pdf = await generatePDF();
-
-                if (pdf) {
-                    try {
-                        const pdfBlob = pdf.output('blob');
-                        console.log("PDF Blob created size:", (pdfBlob.size / 1024).toFixed(2) + " KB");
-
-                        const pdfFile = new File([pdfBlob], `Newbi_INV-${formData.invoiceNumber}.pdf`, { type: 'application/pdf' });
-
-                        // 2. Upload to Firebase
-                        console.log("Step 2: Uploading to Firebase Storage...");
-                        const storageRef = ref(storage, `invoices/Newbi_INV-${formData.invoiceNumber}_${Date.now()}.pdf`);
-                        await uploadBytes(storageRef, pdfFile);
-                        downloadURL = await getDownloadURL(storageRef);
-                        console.log("Download URL:", downloadURL);
-                    } catch (uploadError) {
-                        console.error("Upload Error (Non-fatal):", uploadError);
-                        // Fallback: Continue without PDF URL
-                        // toast.error("PDF Upload Failed. Saving invoice without PDF.");
-                    }
-                } else {
-                    console.warn("PDF Generation Failed visually. Saving invoice data without PDF link.");
-                }
-            } else {
-                console.log("Skipping PDF generation as requested.");
-            }
-
-            // 3. Sanitize Data
-            console.log("Step 3: Sanitizing Data...");
+            // 1. Sanitize Data
+            console.log("Step 1: Sanitizing Data...");
             const cleanItems = items.map(item => {
                 const cleanCustom = {};
                 if (item.customValues) {
@@ -187,8 +158,8 @@ const InvoiceGenerator = () => {
                 };
             });
 
-            // 4. Save to Firestore
-            console.log("Step 4: Saving to Firestore...");
+            // 2. Save to Firestore
+            console.log("Step 2: Saving to Firestore...");
             const newInvoice = {
                 invoiceNumber: formData.invoiceNumber,
                 clientName: formData.clientName || 'Unknown Client',
@@ -197,14 +168,14 @@ const InvoiceGenerator = () => {
                 issueDate: formData.invoiceDate,
                 amount: totalAmount,
                 status: toBePaid <= 0 ? 'Paid' : 'Pending',
-                pdfUrl: downloadURL,
+                pdfUrl: '', // No longer generated on save
                 items: cleanItems,
-                customColumns: customColumns || [], // Save the columns used for this invoice
+                customColumns: customColumns || [],
                 note: formData.note || '',
                 paymentDetails: formData.paymentDetails || '',
                 advancePaid: Number(formData.advancePaid) || 0,
                 dueDate: formData.dueDate || '',
-                senderName: formData.senderName, // Save sender details too for history
+                senderName: formData.senderName,
                 senderContact: formData.senderContact,
                 senderEmail: formData.senderEmail,
                 senderPan: formData.senderPan,
@@ -215,11 +186,13 @@ const InvoiceGenerator = () => {
             await addInvoice(newInvoice);
             console.log("Firestore save complete!");
 
-            alert("Invoice Saved Successfully!" + (downloadURL ? "" : " (Note: PDF Upload Failed, but data is saved)"));
+            alert("Invoice Saved Successfully!");
             navigate('/admin/invoices');
         } catch (error) {
             console.error("SAVE ERROR:", error);
             alert("Error saving invoice: " + error.message + "\n\nSee console for details.");
+        } finally {
+            setGenerating(false);
         }
     };
 
@@ -400,7 +373,7 @@ const InvoiceGenerator = () => {
                                     ))}
                                     <Input
                                         type="number"
-                                        value={item.quantity}
+                                        value={item.qty}
                                         min="1"
                                         onChange={e => handleItemChange(item.id, 'qty', parseInt(e.target.value) || 0)}
                                         className="text-xs h-8 text-center"
@@ -456,24 +429,15 @@ const InvoiceGenerator = () => {
                         <div className="flex flex-col gap-2 pt-6">
                             <div className="flex gap-2">
                                 <Button onClick={handleDownload} variant="outline" className="flex-1" disabled={generating}>
-                                    <Download className="mr-2 h-4 w-4" /> PDF
+                                    <Download className="mr-2 h-4 w-4" /> PDF Preview
                                 </Button>
-                                <Button onClick={() => handleSaveToDB(false)} variant="primary" className="flex-1 bg-neon-green text-black hover:bg-neon-green/90" disabled={generating}>
-                                    <Save className="mr-2 h-4 w-4" /> Save
+                                <Button onClick={handleSaveToDB} variant="primary" className="flex-1 bg-neon-green text-black hover:bg-neon-green/90" disabled={generating}>
+                                    <Save className="mr-2 h-4 w-4" /> Save Invoice
                                 </Button>
                             </div>
                             <Button onClick={handleReset} variant="ghost" className="w-full text-xs text-gray-500 hover:text-white border border-white/10" disabled={generating}>
-                                + Create New Invoice
+                                + Clear Form / New
                             </Button>
-                            <div className="text-center mt-1">
-                                <button
-                                    onClick={() => handleSaveToDB(true)}
-                                    disabled={generating}
-                                    className="text-gray-500 text-xs underline hover:text-white"
-                                >
-                                    Scanning Trouble? Save Data Only (Skip PDF)
-                                </button>
-                            </div>
                         </div>
                     </Card>
                 </div>

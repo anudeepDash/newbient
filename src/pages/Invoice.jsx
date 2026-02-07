@@ -38,25 +38,32 @@ const Invoice = () => {
 
 
     const handleDownloadPDF = async () => {
-        if (invoice?.pdfUrl) {
-            window.open(invoice.pdfUrl, '_blank');
-            return;
-        }
-
         const element = invoiceRef.current;
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            backgroundColor: '#E5E7EB',
-            logging: false,
-            useCORS: true
-        });
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        if (!element) return;
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Invoice-${invoice.id}.pdf`);
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: '#E5E7EB',
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+
+            // Calculate height for a single page PDF
+            // A4 width is 210mm
+            const pdfWidth = 210;
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+            pdf.save(`Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`);
+        } catch (error) {
+            console.error("PDF generation failed:", error);
+            alert("Failed to generate PDF. Please try again.");
+        }
     };
 
     const handlePrint = () => {
@@ -75,62 +82,39 @@ const Invoice = () => {
     };
 
     const handleShareEmail = () => {
-        const subject = `Invoice #${invoice.invoiceNumber || invoice.id} from Newbi Entertainments`;
-        const body = `Hi,\n\nPlease find your invoice attached here: ${window.location.href}\n\nThanks,\nNewbi Entertainments`;
+        const subject = `Invoice #${displayInvoice.invoiceNumber || displayInvoice.id} from Newbi Entertainments`;
+        const body = `Hi,\n\nPlease find your invoice here: ${window.location.href}\n\nThanks,\nNewbi Entertainments`;
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     };
 
-    // Calculate totals (mock logic if items exist, otherwise use total amount)
-    const subtotal = invoice.amount; // Simplified for now as we might not have line items in old mock data
-    const tax = subtotal * 0.18; // Mock 18% tax
-    const total = subtotal + tax;
-
-    const currencySymbol = getSymbol(invoice?.currency || 'USD'); // Safe access
-
-    // Fallback Demo Data if invoice not found
-    const displayInvoice = invoice || {
-        id: "DEMO-INV-001",
-        clientName: "Demo Client (No Data Found)",
-        currency: "USD",
-        amount: 0,
-        status: "Demo Mode",
-        dueDate: new Date().toISOString().split('T')[0],
-        items: []
-    };
-
-    // Calculate totals based on displayInvoice
-    const demoSubtotal = displayInvoice.items?.reduce((acc, item) => acc + (item.price * item.quantity), 0) || displayInvoice.amount || 0;
-    const demoTax = demoSubtotal * 0.18;
-    const demoTotal = demoSubtotal + demoTax;
     const getGridTemplate = () => {
         const columns = displayInvoice.customColumns || [];
         const customFr = columns.map(() => '1.5fr').join(' ');
         return `3fr ${customFr} 0.8fr 1.2fr 1.2fr`;
     };
 
-    const toBePaid = displayInvoice.amount - (displayInvoice.advancePaid || 0);
+    const totalAmount = displayInvoice.amount || 0;
+    const advancePaid = Number(displayInvoice.advancePaid) || 0;
+    const toBePaid = totalAmount - advancePaid;
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black">
+        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white print:text-black bg-black">
             <div className="max-w-4xl mx-auto">
-                <div className="mb-8 print:hidden">
+                <div className="mb-8 print:hidden flex justify-between items-center">
                     <Link to="/admin/invoices" className="text-gray-400 hover:text-white flex items-center transition-colors">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Manager
                     </Link>
+                    {!invoice && !loading && (
+                        <span className="text-yellow-500 text-sm font-bold">Demo Mode / No Data</span>
+                    )}
                 </div>
-
-                {!invoice && (
-                    <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-200 text-sm print:hidden">
-                        <strong>Demo Mode:</strong> The requested invoice ID was not found. Showing a sample layout.
-                    </div>
-                )}
 
                 <div className="flex flex-col gap-8">
                     {/* TOP ACTIONS BAR */}
-                    <Card className="p-4 bg-black/40 border-white/10 flex flex-wrap gap-4 items-center print:hidden">
+                    <Card className="p-4 bg-white/5 border-white/10 flex flex-wrap gap-4 items-center print:hidden backdrop-blur-xl">
                         <h2 className="text-white font-bold flex items-center gap-2 mr-auto">
-                            <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} h-5 w-5 />
+                            <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} size={20} />
                             #{displayInvoice.invoiceNumber || displayInvoice.id}
                         </h2>
 
@@ -144,14 +128,14 @@ const Invoice = () => {
                         {isAdmin && (
                             <div className="flex gap-2">
                                 <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp">
-                                    <MessageCircle className="h-4 w-4" />
+                                    <MessageCircle size={16} />
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email">
-                                    <Mail className="h-4 w-4" />
+                                    <Mail size={16} />
                                 </Button>
                                 {displayInvoice.status !== 'Paid' && (
                                     <Button variant="outline" size="sm" onClick={handleMarkPaid} className="text-green-400 border-green-400/50 hover:bg-green-400/10">
-                                        <DollarSign className="mr-2 h-4 w-4" />
+                                        <DollarSign size={16} />
                                         Mark Paid
                                     </Button>
                                 )}
@@ -159,15 +143,15 @@ const Invoice = () => {
                         )}
 
                         <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
-                            <Printer className="mr-2 h-4 w-4" /> Print
+                            <Printer size={16} className="mr-2" /> Print
                         </Button>
-                        <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
-                            <Download className="mr-2 h-4 w-4" /> Download
+                        <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="bg-neon-green text-black hover:bg-neon-green/90">
+                            <Download size={16} className="mr-2" /> Download PDF
                         </Button>
                     </Card>
 
                     {/* MAIN INVOICE CONTENT */}
-                    <div className="flex justify-center overflow-x-auto bg-[#1a1a1a] p-8 rounded-xl border border-white/5">
+                    <div className="flex justify-center overflow-x-auto bg-gray-900/50 p-4 md:p-8 rounded-2xl border border-white/5 shadow-2xl">
                         <div
                             ref={invoiceRef}
                             className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black relative shadow-2xl overflow-hidden shrink-0"
@@ -195,8 +179,8 @@ const Invoice = () => {
                                     </div>
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
                                         <p className="font-black text-lg text-black mb-2">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
-                                        <p>Contact: {displayInvoice.senderContact || '+91 93043 72773'}</p>
-                                        <p>Email: {displayInvoice.senderEmail || 'partnership@newbi.live'}</p>
+                                        {displayInvoice.senderContact && <p>Contact: {displayInvoice.senderContact}</p>}
+                                        {displayInvoice.senderEmail && <p>Email: {displayInvoice.senderEmail}</p>}
                                         {displayInvoice.senderPan && <p>PAN: {displayInvoice.senderPan}</p>}
                                         {displayInvoice.senderGst && <p>GSTIN: {displayInvoice.senderGst}</p>}
                                     </div>
@@ -210,8 +194,11 @@ const Invoice = () => {
                                     <div className="p-4 text-sm text-gray-700 space-y-1">
                                         <p className="font-black text-lg text-black mb-2">{displayInvoice.clientName || 'Client Name'}</p>
                                         <p className="mb-1">Date: {new Date(displayInvoice.issueDate || displayInvoice.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
-                                        {displayInvoice.dueDate && <p className="mb-2 text-red-600 font-bold text-xs">Due: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
-
+                                        {displayInvoice.dueDate && (
+                                            <p className="mb-2 text-red-600 font-bold text-xs">
+                                                Due: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}
+                                            </p>
+                                        )}
                                         {displayInvoice.clientAddress && <p className="text-gray-600 italic mb-1">{displayInvoice.clientAddress}</p>}
                                         {displayInvoice.clientGst && <p className="font-bold border-t border-gray-300 pt-1 mt-1 inline-block">GSTIN: {displayInvoice.clientGst}</p>}
                                     </div>
@@ -252,11 +239,11 @@ const Invoice = () => {
 
                                     <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
                                         <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Total</div>
-                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{(displayInvoice.amount || 0).toLocaleString()}</div>
+                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{totalAmount.toLocaleString()}</div>
                                     </div>
                                     <div className="grid grid-cols-12 bg-[#E5E7EB] border-b border-dashed border-gray-400 text-sm font-bold">
                                         <div className="col-span-10 text-right pr-4 py-2 text-gray-600 uppercase">Advance Paid</div>
-                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{(displayInvoice.advancePaid || 0).toLocaleString()}</div>
+                                        <div className="col-span-2 text-center py-2 border-l border-dashed border-gray-400">₹{advancePaid.toLocaleString()}</div>
                                     </div>
                                     <div className="grid grid-cols-12 bg-[#86EFAC] rounded-b-xl text-lg font-bold">
                                         <div className="col-span-10 text-right pr-4 py-3 text-[#DC2626] uppercase">To Be Paid</div>
