@@ -67,20 +67,20 @@ const DevSettings = () => {
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
+                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                            <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
                                 <Shield className="text-white fill-white" size={32} />
-                                Developer Settings
+                                Dev Settings
                             </h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <p className="text-gray-400 text-sm italic">Manage sitewide maintenance & feature flags</p>
-                                <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-widest ${isLocal ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' : 'bg-neon-green/20 text-neon-green border border-neon-green/30'}`}>
-                                    {isLocal ? 'Environment: Local' : 'Environment: Production'}
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <p className="text-gray-400 text-xs italic">Maintenance & flags</p>
+                                <span className={`text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-widest ${isLocal ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' : 'bg-neon-green/20 text-neon-green border border-neon-green/30'}`}>
+                                    {isLocal ? 'Local' : 'Prod'}
                                 </span>
                             </div>
                         </div>

@@ -257,24 +257,24 @@ const Dashboard = () => {
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-                        <p className="text-gray-400">
-                            Logged in as <span className="text-neon-blue">{user.email}</span>
-                            <span className="ml-2 text-xs bg-white/10 px-2 py-1 rounded uppercase tracking-wider">{user.role?.replace('_', ' ')}</span>
+                        <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter">Dashboard</h1>
+                        <p className="text-gray-400 text-sm mt-1">
+                            Logged in as <span className="text-neon-blue font-medium">{user.email}</span>
+                            <span className="ml-2 text-[10px] bg-white/10 px-2 py-1 rounded font-black uppercase tracking-widest">{user.role?.replace('_', ' ')}</span>
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin/messages" className="relative text-gray-400 hover:text-white transition-colors">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-6 bg-white/5 md:bg-transparent p-4 md:p-0 rounded-2xl border border-white/10 md:border-0">
+                        <Link to="/admin/messages" className="relative text-gray-400 hover:text-white transition-all hover:scale-110 active:scale-95">
                             <Mail size={24} />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-black">
+                                <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-black animate-bounce">
                                     {unreadCount}
                                 </span>
                             )}
                         </Link>
-                        <Button variant="outline" onClick={logout}>
+                        <Button variant="outline" onClick={logout} className="border-white/20 hover:bg-white hover:text-black font-bold uppercase text-xs tracking-widest">
                             Logout
                         </Button>
                     </div>

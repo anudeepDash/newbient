@@ -78,13 +78,13 @@ const VolunteerGigManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">Volunteer Opportunities</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Volunteer Opportunities</h2>
                 <Button variant="primary" onClick={() => {
                     setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyType: 'link', applyLink: '' });
                     setIsAdding(true);
                     setEditingId(null);
-                }}>
+                }} className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest">
                     <Plus className="mr-2 h-4 w-4" />
                     Add New Gig
                 </Button>
