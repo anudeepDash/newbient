@@ -167,8 +167,8 @@ const InvoiceGenerator = () => {
                 clientGst: formData.clientGst || '',
                 issueDate: formData.invoiceDate,
                 amount: totalAmount,
-                status: toBePaid <= 0 ? 'Paid' : 'Pending',
-                pdfUrl: '', // No longer generated on save
+                status: (totalAmount > 0 && toBePaid <= 0) ? 'Paid' : 'Pending',
+                pdfUrl: '',
                 items: cleanItems,
                 customColumns: customColumns || [],
                 note: formData.note || '',

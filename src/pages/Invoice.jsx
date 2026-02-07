@@ -87,6 +87,18 @@ const Invoice = () => {
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     };
 
+    // Define displayInvoice derived from the fetched invoice or a fallback
+    const displayInvoice = invoice || {
+        id: "DEMO-INV-001",
+        invoiceNumber: "DEMO-001",
+        clientName: "Demo Client (No Data)",
+        amount: 0,
+        status: "Demo Mode",
+        advancePaid: 0,
+        items: [],
+        customColumns: []
+    };
+
     const getGridTemplate = () => {
         const columns = displayInvoice.customColumns || [];
         const customFr = columns.map(() => '1.5fr').join(' ');
