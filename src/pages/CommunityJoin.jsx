@@ -4,7 +4,7 @@ import FormViewer from './FormViewer';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight } from 'lucide-react';
 
 const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs } = useStore();
@@ -214,10 +214,10 @@ const CommunityJoin = () => {
                                         <p className="text-gray-400 text-sm mb-6 line-clamp-3">{form.description}</p>
                                     </div>
                                     <div className="mt-auto pt-4 border-t border-white/5">
-                                        <Link to={`/forms/${form.id}`} target="_blank">
+                                        <Link to={`/forms/${form.id}`}>
                                             <Button className="w-full bg-transparent border border-white/20 text-white hover:border-yellow-400 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all font-medium flex items-center justify-center gap-2 group-hover:border-yellow-400">
-                                                <span>Take Survey</span>
-                                                <ExternalLink size={16} />
+                                                <span>View Form</span>
+                                                <ArrowRight size={16} />
                                             </Button>
                                         </Link>
                                     </div>

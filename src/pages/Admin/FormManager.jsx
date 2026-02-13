@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Edit, Trash2, Share2, Bell, ArrowLeft, Eye } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -9,7 +9,13 @@ import VolunteerGigManager from './VolunteerGigManager';
 const FormManager = () => {
     const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('gigs'); // 'forms' | 'gigs'
+    const location = useLocation();
+
+    // Check for query param 'tab'
+    const searchParams = new URLSearchParams(location.search);
+    const initialTab = searchParams.get('tab') === 'forms' ? 'forms' : 'gigs';
+
+    const [activeTab, setActiveTab] = useState(initialTab); // 'forms' | 'gigs'
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this form?')) {
@@ -69,7 +75,7 @@ const FormManager = () => {
                     <>
                         <div className="flex justify-end mb-6">
                             <Link to="/admin/forms/create">
-                                <Button variant="primary">
+                                <Button variant="primary" className="px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest">
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Google Form
                                 </Button>

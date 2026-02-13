@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card';
 const FormViewer = ({ formIdOverride }) => {
     const { id } = useParams();
     const { forms } = useStore();
-    const formId = formIdOverride || (id ? parseInt(id) : null);
+    const formId = formIdOverride || id;
 
     console.log('FormViewer Debug:', { id, formId, availableForms: forms });
 

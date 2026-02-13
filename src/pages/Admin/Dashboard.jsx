@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield, Clock } from 'lucide-react';
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -19,6 +19,20 @@ const Dashboard = () => {
     const [authLoading, setAuthLoading] = useState(true);
     const [isFirstRun, setIsFirstRun] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
+
+    const [isResetting, setIsResetting] = useState(false);
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("Password reset email sent! Check your inbox.");
+            setIsResetting(false);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to send reset email: " + error.message);
+        }
+    };
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -124,52 +138,87 @@ const Dashboard = () => {
         return <div className="min-h-screen flex items-center justify-center text-white">Loading Security...</div>;
     }
 
-
-
-
-
-
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center px-4 flex-col">
                 <Card className="p-8 w-full max-w-md border-neon-pink/30 shadow-neon-pink/20">
                     <h1 className="text-2xl font-bold text-white mb-6 text-center">
-                        {isRegistering ? 'Request Admin Access' : 'Admin Login'}
+                        {isResetting ? 'Reset Password' : (isRegistering ? 'Request Admin Access' : 'Admin Login')}
                     </h1>
-                    <form onSubmit={isRegistering ? handleSignUp : handleLogin} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                            <Input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@newbi.live"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
-                            <Input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                            />
-                        </div>
-                        <Button type="submit" variant="primary" className="w-full">
-                            {isRegistering ? 'Submit Request' : 'Sign In'}
-                        </Button>
-                    </form>
 
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => setIsRegistering(!isRegistering)}
-                            className="text-sm text-gray-400 hover:text-white underline transition-colors"
-                        >
-                            {isRegistering ? 'Already have an account? Login' : 'Need access? Request an account'}
-                        </button>
-                    </div>
+                    {isResetting ? (
+                        <form onSubmit={handleResetPassword} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                                <Input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@newbi.live"
+                                    required
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full">
+                                Send Reset Link
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => setIsResetting(false)}
+                                className="w-full text-sm text-gray-400 hover:text-white underline mt-2"
+                            >
+                                Back to Login
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={isRegistering ? handleSignUp : handleLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                                <Input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@newbi.live"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                                <Input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                            <Button type="submit" variant="primary" className="w-full">
+                                {isRegistering ? 'Submit Request' : 'Sign In'}
+                            </Button>
+
+                            {!isRegistering && (
+                                <div className="text-center pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsResetting(true)}
+                                        className="text-xs text-neon-blue hover:text-white transition-colors"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                            )}
+                        </form>
+                    )}
+
+                    {!isResetting && (
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={() => setIsRegistering(!isRegistering)}
+                                className="text-sm text-gray-400 hover:text-white underline transition-colors"
+                            >
+                                {isRegistering ? 'Already have an account? Login' : 'Need access? Request an account'}
+                            </button>
+                        </div>
+                    )}
                 </Card>
             </div>
         );
@@ -313,7 +362,7 @@ const Dashboard = () => {
                                 <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
                             </div>
                         </Link>
-                        {(user.role === 'developer' || user.role === 'super_admin') && (
+                        {user.role === 'developer' && (
                             <Link to="/admin/dev-settings" className="flex-1">
                                 <div className="bg-gradient-to-r from-white/10 to-transparent border border-white/20 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
                                     <div className="flex items-center gap-4">
@@ -382,7 +431,7 @@ const Dashboard = () => {
                         description="Volunteer gigs, forms, and sign-ups."
                         icon={Users}
                         color="neon-green"
-                        link="/admin/forms"
+                        link="/admin/forms?tab=forms"
                         isUnderMaintenance={maintenanceState.features?.forms}
                     />
                 </AdminCarousel>
