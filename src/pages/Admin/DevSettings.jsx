@@ -10,7 +10,7 @@ const DevSettings = () => {
     const { user, maintenanceState, toggleMaintenanceFeature, toggleGlobalMaintenance } = useStore();
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    const isAdmin = user?.role === 'developer' || user?.role === 'super_admin';
+    const isAdmin = user?.role === 'developer';
 
     if (!isAdmin) {
         return (
@@ -61,7 +61,7 @@ const DevSettings = () => {
                 { label: "Home: Portfolio", id: "home_portfolio" },
             ]
         }
-    ].filter(cat => user?.role === 'developer' || !cat.developerOnly);
+    ];
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">

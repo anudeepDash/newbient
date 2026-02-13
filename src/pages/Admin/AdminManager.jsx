@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { db, auth } from '../../lib/firebase';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -324,15 +325,33 @@ const AdminManager = () => {
                                             <div className="col-span-3 text-sm text-gray-500">
                                                 {new Date(admin.createdAt).toLocaleDateString()}
                                             </div>
-                                            <div className="col-span-1 text-right">
+                                            <div className="col-span-1 text-right flex justify-end gap-2">
                                                 {(admin.email !== user.email && canEditRoles(admin.role)) && (
-                                                    <button
-                                                        onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                        className="text-gray-500 hover:text-red-500 transition-colors p-2 rounded hover:bg-white/5"
-                                                        title="Revoke Access"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm(`Send password reset email to ${admin.email}?`)) {
+                                                                    try {
+                                                                        await sendPasswordResetEmail(auth, admin.email);
+                                                                        alert(`Password reset email sent to ${admin.email}`);
+                                                                    } catch (err) {
+                                                                        alert("Error: " + err.message);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="text-gray-500 hover:text-neon-blue transition-colors p-2 rounded hover:bg-white/5"
+                                                            title="Send Password Reset Email"
+                                                        >
+                                                            <Shield size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveAdmin(admin.id, admin.role)}
+                                                            className="text-gray-500 hover:text-red-500 transition-colors p-2 rounded hover:bg-white/5"
+                                                            title="Revoke Access"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -353,12 +372,30 @@ const AdminManager = () => {
                                                 </div>
                                             </div>
                                             {(admin.email !== user.email && canEditRoles(admin.role)) && (
-                                                <button
-                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                    className="p-3 text-red-500 bg-red-500/10 rounded-full"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm(`Send password reset email to ${admin.email}?`)) {
+                                                                try {
+                                                                    await sendPasswordResetEmail(auth, admin.email);
+                                                                    alert(`Password reset email sent to ${admin.email}`);
+                                                                } catch (err) {
+                                                                    alert("Error: " + err.message);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="p-3 text-neon-blue bg-neon-blue/10 rounded-full"
+                                                        title="Reset Password"
+                                                    >
+                                                        <Shield size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRemoveAdmin(admin.id, admin.role)}
+                                                        className="p-3 text-red-500 bg-red-500/10 rounded-full"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

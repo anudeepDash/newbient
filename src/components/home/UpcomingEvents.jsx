@@ -23,7 +23,7 @@ const UpcomingEvents = () => {
             )}
 
             {/* Gradient Overlay & Text (Idle State) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
                 <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
                     {event.title}
                 </h3>
@@ -78,7 +78,7 @@ const UpcomingEvents = () => {
                         {upcomingEvents.map((event) => (
                             <div
                                 key={event.id}
-                                className="min-w-[280px] sm:min-w-[320px] aspect-square relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg snap-start"
+                                className="min-w-[280px] sm:min-w-[320px] aspect-[4/5] relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg snap-start"
                             >
                                 {/* Link Wrapper if needed */}
                                 {event.link ? (
