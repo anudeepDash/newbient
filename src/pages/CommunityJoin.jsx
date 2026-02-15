@@ -546,7 +546,7 @@ const CommunityJoin = () => {
                                 <div className="flex items-center gap-5">
                                     <div className="h-12 w-1.5 bg-neon-pink rounded-full shadow-[0_0_20px_rgba(255,0,255,0.3)]"></div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-neon-pink uppercase tracking-widest mb-1">Feedback & More</p>
+                                        <p className="text-[10px] font-bold text-neon-pink uppercase tracking-widest mb-1">Forms and More</p>
                                         <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Community Pulse</h2>
                                     </div>
                                 </div>
