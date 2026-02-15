@@ -34,7 +34,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
             >
                 {/* Front Side */}
                 <div className={cn(
-                    "backface-hidden relative bg-zinc-900 border border-white/5 rounded-[1.5rem] p-5 flex flex-col sm:flex-row gap-4 group transition-all duration-700",
+                    "backface-hidden relative bg-zinc-900 border border-white/5 rounded-[1.5rem] p-5 md:p-6 flex flex-col sm:flex-row gap-6 group transition-all duration-700",
                     isGig ? "hover:border-neon-green/30" : "hover:border-neon-blue/30"
                 )}>
                     <div className={cn(
@@ -44,130 +44,135 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
                     {/* Content Left */}
                     <div className="flex-1 flex flex-col relative z-10">
-                        {/* Top: Icon Left, Status/Share Right */}
-                        <div className="flex items-start justify-between mb-4">
+                        {/* Top: Main Icon */}
+                        <div className="mb-5">
                             <div className={cn(
-                                "p-2 rounded-lg group-hover:scale-110 transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.05)] shrink-0",
+                                "p-2.5 w-fit rounded-xl group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.05)]",
                                 isGig ? "bg-neon-green/10 bg-neon-green/20" : "bg-neon-blue/10 bg-neon-blue/20"
                             )}>
-                                <Icon size={16} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <span className={cn(
-                                    "px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest border shrink-0",
-                                    item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                                )}>
-                                    {item.status || 'Open'}
-                                </span>
-                                <button
-                                    onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
-                                    className="p-1 text-gray-500 hover:text-white rounded hover:bg-white/5 transition-all"
-                                >
-                                    <Share2 size={12} />
-                                </button>
+                                <Icon size={20} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
                             </div>
                         </div>
 
                         {/* Title & Description */}
                         <div className="mb-4">
                             <h3 className={cn(
-                                "text-lg md:text-xl font-black font-heading transition-colors leading-tight tracking-tighter mb-1",
+                                "text-xl md:text-2xl font-black font-heading transition-colors leading-tight tracking-tighter mb-2",
                                 isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue"
                             )}>{item.title}</h3>
 
                             {item.description && (
-                                <div className="space-y-1">
-                                    <p className="text-gray-400 text-[10px] line-clamp-2 italic font-medium opacity-60 leading-relaxed overflow-hidden">
+                                <div className="space-y-2">
+                                    <p className="text-gray-400 text-xs line-clamp-2 italic font-medium opacity-60 leading-relaxed overflow-hidden">
                                         "{item.description}"
                                     </p>
                                     <button
                                         onClick={() => setIsFlipped(true)}
                                         className={cn(
-                                            "text-[9px] font-bold uppercase tracking-widest transition-colors",
+                                            "text-[10px] font-bold uppercase tracking-widest transition-colors border-b border-transparent hover:border-current inline-block",
                                             isGig ? "text-neon-green/60 hover:text-neon-green" : "text-neon-blue/60 hover:text-neon-blue"
                                         )}
                                     >
-                                        [ Read More ]
+                                        [ Read Full Details ]
                                     </button>
                                 </div>
                             )}
                         </div>
 
                         {/* Metadata Bottom */}
-                        <div className="mt-auto space-y-1.5">
-                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-bold">
-                                <Calendar size={10} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
+                        <div className="mt-auto pt-4 space-y-2">
+                            <div className="flex items-center gap-2.5 text-gray-500 text-[10px] font-bold">
+                                <Calendar size={12} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
                                 <span>Date: <span className="text-white/80">{isGig ? `${item.date} | ${item.time}` : (item.date || 'Upcoming')}</span></span>
                             </div>
-                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-bold">
-                                <MapPin size={10} className="text-neon-pink" />
+                            <div className="flex items-center gap-2.5 text-gray-500 text-[10px] font-bold">
+                                <MapPin size={12} className="text-neon-pink" />
                                 <span>Location: <span className="text-white/80">{item.location || (isGig ? '' : 'Announcing Soon')}</span></span>
                             </div>
                         </div>
                     </div>
 
                     {/* Actions Right */}
-                    <div className="flex flex-col gap-2 relative z-10 shrink-0 sm:min-w-[150px] justify-center pt-2 sm:pt-0">
-                        <Button
-                            as="a"
-                            href={href}
-                            target="_blank"
-                            className={cn(
-                                "w-full h-11 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading transition-all shadow-[0_0_20px_rgba(255,0,100,0.1)] hover:shadow-[0_0_25px_rgba(255,0,100,0.2)]",
-                                isGig
-                                    ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80")
-                                    : "bg-neon-blue text-black hover:bg-neon-blue/80"
-                            )}
-                        >
-                            {isGig ? (isWhatsApp ? 'Apply via WA' : 'Apply for Gig') : 'Register Now'}
-                            {isGig ? (isWhatsApp ? <Share2 size={14} /> : <ArrowRight size={14} />) : <ArrowRight size={14} />}
-                        </Button>
+                    <div className="flex flex-col gap-3 relative z-10 shrink-0 sm:min-w-[180px] justify-between py-1">
+                        {/* Status & Share - Now completely right-aligned above buttons */}
+                        <div className="flex items-center justify-end gap-3 mb-2">
+                            <span className={cn(
+                                "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0",
+                                item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                            )}>
+                                {item.status || 'Open'}
+                            </span>
+                            <button
+                                onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
+                                className="p-1.5 text-gray-500 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                                title="Share Card"
+                            >
+                                <Share2 size={14} />
+                            </button>
+                        </div>
 
-                        {(!isGig && item.whatsappLink) && (
+                        {/* Stretched Vertical Buttons */}
+                        <div className="flex flex-col gap-2.5 flex-1 justify-center">
                             <Button
                                 as="a"
-                                href={item.whatsappLink}
+                                href={href}
                                 target="_blank"
-                                className="w-full h-11 bg-zinc-800 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading"
+                                className={cn(
+                                    "w-full h-14 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2.5 font-heading transition-all shadow-lg",
+                                    isGig
+                                        ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E] shadow-[#25D366]/10" : "bg-neon-green text-black hover:bg-neon-green/80 shadow-neon-green/10")
+                                        : "bg-neon-blue text-black hover:bg-neon-blue/80 shadow-neon-blue/10"
+                                )}
                             >
-                                Join WhatsApp
-                                <ExternalLink size={12} />
+                                {isGig ? (isWhatsApp ? 'Apply via WA' : 'Apply for Gig') : 'Register Now'}
+                                {isGig ? (isWhatsApp ? <Share2 size={16} /> : <ArrowRight size={16} />) : <ArrowRight size={16} />}
                             </Button>
-                        )}
+
+                            {(!isGig && item.whatsappLink) && (
+                                <Button
+                                    as="a"
+                                    href={item.whatsappLink}
+                                    target="_blank"
+                                    className="w-full h-14 bg-zinc-800 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2.5 font-heading transition-all"
+                                >
+                                    Join WhatsApp
+                                    <ExternalLink size={14} />
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Back Side (Description Only) */}
                 <div className={cn(
-                    "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-900 border border-white/5 rounded-[1.5rem] p-6 flex flex-col overflow-hidden transition-all duration-700",
+                    "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-900 border border-white/5 rounded-[1.5rem] p-6 md:p-8 flex flex-col overflow-hidden transition-all duration-700 shadow-2xl",
                     isGig ? "border-neon-green/30" : "border-neon-blue/30"
                 )}>
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-6">
                         <h3 className={cn(
-                            "text-lg font-black font-heading leading-tight tracking-tighter",
+                            "text-xl font-black font-heading leading-tight tracking-tighter",
                             isGig ? "text-neon-green" : "text-neon-blue"
                         )}>{item.title}</h3>
                         <button
                             onClick={() => setIsFlipped(false)}
-                            className="p-2 text-gray-500 hover:text-white rounded-full hover:bg-white/5"
+                            className="p-2 text-gray-500 hover:text-white rounded-full hover:bg-white/5 transition-colors"
                         >
-                            <ArrowRight className="rotate-180" size={16} />
+                            <ArrowRight className="rotate-180" size={20} />
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                        <p className="text-gray-300 text-xs italic font-medium leading-relaxed whitespace-pre-wrap">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-3">
+                        <p className="text-gray-300 text-sm italic font-medium leading-relaxed whitespace-pre-wrap">
                             "{item.description}"
                         </p>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-white/5 text-center">
+                    <div className="mt-6 pt-6 border-t border-white/5 text-center">
                         <button
                             onClick={() => setIsFlipped(false)}
-                            className="text-[10px] font-bold text-gray-400 hover:text-white uppercase tracking-widest"
+                            className="text-[10px] font-black text-gray-400 hover:text-white uppercase tracking-[0.2em] transition-colors"
                         >
-                            Back to Event
+                            ← Return to Front
                         </button>
                     </div>
                 </div>
@@ -335,6 +340,7 @@ const CommunityJoin = () => {
 
                             <div className="mt-12 text-center p-10 bg-zinc-900/50 border border-white/10 rounded-[2rem] backdrop-blur-sm">
                                 <h3 className="text-2xl font-bold mb-4 font-heading">Already filled the form?</h3>
+                                Workshop with you!
                                 <p className="text-gray-400 mb-8 max-w-md mx-auto">Once you've submitted the Google Form, click below to instantly unlock the community hub.</p>
                                 <Button
                                     onClick={handleJoinedConfirm}
