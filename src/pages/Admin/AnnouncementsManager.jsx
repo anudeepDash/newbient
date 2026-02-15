@@ -9,8 +9,14 @@ import { cn } from '../../lib/utils';
 import LivePreview from '../../components/admin/LivePreview';
 
 const AnnouncementsManager = () => {
-    const { announcements, addAnnouncement, togglePinAnnouncement, deleteAnnouncement } = useStore();
+    const { announcements, addAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, cleanupExpiredAnnouncements } = useStore();
     const [isAdding, setIsAdding] = useState(false);
+
+    // Auto-cleanup on mount
+    useEffect(() => {
+        cleanupExpiredAnnouncements();
+    }, [cleanupExpiredAnnouncements]);
+
     const [newAnnouncement, setNewAnnouncement] = useState({
         title: '',
         date: new Date().toISOString().split('T')[0],
@@ -39,6 +45,20 @@ const AnnouncementsManager = () => {
             console.error("Error adding announcement:", error);
             alert("Failed to add announcement.");
         }
+    };
+
+    const handleMoveUp = (index) => {
+        if (index === 0) return;
+        const newItems = [...announcements];
+        [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+        reorderAnnouncements(newItems);
+    };
+
+    const handleMoveDown = (index) => {
+        if (index === announcements.length - 1) return;
+        const newItems = [...announcements];
+        [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+        reorderAnnouncements(newItems);
     };
 
     return (
@@ -150,6 +170,24 @@ const AnnouncementsManager = () => {
                                         <p className="text-gray-300 line-clamp-1">{item.content}</p>
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
+                                        <div className="flex flex-col gap-1 mr-2">
+                                            <button
+                                                onClick={() => handleMoveUp(index)}
+                                                disabled={index === 0}
+                                                className="p-1 bg-zinc-800 rounded hover:bg-zinc-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-gray-400 hover:text-white"
+                                                title="Move Up"
+                                            >
+                                                ↑
+                                            </button>
+                                            <button
+                                                onClick={() => handleMoveDown(index)}
+                                                disabled={index === announcements.length - 1}
+                                                className="p-1 bg-zinc-800 rounded hover:bg-zinc-700 disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-gray-400 hover:text-white"
+                                                title="Move Down"
+                                            >
+                                                ↓
+                                            </button>
+                                        </div>
                                         <button
                                             onClick={() => togglePinAnnouncement(item.id)}
                                             className={cn(

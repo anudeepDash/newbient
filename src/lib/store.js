@@ -36,12 +36,7 @@ export const useStore = create((set, get) => ({
                 });
 
                 // Sort by 'order' field if available (ascending)
-                if (colName === 'portfolio') {
-                    data.sort((a, b) => (a.order || 0) - (b.order || 0));
-                }
-
-                // Sort upcoming events by order (ascending)
-                if (colName === 'upcoming_events') {
+                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements') {
                     data.sort((a, b) => (a.order || 0) - (b.order || 0));
                 }
 
@@ -219,7 +214,43 @@ export const useStore = create((set, get) => ({
 
     // Announcements
     addAnnouncement: async (announcement) => {
-        await addDoc(collection(db, 'announcements'), announcement);
+        // Assign a default order (put at top -> minOrder - 1)
+        const currentItems = get().announcements;
+        const minOrder = currentItems.reduce((min, i) => Math.min(min, i.order || 0), 0);
+
+        await addDoc(collection(db, 'announcements'), {
+            ...announcement,
+            order: minOrder - 1
+        });
+    },
+    reorderAnnouncements: async (items) => {
+        const updates = items.map((item, index) =>
+            updateDoc(doc(db, 'announcements', item.id), { order: index })
+        );
+        await Promise.all(updates);
+    },
+    cleanupExpiredAnnouncements: async () => {
+        // This is called from the component or a dedicated effect, not essentially here in the store definition
+        // But we can expose it as an action
+        const { announcements, deleteAnnouncement } = get();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const expired = announcements.filter(a => {
+            if (!a.date) return false;
+            const itemDate = new Date(a.date);
+            // Check if date is strictly BEFORE today (yesterday or earlier)
+            // If date is today, we keep it until tomorrow
+            return itemDate < today;
+        });
+
+        if (expired.length > 0) {
+            console.log(`[Cleanup] Found ${expired.length} expired announcements.`);
+            for (const item of expired) {
+                await deleteAnnouncement(item.id);
+                console.log(`[Cleanup] Deleted expired announcement: ${item.title}`);
+            }
+        }
     },
     togglePinAnnouncement: async (id) => {
         const item = get().announcements.find(a => a.id === id);

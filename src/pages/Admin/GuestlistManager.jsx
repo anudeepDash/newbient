@@ -109,7 +109,7 @@ const GuestlistManager = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
-                                        <Input value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} placeholder="e.g. Oct 25, 2025" required />
+                                        <Input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
