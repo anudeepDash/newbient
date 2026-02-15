@@ -42,7 +42,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                 )}>
                     {/* Header Gradient Strip */}
                     <div className={cn(
-                        "h-1.5 w-full bg-gradient-to-r",
+                        "h-1.5 w-full bg-gradient-to-r relative z-10",
                         isForm ? "from-neon-pink via-neon-pink/50 to-transparent" : (isGig ? "from-neon-green via-neon-green/50 to-transparent" : "from-neon-blue via-neon-blue/50 to-transparent")
                     )}></div>
 

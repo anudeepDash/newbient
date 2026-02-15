@@ -5,6 +5,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
+import LivePreview from '../../components/admin/LivePreview';
+
 const GuestlistManager = () => {
     const { guestlists, addGuestlist, updateGuestlist, deleteGuestlist } = useStore();
     const [isAdding, setIsAdding] = useState(false);
@@ -63,7 +65,7 @@ const GuestlistManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className={`mx-auto ${isAdding ? 'max-w-4xl' : 'max-w-6xl'}`}>
+            <div className={`mx-auto ${isAdding ? 'max-w-7xl' : 'max-w-6xl'}`}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
                         <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Guestlist Management</h2>
@@ -73,7 +75,7 @@ const GuestlistManager = () => {
                         <Button variant="primary" onClick={() => {
                             resetForm();
                             setIsAdding(true);
-                        }} className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-neon-green/20">
+                        }} className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-neon-blue/20">
                             <Plus className="mr-2 h-4 w-4" />
                             Add New Guestlist
                         </Button>
@@ -81,68 +83,74 @@ const GuestlistManager = () => {
                 </div>
 
                 {isAdding ? (
-                    <Card className="p-6 border-neon-green/30">
-                        <h2 className="text-xl font-bold text-white mb-4">{editingId ? 'Edit Guestlist' : 'Add New Guestlist'}</h2>
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Event Title</label>
-                                    <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start h-[calc(100vh-150px)] min-h-[700px]">
+                        {/* Editor Column */}
+                        <Card className="p-6 h-full flex flex-col border-neon-blue/30 overflow-y-auto">
+                            <h2 className="text-xl font-bold text-white mb-4 flex-shrink-0">{editingId ? 'Edit Guestlist' : 'Add New Guestlist'}</h2>
+                            <form onSubmit={handleSave} className="space-y-4 flex-grow flex flex-col">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Event Title</label>
+                                        <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                        <select
+                                            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue"
+                                            value={formData.status}
+                                            onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                        >
+                                            <option value="Open">Open</option>
+                                            <option value="Closed">Closed</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                    <select
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-green"
-                                        value={formData.status}
-                                        onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                    >
-                                        <option value="Open">Open</option>
-                                        <option value="Closed">Closed</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
-                                    <Input value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} placeholder="e.g. Oct 25, 2025" required />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
+                                        <Input value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} placeholder="e.g. Oct 25, 2025" required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
+                                        <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
-                                    <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required />
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Access Link (Google Form, etc.)</label>
-                                    <Input value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} placeholder="https://..." required />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Access Link (Google Form, etc.)</label>
+                                        <Input value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} placeholder="https://..." required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">WhatsApp Group Link (Optional)</label>
+                                        <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." />
+                                    </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">WhatsApp Group Link (Optional)</label>
-                                    <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." />
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Description (Optional)</label>
+                                    <textarea
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue h-24 resize-none"
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="Brief details..."
+                                    />
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Description (Optional)</label>
-                                <textarea
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-green h-24 resize-none"
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder="Brief details..."
-                                />
-                            </div>
+                                <div className="flex justify-end gap-3 pt-4 mt-auto border-t border-white/10 flex-shrink-0">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="h-12 px-6">Cancel</Button>
+                                    <Button type="submit" variant="primary" disabled={saving} className="h-12 px-8 shadow-lg shadow-neon-blue/20">
+                                        {saving ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                                        {editingId ? 'Update' : 'Save'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </Card>
 
-                            <div className="flex justify-end gap-4 pt-4 border-t border-white/10">
-                                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                                <Button type="submit" variant="primary" disabled={saving}>
-                                    {saving ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                                    {editingId ? 'Update Guestlist' : 'Save Guestlist'}
-                                </Button>
-                            </div>
-                        </form>
-                    </Card>
+                        {/* Preview Column */}
+                        <LivePreview type="guestlist" data={formData} />
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {guestlists && guestlists.length > 0 ? (
