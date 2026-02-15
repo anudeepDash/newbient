@@ -85,7 +85,7 @@ const LivePreview = ({ type, data }) => {
                     {/* GIG PREVIEW */}
                     {type === 'gig' && (
                         <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
-                            <div className="h-1 w-full bg-gradient-to-r from-neon-green via-neon-green/50 to-transparent"></div>
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-green via-neon-green/50 to-transparent relative z-10"></div>
 
                             <div className="p-5 flex flex-col relative overflow-hidden">
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
@@ -141,7 +141,7 @@ const LivePreview = ({ type, data }) => {
                     {/* GUESTLIST PREVIEW */}
                     {type === 'guestlist' && (
                         <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
-                            <div className="h-1 w-full bg-gradient-to-r from-neon-blue via-neon-pink/50 to-transparent"></div>
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-blue via-neon-pink/50 to-transparent relative z-10"></div>
 
                             <div className="p-5 flex flex-col relative overflow-hidden">
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
@@ -202,7 +202,7 @@ const LivePreview = ({ type, data }) => {
                     {/* FORM/PULSE PREVIEW */}
                     {type === 'form' && (
                         <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
-                            <div className="h-1 w-full bg-gradient-to-r from-neon-pink via-neon-pink/50 to-transparent"></div>
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-pink via-neon-pink/50 to-transparent relative z-10"></div>
 
                             <div className="p-5 flex flex-col relative overflow-hidden">
                                 <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
