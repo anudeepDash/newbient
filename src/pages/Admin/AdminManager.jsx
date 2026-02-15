@@ -283,10 +283,10 @@ const AdminManager = () => {
                         <div>
                             {/* Desktop Table Header */}
                             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <div className="col-span-5">User</div>
+                                <div className="col-span-4">User / Name</div>
                                 <div className="col-span-3">Role</div>
-                                <div className="col-span-3">Added Date</div>
-                                <div className="col-span-1 text-right">Actions</div>
+                                <div className="col-span-2">Added Date</div>
+                                <div className="col-span-3 text-right">Actions</div>
                             </div>
 
                             {/* List Items */}
@@ -297,9 +297,12 @@ const AdminManager = () => {
                                     <div key={admin.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
                                         {/* Desktop Row */}
                                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 items-center">
-                                            <div className="col-span-5 font-medium text-white break-words">
-                                                {admin.email}
-                                                {admin.email === user.email && <span className="ml-2 text-[10px] bg-white/10 px-1 rounded text-gray-400">(You)</span>}
+                                            <div className="col-span-4 font-medium text-white break-words">
+                                                <div className="flex flex-col">
+                                                    <span>{admin.displayName || 'Unnamed Admin'}</span>
+                                                    <span className="text-[10px] text-gray-500">{admin.email}</span>
+                                                </div>
+                                                {admin.email === user.email && <span className="text-[10px] bg-white/10 px-1 rounded text-gray-400 mt-1 inline-block">(You)</span>}
                                             </div>
                                             <div className="col-span-3">
                                                 {canManageDevelopers ? (
@@ -307,7 +310,7 @@ const AdminManager = () => {
                                                         value={admin.role}
                                                         onChange={(e) => handleUpdateRole(admin.id, e.target.value)}
                                                         disabled={admin.email === user.email}
-                                                        className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-bold uppercase text-neon-green focus:outline-none focus:border-neon-blue"
+                                                        className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-bold uppercase text-neon-green focus:outline-none focus:border-neon-blue w-full"
                                                     >
                                                         <option value="editor">Editor</option>
                                                         <option value="super_admin">Super Admin</option>
@@ -322,17 +325,39 @@ const AdminManager = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="col-span-3 text-sm text-gray-500">
+                                            <div className="col-span-2 text-sm text-gray-500">
                                                 {new Date(admin.createdAt).toLocaleDateString()}
                                             </div>
-                                            <div className="col-span-1 text-right flex justify-end gap-2">
+                                            <div className="col-span-3 text-right flex justify-end gap-2">
+                                                {(admin.email === user.email || user.role === 'developer') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const newName = prompt(`Enter new display name for ${admin.email}:`, admin.displayName || "");
+                                                            if (newName !== null && newName.trim() !== "") {
+                                                                useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName })
+                                                                    .then(() => {
+                                                                        fetchAdmins();
+                                                                        alert("Profile updated!");
+                                                                    })
+                                                                    .catch(err => alert("Error: " + err.message));
+                                                            }
+                                                        }}
+                                                        className="text-[10px] font-bold text-neon-blue hover:text-white uppercase tracking-widest px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg transition-colors"
+                                                    >
+                                                        Edit Name
+                                                    </button>
+                                                )}
                                                 {(admin.email !== user.email && canEditRoles(admin.role)) && (
                                                     <>
                                                         <button
                                                             onClick={async () => {
                                                                 if (window.confirm(`Send password reset email to ${admin.email}?`)) {
                                                                     try {
-                                                                        await sendPasswordResetEmail(auth, admin.email);
+                                                                        const actionCodeSettings = {
+                                                                            url: `${window.location.origin}/auth/action?mode=resetPassword`,
+                                                                            handleCodeInApp: true,
+                                                                        };
+                                                                        await sendPasswordResetEmail(auth, admin.email, actionCodeSettings);
                                                                         alert(`Password reset email sent to ${admin.email}`);
                                                                     } catch (err) {
                                                                         alert("Error: " + err.message);
@@ -357,43 +382,68 @@ const AdminManager = () => {
                                         </div>
 
                                         {/* Mobile Card View */}
-                                        <div className="md:hidden p-4 flex justify-between items-center">
-                                            <div>
-                                                <div className="font-bold text-white mb-1">
-                                                    {admin.email}
-                                                    {admin.email === user.email && <span className="ml-2 text-xs text-gray-500">(You)</span>}
+                                        <div className="md:hidden p-4 flex flex-col gap-4">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="font-bold text-white mb-1">
+                                                        {admin.displayName || 'Unnamed Admin'}
+                                                        <span className="block text-[10px] text-gray-500 font-normal">{admin.email}</span>
+                                                        {admin.email === user.email && <span className="text-[10px] bg-white/10 px-1 rounded text-gray-400 mt-1 inline-block">(You)</span>}
+                                                    </div>
+                                                    <div className="flex gap-2 text-xs mb-2">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
+                                                            }`}>
+                                                            {admin.role.replace('_', ' ')}
+                                                        </span>
+                                                        <span className="text-gray-500 flex items-center">{new Date(admin.createdAt).toLocaleDateString()}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-2 text-xs mb-2">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
-                                                        }`}>
-                                                        {admin.role.replace('_', ' ')}
-                                                    </span>
-                                                    <span className="text-gray-500 flex items-center">{new Date(admin.createdAt).toLocaleDateString()}</span>
-                                                </div>
+                                                {(admin.email === user.email || user.role === 'developer') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const newName = prompt(`Enter new display name for ${admin.email}:`, admin.displayName || "");
+                                                            if (newName !== null && newName.trim() !== "") {
+                                                                useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName })
+                                                                    .then(() => {
+                                                                        fetchAdmins();
+                                                                        alert("Profile updated!");
+                                                                    })
+                                                                    .catch(err => alert("Error: " + err.message));
+                                                            }
+                                                        }}
+                                                        className="text-[10px] font-bold text-neon-blue px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg"
+                                                    >
+                                                        Edit Name
+                                                    </button>
+                                                )}
                                             </div>
                                             {(admin.email !== user.email && canEditRoles(admin.role)) && (
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
                                                     <button
                                                         onClick={async () => {
                                                             if (window.confirm(`Send password reset email to ${admin.email}?`)) {
                                                                 try {
-                                                                    await sendPasswordResetEmail(auth, admin.email);
+                                                                    const actionCodeSettings = {
+                                                                        url: `${window.location.origin}/auth/action?mode=resetPassword`,
+                                                                        handleCodeInApp: true,
+                                                                    };
+                                                                    await sendPasswordResetEmail(auth, admin.email, actionCodeSettings);
                                                                     alert(`Password reset email sent to ${admin.email}`);
                                                                 } catch (err) {
                                                                     alert("Error: " + err.message);
                                                                 }
                                                             }
                                                         }}
-                                                        className="p-3 text-neon-blue bg-neon-blue/10 rounded-full"
+                                                        className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-neon-blue bg-neon-blue/10 rounded-lg"
                                                         title="Reset Password"
                                                     >
-                                                        <Shield size={16} />
+                                                        <Shield size={14} /> Reset Password
                                                     </button>
                                                     <button
                                                         onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                        className="p-3 text-red-500 bg-red-500/10 rounded-full"
+                                                        className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-500 bg-red-500/10 rounded-lg"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash2 size={14} /> Remove
                                                     </button>
                                                 </div>
                                             )}

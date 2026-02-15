@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc } from 'firebase/firestore';
 
 export const useStore = create((set, get) => ({
     announcements: [],
@@ -9,6 +9,7 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     upcomingEvents: [],
+    guestlists: [], // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
         global: false,
@@ -19,6 +20,7 @@ export const useStore = create((set, get) => ({
     siteSettings: { showUpcomingEvents: true },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
     loading: true,
+    authInitialized: false,
 
     // Real-time Subscription Init
     subscribeToData: () => {
@@ -69,6 +71,7 @@ export const useStore = create((set, get) => ({
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
         const unsub8 = sub('upcoming_events', 'upcomingEvents');
         const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
+        const unsubGuestlist = sub('guestlists', 'guestlists'); // New sub
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -119,7 +122,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsubCategory();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsubCategory(); unsubGuestlist();
         };
     },
 
@@ -131,7 +134,11 @@ export const useStore = create((set, get) => ({
         const currentItems = get().upcomingEvents;
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
 
-        const docRef = await addDoc(collection(db, 'upcoming_events'), { ...event, order: maxOrder + 1 });
+        const docRef = await addDoc(collection(db, 'upcoming_events'), {
+            ...event,
+            category: event.category || '', // Added category
+            order: maxOrder + 1
+        });
 
         if (alsoAddToAnnouncements) {
             await addDoc(collection(db, 'announcements'), {
@@ -145,7 +152,10 @@ export const useStore = create((set, get) => ({
         }
     },
     updateUpcomingEvent: async (id, updates) => {
-        await updateDoc(doc(db, 'upcoming_events', id), updates);
+        await updateDoc(doc(db, 'upcoming_events', id), {
+            ...updates,
+            category: updates.category || '' // Ensure category is updated
+        });
     },
     deleteUpcomingEvent: async (id) => {
         await deleteDoc(doc(db, 'upcoming_events', id));
@@ -181,7 +191,7 @@ export const useStore = create((set, get) => ({
             await addPortfolioItem({
                 title: event.title,
                 image: event.image,
-                category: defaultCategory, // Assign to default category
+                category: event.category || defaultCategory, // Use event's category if present
                 highlightUrl: event.link || '', // Map link to highlight if present
                 date: event.date // Preserve date if useful
             });
@@ -296,46 +306,172 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'volunteer_gigs', id));
     },
 
-    // Auth & Roles
-    user: null, // { email, uid, role }
+    // Guestlists
+    addGuestlist: async (guestlist) => {
+        await addDoc(collection(db, 'guestlists'), { ...guestlist, createdAt: new Date().toISOString() });
+    },
+    updateGuestlist: async (id, updates) => {
+        await updateDoc(doc(db, 'guestlists', id), updates);
+    },
+    deleteGuestlist: async (id) => {
+        await deleteDoc(doc(db, 'guestlists', id));
+    },
 
-    checkUserRole: async (user) => {
-        if (!user) {
-            set({ user: null });
+    // Auth & Roles
+    user: null, // { email, uid, role, displayName, hasJoinedTribe }
+    isAuthOpen: false,
+    setAuthModal: (open) => set({ isAuthOpen: open }),
+
+    loginWithGoogle: async () => {
+        const { signInWithPopup } = await import('firebase/auth');
+        const { auth, googleProvider } = await import('./firebase');
+        const result = await signInWithPopup(auth, googleProvider);
+        return result.user;
+    },
+
+    signUpWithEmail: async (email, password, displayName) => {
+        const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+        const { auth } = await import('./firebase');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName });
+
+        // Create initial user doc in Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+            email,
+            displayName,
+            hasJoinedTribe: false,
+            createdAt: new Date().toISOString()
+        });
+
+        return userCredential.user;
+    },
+
+    signInWithEmail: async (email, password) => {
+        const { signInWithEmailAndPassword } = await import('firebase/auth');
+        const { auth } = await import('./firebase');
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        return userCredential.user;
+    },
+
+    checkUserRole: async (firebaseUser) => {
+        if (!firebaseUser) {
+            set({ user: null, authInitialized: true });
             return;
         }
 
-        // Default role is 'unauthorized' until fetched
         let role = 'unauthorized';
+        let hasJoinedTribe = false;
+        let displayName = firebaseUser.displayName || '';
+
         try {
-            // Check 'admins' collection for this email
-            // Doc ID should be the email for easy lookup, or query by field
-            // Let's try direct doc lookup by email first (standardize lowercase)
-            // If we used UID as doc ID, that's better, but email is easier for manual bootstrapping
+            // 1. Check if Admin (still by email as admins are added by email)
+            const adminQ = query(collection(db, 'admins'), where('email', '==', firebaseUser.email));
+            const adminSnapshot = await getDocs(adminQ);
 
-            // Query by email field to be safe if Doc ID isn't strict
-            const q = query(collection(db, 'admins'), where('email', '==', user.email));
-            const snapshot = await getDocs(q);
+            if (!adminSnapshot.empty) {
+                const adminData = adminSnapshot.docs[0].data();
+                role = adminData.role || 'unauthorized';
+                displayName = adminData.displayName || displayName;
+            }
 
-            if (!snapshot.empty) {
-                const adminDoc = snapshot.docs[0].data();
-                role = adminDoc.role || 'unauthorized';
-                // Standardize 'developer' role
-                if (role === 'developer') role = 'developer';
-            } else {
-                console.warn("User logged in but not found in admins collection.");
+            // 2. Load User Profile by UID (Direct lookup is much more efficient and reliable)
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                hasJoinedTribe = userData.hasJoinedTribe || false;
+                displayName = userData.displayName || displayName;
+            } else if (firebaseUser.providerData[0]?.providerId === 'google.com') {
+                // Auto-create profile for Google users if missing
+                await setDoc(userRef, {
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName,
+                    hasJoinedTribe: false,
+                    createdAt: new Date().toISOString()
+                }, { merge: true });
             }
         } catch (error) {
-            console.error("Error fetching role:", error);
+            console.error("Error fetching role/profile:", error);
         }
 
         set({
             user: {
-                email: user.email,
-                uid: user.uid,
-                role: role
-            }
+                email: firebaseUser.email,
+                uid: firebaseUser.uid,
+                role: role,
+                displayName: displayName,
+                hasJoinedTribe: hasJoinedTribe
+            },
+            authInitialized: true
         });
+    },
+
+    markFormAsSubmitted: async () => {
+        const { user } = get();
+        if (!user) {
+            console.warn("[markFormAsSubmitted] No user found in store.");
+            throw new Error("You must be signed in to confirm.");
+        }
+
+        console.log("[markFormAsSubmitted] Marking user as joined:", user.uid);
+
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                email: user.email, // Ensure email is saved so lookups by email also work
+                displayName: user.displayName,
+                hasJoinedTribe: true,
+                joinedAt: new Date().toISOString()
+            }, { merge: true });
+
+            console.log("[markFormAsSubmitted] Successfully updated Firestore.");
+
+            // Optimistic update
+            set({ user: { ...user, hasJoinedTribe: true } });
+        } catch (error) {
+            console.error("[markFormAsSubmitted] Firestore error:", error);
+            throw new Error(`Failed to save: ${error.message || 'Unknown error'}`);
+        }
+    },
+
+    updateAdminProfile: async (targetUid, targetEmail, newData) => {
+        const { user } = get();
+        if (!user) return;
+
+        try {
+            // 1. Update in admins collection (always by email)
+            const q = query(collection(db, 'admins'), where('email', '==', targetEmail));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const adminDocRef = doc(db, 'admins', snapshot.docs[0].id);
+                await updateDoc(adminDocRef, newData);
+            }
+
+            // 2. Update in users collection (if UID provided or found)
+            let uidToUpdate = targetUid;
+
+            if (!uidToUpdate) {
+                const userQ = query(collection(db, 'users'), where('email', '==', targetEmail));
+                const userSnap = await getDocs(userQ);
+                if (!userSnap.empty) {
+                    uidToUpdate = userSnap.docs[0].id;
+                }
+            }
+
+            if (uidToUpdate) {
+                const userRef = doc(db, 'users', uidToUpdate);
+                await setDoc(userRef, newData, { merge: true });
+            }
+
+            // 3. Update local state if it's the current user
+            if (user.email === targetEmail) {
+                set({ user: { ...user, ...newData } });
+            }
+        } catch (error) {
+            console.error("Error updating admin profile:", error);
+            throw error;
+        }
     },
 
     logout: async () => {

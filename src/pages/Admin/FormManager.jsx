@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Edit, Trash2, Share2, Bell, ArrowLeft, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Share2, Bell, ArrowLeft, Eye, Users, ClipboardList, ListMusic } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import VolunteerGigManager from './VolunteerGigManager';
+import GuestlistManager from './GuestlistManager';
 
 const FormManager = () => {
     const { forms, deleteForm, addAnnouncement } = useStore();
@@ -13,9 +14,9 @@ const FormManager = () => {
 
     // Check for query param 'tab'
     const searchParams = new URLSearchParams(location.search);
-    const initialTab = searchParams.get('tab') === 'forms' ? 'forms' : 'gigs';
+    const initialTab = searchParams.get('tab') || 'forms'; // Default to forms
 
-    const [activeTab, setActiveTab] = useState(initialTab); // 'forms' | 'gigs'
+    const [activeTab, setActiveTab] = useState(initialTab); // 'forms' | 'gigs' | 'guestlists'
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this form?')) {
@@ -51,27 +52,36 @@ const FormManager = () => {
                         <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
                             <ArrowLeft className="h-6 w-6" />
                         </Link>
-                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Community & Forms</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Community Hub</h1>
                     </div>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-4 md:gap-8 mb-8 border-b border-white/10 pb-4 overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => setActiveTab('forms')}
-                        className={`text-lg font-bold pb-2 border-b-2 transition-colors ${activeTab === 'forms' ? 'text-neon-green border-neon-green' : 'text-gray-400 border-transparent hover:text-white'}`}
+                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'forms' ? 'text-neon-green border-neon-green' : 'text-gray-400 border-transparent hover:text-white'}`}
                     >
+                        <ClipboardList size={20} />
                         Forms & Surveys
                     </button>
                     <button
                         onClick={() => setActiveTab('gigs')}
-                        className={`text-lg font-bold pb-2 border-b-2 transition-colors ${activeTab === 'gigs' ? 'text-neon-blue border-neon-blue' : 'text-gray-400 border-transparent hover:text-white'}`}
+                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'gigs' ? 'text-neon-blue border-neon-blue' : 'text-gray-400 border-transparent hover:text-white'}`}
                     >
+                        <Users size={20} />
                         Volunteer Gigs
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('guestlists')}
+                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'guestlists' ? 'text-neon-green border-neon-green' : 'text-gray-400 border-transparent hover:text-white'}`}
+                    >
+                        <ListMusic size={20} />
+                        Guestlists
                     </button>
                 </div>
 
-                {activeTab === 'forms' ? (
+                {activeTab === 'forms' && (
                     <>
                         <div className="flex justify-end mb-6">
                             <Link to="/admin/forms/create">
@@ -119,8 +129,14 @@ const FormManager = () => {
                             )}
                         </div>
                     </>
-                ) : (
+                )}
+
+                {activeTab === 'gigs' && (
                     <VolunteerGigManager />
+                )}
+
+                {activeTab === 'guestlists' && (
+                    <GuestlistManager />
                 )}
             </div>
         </div>

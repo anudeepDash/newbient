@@ -59,14 +59,25 @@ const LivePreview = ({ type, data }) => {
                                 </div>
                             )}
 
-                            {/* Gradient Overlay & Text */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6">
+                            {/* Hover Overlay Simulation (Always partially visible in preview) */}
+                            <div className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center p-4 text-center">
                                 <h3 className="text-xl font-bold text-white mb-1">
                                     {data.title || 'Event Title'}
                                 </h3>
-                                <p className="text-neon-green text-sm font-bold uppercase tracking-wider">
+                                <p className="text-neon-green text-[10px] font-bold uppercase tracking-wider mb-2">
                                     {data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
                                 </p>
+
+                                {data.description && (
+                                    <p className="text-gray-300 text-[10px] mb-3 whitespace-pre-line line-clamp-4">
+                                        {data.description}
+                                    </p>
+                                )}
+
+                                <div className="flex items-center gap-1 text-white text-[10px] font-medium border border-white/20 px-2 py-1 rounded">
+                                    {data.buttonText || 'view event'}
+                                    <ArrowRight size={10} />
+                                </div>
                             </div>
                         </div>
                     )}

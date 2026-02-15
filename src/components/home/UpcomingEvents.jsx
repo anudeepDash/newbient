@@ -1,15 +1,71 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Share2, Copy, Download, Check } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings } = useStore();
     const carouselRef = useRef();
 
+    // handle share logic
+    const handleShare = async (e, event) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cardElement = document.getElementById(`event-card-${event.id}`);
+        if (!cardElement) return;
+
+        try {
+            // Create a canvas from the element
+            // Use scale for higher resolution
+            const canvas = await html2canvas(cardElement, {
+                useCORS: true,
+                scale: 3,
+                backgroundColor: '#000000',
+                logging: false,
+            });
+
+            const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+            const imageFile = new File([imageBlob], `${event.title.replace(/\s+/g, '_')}_event.png`, { type: 'image/png' });
+
+            const eventUrl = event.link || window.location.origin;
+            const shareData = {
+                title: event.title,
+                text: `${event.title} - ${event.date ? new Date(event.date).toLocaleDateString() : 'Upcoming Event'}\n\nAccess it here: ${eventUrl}`,
+                url: eventUrl,
+                files: [imageFile],
+            };
+
+            if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback for desktop: Download + Copy Link
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${event.title.replace(/\s+/g, '_')}_event.png`;
+                link.click();
+
+                if (event.link) {
+                    await navigator.clipboard.writeText(event.link);
+                    alert("Image downloaded and event link copied to clipboard!");
+                } else {
+                    alert("Image downloaded!");
+                }
+            }
+        } catch (error) {
+            console.error("Share failed:", error);
+            // Simple fallback if everything fails
+            if (event.link) {
+                await navigator.clipboard.writeText(event.link);
+                alert("Link copied to clipboard!");
+            }
+        }
+    };
+
     // Component for reusable card content matching Portfolio style
     const InnerCardContent = ({ event }) => (
-        <>
+        <div id={`event-card-${event.id}`} className="w-full h-full relative">
             {/* Image Background */}
             {event.image ? (
                 <div
@@ -20,14 +76,17 @@ const UpcomingEvents = () => {
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
                     No Image
                 </div>
-            )}
+            )/* Branding Tag for Captured Image */}
+            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                <span className="text-[10px] font-bold text-neon-green tracking-widest uppercase">Newbi Ent.</span>
+            </div>
 
             {/* Gradient Overlay & Text (Idle State) */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
                 <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
                     {event.title}
                 </h3>
-                <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300 uppercase font-bold tracking-tight">
                     {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
                 </p>
             </div>
@@ -40,16 +99,33 @@ const UpcomingEvents = () => {
                         {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
                     </span>
 
-                    <div className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium">
-                        view event
-                        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                    {/* Description Section */}
+                    {event.description && (
+                        <p className="text-gray-300 text-xs mb-4 max-w-[200px] whitespace-pre-line text-center">
+                            {event.description}
+                        </p>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium">
+                            {event.buttonText || 'view event'}
+                            <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                        </div>
+
+                        <button
+                            onClick={(e) => handleShare(e, event)}
+                            className="p-2 bg-white/10 hover:bg-neon-green hover:text-black rounded-full transition-all text-white group/share"
+                            title="Share Event"
+                        >
+                            <Share2 size={16} />
+                        </button>
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 
-    if (!siteSettings?.showUpcomingEvents) {
+    if (!siteSettings?.showUpcomingEvents || upcomingEvents.length === 0) {
         return null;
     }
 
