@@ -7,17 +7,11 @@
 ```env
 # Email Settings
 EMAIL_USER=your-partnership@newbi.live
-EMAIL_PASSWORD=part.newbi@25
+EMAIL_PASSWORD=your-part.newbi@25
 EMAIL_HOST=imap.secureserver.net
 EMAIL_PORT=993
 ```
 *(Replace the values with your actual Godaddy login details)*
-
-### Windows Users: "Operation not permitted" Error?
-If `vercel dev` fails with `EPERM: operation not permitted`, this is a Windows permission setting.
-**Solution:**
-1.  **Recommended:** Skip local testing and **Deploy to Vercel** (see below). It is much easier.
-2.  **Alternative:** Run your terminal (PowerShell/Command Prompt) as **Administrator** and try `npx vercel dev` again.
 
 ## 2. Production (On Vercel)
 When you deploy to the live website, you must add these same variables to Vercel:
