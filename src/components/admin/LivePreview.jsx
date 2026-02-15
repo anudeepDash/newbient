@@ -85,40 +85,77 @@ const LivePreview = ({ type, data }) => {
                     {/* GIG PREVIEW */}
                     {type === 'gig' && (
                         <div className="bg-zinc-900 border border-white/10 rounded-xl p-5 hover:border-neon-blue/50 transition-all">
-                            <div className="flex justify-between items-start gap-3 mb-4">
-                                <h3 className="text-xl font-bold text-white">{data.title || 'Gig Title'}</h3>
-                                <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${data.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
+                            <div className="flex justify-between items-start gap-3 mb-3">
+                                <h3 className="text-lg font-bold text-white leading-tight">{data.title || 'Gig Title'}</h3>
+                                <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded-full shrink-0 ${data.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
                                     {data.status || 'Open'}
                                 </span>
                             </div>
 
-                            <div className="space-y-3 mb-6 text-gray-400">
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span>{data.date || 'TBD'}</span>
+                            {data.description && (
+                                <p className="text-gray-400 text-[10px] mb-4 line-clamp-2 italic font-medium">
+                                    {data.description}
+                                </p>
+                            )}
+
+                            <div className="space-y-2 mb-4 text-gray-400">
+                                <div className="flex items-center gap-2 text-[10px]">
+                                    <Calendar className="w-3 h-3 text-neon-green" />
+                                    <span>{data.date || 'TBD'} | {data.time || 'TBD'}</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <MapPin className="w-4 h-4 text-gray-500" />
+                                <div className="flex items-center gap-2 text-[10px]">
+                                    <MapPin className="w-3 h-3 text-neon-pink" />
                                     <span>{data.location || 'Location'}</span>
-                                </div>
-                                <div className="flex items-start gap-3 text-sm">
-                                    <Users className="w-4 h-4 text-gray-500 mt-1" />
-                                    <div className="flex flex-wrap gap-2">
-                                        {data.roles && data.roles.split(',').map((role, idx) => (
-                                            <span key={idx} className="bg-white/5 px-2 py-0.5 rounded text-xs text-gray-300">{role.trim()}</span>
-                                        ))}
-                                        {!data.roles && <span className="text-gray-600 italic">No roles specified</span>}
-                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
-                                <button className="p-3 bg-zinc-800 border border-white/10 rounded-lg text-gray-400">
-                                    <Share2 size={18} />
-                                </button>
-                                <Button className="flex-1 bg-none border border-neon-blue text-neon-blue text-xs uppercase tracking-wider">
+                            <div className="flex gap-2">
+                                <Button className={cn(
+                                    "flex-1 h-10 text-[10px] uppercase tracking-wider rounded-lg",
+                                    data.applyType === 'whatsapp' ? "bg-[#25D366] text-black" : "bg-neon-green text-black"
+                                )}>
                                     {data.applyType === 'whatsapp' ? 'Apply via WhatsApp' : 'Apply for Gig'}
                                 </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GUESTLIST PREVIEW */}
+                    {type === 'guestlist' && (
+                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5 hover:border-neon-blue/50 transition-all">
+                            <div className="flex justify-between items-start gap-3 mb-3">
+                                <h3 className="text-lg font-bold text-white leading-tight">{data.title || 'Event Title'}</h3>
+                                <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded-full shrink-0 ${data.status === 'Open' ? 'bg-neon-blue/20 text-neon-blue' : 'bg-red-500/20 text-red-500'}`}>
+                                    {data.status || 'Open'}
+                                </span>
+                            </div>
+
+                            {data.description && (
+                                <p className="text-gray-400 text-[10px] mb-4 line-clamp-2 italic font-medium">
+                                    {data.description}
+                                </p>
+                            )}
+
+                            <div className="space-y-2 mb-4 text-gray-400">
+                                <div className="flex items-center gap-2 text-[10px]">
+                                    <Calendar className="w-3 h-3 text-neon-blue" />
+                                    <span>{data.date || 'Upcoming'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px]">
+                                    <MapPin className="w-3 h-3 text-neon-pink" />
+                                    <span>{data.location || 'Announcing Soon'}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Button className="w-full h-10 bg-neon-blue text-black text-[10px] uppercase tracking-wider rounded-lg">
+                                    Register Now
+                                </Button>
+                                {data.whatsappLink && (
+                                    <Button className="w-full h-8 bg-zinc-800 text-green-400 border border-green-400/20 text-[8px] uppercase tracking-widest rounded-lg">
+                                        Join Chat Group
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     )}
