@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Pin, Calendar, MapPin, Users, Share2, ArrowRight } from 'lucide-react';
+import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const LivePreview = ({ type, data }) => {
@@ -84,78 +84,165 @@ const LivePreview = ({ type, data }) => {
 
                     {/* GIG PREVIEW */}
                     {type === 'gig' && (
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5 hover:border-neon-blue/50 transition-all">
-                            <div className="flex justify-between items-start gap-3 mb-3">
-                                <h3 className="text-lg font-bold text-white leading-tight">{data.title || 'Gig Title'}</h3>
-                                <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded-full shrink-0 ${data.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
-                                    {data.status || 'Open'}
-                                </span>
-                            </div>
+                        <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-green via-neon-green/50 to-transparent"></div>
 
-                            {data.description && (
-                                <p className="text-gray-400 text-[10px] mb-4 line-clamp-2 italic font-medium">
-                                    {data.description}
-                                </p>
-                            )}
-
-                            <div className="space-y-2 mb-4 text-gray-400">
-                                <div className="flex items-center gap-2 text-[10px]">
-                                    <Calendar className="w-3 h-3 text-neon-green" />
-                                    <span>{data.date || 'TBD'} | {data.time || 'TBD'}</span>
+                            <div className="p-5 flex flex-col relative overflow-hidden">
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
+                                    <Users size={120} />
                                 </div>
-                                <div className="flex items-center gap-2 text-[10px]">
-                                    <MapPin className="w-3 h-3 text-neon-pink" />
-                                    <span>{data.location || 'Location'}</span>
-                                </div>
-                            </div>
 
-                            <div className="flex gap-2">
-                                <Button className={cn(
-                                    "flex-1 h-10 text-[10px] uppercase tracking-wider rounded-lg",
-                                    data.applyType === 'whatsapp' ? "bg-[#25D366] text-black" : "bg-neon-green text-black"
-                                )}>
-                                    {data.applyType === 'whatsapp' ? 'Apply via WhatsApp' : 'Apply for Gig'}
-                                </Button>
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-green">
+                                        <Users size={20} />
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border bg-neon-green/10 text-neon-green border-neon-green/20">
+                                        {data.status || 'Open'}
+                                    </span>
+                                </div>
+
+                                <h3 className="text-xl font-bold font-heading leading-tight mb-2 text-white">
+                                    {data.title || 'Gig Title'}
+                                </h3>
+
+                                {data.description && (
+                                    <p className="text-gray-400 text-[10px] line-clamp-2 italic font-medium opacity-70 mb-4 whitespace-pre-wrap">
+                                        "{data.description}"
+                                    </p>
+                                )}
+
+                                <div className="space-y-2 mt-auto">
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                        <Calendar size={12} className="text-neon-green" />
+                                        <span className="text-white/60">{data.date || 'TBD'} | {data.time || 'TBD'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                        <MapPin size={12} className="text-neon-pink" />
+                                        <span className="text-white/60 truncate">{data.location || 'Location'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-white/5 space-y-3">
+                                    <Button className={cn(
+                                        "w-full h-12 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading",
+                                        data.applyType === 'whatsapp' ? "bg-[#25D366] text-black" : "bg-neon-green text-black"
+                                    )}>
+                                        {data.applyType === 'whatsapp' ? 'Apply via WA' : 'Apply for Gig'}
+                                        <ArrowRight size={14} />
+                                    </Button>
+                                    <button className="w-full text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                                        [ View Details ]
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* GUESTLIST PREVIEW */}
                     {type === 'guestlist' && (
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5 hover:border-neon-blue/50 transition-all">
-                            <div className="flex justify-between items-start gap-3 mb-3">
-                                <h3 className="text-lg font-bold text-white leading-tight">{data.title || 'Event Title'}</h3>
-                                <span className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded-full shrink-0 ${data.status === 'Open' ? 'bg-neon-blue/20 text-neon-blue' : 'bg-red-500/20 text-red-500'}`}>
-                                    {data.status || 'Open'}
-                                </span>
-                            </div>
+                        <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-blue via-neon-pink/50 to-transparent"></div>
 
-                            {data.description && (
-                                <p className="text-gray-400 text-[10px] mb-4 line-clamp-2 italic font-medium">
-                                    {data.description}
-                                </p>
-                            )}
-
-                            <div className="space-y-2 mb-4 text-gray-400">
-                                <div className="flex items-center gap-2 text-[10px]">
-                                    <Calendar className="w-3 h-3 text-neon-blue" />
-                                    <span>{data.date || 'Upcoming'}</span>
+                            <div className="p-5 flex flex-col relative overflow-hidden">
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
+                                    <Calendar size={120} />
                                 </div>
-                                <div className="flex items-center gap-2 text-[10px]">
-                                    <MapPin className="w-3 h-3 text-neon-pink" />
-                                    <span>{data.location || 'Announcing Soon'}</span>
-                                </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Button className="w-full h-10 bg-neon-blue text-black text-[10px] uppercase tracking-wider rounded-lg">
-                                    Register Now
-                                </Button>
-                                {data.whatsappLink && (
-                                    <Button className="w-full h-8 bg-zinc-800 text-green-400 border border-green-400/20 text-[8px] uppercase tracking-widest rounded-lg">
-                                        Join Chat Group
-                                    </Button>
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-blue">
+                                        <Calendar size={20} />
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
+                                        {data.status || 'Open'}
+                                    </span>
+                                </div>
+
+                                <div className="mb-4">
+                                    <p className="text-[7px] font-bold text-neon-blue uppercase tracking-widest mb-1">Exclusive Access for Community Members</p>
+                                    <h3 className="text-xl font-bold font-heading leading-tight text-white">
+                                        {data.title || 'Event Title'}
+                                    </h3>
+                                </div>
+
+                                {data.description && (
+                                    <p className="text-gray-400 text-[10px] line-clamp-2 italic font-medium opacity-70 mb-4 whitespace-pre-wrap">
+                                        "{data.description}"
+                                    </p>
                                 )}
+
+                                <div className="space-y-2 mt-auto">
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                        <Calendar size={12} className="text-neon-blue" />
+                                        <span className="text-white/60">{data.date || 'Upcoming'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                        <MapPin size={12} className="text-neon-pink" />
+                                        <span className="text-white/60 truncate">{data.location || 'Announcing Soon'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-white/5 space-y-3">
+                                    <Button className="w-full h-12 bg-neon-blue text-black rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading">
+                                        Register Now
+                                        <ArrowRight size={14} />
+                                    </Button>
+                                    {data.whatsappLink && (
+                                        <Button className="w-full h-12 bg-zinc-800/80 text-green-400 border border-green-400/20 rounded-xl font-bold uppercase tracking-widest text-[10px]">
+                                            Join WhatsApp
+                                        </Button>
+                                    )}
+                                    <button className="w-full text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-500 pt-1">
+                                        [ View Details ]
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* FORM/PULSE PREVIEW */}
+                    {type === 'form' && (
+                        <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group transition-all duration-500 shadow-2xl">
+                            <div className="h-1 w-full bg-gradient-to-r from-neon-pink via-neon-pink/50 to-transparent"></div>
+
+                            <div className="p-5 flex flex-col relative overflow-hidden">
+                                <div className="absolute -right-4 -bottom-4 opacity-[0.03] scale-150 pointer-events-none">
+                                    <ClipboardList size={120} />
+                                </div>
+
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-pink">
+                                        <ClipboardList size={20} />
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10">Active Pulse</span>
+                                </div>
+
+                                <div className="mb-4">
+                                    <p className="text-[7px] font-bold text-neon-pink uppercase tracking-widest mb-1">Feedback & More</p>
+                                    <h3 className="text-xl font-bold font-heading leading-tight text-white">
+                                        {data.title || 'Form Title'}
+                                    </h3>
+                                </div>
+
+                                {data.description && (
+                                    <p className="text-gray-400 text-[10px] line-clamp-2 italic font-medium opacity-70 mb-4 whitespace-pre-wrap">
+                                        "{data.description}"
+                                    </p>
+                                )}
+
+                                <div className="flex items-center gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-auto">
+                                    <Sparkles size={12} className="text-neon-pink" />
+                                    <span>Community Feedback Loop</span>
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-white/5">
+                                    <Button className="w-full h-12 bg-neon-pink text-black rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading">
+                                        Take Form
+                                        <ArrowRight size={14} />
+                                    </Button>
+                                    <button className="w-full text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-500 pt-4">
+                                        [ View Details ]
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
