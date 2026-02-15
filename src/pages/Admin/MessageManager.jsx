@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, Calendar, CheckCircle, Trash2 } from 'lucide-react';
-import { collection, query, orderBy, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { Card } from '../../components/ui/Card';
+import { ArrowLeft, Mail, RefreshCw, ExternalLink, Inbox } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 
 const MessageManager = () => {
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
+    // Fetch Webmail Only
     const fetchMessages = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const msgs = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setMessages(msgs);
+            const res = await fetch('/api/email/fetch');
+            if (!res.ok) throw new Error('Failed to fetch emails');
+
+            const data = await res.json();
+            if (data.emails) {
+                setMessages(data.emails);
+                // Select first message if none selected
+                if (!selectedMessage && data.emails.length > 0) {
+                    setSelectedMessage(data.emails[0]);
+                }
+            }
         } catch (error) {
-            console.error("Error fetching messages:", error);
+            console.error("Error fetching webmail:", error);
+            setError("Failed to load emails. Please check your connection and credentials.");
         } finally {
             setLoading(false);
         }
@@ -30,83 +37,129 @@ const MessageManager = () => {
         fetchMessages();
     }, []);
 
-    const markAsRead = async (id) => {
-        try {
-            const msgRef = doc(db, "messages", id);
-            await updateDoc(msgRef, { status: 'read' });
-            setMessages(messages.map(m => m.id === id ? { ...m, status: 'read' } : m));
-        } catch (error) {
-            console.error("Error updating message:", error);
-        }
-    };
-
-    const deleteMessage = async (id) => {
-        if (window.confirm('Are you sure you want to delete this message?')) {
-            try {
-                await deleteDoc(doc(db, "messages", id));
-                setMessages(messages.filter(m => m.id !== id));
-            } catch (error) {
-                console.error("Error deleting message:", error);
-            }
-        }
-    };
-
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
-                            <ArrowLeft className="h-6 w-6" />
-                        </Link>
-                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Inbox</h1>
-                    </div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                        Total: {messages.length} | New: <span className="text-neon-blue">{messages.filter(m => m.status === 'new').length}</span>
+        <div className="h-screen flex flex-col pt-20 bg-black text-white overflow-hidden">
+            {/* Header */}
+            <div className="flex-none px-6 pb-6 border-b border-white/10 flex justify-between items-center bg-black/95 backdrop-blur z-10">
+                <div className="flex items-center gap-4">
+                    <Link to="/admin" className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <h1 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                        <Mail className="text-neon-blue" />
+                        Domain Inbox
+                    </h1>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-gray-500 hidden md:inline-block">
+                        Syncs with Godaddy / IMAP
+                    </span>
+                    <button
+                        onClick={fetchMessages}
+                        className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                        title="Refresh Emails"
+                    >
+                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <a
+                        href="https://email.godaddy.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Button className="bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black border-neon-blue/50 text-xs px-3 py-1">
+                            <ExternalLink size={14} className="mr-2" />
+                            Open Webmail
+                        </Button>
+                    </a>
+                </div>
+            </div>
+
+            <div className="flex-1 flex overflow-hidden">
+                {/* Sidebar List */}
+                <div className="w-full md:w-1/3 border-r border-white/10 flex flex-col bg-black/50">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {loading && messages.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500 flex flex-col items-center">
+                                <RefreshCw className="animate-spin mb-2" />
+                                Loading emails...
+                            </div>
+                        ) : error ? (
+                            <div className="p-8 text-center text-red-400 text-sm">
+                                {error}
+                                <br />
+                                <button onClick={fetchMessages} className="mt-4 underline hover:text-white">Try Again</button>
+                            </div>
+                        ) : messages.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">No messages found in Inbox.</div>
+                        ) : (
+                            messages.map((msg) => (
+                                <div
+                                    key={msg.id || msg.uid || Math.random()}
+                                    onClick={() => setSelectedMessage(msg)}
+                                    className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${selectedMessage === msg ? 'bg-white/10 border-l-4 border-l-neon-blue' : ''}`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h4 className="font-bold text-sm truncate pr-2 text-white">
+                                            {msg.from || 'Unknown'}
+                                        </h4>
+                                        <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                            {new Date(msg.date).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-400 text-xs truncate mb-1">{msg.subject || '(No Subject)'}</p>
+                                    <p className="text-gray-500 text-xs line-clamp-2">
+                                        {msg.text || ''}
+                                    </p>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    {loading ? (
-                        <div className="text-white text-center">Loading messages...</div>
-                    ) : messages.length === 0 ? (
-                        <div className="text-gray-500 text-center py-12 bg-white/5 rounded-xl">No messages found.</div>
-                    ) : (
-                        messages.map((msg) => (
-                            <Card key={msg.id} className={`p-6 transition-all ${msg.status === 'new' ? 'border-neon-blue/50 bg-neon-blue/5' : 'border-white/5 hover:border-white/20'}`}>
-                                <div className="flex flex-col md:flex-row justify-between gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="text-xl font-bold text-white">{msg.name}</h3>
-                                            {msg.status === 'new' && (
-                                                <span className="px-2 py-0.5 rounded-full bg-neon-blue text-black text-xs font-bold uppercase">New</span>
-                                            )}
+                {/* Main Content */}
+                <div className="hidden md:flex flex-1 flex-col bg-zinc-900/50">
+                    {selectedMessage ? (
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <div className="flex justify-between items-start mb-8 pb-6 border-b border-white/10">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-2">{selectedMessage.subject || '(No Subject)'}</h2>
+                                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-blue/20 to-blue-900/20 flex items-center justify-center text-neon-blue font-bold border border-neon-blue/30">
+                                            {(selectedMessage.from || '?').charAt(0).toUpperCase().replace(/[^A-Z]/, '?')}
                                         </div>
-                                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                                            <a href={`mailto:${msg.email}`} className="hover:text-neon-blue flex items-center gap-1">
-                                                <Mail size={14} /> {msg.email}
-                                            </a>
-                                            <span className="flex items-center gap-1">
-                                                <Calendar size={14} /> {new Date(msg.createdAt).toLocaleString()}
-                                            </span>
+                                        <div>
+                                            <p className="text-white font-medium">{selectedMessage.from}</p>
+                                            <p className="text-xs text-gray-500">{new Date(selectedMessage.date).toLocaleString()}</p>
                                         </div>
-                                        <p className="text-gray-300 bg-black/30 p-4 rounded-lg border border-white/5 whitespace-pre-wrap">
-                                            {msg.message}
-                                        </p>
-                                    </div>
-                                    <div className="flex md:flex-col gap-2 justify-start md:justify-center min-w-[120px]">
-                                        {msg.status !== 'read' && (
-                                            <Button variant="outline" size="sm" onClick={() => markAsRead(msg.id)} className="w-full justify-center">
-                                                <CheckCircle size={16} className="mr-2" /> Mark Read
-                                            </Button>
-                                        )}
-                                        <Button variant="outline" size="sm" onClick={() => deleteMessage(msg.id)} className="w-full justify-center text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20">
-                                            <Trash2 size={16} className="mr-2" /> Delete
-                                        </Button>
                                     </div>
                                 </div>
-                            </Card>
-                        ))
+                            </div>
+
+                            <div className="prose prose-invert max-w-none mb-12 text-gray-300 whitespace-pre-wrap font-sans">
+                                {selectedMessage.text || selectedMessage.html || '(No content preview available)'}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-4 border-t border-white/10 pt-6">
+                                <a
+                                    href="https://email.godaddy.com/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Button className="bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black border-neon-blue/50">
+                                        <ExternalLink size={16} className="mr-2" />
+                                        Reply via Godaddy
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                                <Inbox size={32} />
+                            </div>
+                            <p>Select a verified email to read</p>
+                        </div>
                     )}
                 </div>
             </div>
