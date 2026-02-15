@@ -159,7 +159,7 @@ const AnnouncementsManager = () => {
                                 <Button variant="link" onClick={() => setIsAdding(true)} className="text-neon-pink">Create your first one</Button>
                             </div>
                         ) : (
-                            announcements.map((item) => (
+                            announcements.map((item, index) => (
                                 <Card key={item.id} className="p-6 flex items-center justify-between group hover:border-white/20 transition-colors">
                                     <div className="flex-grow">
                                         <div className="flex items-center gap-3 mb-1">
