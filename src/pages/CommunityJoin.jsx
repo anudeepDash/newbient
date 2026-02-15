@@ -239,28 +239,31 @@ const CommunityJoin = () => {
         }
     }, [authInitialized, user, setAuthModal]);
 
-    // Auto-scroll to gig if query param exists
+    // Auto-scroll to gig/guestlist if query param exists
     useEffect(() => {
+        if (!hasJoined) return; // Wait until content is unlocked
+
         const params = new URLSearchParams(location.search);
         const gigId = params.get('gig');
         const glId = params.get('gl');
+        const targetId = gigId ? `gig-${gigId}` : (glId ? `gl-${glId}` : null);
 
-        if (gigId && volunteerGigs && volunteerGigs.length > 0) {
-            const element = document.getElementById(`gig-${gigId}`);
-            if (element) {
-                setTimeout(() => {
+        if (targetId) {
+            // Use a small delay to ensure React has finished rendering the unlocked content
+            const timer = setTimeout(() => {
+                const element = document.getElementById(targetId);
+                if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 500);
-            }
-        } else if (glId && guestlists && guestlists.length > 0) {
-            const element = document.getElementById(`gl-${glId}`);
-            if (element) {
-                setTimeout(() => {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 500);
-            }
+                    // Add a temporary glow or highlight effect
+                    element.classList.add('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
+                    setTimeout(() => {
+                        element.classList.remove('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
+                    }, 3000);
+                }
+            }, 800);
+            return () => clearTimeout(timer);
         }
-    }, [location.search, volunteerGigs, guestlists]);
+    }, [location.search, volunteerGigs, guestlists, hasJoined]);
 
     const handleShare = (type, id) => {
         const url = `${window.location.origin}/community-join?${type}=${id}`;
