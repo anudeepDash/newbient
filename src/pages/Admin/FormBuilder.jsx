@@ -13,6 +13,9 @@ const FormBuilder = () => {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [activeLabel, setActiveLabel] = useState('');
+    const [bottomText, setBottomText] = useState('');
+    const [buttonText, setButtonText] = useState('');
     const [formUrl, setFormUrl] = useState('');
     // Removed isCommunityForm
     const [requiresExternal, setRequiresExternal] = useState(false);
@@ -24,7 +27,11 @@ const FormBuilder = () => {
             const form = forms.find(f => f.id === id);
             if (form) {
                 setTitle(form.title);
+                setTitle(form.title);
                 setDescription(form.description);
+                setActiveLabel(form.activeLabel || '');
+                setBottomText(form.bottomText || '');
+                setButtonText(form.buttonText || '');
                 setFormUrl(form.formUrl || '');
                 setRequiresExternal(form.requiresExternal || false);
             }
@@ -46,6 +53,9 @@ const FormBuilder = () => {
         const formData = {
             title,
             description,
+            activeLabel,
+            bottomText,
+            buttonText,
             formUrl: cleanUrl,
             requiresExternal,
             updatedAt: new Date().toISOString()
@@ -91,6 +101,36 @@ const FormBuilder = () => {
                                         required
                                         placeholder="e.g. Volunteer Sign Up"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Active Label</label>
+                                        <Input
+                                            value={activeLabel}
+                                            onChange={(e) => setActiveLabel(e.target.value)}
+                                            placeholder="Default: Active Pulse"
+                                            className="text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Bottom Text</label>
+                                        <Input
+                                            value={bottomText}
+                                            onChange={(e) => setBottomText(e.target.value)}
+                                            placeholder="Default: Community Form"
+                                            className="text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Button Label</label>
+                                        <Input
+                                            value={buttonText}
+                                            onChange={(e) => setButtonText(e.target.value)}
+                                            placeholder="Default: Take Form"
+                                            className="text-xs"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>

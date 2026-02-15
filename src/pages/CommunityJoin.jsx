@@ -54,9 +54,9 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 <Icon size={180} />
                             </div>
 
-                            <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-start justify-between mb-6 gap-4">
                                 <div className={cn(
-                                    "p-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg group-hover:scale-110 transition-all duration-500",
+                                    "p-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg group-hover:scale-110 transition-all duration-500 shrink-0",
                                     isForm ? "text-neon-pink group-hover:bg-neon-pink/10" : (isGig ? "text-neon-green group-hover:bg-neon-green/10" : "text-neon-blue group-hover:bg-neon-blue/10")
                                 )}>
                                     <Icon size={24} />
@@ -64,7 +64,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 {!isForm && (
                                     <div className="flex items-center gap-2">
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
+                                            "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-right",
                                             item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                                         )}>
                                             {item.status || 'Open'}
@@ -72,7 +72,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     </div>
                                 )}
                                 {isForm && (
-                                    <span className="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10">Active Pulse</span>
+                                    <span className="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10 text-right">{item.activeLabel ?? 'Active Pulse'}</span>
                                 )}
                             </div>
 
@@ -105,7 +105,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 {isForm && (
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-auto">
                                         <Sparkles size={14} className="text-neon-pink" />
-                                        <span>Community Feedback Loop</span>
+                                        <span>{item.bottomText ?? 'Community Form'}</span>
                                     </div>
                                 )}
                             </div>
@@ -145,7 +145,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                             <Button
                                                 className="w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading transition-all shadow-xl group-hover:scale-[1.02] bg-neon-pink text-black hover:bg-neon-pink/80 shadow-neon-pink/20"
                                             >
-                                                Take Form
+                                                {item.buttonText || 'Take Form'}
                                                 <ArrowRight size={16} />
                                             </Button>
                                         </Link>
@@ -553,7 +553,7 @@ const CommunityJoin = () => {
                             </div>
 
                             {forms && forms.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-12">
                                     {forms.map((form) => (
                                         <CommunityCard
                                             key={form.id}
