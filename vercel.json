@@ -5,7 +5,11 @@
             "destination": "/api/$1"
         },
         {
-            "source": "/(.*)",
+            "source": "/assets/(.*)",
+            "destination": "/assets/$1"
+        },
+        {
+            "source": "/((?!api/|assets/|favicon.ico).*)",
             "destination": "/index.html"
         }
     ]
