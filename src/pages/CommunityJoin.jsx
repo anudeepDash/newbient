@@ -582,7 +582,7 @@ const CommunityJoin = () => {
                                         <Lock className="w-16 h-16 md:w-24 md:h-24 text-gray-500 group-hover:text-neon-pink transition-colors" />
                                     </div>
 
-                                    <h3 className="text-5xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/20 font-heading tracking-tighter uppercase italic">
+                                    <h3 className="text-5xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/20 font-heading tracking-tighter uppercase italic pr-4">
                                         Coming Soon
                                     </h3>
 
