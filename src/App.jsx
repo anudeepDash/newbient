@@ -25,6 +25,7 @@ import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
 import DevSettings from './pages/Admin/DevSettings';
 import MaintenanceGuard from './components/MaintenanceGuard';
+import ActionHandler from './pages/Auth/ActionHandler';
 
 function App() {
   const subscribeToData = useStore((state) => state.subscribeToData);
@@ -69,6 +70,9 @@ function App() {
           <Route path="admin/forms/edit/:id" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
           <Route path="admin/volunteer-gigs" element={<MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard>} />
           <Route path="admin/upcoming-events" element={<MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard>} />
+
+          {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
+          <Route path="auth/action" element={<ActionHandler />} />
         </Route>
       </Routes>
     </Router>
