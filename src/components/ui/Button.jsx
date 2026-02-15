@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
 
-const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', children, ...props }, ref) => {
+const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', children, as: Component = 'button', ...props }, ref) => {
     const variants = {
         primary: 'bg-neon-pink text-white hover:bg-neon-pink/80 shadow-neon-pink',
         secondary: 'bg-neon-green text-dark hover:bg-neon-green/80 shadow-neon-green',
@@ -16,8 +16,10 @@ const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', 
         lg: 'px-8 py-4 text-lg',
     };
 
+    const MotionComponent = motion[Component] || motion.button;
+
     return (
-        <motion.button
+        <MotionComponent
             ref={ref}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -30,7 +32,7 @@ const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', 
             {...props}
         >
             {children}
-        </motion.button>
+        </MotionComponent>
     );
 });
 

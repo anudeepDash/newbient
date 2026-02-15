@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 
 const UpcomingEventsManager = () => {
-    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility } = useStore();
+    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility, portfolioCategories } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -17,7 +17,9 @@ const UpcomingEventsManager = () => {
     const [newEvent, setNewEvent] = useState({
         title: '',
         date: '',
+        category: '',
         description: '',
+        buttonText: '', // New field
         image: '',
         link: '',
         alsoPostToAnnouncements: false
@@ -27,7 +29,9 @@ const UpcomingEventsManager = () => {
         setNewEvent({
             title: '',
             date: '',
+            category: '',
             description: '',
+            buttonText: '', // New field
             image: '',
             link: '',
             alsoPostToAnnouncements: false
@@ -88,7 +92,9 @@ const UpcomingEventsManager = () => {
             const eventData = {
                 title: newEvent.title,
                 date: newEvent.date,
+                category: newEvent.category,
                 description: newEvent.description,
+                buttonText: newEvent.buttonText, // Include new field
                 image: imageUrl,
                 link: newEvent.link
             };
@@ -180,12 +186,45 @@ const UpcomingEventsManager = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Short Description (Optional)</label>
-                                    <Input
-                                        placeholder="Brief details..."
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-sm font-medium text-gray-400">Description (On Hover)</label>
+                                        <span className={`text-[10px] ${newEvent.description.length > 110 ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+                                            {newEvent.description.length}/120
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue h-24 resize-none"
+                                        placeholder="Add more details about the event... (e.g. entry requirements, special artists)"
                                         value={newEvent.description}
+                                        maxLength={120}
                                         onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                                     />
+                                    <p className="text-[10px] text-gray-500 mt-1">This text appears when visitors hover over the card. Manual line breaks are preserved.</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">View Event Button Text (Optional)</label>
+                                    <Input
+                                        placeholder="e.g. View Portfolio, Book Now"
+                                        value={newEvent.buttonText}
+                                        onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1">Defaults to "view event" if empty.</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Category (For Auto-Archiving)</label>
+                                    <select
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue"
+                                        value={newEvent.category}
+                                        onChange={e => setNewEvent({ ...newEvent, category: e.target.value })}
+                                    >
+                                        <option value="">Select a Category...</option>
+                                        {portfolioCategories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.label}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-gray-500 mt-1">Choosing a category ensures the event is correctly filed in Past Events after it expires.</p>
                                 </div>
 
                                 <div>
@@ -322,10 +361,8 @@ const UpcomingEventsManager = () => {
 
                         {upcomingEvents.length === 0 && !isAdding && (
                             <div className="col-span-full text-center py-16 text-gray-500 bg-white/5 rounded-2xl border border-white/5">
-                                <p className="text-lg">No upcoming events found.</p>
-                                <Button variant="link" onClick={() => setIsAdding(true)} className="text-neon-blue">
-                                    Add your first event
-                                </Button>
+                                <p className="text-lg">No upcoming events at the moment.</p>
+                                <p className="text-sm text-gray-600 mt-2">Any expired events have been moved to the portfolio.</p>
                             </div>
                         )}
                     </div>

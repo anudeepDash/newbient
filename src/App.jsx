@@ -26,20 +26,30 @@ import Maintenance from './pages/Admin/Maintenance';
 import DevSettings from './pages/Admin/DevSettings';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import ActionHandler from './pages/Auth/ActionHandler';
+import AuthOverlay from './components/auth/AuthOverlay';
 
 function App() {
-  const subscribeToData = useStore((state) => state.subscribeToData);
+  const { subscribeToData, checkUserRole } = useStore();
 
   useEffect(() => {
-    try {
-      const unsubscribe = subscribeToData();
-      if (typeof unsubscribe === 'function') {
-        return () => unsubscribe();
-      }
-    } catch (error) {
-      console.error("Failed to subscribe to real-time data:", error);
-    }
-  }, [subscribeToData]);
+    let unsubAuth;
+    const initAuth = async () => {
+      const { auth } = await import('./lib/firebase');
+      const { onAuthStateChanged } = await import('firebase/auth');
+
+      unsubAuth = onAuthStateChanged(auth, (user) => {
+        checkUserRole(user);
+      });
+    };
+
+    const unsubscribe = subscribeToData();
+    initAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (unsubAuth) unsubAuth();
+    };
+  }, [subscribeToData, checkUserRole]);
 
   return (
     <Router>
@@ -75,6 +85,7 @@ function App() {
           <Route path="auth/action" element={<ActionHandler />} />
         </Route>
       </Routes>
+      <AuthOverlay />
     </Router>
   );
 }

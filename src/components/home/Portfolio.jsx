@@ -11,6 +11,7 @@ const Portfolio = () => {
     const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
 
     const [activeTab, setActiveTab] = useState(categories.length > 0 ? categories[0].id : '');
+    const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
     // Update active tab if categories load late
     useEffect(() => {
@@ -19,10 +20,28 @@ const Portfolio = () => {
         }
     }, [categories, activeTab]);
 
+    // Auto-rotation logic
+    useEffect(() => {
+        if (!isAutoPlaying || categories.length <= 1) return;
+
+        const interval = setInterval(() => {
+            setActiveTab(prev => {
+                const currentIndex = categories.findIndex(c => c.id === prev);
+                const nextIndex = (currentIndex + 1) % categories.length;
+                return categories[nextIndex].id;
+            });
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [isAutoPlaying, categories]);
+
     const filteredItems = portfolio.filter(item => item.category === activeTab);
 
     return (
-        <section className="py-20 bg-black text-white relative overflow-hidden border-t border-white/5">
+        <section className="py-20 bg-black text-white relative overflow-hidden border-t border-white/5"
+            onMouseEnter={() => setIsAutoPlaying(false)}
+            onMouseLeave={() => setIsAutoPlaying(true)}
+        >
             {/* Neon Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -34,18 +53,31 @@ const Portfolio = () => {
                     <p className="text-gray-400">Highlights from the incredible events we've powered.</p>
                 </div>
 
-                {/* Tabs */}
+                {/* Tabs with Selection Feedback */}
                 <div className="flex flex-wrap justify-center gap-4 mb-12">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveTab(cat.id)}
-                            className={`px-6 py-3 rounded-full font-medium transition-all duration-300 relative ${activeTab === cat.id
+                            onClick={() => {
+                                setActiveTab(cat.id);
+                                setIsAutoPlaying(false);
+                            }}
+                            className={`px-6 py-3 rounded-full font-medium transition-all duration-500 relative group overflow-hidden ${activeTab === cat.id
                                 ? 'text-black bg-neon-green shadow-[0_0_20px_rgba(57,255,20,0.4)]'
                                 : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'
                                 }`}
                         >
-                            {cat.label}
+                            <span className="relative z-10">{cat.label}</span>
+
+                            {/* Auto-play Progress Bar */}
+                            {activeTab === cat.id && isAutoPlaying && (
+                                <motion.div
+                                    className="absolute bottom-0 left-0 h-1 bg-black/20"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 5, ease: "linear" }}
+                                />
+                            )}
                         </button>
                     ))}
                 </div>

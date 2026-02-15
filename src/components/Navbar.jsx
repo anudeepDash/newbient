@@ -78,8 +78,33 @@ const Navbar = () => {
                         </div>
 
                         {/* Notification & Desktop Menu Right */}
-                        <div className="hidden md:flex items-center ml-4">
+                        <div className="hidden md:flex items-center ml-4 gap-4">
                             <NotificationBell />
+                            {user ? (
+                                <div className="flex items-center gap-4 pl-4 border-l border-white/10">
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-white leading-none capitalize">{user.displayName || 'Tribe Member'}</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                                            {['developer', 'super_admin', 'editor'].includes(user.role)
+                                                ? user.role.replace('_', ' ')
+                                                : 'Tribe Member'}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => useStore.getState().logout()}
+                                        className="text-xs font-bold text-gray-400 hover:text-neon-pink uppercase tracking-widest transition-colors"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => useStore.getState().setAuthModal(true)}
+                                    className="px-4 py-2 rounded-full border border-neon-blue text-neon-blue text-xs font-bold uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.1)] hover:shadow-[0_0_20px_rgba(0,243,255,0.3)]"
+                                >
+                                    Sign In
+                                </button>
+                            )}
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -137,6 +162,33 @@ const Navbar = () => {
                                         </Link>
                                     );
                                 })}
+                                <div className="pt-4 mt-4 border-t border-white/10 px-3 pb-3">
+                                    {user ? (
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white capitalize">{user.displayName || 'Tribe Member'}</span>
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-1">
+                                                    {['developer', 'super_admin', 'editor'].includes(user.role)
+                                                        ? user.role.replace('_', ' ')
+                                                        : 'Tribe Member'}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
+                                                className="text-xs font-bold text-neon-pink uppercase tracking-widest p-2"
+                                            >
+                                                Logout
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
+                                            className="w-full py-3 rounded-xl border border-neon-blue text-neon-blue text-sm font-bold uppercase tracking-[0.2em] hover:bg-neon-blue hover:text-black transition-all"
+                                        >
+                                            Sign In / Join Tribe
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                     )}

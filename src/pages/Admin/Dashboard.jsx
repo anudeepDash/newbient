@@ -32,7 +32,7 @@ const Dashboard = () => {
         e.preventDefault();
         try {
             const actionCodeSettings = {
-                url: 'https://newbi.live/auth/action?mode=resetPassword',
+                url: `${window.location.origin}/auth/action?mode=resetPassword`,
                 handleCodeInApp: true,
             };
             await sendPasswordResetEmail(auth, email, actionCodeSettings);
@@ -503,7 +503,7 @@ const Dashboard = () => {
                     {/* Forms / Community */}
                     <MaintenanceCard
                         title="Community Hub"
-                        description="Volunteer gigs, forms, and sign-ups."
+                        description="Volunteer gigs, guestlists, and forms."
                         icon={Users}
                         color="neon-green"
                         link="/admin/forms?tab=forms"
