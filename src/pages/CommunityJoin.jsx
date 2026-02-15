@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import AuthOverlay from '../components/auth/AuthOverlay';
+import { cn } from '../lib/utils';
 
 const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs, guestlists, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
