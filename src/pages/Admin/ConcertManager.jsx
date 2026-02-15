@@ -9,19 +9,21 @@ import { db } from '../../lib/firebase'; // Keep db, removed storage
 // import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Removed
 
 const ConcertManager = () => {
-    const { portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder } = useStore();
+    const { portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder, portfolioCategories, addCategory, deleteCategory } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [showCategoryManager, setShowCategoryManager] = useState(false);
 
     // State for Portfolio (Past)
     const [newPortfolio, setNewPortfolio] = useState({
-        title: '', category: 'music', image: '', highlightUrl: ''
+        title: '', category: '', image: '', highlightUrl: ''
     });
 
     const resetForms = () => {
-        setNewPortfolio({ title: '', category: 'music', image: '', highlightUrl: '' });
+        setNewPortfolio({ title: '', category: '', image: '', highlightUrl: '' });
         setIsAdding(false);
         setEditingId(null);
         setSelectedFile(null);
@@ -80,6 +82,11 @@ const ConcertManager = () => {
 
             const portfolioData = { ...newPortfolio, image: imageUrl };
 
+            // Default to first category if none selected
+            if (!portfolioData.category && portfolioCategories.length > 0) {
+                portfolioData.category = portfolioCategories[0].id;
+            }
+
             if (editingId) {
                 await updatePortfolioItem(editingId, portfolioData);
                 alert("Event updated!");
@@ -96,6 +103,19 @@ const ConcertManager = () => {
         }
     };
 
+    const handleAddCategory = async (e) => {
+        e.preventDefault();
+        if (!newCategoryName.trim()) return;
+        try {
+            await addCategory(newCategoryName.trim());
+            setNewCategoryName('');
+            alert("Category added!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to add category");
+        }
+    };
+
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
@@ -107,11 +127,49 @@ const ConcertManager = () => {
                         <h1 className="text-3xl font-bold text-white">Past Events Manager</h1>
                     </div>
 
-                    <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', category: 'music', image: '', highlightUrl: '' }); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        {isAdding && !editingId ? 'Cancel' : 'Add Past Event'}
-                    </Button>
+                    <div className="flex gap-4">
+                        <Button variant="outline" onClick={() => setShowCategoryManager(!showCategoryManager)}>
+                            {showCategoryManager ? 'Hide Categories' : 'Manage Categories'}
+                        </Button>
+                        <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', category: '', image: '', highlightUrl: '' }); }}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            {isAdding && !editingId ? 'Cancel' : 'Add Past Event'}
+                        </Button>
+                    </div>
                 </div>
+
+                {/* Category Manager */}
+                {showCategoryManager && (
+                    <Card className="p-6 mb-8 border-neon-purple/30 bg-white/5">
+                        <h2 className="text-xl font-bold text-white mb-4">Manage Categories</h2>
+                        <div className="flex gap-4 mb-6">
+                            <Input
+                                placeholder="New Category Name (e.g., Techno Nights)"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                            />
+                            <Button onClick={handleAddCategory} variant="primary">Add</Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {portfolioCategories.map(cat => (
+                                <div key={cat.id} className="flex items-center gap-2 bg-black/50 border border-white/10 px-3 py-1 rounded-full text-sm text-gray-300">
+                                    {cat.label}
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm(`Delete category "${cat.label}"? Events in this category will keep the category ID but it won't be listed.`)) {
+                                                deleteCategory(cat.id);
+                                            }
+                                        }}
+                                        className="text-red-500 hover:text-red-400 ml-1"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                            {portfolioCategories.length === 0 && <p className="text-gray-500 text-sm">No categories yet. Add one above.</p>}
+                        </div>
+                    </Card>
+                )}
 
                 {isAdding && (
                     <Card className="p-6 mb-8 border-neon-green/30">
@@ -126,10 +184,12 @@ const ConcertManager = () => {
                                     value={newPortfolio.category}
                                     onChange={e => setNewPortfolio({ ...newPortfolio, category: e.target.value })}
                                 >
-                                    <option value="music">Music Concerts</option>
-                                    <option value="fests">Fests & IPs</option>
-                                    <option value="comedy">Stand-Up Shows</option>
+                                    <option value="">Select a Category...</option>
+                                    {portfolioCategories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.label}</option>
+                                    ))}
                                 </select>
+                                {portfolioCategories.length === 0 && <p className="text-xs text-red-400 mt-1">No categories found. Please add a category first.</p>}
                             </div>
 
                             <div>

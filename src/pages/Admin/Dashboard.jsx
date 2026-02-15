@@ -12,8 +12,14 @@ import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
 
 const Dashboard = () => {
-    const { invoices, concerts, announcements, user, checkUserRole, logout, maintenanceState } = useStore();
+    const { invoices, concerts, announcements, user, checkUserRole, logout, maintenanceState, archivePastEvents } = useStore();
     const [email, setEmail] = useState('');
+
+    useEffect(() => {
+        if (user && (user.role === 'super_admin' || user.role === 'developer')) {
+            archivePastEvents();
+        }
+    }, [user, archivePastEvents]);
     const [password, setPassword] = useState('');
     const [unreadCount, setUnreadCount] = useState(0);
     const [authLoading, setAuthLoading] = useState(true);

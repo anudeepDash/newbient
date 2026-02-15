@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, addDoc, writeBatch, doc } from 'firebase/firestore';
+import { collection, addDoc, writeBatch, doc, setDoc } from 'firebase/firestore';
 
 const initialConcerts = [
     {
@@ -47,6 +47,12 @@ const initialPortfolio = [
     { id: 'c1', category: 'comedy', title: "Anubhav Singh Bassi", image: "https://images.unsplash.com/photo-1585672629633-84f55dbd7c0f" }
 ];
 
+const initialCategories = [
+    { id: 'music', label: 'Music Concerts', order: 1 },
+    { id: 'fests', label: 'Fests & IPs', order: 2 },
+    { id: 'comedy', label: 'Stand-Up Shows', order: 3 }
+];
+
 const initialInvoices = [
     {
         clientName: "Acme Corp",
@@ -79,6 +85,10 @@ export const seedDatabase = async () => {
 
         for (const item of initialInvoices) {
             await addDoc(collection(db, 'invoices'), item);
+        }
+
+        for (const item of initialCategories) {
+            await setDoc(doc(db, 'portfolio_categories', item.id), item);
         }
 
         console.log("Seeding complete!");
