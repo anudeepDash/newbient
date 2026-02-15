@@ -256,10 +256,10 @@ const CommunityJoin = () => {
                 if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     // Add a temporary glow or highlight effect
-                    element.classList.add('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
+                    element.classList.add('ring-2', 'ring-neon-blue', 'rounded-[2rem]');
                     setTimeout(() => {
-                        element.classList.remove('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
-                    }, 3000);
+                        element.classList.remove('ring-2', 'ring-neon-blue', 'rounded-[2rem]');
+                    }, 2000);
                 }
             }, 800);
             return () => clearTimeout(timer);
