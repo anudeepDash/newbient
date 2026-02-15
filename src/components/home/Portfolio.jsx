@@ -4,14 +4,21 @@ import { useStore } from '../../lib/store';
 import { ArrowRight } from 'lucide-react';
 
 const Portfolio = () => {
-    const { portfolio } = useStore();
-    const categories = [
-        { id: 'music', label: 'Music Concerts' },
-        { id: 'fests', label: 'Fests & IPs' },
-        { id: 'comedy', label: 'Stand-Up Shows' }
-    ];
+    const { portfolio, portfolioCategories } = useStore();
 
-    const [activeTab, setActiveTab] = useState(categories[0].id);
+    // Sort categories (optional order field, or just by insertion)
+    // Map to simple structure if needed, but store already has { id, label }
+    const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
+
+    const [activeTab, setActiveTab] = useState(categories.length > 0 ? categories[0].id : '');
+
+    // Update active tab if categories load late
+    useEffect(() => {
+        if (!activeTab && categories.length > 0) {
+            setActiveTab(categories[0].id);
+        }
+    }, [categories, activeTab]);
+
     const filteredItems = portfolio.filter(item => item.category === activeTab);
 
     return (

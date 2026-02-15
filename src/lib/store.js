@@ -9,6 +9,7 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     upcomingEvents: [],
+    portfolioCategories: [], // Dynamic categories
     maintenanceState: {
         global: false,
         pages: {}, // e.g., gallery, concerts
@@ -67,6 +68,7 @@ export const useStore = create((set, get) => ({
         const unsub6 = sub('gallery', 'galleryImages');
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
         const unsub8 = sub('upcoming_events', 'upcomingEvents');
+        const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -117,7 +119,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsubCategory();
         };
     },
 
@@ -153,6 +155,51 @@ export const useStore = create((set, get) => ({
             updateDoc(doc(db, 'upcoming_events', item.id), { order: index })
         );
         await Promise.all(updates);
+    },
+
+    // Auto-Archive Logic
+    archivePastEvents: async () => {
+        const { upcomingEvents, addPortfolioItem, deleteUpcomingEvent, portfolioCategories } = get();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Compare dates only
+
+        const eventsToArchive = upcomingEvents.filter(event => {
+            if (!event.date) return false; // Keep events without dates
+            const eventDate = new Date(event.date);
+            return eventDate < today;
+        });
+
+        if (eventsToArchive.length === 0) return;
+
+        console.log(`[Auto-Archive] Found ${eventsToArchive.length} expired events.`);
+
+        // Default category is the first one, or 'music' if none exists
+        const defaultCategory = portfolioCategories.length > 0 ? portfolioCategories[0].id : 'music';
+
+        for (const event of eventsToArchive) {
+            // 1. Add to Portfolio
+            await addPortfolioItem({
+                title: event.title,
+                image: event.image,
+                category: defaultCategory, // Assign to default category
+                highlightUrl: event.link || '', // Map link to highlight if present
+                date: event.date // Preserve date if useful
+            });
+
+            // 2. Remove from Upcoming
+            await deleteUpcomingEvent(event.id);
+            console.log(`[Auto-Archive] Moved "${event.title}" to Past Events.`);
+        }
+    },
+
+    // Portfolio Categories
+    addCategory: async (label) => {
+        // ID is lowercase label with dashes
+        const id = label.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        await setDoc(doc(db, 'portfolio_categories', id), { id, label, order: Date.now() });
+    },
+    deleteCategory: async (id) => {
+        await deleteDoc(doc(db, 'portfolio_categories', id));
     },
 
     // Site Settings
