@@ -2,10 +2,179 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import AuthOverlay from '../components/auth/AuthOverlay';
 import { cn } from '../lib/utils';
+
+const CommunityCard = ({ item, type, handleShare }) => {
+    const [isFlipped, setIsFlipped] = useState(false);
+    const isGig = type === 'gig';
+
+    const isWhatsApp = isGig && item.applyType === 'whatsapp';
+    const href = isGig
+        ? (isWhatsApp
+            ? `https://wa.me/${item.applyLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the ${item.title} volunteer gig!`)}`
+            : item.applyLink)
+        : item.link;
+
+    const mainColor = isGig ? 'neon-green' : 'neon-blue';
+    const Icon = isGig ? Users : Calendar;
+
+    return (
+        <div
+            id={`${type}-${item.id}`}
+            className="perspective-1000 w-full min-h-[220px]"
+        >
+            <motion.div
+                initial={false}
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+                className="relative w-full h-full preserve-3d"
+            >
+                {/* Front Side */}
+                <div className={cn(
+                    "backface-hidden relative bg-zinc-900 border border-white/5 rounded-[1.5rem] p-5 flex flex-col sm:flex-row gap-4 group transition-all duration-700",
+                    isGig ? "hover:border-neon-green/30" : "hover:border-neon-blue/30"
+                )}>
+                    <div className={cn(
+                        "absolute inset-x-0 inset-y-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-700",
+                        isGig ? "from-neon-green/5 to-transparent" : "from-neon-blue/5 to-transparent"
+                    )}></div>
+
+                    {/* Content Left */}
+                    <div className="flex-1 flex flex-col relative z-10">
+                        {/* Top: Icon Left, Status/Share Right */}
+                        <div className="flex items-start justify-between mb-4">
+                            <div className={cn(
+                                "p-2 rounded-lg group-hover:scale-110 transition-all duration-500 shadow-[0_0_15px_rgba(255,255,255,0.05)] shrink-0",
+                                isGig ? "bg-neon-green/10 bg-neon-green/20" : "bg-neon-blue/10 bg-neon-blue/20"
+                            )}>
+                                <Icon size={16} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest border shrink-0",
+                                    item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                                )}>
+                                    {item.status || 'Open'}
+                                </span>
+                                <button
+                                    onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
+                                    className="p-1 text-gray-500 hover:text-white rounded hover:bg-white/5 transition-all"
+                                >
+                                    <Share2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Title & Description */}
+                        <div className="mb-4">
+                            <h3 className={cn(
+                                "text-lg md:text-xl font-black font-heading transition-colors leading-tight tracking-tighter mb-1",
+                                isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue"
+                            )}>{item.title}</h3>
+
+                            {item.description && (
+                                <div className="space-y-1">
+                                    <p className="text-gray-400 text-[10px] line-clamp-2 italic font-medium opacity-60 leading-relaxed overflow-hidden">
+                                        "{item.description}"
+                                    </p>
+                                    <button
+                                        onClick={() => setIsFlipped(true)}
+                                        className={cn(
+                                            "text-[9px] font-bold uppercase tracking-widest transition-colors",
+                                            isGig ? "text-neon-green/60 hover:text-neon-green" : "text-neon-blue/60 hover:text-neon-blue"
+                                        )}
+                                    >
+                                        [ Read More ]
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Metadata Bottom */}
+                        <div className="mt-auto space-y-1.5">
+                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-bold">
+                                <Calendar size={10} className={cn(isGig ? "text-neon-green" : "text-neon-blue")} />
+                                <span>Date: <span className="text-white/80">{isGig ? `${item.date} | ${item.time}` : (item.date || 'Upcoming')}</span></span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-500 text-[9px] font-bold">
+                                <MapPin size={10} className="text-neon-pink" />
+                                <span>Location: <span className="text-white/80">{item.location || (isGig ? '' : 'Announcing Soon')}</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Right */}
+                    <div className="flex flex-col gap-2 relative z-10 shrink-0 sm:min-w-[150px] justify-center pt-2 sm:pt-0">
+                        <Button
+                            as="a"
+                            href={href}
+                            target="_blank"
+                            className={cn(
+                                "w-full h-11 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading transition-all shadow-[0_0_20px_rgba(255,0,100,0.1)] hover:shadow-[0_0_25px_rgba(255,0,100,0.2)]",
+                                isGig
+                                    ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80")
+                                    : "bg-neon-blue text-black hover:bg-neon-blue/80"
+                            )}
+                        >
+                            {isGig ? (isWhatsApp ? 'Apply via WA' : 'Apply for Gig') : 'Register Now'}
+                            {isGig ? (isWhatsApp ? <Share2 size={14} /> : <ArrowRight size={14} />) : <ArrowRight size={14} />}
+                        </Button>
+
+                        {(!isGig && item.whatsappLink) && (
+                            <Button
+                                as="a"
+                                href={item.whatsappLink}
+                                target="_blank"
+                                className="w-full h-11 bg-zinc-800 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading"
+                            >
+                                Join WhatsApp
+                                <ExternalLink size={12} />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Back Side (Description Only) */}
+                <div className={cn(
+                    "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-900 border border-white/5 rounded-[1.5rem] p-6 flex flex-col overflow-hidden transition-all duration-700",
+                    isGig ? "border-neon-green/30" : "border-neon-blue/30"
+                )}>
+                    <div className="flex items-start justify-between mb-4">
+                        <h3 className={cn(
+                            "text-lg font-black font-heading leading-tight tracking-tighter",
+                            isGig ? "text-neon-green" : "text-neon-blue"
+                        )}>{item.title}</h3>
+                        <button
+                            onClick={() => setIsFlipped(false)}
+                            className="p-2 text-gray-500 hover:text-white rounded-full hover:bg-white/5"
+                        >
+                            <ArrowRight className="rotate-180" size={16} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                        <p className="text-gray-300 text-xs italic font-medium leading-relaxed whitespace-pre-wrap">
+                            "{item.description}"
+                        </p>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-white/5 text-center">
+                        <button
+                            onClick={() => setIsFlipped(false)}
+                            className="text-[10px] font-bold text-gray-400 hover:text-white uppercase tracking-widest"
+                        >
+                            Back to Event
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
 
 const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs, guestlists, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
@@ -67,6 +236,17 @@ const CommunityJoin = () => {
 
     return (
         <div className="min-h-screen bg-black text-white pt-20 md:pt-24 pb-16 md:pb-20 px-4 scroll-smooth">
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .perspective-1000 { perspective: 1000px; }
+                .preserve-3d { transform-style: preserve-3d; }
+                .backface-hidden { backface-visibility: hidden; }
+                .rotate-y-180 { transform: rotateY(180deg); }
+                .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+            `}} />
+
             <div className="max-w-7xl mx-auto space-y-8 md:space-y-14">
 
                 {/* Header */}
@@ -251,81 +431,14 @@ const CommunityJoin = () => {
                             </div>
 
                             {guestlists && guestlists.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                                     {guestlists.map((gl) => (
-                                        <div
+                                        <CommunityCard
                                             key={gl.id}
-                                            id={`gl-${gl.id}`}
-                                            className="group relative bg-zinc-900 border border-white/5 rounded-[1.5rem] overflow-hidden hover:border-neon-blue/30 transition-all duration-700 flex flex-col sm:flex-row"
-                                        >
-                                            <div className="absolute inset-x-0 inset-y-0 bg-gradient-to-r from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-
-                                            <div className="p-4 md:p-5 flex flex-col flex-1 relative z-10">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="p-2 bg-neon-blue/10 rounded-lg group-hover:scale-110 group-hover:bg-neon-blue/20 transition-all duration-500 shadow-[0_0_15px_rgba(0,255,255,0.05)] shrink-0">
-                                                        <Calendar className="w-4 h-4 text-neon-blue" />
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={cn(
-                                                            "px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest border shrink-0",
-                                                            gl.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                                                        )}>
-                                                            {gl.status || 'Open'}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => handleShare('gl', gl.id)}
-                                                            className="p-1 text-gray-500 hover:text-white rounded hover:bg-white/5 transition-all"
-                                                        >
-                                                            <Share2 size={12} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex-1 overflow-hidden">
-                                                    <h3 className="text-lg md:text-xl font-black font-heading group-hover:text-neon-blue transition-colors leading-tight tracking-tighter mb-2">{gl.title}</h3>
-                                                    {gl.description && (
-                                                        <p className="text-gray-400 text-[10px] italic font-medium mb-3 opacity-60 leading-relaxed whitespace-pre-wrap">
-                                                            "{gl.description}"
-                                                        </p>
-                                                    )}
-
-                                                    <div className="space-y-1.5 mt-auto">
-                                                        <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold">
-                                                            <Calendar size={12} className="text-neon-blue" />
-                                                            <span>Date: <span className="text-white/80">{gl.date || 'Upcoming'}</span></span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold">
-                                                            <MapPin size={12} className="text-neon-pink" />
-                                                            <span>Location: <span className="text-white/80">{gl.location || 'Announcing Soon'}</span></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-4 md:p-5 pt-0 sm:pt-5 sm:pl-0 flex flex-col gap-2 relative z-10 shrink-0 sm:min-w-[140px] justify-center">
-                                                <Button
-                                                    as="a"
-                                                    href={gl.link}
-                                                    target="_blank"
-                                                    className="w-full h-11 bg-neon-blue text-black hover:bg-neon-blue/80 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading shadow-[0_0_15px_rgba(0,255,255,0.1)] transition-all"
-                                                >
-                                                    Register Now
-                                                    <ArrowRight size={14} />
-                                                </Button>
-
-                                                {gl.whatsappLink && (
-                                                    <Button
-                                                        as="a"
-                                                        href={gl.whatsappLink}
-                                                        target="_blank"
-                                                        className="w-full h-11 bg-zinc-800 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading"
-                                                    >
-                                                        Join WhatsApp
-                                                        <ExternalLink size={12} />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
+                                            item={gl}
+                                            type="gl"
+                                            handleShare={handleShare}
+                                        />
                                     ))}
                                 </div>
                             ) : (
@@ -347,83 +460,15 @@ const CommunityJoin = () => {
                             </div>
 
                             {volunteerGigs && volunteerGigs.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
-                                    {volunteerGigs.map((gig) => {
-                                        const isWhatsApp = gig.applyType === 'whatsapp';
-                                        const href = isWhatsApp
-                                            ? `https://wa.me/${gig.applyLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the ${gig.title} volunteer gig!`)}`
-                                            : gig.applyLink;
-
-                                        return (
-                                            <div
-                                                key={gig.id}
-                                                id={`gig-${gig.id}`}
-                                                className="group relative bg-zinc-900 border border-white/5 rounded-[1.5rem] overflow-hidden hover:border-neon-green/30 transition-all duration-700 flex flex-col sm:flex-row"
-                                            >
-                                                <div className="absolute inset-x-0 inset-y-0 bg-gradient-to-r from-neon-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-
-                                                <div className="p-4 md:p-5 flex flex-col flex-1 relative z-10">
-                                                    <div className="flex items-start justify-between mb-4">
-                                                        <div className="p-2 bg-neon-green/10 rounded-lg group-hover:scale-110 group-hover:bg-neon-green/20 transition-all duration-500 shadow-[0_0_15px_rgba(57,255,20,0.05)] shrink-0">
-                                                            <Users className="w-4 h-4 text-neon-green" />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={cn(
-                                                                "px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest border shrink-0",
-                                                                gig.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                                                            )}>
-                                                                {gig.status || 'Open'}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => handleShare('gig', gig.id)}
-                                                                className="p-1 text-gray-500 hover:text-white rounded hover:bg-white/5 transition-all"
-                                                            >
-                                                                <Share2 size={12} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-1 overflow-hidden">
-                                                        <h3 className="text-lg md:text-xl font-black font-heading group-hover:text-neon-green transition-colors leading-tight tracking-tighter mb-2">{gig.title}</h3>
-
-                                                        {gig.description && (
-                                                            <p className="text-gray-400 text-[10px] font-medium mb-3 opacity-60 leading-relaxed whitespace-pre-wrap">
-                                                                {gig.description}
-                                                            </p>
-                                                        )}
-
-                                                        <div className="space-y-1.5 mt-auto">
-                                                            <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold">
-                                                                <Calendar size={12} className="text-neon-green" />
-                                                                <span>Date: <span className="text-white/80">{gig.date} | {gig.time}</span></span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold">
-                                                                <MapPin size={12} className="text-neon-pink" />
-                                                                <span>Location: <span className="text-white/80">{gig.location}</span></span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-4 md:p-5 pt-0 sm:pt-5 sm:pl-0 relative z-10 shrink-0 sm:min-w-[140px] justify-center">
-                                                    <Button
-                                                        as="a"
-                                                        href={href}
-                                                        target="_blank"
-                                                        className={cn(
-                                                            "w-full h-11 rounded-lg font-black uppercase tracking-widest text-[9px] gap-2 font-heading transition-all",
-                                                            isWhatsApp
-                                                                ? "bg-[#25D366] text-black hover:bg-[#128C7E] shadow-[0_0_15px_rgba(37,211,102,0.1)]"
-                                                                : "bg-neon-green text-black hover:bg-neon-green/80 shadow-[0_0_15px_rgba(57,255,20,0.1)]"
-                                                        )}
-                                                    >
-                                                        {isWhatsApp ? 'Apply via WA' : 'Apply for Gig'}
-                                                        {isWhatsApp ? <Share2 size={14} /> : <ArrowRight size={14} />}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+                                    {volunteerGigs.map((gig) => (
+                                        <CommunityCard
+                                            key={gig.id}
+                                            item={gig}
+                                            type="gig"
+                                            handleShare={handleShare}
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="text-center py-20 text-gray-500 bg-white/5 rounded-[3rem] border border-dashed border-white/10">
