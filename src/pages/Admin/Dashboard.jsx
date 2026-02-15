@@ -470,16 +470,6 @@ const Dashboard = () => {
 
                 {/* Quick Actions Carousel */}
                 <AdminCarousel title="Quick Actions">
-                    {/* Inbox */}
-                    <MaintenanceCard
-                        title="Inbox"
-                        description="View contact form submissions and webmail."
-                        icon={Mail}
-                        color="neon-blue"
-                        link="/admin/messages"
-                        isUnderMaintenance={maintenanceState.features?.messages}
-                    />
-
                     {/* Invoices */}
                     <MaintenanceCard
                         title="Invoices"
