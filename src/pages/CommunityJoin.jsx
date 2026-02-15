@@ -228,6 +228,7 @@ const CommunityJoin = () => {
     const { forms, siteDetails, volunteerGigs, guestlists, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
+    const hasJoined = user && user.hasJoinedTribe;
 
     // Auto-trigger sign-in if not authenticated
     useEffect(() => {
@@ -283,7 +284,6 @@ const CommunityJoin = () => {
         }
     };
 
-    const hasJoined = user && user.hasJoinedTribe;
 
     return (
         <div className="min-h-screen bg-black text-white pt-20 md:pt-24 pb-16 md:pb-20 px-4 scroll-smooth">
