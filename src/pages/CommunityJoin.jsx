@@ -3,27 +3,31 @@ import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import AuthOverlay from '../components/auth/AuthOverlay';
 import { cn } from '../lib/utils';
 
 const CommunityCard = ({ item, type, handleShare }) => {
     const [isFlipped, setIsFlipped] = useState(false);
     const isGig = type === 'gig';
+    const isForm = type === 'form';
 
     const isWhatsApp = isGig && item.applyType === 'whatsapp';
-    const href = isGig
-        ? (isWhatsApp
-            ? `https://wa.me/${item.applyLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the ${item.title} volunteer gig!`)}`
-            : item.applyLink)
-        : item.link;
+    const href = isForm
+        ? `/forms/${item.id}`
+        : (isGig
+            ? (isWhatsApp
+                ? `https://wa.me/${item.applyLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the ${item.title} volunteer gig!`)}`
+                : item.applyLink)
+            : item.link);
 
-    const Icon = isGig ? Users : Calendar;
+    const Icon = isForm ? ClipboardList : (isGig ? Users : Calendar);
+    const accentColor = isForm ? 'neon-pink' : (isGig ? 'neon-green' : 'neon-blue');
 
     return (
         <div
             id={`${type}-${item.id}`}
-            className="perspective-1000 w-full min-h-[240px]"
+            className="perspective-1000 w-full min-h-[220px]"
         >
             <motion.div
                 initial={false}
@@ -34,12 +38,12 @@ const CommunityCard = ({ item, type, handleShare }) => {
                 {/* Front Side - Ticket Aesthetic */}
                 <div className={cn(
                     "backface-hidden relative bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col group transition-all duration-500",
-                    isGig ? "hover:border-neon-green/40 shadow-neon-green/5" : "hover:border-neon-blue/40 shadow-neon-blue/5"
+                    isForm ? "hover:border-neon-pink/40 shadow-neon-pink/5" : (isGig ? "hover:border-neon-green/40 shadow-neon-green/5" : "hover:border-neon-blue/40 shadow-neon-blue/5")
                 )}>
                     {/* Header Gradient Strip */}
                     <div className={cn(
                         "h-1.5 w-full bg-gradient-to-r",
-                        isGig ? "from-neon-green via-neon-green/50 to-transparent" : "from-neon-blue via-neon-pink/50 to-transparent"
+                        isForm ? "from-neon-pink via-neon-pink/50 to-transparent" : (isGig ? "from-neon-green via-neon-green/50 to-transparent" : "from-neon-blue via-neon-blue/50 to-transparent")
                     )}></div>
 
                     <div className="flex flex-col sm:flex-row h-full">
@@ -53,24 +57,29 @@ const CommunityCard = ({ item, type, handleShare }) => {
                             <div className="flex items-start justify-between mb-6">
                                 <div className={cn(
                                     "p-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg group-hover:scale-110 transition-all duration-500",
-                                    isGig ? "text-neon-green group-hover:bg-neon-green/10" : "text-neon-blue group-hover:bg-neon-blue/10"
+                                    isForm ? "text-neon-pink group-hover:bg-neon-pink/10" : (isGig ? "text-neon-green group-hover:bg-neon-green/10" : "text-neon-blue group-hover:bg-neon-blue/10")
                                 )}>
                                     <Icon size={24} />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={cn(
-                                        "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
-                                        item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                                    )}>
-                                        {item.status || 'Open'}
-                                    </span>
-                                </div>
+                                {!isForm && (
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn(
+                                            "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
+                                            item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                                        )}>
+                                            {item.status || 'Open'}
+                                        </span>
+                                    </div>
+                                )}
+                                {isForm && (
+                                    <span className="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10">Active Pulse</span>
+                                )}
                             </div>
 
                             <div className="flex-1">
                                 <h3 className={cn(
                                     "text-2xl md:text-3xl font-bold font-heading leading-tight mb-3 transition-colors",
-                                    isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue"
+                                    isForm ? "group-hover:text-neon-pink" : (isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue")
                                 )}>
                                     {item.title}
                                 </h3>
@@ -81,16 +90,24 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     </p>
                                 )}
 
-                                <div className="flex flex-wrap gap-x-6 gap-y-3 mt-auto">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                        <Calendar size={14} className={isGig ? "text-neon-green" : "text-neon-blue"} />
-                                        <span className="text-white/60">{isGig ? `${item.date} | ${item.time}` : (item.date || 'Upcoming')}</span>
+                                {!isForm && (
+                                    <div className="flex flex-wrap gap-x-6 gap-y-3 mt-auto">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                            <Calendar size={14} className={isGig ? "text-neon-green" : "text-neon-blue"} />
+                                            <span className="text-white/60">{isGig ? `${item.date} | ${item.time}` : (item.date || 'Upcoming')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                            <MapPin size={14} className="text-neon-pink" />
+                                            <span className="text-white/60 truncate max-w-[120px]">{item.location || (isGig ? '' : 'TBA')}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                        <MapPin size={14} className="text-neon-pink" />
-                                        <span className="text-white/60 truncate max-w-[120px]">{item.location || (isGig ? '' : 'TBA')}</span>
+                                )}
+                                {isForm && (
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-auto">
+                                        <Sparkles size={14} className="text-neon-pink" />
+                                        <span>Community Feedback Loop</span>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -103,14 +120,16 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
                         {/* Action Section */}
                         <div className="sm:w-[220px] p-6 md:p-8 bg-white/[0.02] flex flex-col justify-between items-center relative gap-4">
-                            <button
-                                onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
-                                className="absolute top-4 right-4 p-2 text-gray-600 hover:text-white transition-colors"
-                            >
-                                <Share2 size={16} />
-                            </button>
+                            {!isForm && (
+                                <button
+                                    onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
+                                    className="absolute top-4 right-4 p-2 text-gray-600 hover:text-white transition-colors"
+                                >
+                                    <Share2 size={16} />
+                                </button>
+                            )}
 
-                            <div className="w-full space-y-4 pt-4 sm:pt-0">
+                            <div className="w-full space-y-4 pt-4 sm:pt-0 mt-auto">
                                 {item.description && (
                                     <button
                                         onClick={() => setIsFlipped(true)}
@@ -121,22 +140,33 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 )}
 
                                 <div className="space-y-3">
-                                    <Button
-                                        as="a"
-                                        href={href}
-                                        target="_blank"
-                                        className={cn(
-                                            "w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading transition-all shadow-xl group-hover:scale-[1.02]",
-                                            isGig
-                                                ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80 shadow-neon-green/20")
-                                                : "bg-neon-blue text-black hover:bg-neon-blue/80 shadow-neon-blue/20"
-                                        )}
-                                    >
-                                        {isGig ? (isWhatsApp ? 'Apply via WA' : 'Apply for Gig') : 'Register Now'}
-                                        <ArrowRight size={16} />
-                                    </Button>
+                                    {isForm ? (
+                                        <Link to={href} className="block w-full">
+                                            <Button
+                                                className="w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading transition-all shadow-xl group-hover:scale-[1.02] bg-neon-pink text-black hover:bg-neon-pink/80 shadow-neon-pink/20"
+                                            >
+                                                Take Form
+                                                <ArrowRight size={16} />
+                                            </Button>
+                                        </Link>
+                                    ) : (
+                                        <Button
+                                            as="a"
+                                            href={href}
+                                            target="_blank"
+                                            className={cn(
+                                                "w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading transition-all shadow-xl group-hover:scale-[1.02]",
+                                                isGig
+                                                    ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80 shadow-neon-green/20")
+                                                    : "bg-neon-blue text-black hover:bg-neon-blue/80 shadow-neon-blue/20"
+                                            )}
+                                        >
+                                            {isGig ? (isWhatsApp ? 'Apply via WA' : 'Apply for Gig') : 'Register Now'}
+                                            <ArrowRight size={16} />
+                                        </Button>
+                                    )}
 
-                                    {(!isGig && item.whatsappLink) && (
+                                    {(!isGig && !isForm && item.whatsappLink) && (
                                         <Button
                                             as="a"
                                             href={item.whatsappLink}
@@ -156,11 +186,14 @@ const CommunityCard = ({ item, type, handleShare }) => {
                 {/* Back Side - Info Docket */}
                 <div className={cn(
                     "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-900 border border-white/10 rounded-[2rem] p-8 md:p-10 flex flex-col overflow-hidden shadow-2xl",
-                    isGig ? "border-neon-green/30" : "border-neon-blue/30"
+                    isForm ? "border-neon-pink/30" : (isGig ? "border-neon-green/30" : "border-neon-blue/30")
                 )}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <p className="text-[10px] font-bold text-neon-pink uppercase tracking-widest mb-1">More Information</p>
+                            <p className={cn(
+                                "text-[10px] font-bold uppercase tracking-widest mb-1",
+                                isForm ? "text-neon-pink" : "text-gray-500"
+                            )}>More Information</p>
                             <h3 className="text-2xl font-bold font-heading leading-tight">{item.title}</h3>
                         </div>
                         <button
@@ -177,12 +210,12 @@ const CommunityCard = ({ item, type, handleShare }) => {
                         </p>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-white/10">
+                    <div className="mt-8 pt-8 border-t border-white/10 text-center">
                         <button
                             onClick={() => setIsFlipped(false)}
-                            className="w-full text-center text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
+                            className="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors"
                         >
-                            ← Back to Event
+                            ← Back to {isForm ? 'Form' : 'Event'}
                         </button>
                     </div>
                 </div>
@@ -262,7 +295,7 @@ const CommunityJoin = () => {
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 20px; }
             `}} />
 
-            <div className="max-w-7xl mx-auto space-y-12 md:space-y-20">
+            <div className="max-w-7xl mx-auto space-y-12 md:space-y-24">
 
                 {/* Header */}
                 <div className="text-center relative py-10 overflow-hidden">
@@ -322,7 +355,7 @@ const CommunityJoin = () => {
                             viewport={{ once: true }}
                             className="p-10 md:p-16 bg-zinc-900 border border-white/10 rounded-[3rem] backdrop-blur-2xl mb-12 max-w-xl w-full shadow-2xl relative group overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[80px] -mr-32 -mt-32"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/5 blur-[50px] -mr-16 -mt-16"></div>
 
                             <Users className="w-20 h-20 text-neon-blue mx-auto mb-10 relative z-10" />
                             <h3 className="text-3xl font-bold mb-6 relative z-10 font-heading">Start Your Journey</h3>
@@ -412,31 +445,30 @@ const CommunityJoin = () => {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="space-y-24 md:space-y-32"
+                        className="space-y-24 md:space-y-40"
                     >
                         {/* WhatsApp (Unlocked) */}
                         <section className="relative group max-w-5xl mx-auto">
                             <div className="absolute -inset-1 bg-gradient-to-r from-[#25D366]/10 to-neon-blue/10 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                            <div className="bg-zinc-900/60 border border-white/10 rounded-[3rem] backdrop-blur-2xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 md:gap-12">
-                                <div className="absolute top-0 right-0 w-80 h-80 bg-[#25D366]/5 blur-[100px] -mr-40 -mt-40"></div>
-
-                                <div className="w-24 h-24 bg-[#25D366] rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(37,211,102,0.2)] group-hover:scale-110 transition-transform duration-700 shrink-0">
-                                    <CheckCircle2 className="w-14 h-14 text-black" />
+                            <div className="bg-zinc-900 border border-white/5 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-[#25D366]/5 blur-[80px] -mr-32 -mt-32"></div>
+                                <div className="w-20 h-20 md:w-24 md:h-24 bg-[#25D366] rounded-[2rem] flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-xl">
+                                    <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12 text-black" />
                                 </div>
-
                                 <div className="flex-1 text-center md:text-left">
-                                    <div className="inline-block px-4 py-1 bg-[#25D366]/10 text-[#25D366] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#25D366]/20 mb-4">Step 2: Complete</div>
-                                    <h3 className="text-3xl md:text-4xl font-bold mb-4 font-heading">Welcome to the Inner Circle</h3>
-                                    <p className="text-gray-400 text-lg md:text-xl font-medium leading-relaxed max-w-xl">
-                                        You're officially part of the Newbi Tribe. Connect with fellow members and stay updated on the latest drops.
+                                    <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                                        <span className="px-3 py-1 bg-[#25D366]/10 text-[#25D366] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#25D366]/20">Step 2: Complete</span>
+                                    </div>
+                                    <h3 className="text-2xl md:text-3xl font-bold mb-4 font-heading">Welcome to the Inner Circle</h3>
+                                    <p className="text-gray-400 text-lg max-w-xl leading-relaxed font-medium">
+                                        You're officially a part of the Newbi Tribe. Connect with fellow members and stay updated on the latest drops.
                                     </p>
                                 </div>
-
                                 <Button
                                     as="a"
                                     href={siteDetails.whatsappCommunity || "#"}
                                     target="_blank"
-                                    className="w-full md:w-auto bg-[#25D366] text-black hover:bg-[#128C7E] h-20 px-12 rounded-[2rem] font-bold font-heading uppercase tracking-widest text-base shrink-0"
+                                    className="w-full md:w-auto bg-[#25D366] text-black hover:bg-[#128C7E] h-20 px-10 rounded-2xl font-bold uppercase tracking-widest text-sm"
                                 >
                                     Join WhatsApp Community
                                 </Button>
@@ -449,11 +481,10 @@ const CommunityJoin = () => {
                                 <div className="flex items-center gap-5">
                                     <div className="h-12 w-1.5 bg-neon-blue rounded-full shadow-[0_0_20px_rgba(0,255,255,0.3)]"></div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-neon-blue uppercase tracking-widest mb-1">Exclusive Access</p>
+                                        <p className="text-[10px] font-bold text-neon-blue uppercase tracking-widest mb-1">Exclusive Access for Community Members</p>
                                         <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Active Guestlists</h2>
                                     </div>
                                 </div>
-                                <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] bg-white/5 py-2 px-4 rounded-lg border border-white/5">Available for Tribe Members</p>
                             </div>
 
                             {guestlists && guestlists.length > 0 ? (
@@ -469,8 +500,8 @@ const CommunityJoin = () => {
                                 </div>
                             ) : (
                                 <div className="text-center py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10 group">
-                                    <Users className="w-16 h-16 mx-auto mb-6 opacity-20" />
-                                    <p className="font-heading font-bold uppercase tracking-widest text-sm text-gray-500">No active guestlists right now</p>
+                                    <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                    <p className="font-heading uppercase tracking-widest text-sm text-gray-500">No active guestlists at the moment</p>
                                 </div>
                             )}
                         </section>
@@ -481,7 +512,7 @@ const CommunityJoin = () => {
                                 <div className="flex items-center gap-5">
                                     <div className="h-12 w-1.5 bg-neon-green rounded-full shadow-[0_0_20px_rgba(57,255,20,0.3)]"></div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-neon-green uppercase tracking-widest mb-1">Get Involved</p>
+                                        <p className="text-[10px] font-bold text-neon-green uppercase tracking-widest mb-1">Operational Support</p>
                                         <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Volunteer Gigs</h2>
                                     </div>
                                 </div>
@@ -499,61 +530,51 @@ const CommunityJoin = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10">
-                                    <Users className="w-16 h-16 mx-auto mb-6 opacity-20" />
-                                    <p className="font-heading font-bold uppercase tracking-widest text-sm text-gray-500">No active volunteer opportunities right now</p>
+                                <div className="text-center py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10 text-gray-500">
+                                    <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                    <p className="font-heading uppercase tracking-widest text-sm">No active volunteer opportunities right now</p>
                                 </div>
                             )}
                         </section>
 
                         {/* Community Pulse */}
-                        <section>
-                            <div className="flex items-center gap-5 mb-12 md:mb-16">
-                                <div className="h-12 w-1.5 bg-neon-pink rounded-full shadow-[0_0_20px_rgba(255,0,255,0.3)]"></div>
-                                <h2 className="text-4xl font-bold font-heading uppercase tracking-tight">Community Pulse</h2>
+                        <section id="community-pulse" className="scroll-mt-32">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 md:mb-16">
+                                <div className="flex items-center gap-5">
+                                    <div className="h-12 w-1.5 bg-neon-pink rounded-full shadow-[0_0_20px_rgba(255,0,255,0.3)]"></div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-neon-pink uppercase tracking-widest mb-1">Feedback & More</p>
+                                        <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Community Pulse</h2>
+                                    </div>
+                                </div>
                             </div>
 
                             {forms && forms.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                                     {forms.map((form) => (
-                                        <div key={form.id} className="group p-10 md:p-14 bg-zinc-900 border border-white/10 rounded-[3rem] hover:border-neon-pink/40 transition-all duration-700 relative overflow-hidden backdrop-blur-3xl">
-                                            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-pink/5 blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
-
-                                            <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                                                <div className="p-8 bg-neon-pink/10 rounded-3xl group-hover:scale-110 transition-all duration-700">
-                                                    <ClipboardList className="w-12 h-12 md:w-16 md:h-16 text-neon-pink" />
-                                                </div>
-                                                <div className="flex-1 text-center md:text-left">
-                                                    <h3 className="text-3xl font-bold mb-4 font-heading group-hover:text-neon-pink transition-colors">"{form.title}"</h3>
-                                                    <p className="text-gray-400 text-sm mb-8 font-medium leading-relaxed max-w-sm italic opacity-80">{form.description}</p>
-                                                    <div className="flex justify-center md:justify-start">
-                                                        <Link to={`/forms/${form.id}`}>
-                                                            <Button className="bg-neon-pink text-black hover:bg-neon-pink/80 h-14 px-10 rounded-2xl font-bold uppercase tracking-widest text-xs gap-3 font-heading">
-                                                                Take Form
-                                                                <ArrowRight size={18} />
-                                                            </Button>
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <CommunityCard
+                                            key={form.id}
+                                            item={form}
+                                            type="form"
+                                        />
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-24 bg-white/[0.02] rounded-[3.5rem] border border-white/5 text-gray-500">
-                                    <p className="font-heading font-bold uppercase tracking-widest text-sm">No active forms at the moment</p>
+                                <div className="text-center py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10 text-gray-500">
+                                    <ClipboardList className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                    <p className="font-heading uppercase tracking-widest text-sm">No active forms at the moment</p>
                                 </div>
                             )}
                         </section>
 
                         {/* Secret Store */}
                         <section className="pb-20">
-                            <div className="flex items-center gap-5 mb-10 md:mb-12">
-                                <div className="h-10 w-1 bg-neon-pink rounded-full group-hover:animate-pulse"></div>
-                                <h2 className="text-3xl md:text-4xl font-bold font-heading uppercase tracking-tight">Secret Store</h2>
+                            <div className="flex items-center gap-5 mb-12">
+                                <div className="h-12 w-1.5 bg-neon-pink rounded-full shadow-[0_0_20px_rgba(255,0,255,0.3)]"></div>
+                                <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Secret Store</h2>
                             </div>
 
-                            <div className="relative bg-zinc-900 border border-white/10 rounded-[4rem] p-16 md:p-32 overflow-hidden text-center group backdrop-blur-3xl shadow-2xl">
+                            <div className="relative bg-zinc-900 border border-white/10 rounded-[4rem] p-24 md:p-32 overflow-hidden text-center group backdrop-blur-3xl shadow-2xl">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-neon-pink/5 blur-[120px] rounded-full pointer-events-none transition-all duration-1000"></div>
 
                                 <div className="relative z-10 flex flex-col items-center">
@@ -561,14 +582,15 @@ const CommunityJoin = () => {
                                         <Lock className="w-16 h-16 md:w-24 md:h-24 text-gray-500 group-hover:text-neon-pink transition-colors" />
                                     </div>
 
-                                    <h3 className="text-4xl md:text-7xl font-bold text-white mb-8 font-heading">Coming Soon</h3>
-                                    <p className="text-gray-400 max-w-2xl mx-auto mb-16 text-lg md:text-2xl font-medium leading-relaxed italic">
-                                        Exclusive ticket drops, secret guestlist spots, and physical merchandise. Available for the tribe soon.
-                                    </p>
+                                    <h3 className="text-5xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/20 font-heading tracking-tighter uppercase italic">
+                                        Coming Soon
+                                    </h3>
 
-                                    <Button disabled className="bg-zinc-800 text-gray-600 border-zinc-700 cursor-not-allowed uppercase tracking-widest font-bold text-xs h-16 px-16 rounded-2xl">
-                                        Locked for Now
-                                    </Button>
+                                    <div className="mt-16">
+                                        <Button disabled className="bg-zinc-800 text-gray-500 border-zinc-700 cursor-not-allowed uppercase tracking-widest font-bold text-xs h-16 px-16 rounded-2xl">
+                                            Locked for Now
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </section>
