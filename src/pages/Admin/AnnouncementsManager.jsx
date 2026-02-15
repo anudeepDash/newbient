@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Pin, ArrowLeft, Save } from 'lucide-react';
 import { useStore } from '../../lib/store';
