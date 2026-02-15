@@ -25,7 +25,11 @@ const Dashboard = () => {
     const handleResetPassword = async (e) => {
         e.preventDefault();
         try {
-            await sendPasswordResetEmail(auth, email);
+            const actionCodeSettings = {
+                url: 'https://newbi.live/auth/action?mode=resetPassword',
+                handleCodeInApp: true,
+            };
+            await sendPasswordResetEmail(auth, email, actionCodeSettings);
             alert("Password reset email sent! Check your inbox.");
             setIsResetting(false);
         } catch (error) {
