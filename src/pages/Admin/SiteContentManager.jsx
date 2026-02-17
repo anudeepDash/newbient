@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Users } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 const SiteContentManager = () => {
-    const { siteDetails, updateSiteDetails } = useStore();
+    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings } = useStore();
     const navigate = useNavigate();
 
     // Local state for form
@@ -38,6 +38,36 @@ const SiteContentManager = () => {
 
                 <Card className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Feature Toggles */}
+                        <div className="p-6 border border-neon-blue/20 rounded-xl bg-neon-blue/5 mb-8">
+                            <h3 className="text-lg font-bold text-neon-blue mb-4 flex items-center gap-2">
+                                <span className="p-1 bg-neon-blue/20 rounded-lg"><Users size={16} /></span>
+                                Community Settings
+                            </h3>
+
+                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
+                                <div>
+                                    <h4 className="text-white font-bold text-sm">Enable Tribe Form (Step 1)</h4>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        If disabled, users will skip the Google Form and go directly to Step 2 (WhatsApp).
+                                    </p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={siteSettings.enableTribeForm !== false} // Default to true
+                                        onChange={(e) => {
+                                            const newValue = e.target.checked;
+                                            // Optimistic update locally not needed as we pull from store, but for fast feedback:
+                                            updateGeneralSettings({ enableTribeForm: newValue });
+                                        }}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2 p-4 border border-white/10 rounded-lg bg-white/5">
                                 <label className="block text-sm font-bold text-neon-green mb-2">Community Page: WhatsApp Group Link</label>

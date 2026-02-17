@@ -243,7 +243,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
 };
 
 const CommunityJoin = () => {
-    const { forms, siteDetails, volunteerGigs, guestlists, upcomingEvents, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
+    const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
     const [selectedTicketEvent, setSelectedTicketEvent] = useState(null);
@@ -395,8 +395,8 @@ const CommunityJoin = () => {
                             </Button>
                         </motion.div>
                     </section>
-                ) : !hasJoined ? (
-                    /* Logged In, Not Joined State */
+                ) : (!hasJoined && siteSettings.enableTribeForm !== false) ? (
+                    /* Logged In, Not Joined State (Step 1 Active) */
                     <section className="space-y-20 md:space-y-32">
                         <div className="max-w-5xl mx-auto">
                             <div className="flex items-center gap-4 mb-12">

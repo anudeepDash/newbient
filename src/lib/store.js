@@ -233,6 +233,9 @@ export const useStore = create((set, get) => ({
     toggleUpcomingSectionVisibility: async (currentValue) => {
         await setDoc(doc(db, 'site_settings', 'general'), { showUpcomingEvents: !currentValue }, { merge: true });
     },
+    updateGeneralSettings: async (settings) => {
+        await setDoc(doc(db, 'site_settings', 'general'), settings, { merge: true });
+    },
 
     // Announcements
     addAnnouncement: async (announcement) => {
