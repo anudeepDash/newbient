@@ -17,6 +17,7 @@ const GuestlistManager = () => {
     const [formData, setFormData] = useState({
         title: '',
         date: '',
+        time: '',
         location: '',
         link: '',
         whatsappLink: '', // New field
@@ -25,7 +26,7 @@ const GuestlistManager = () => {
     });
 
     const resetForm = () => {
-        setFormData({ title: '', date: '', location: '', link: '', whatsappLink: '', status: 'Open', description: '' });
+        setFormData({ title: '', date: '', time: '', location: '', link: '', whatsappLink: '', status: 'Open', description: '' });
         setIsAdding(false);
         setEditingId(null);
         setSaving(false);
@@ -35,6 +36,7 @@ const GuestlistManager = () => {
         setFormData({
             title: item.title,
             date: item.date,
+            time: item.time || '',
             location: item.location,
             link: item.link || '',
             whatsappLink: item.whatsappLink || '',
@@ -110,6 +112,10 @@ const GuestlistManager = () => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
                                         <Input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Time (Optional)</label>
+                                        <Input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>

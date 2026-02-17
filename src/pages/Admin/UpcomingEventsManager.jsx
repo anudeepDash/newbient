@@ -18,6 +18,7 @@ const UpcomingEventsManager = () => {
     const [newEvent, setNewEvent] = useState({
         title: '',
         date: '',
+        time: '',
         category: '',
         description: '',
         buttonText: '', // New field
@@ -35,6 +36,7 @@ const UpcomingEventsManager = () => {
         setNewEvent({
             title: '',
             date: '',
+            time: '',
             category: '',
             description: '',
             buttonText: '', // New field
@@ -126,6 +128,7 @@ const UpcomingEventsManager = () => {
             const eventData = {
                 title: newEvent.title,
                 date: newEvent.date,
+                time: newEvent.time,
                 category: newEvent.category,
                 description: newEvent.description,
                 buttonText: newEvent.buttonText,
@@ -220,6 +223,14 @@ const UpcomingEventsManager = () => {
                                             type="datetime-local"
                                             value={newEvent.date}
                                             onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Event Time (Optional)</label>
+                                        <Input
+                                            type="time"
+                                            value={newEvent.time}
+                                            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
                                         />
                                     </div>
                                 </div>

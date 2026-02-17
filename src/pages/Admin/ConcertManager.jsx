@@ -18,11 +18,11 @@ const ConcertManager = () => {
 
     // State for Portfolio (Past)
     const [newPortfolio, setNewPortfolio] = useState({
-        title: '', category: '', image: '', highlightUrl: ''
+        title: '', date: '', time: '', category: '', image: '', highlightUrl: ''
     });
 
     const resetForms = () => {
-        setNewPortfolio({ title: '', category: '', image: '', highlightUrl: '' });
+        setNewPortfolio({ title: '', date: '', time: '', category: '', image: '', highlightUrl: '' });
         setIsAdding(false);
         setEditingId(null);
         setSelectedFile(null);
@@ -130,7 +130,7 @@ const ConcertManager = () => {
                         <Button variant="outline" onClick={() => setShowCategoryManager(!showCategoryManager)}>
                             {showCategoryManager ? 'Hide Categories' : 'Manage Categories'}
                         </Button>
-                        <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', category: '', image: '', highlightUrl: '' }); }}>
+                        <Button variant="primary" onClick={() => { setIsAdding(!isAdding); setEditingId(null); setNewPortfolio({ title: '', date: '', time: '', category: '', image: '', highlightUrl: '' }); }}>
                             <Plus className="mr-2 h-4 w-4" />
                             {isAdding && !editingId ? 'Cancel' : 'Add Past Event'}
                         </Button>
@@ -183,6 +183,27 @@ const ConcertManager = () => {
                                     onChange={e => setNewPortfolio({ ...newPortfolio, title: e.target.value })}
                                     required
                                 />
+
+
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Date (Optional)</label>
+                                        <Input
+                                            type="date"
+                                            value={newPortfolio.date || ''}
+                                            onChange={e => setNewPortfolio({ ...newPortfolio, date: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Time (Optional)</label>
+                                        <Input
+                                            type="time"
+                                            value={newPortfolio.time || ''}
+                                            onChange={e => setNewPortfolio({ ...newPortfolio, time: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
