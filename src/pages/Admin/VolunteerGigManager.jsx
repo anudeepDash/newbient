@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 
 const VolunteerGigManager = () => {
-    const { volunteerGigs, addVolunteerGig, updateVolunteerGig, deleteVolunteerGig } = useStore();
+    const { volunteerGigs, addVolunteerGig, updateVolunteerGig, deleteVolunteerGig, reorderVolunteerGigs, addAnnouncement } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -84,6 +84,36 @@ const VolunteerGigManager = () => {
         }
     };
 
+    const handlePushAnnouncement = async (gig) => {
+        if (confirm(`Post an announcement for "${gig.title}"?`)) {
+            await addAnnouncement({
+                title: `New Volunteer Opportunity: ${gig.title}`,
+                content: gig.description || `We are looking for volunteers for ${gig.title} at ${gig.location}. Apply now!`,
+                date: new Date().toISOString().split('T')[0],
+                isPinned: false,
+                link: gig.applyLink || '',
+                type: 'volunteer_gig'
+            });
+            alert('Announcement posted!');
+        }
+    };
+
+    const moveGig = async (index, direction) => {
+        const newGigs = [...volunteerGigs];
+        if (direction === 'up' && index > 0) {
+            [newGigs[index], newGigs[index - 1]] = [newGigs[index - 1], newGigs[index]];
+        } else if (direction === 'down' && index < newGigs.length - 1) {
+            [newGigs[index], newGigs[index + 1]] = [newGigs[index + 1], newGigs[index]];
+        }
+        await reorderVolunteerGigs(newGigs);
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}-${m}-${y}`;
+    };
+
     return (
         <div className="space-y-6">
             <div className={`mx-auto ${isAdding ? 'max-w-7xl' : 'max-w-6xl'}`}>
@@ -135,7 +165,7 @@ const VolunteerGigManager = () => {
                                         <div className="flex flex-wrap gap-2 mb-2">
                                             {formData.dates.map((d, index) => (
                                                 <div key={index} className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full text-sm">
-                                                    <span>{d}</span>
+                                                    <span>{formatDate(d)}</span>
                                                     <button type="button" onClick={() => setFormData({ ...formData, dates: formData.dates.filter((_, i) => i !== index) })} className="text-red-400 hover:text-red-300">
                                                         <Trash2 size={12} />
                                                     </button>
@@ -147,7 +177,8 @@ const VolunteerGigManager = () => {
                                             <Button type="button" variant="outline" onClick={() => {
                                                 const dateVal = document.getElementById('datePicker').value;
                                                 if (dateVal && !formData.dates.includes(dateVal)) {
-                                                    setFormData({ ...formData, dates: [...formData.dates, dateVal].sort() });
+                                                    const newDates = [...formData.dates, dateVal].sort((a, b) => new Date(a) - new Date(b));
+                                                    setFormData({ ...formData, dates: newDates });
                                                     document.getElementById('datePicker').value = '';
                                                 }
                                             }}>Add Day</Button>
@@ -238,6 +269,17 @@ const VolunteerGigManager = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2 self-end md:self-center">
+                                        <div className="flex flex-col mr-2">
+                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-1 hover:text-white text-gray-500 disabled:opacity-30">
+                                                <ArrowUp size={14} />
+                                            </button>
+                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-1 hover:text-white text-gray-500 disabled:opacity-30">
+                                                <ArrowDown size={14} />
+                                            </button>
+                                        </div>
+                                        <Button variant="outline" onClick={() => handlePushAnnouncement(gig)} className="p-2 h-auto text-neon-blue hover:text-neon-blue hover:border-neon-blue" title="Push to Announcements">
+                                            <Megaphone size={16} />
+                                        </Button>
                                         <Button variant="outline" onClick={() => handleEdit(gig)} className="p-2 h-auto">
                                             <Edit size={16} />
                                         </Button>
