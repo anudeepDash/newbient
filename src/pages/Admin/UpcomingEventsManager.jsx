@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
+import { motion } from 'framer-motion';
 
 const UpcomingEventsManager = () => {
     const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility, portfolioCategories } = useStore();
@@ -22,8 +23,13 @@ const UpcomingEventsManager = () => {
         buttonText: '', // New field
         image: '',
         link: '',
+        isTicketed: false,
+        ticketPrice: '', // Keep as "Starting Price" display
+        ticketCategories: [], // Array of { id, name, price, description }
+        venueLayout: '',
         alsoPostToAnnouncements: false
     });
+    const [venueLayoutFile, setVenueLayoutFile] = useState(null);
 
     const resetForm = () => {
         setNewEvent({
@@ -34,11 +40,16 @@ const UpcomingEventsManager = () => {
             buttonText: '', // New field
             image: '',
             link: '',
+            isTicketed: false,
+            ticketPrice: '',
+            ticketCategories: [],
+            venueLayout: '',
             alsoPostToAnnouncements: false
         });
         setIsAdding(false);
         setEditingId(null);
         setSelectedFile(null);
+        setVenueLayoutFile(null);
         setUploading(false);
     };
 
@@ -84,19 +95,46 @@ const UpcomingEventsManager = () => {
         e.preventDefault();
         setUploading(true);
         try {
+            // 1. Handle Main Image Upload
             let imageUrl = newEvent.image;
             if (selectedFile) {
                 imageUrl = await handleFileUpload(selectedFile);
             }
 
+            // 2. Handle Venue Layout Upload
+            let venueLayoutUrl = newEvent.venueLayout;
+            if (venueLayoutFile) {
+                venueLayoutUrl = await handleFileUpload(venueLayoutFile);
+            }
+
+            // 3. Process Ticket Categories
+            const ticketCategories = newEvent.ticketCategories.map(c => ({
+                id: c.id || crypto.randomUUID(),
+                name: c.name,
+                price: Number(c.price) || 0,
+                description: c.description || ''
+            }));
+
+            // 4. Calculate Display Price
+            let ticketPrice = Number(newEvent.ticketPrice) || 0;
+            if (ticketCategories.length > 0) {
+                const minPrice = Math.min(...ticketCategories.map(c => c.price));
+                ticketPrice = minPrice;
+            }
+
+            // 5. Construct Payload
             const eventData = {
                 title: newEvent.title,
                 date: newEvent.date,
                 category: newEvent.category,
                 description: newEvent.description,
-                buttonText: newEvent.buttonText, // Include new field
+                buttonText: newEvent.buttonText,
                 image: imageUrl,
-                link: newEvent.link
+                link: newEvent.link,
+                isTicketed: newEvent.isTicketed,
+                venueLayout: venueLayoutUrl,
+                ticketCategories: ticketCategories,
+                ticketPrice: ticketPrice
             };
 
             if (editingId) {
@@ -116,6 +154,7 @@ const UpcomingEventsManager = () => {
             setUploading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -176,9 +215,9 @@ const UpcomingEventsManager = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Date (Optional)</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Event Date</label>
                                         <Input
-                                            type="date"
+                                            type="datetime-local"
                                             value={newEvent.date}
                                             onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
                                         />
@@ -253,6 +292,138 @@ const UpcomingEventsManager = () => {
                                     />
                                 </div>
 
+                                {/* Ticketing Options */}
+                                <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-4">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <div className={`w-12 h-6 rounded-full relative transition-colors ${newEvent.isTicketed ? 'bg-neon-green' : 'bg-gray-700'}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={newEvent.isTicketed}
+                                                onChange={(e) => setNewEvent({ ...newEvent, isTicketed: e.target.checked })}
+                                                className="hidden"
+                                            />
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${newEvent.isTicketed ? 'left-7' : 'left-1'}`} />
+                                        </div>
+                                        <span className="text-sm font-bold text-white">Enable Ticketing</span>
+                                    </label>
+
+                                    {newEvent.isTicketed && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="space-y-4 pt-2"
+                                        >
+                                            {/* Venue Layout */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1">Venue Layout (Optional)</label>
+                                                <div className="space-y-2">
+                                                    <Input
+                                                        placeholder="Layout Image URL"
+                                                        value={newEvent.venueLayout}
+                                                        onChange={(e) => setNewEvent({ ...newEvent, venueLayout: e.target.value })}
+                                                    />
+                                                    <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => setVenueLayoutFile(e.target.files[0])}
+                                                        className="text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-blue/10 file:text-neon-blue hover:file:bg-neon-blue/20"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Categories */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className="block text-sm font-medium text-gray-400">Ticket Categories</label>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        onClick={() => setNewEvent({
+                                                            ...newEvent,
+                                                            ticketCategories: [...newEvent.ticketCategories, { id: crypto.randomUUID(), name: '', price: '', description: '' }]
+                                                        })}
+                                                        className="text-xs py-1 h-auto"
+                                                    >
+                                                        + Add Category
+                                                    </Button>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    {(newEvent.ticketCategories || []).map((cat, idx) => (
+                                                        <div key={cat.id || idx} className="grid grid-cols-12 gap-2 items-start bg-black/30 p-2 rounded border border-white/5">
+                                                            <div className="col-span-5">
+                                                                <Input
+                                                                    placeholder="Name (e.g. VIP)"
+                                                                    value={cat.name}
+                                                                    onChange={(e) => {
+                                                                        const newCats = [...newEvent.ticketCategories];
+                                                                        newCats[idx].name = e.target.value;
+                                                                        setNewEvent({ ...newEvent, ticketCategories: newCats });
+                                                                    }}
+                                                                    className="h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-3">
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="Price"
+                                                                    value={cat.price}
+                                                                    onChange={(e) => {
+                                                                        const newCats = [...newEvent.ticketCategories];
+                                                                        newCats[idx].price = e.target.value;
+                                                                        setNewEvent({ ...newEvent, ticketCategories: newCats });
+                                                                    }}
+                                                                    className="h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-3">
+                                                                <Input
+                                                                    placeholder="Desc/Qty"
+                                                                    value={cat.description}
+                                                                    onChange={(e) => {
+                                                                        const newCats = [...newEvent.ticketCategories];
+                                                                        newCats[idx].description = e.target.value;
+                                                                        setNewEvent({ ...newEvent, ticketCategories: newCats });
+                                                                    }}
+                                                                    className="h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-1 flex justify-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newCats = newEvent.ticketCategories.filter((_, i) => i !== idx);
+                                                                        setNewEvent({ ...newEvent, ticketCategories: newCats });
+                                                                    }}
+                                                                    className="text-red-500 hover:text-red-400 p-1"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {newEvent.ticketCategories.length === 0 && (
+                                                        <p className="text-xs text-center text-gray-500 italic py-2">No categories. Uses base price.</p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-white/10 pt-2 mt-2">
+                                                <label className="block text-sm font-medium text-gray-400 mb-1">Base Price (Display/Fallback)</label>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="499"
+                                                    value={newEvent.ticketPrice}
+                                                    onChange={(e) => setNewEvent({ ...newEvent, ticketPrice: e.target.value })}
+                                                    className="border-neon-green/30 focus:border-neon-green"
+                                                    readOnly={newEvent.ticketCategories.length > 0}
+                                                />
+                                                {newEvent.ticketCategories.length > 0 && <p className="text-[10px] text-gray-500">Auto-calculated from minimum category price.</p>}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+
                                 {!editingId && (
                                     <div className="flex items-center gap-2 p-3 bg-neon-pink/10 rounded-lg border border-neon-pink/20">
                                         <input
@@ -290,7 +461,7 @@ const UpcomingEventsManager = () => {
                 ) : (
                     /* List View */
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {upcomingEvents.map((item, index) => (
+                        {(upcomingEvents || []).map((item, index) => (
                             <Card key={item.id} className="p-4 flex items-center gap-4 hover:border-white/20 transition-colors">
                                 {/* Reordering Controls */}
                                 <div className="flex flex-col gap-1 mr-2">

@@ -23,6 +23,7 @@ import CommunityJoin from './pages/CommunityJoin';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
+import TicketManager from './pages/Admin/TicketManager';
 import DevSettings from './pages/Admin/DevSettings';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import ActionHandler from './pages/Auth/ActionHandler';
@@ -76,8 +77,11 @@ function App() {
           <Route path="admin/site-content" element={<MaintenanceGuard featureId="site_content"><SiteContentManager /></MaintenanceGuard>} />
           <Route path="admin/gallery-manager" element={<MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard>} />
           <Route path="admin/forms" element={<MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard>} />
+
+          // ...
           <Route path="admin/forms/create" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
           <Route path="admin/forms/edit/:id" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
+          <Route path="admin/tickets" element={<MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard>} />
           <Route path="admin/volunteer-gigs" element={<MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard>} />
           <Route path="admin/upcoming-events" element={<MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard>} />
 

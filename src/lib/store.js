@@ -9,7 +9,10 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     upcomingEvents: [],
+    messages: [], // New state
     guestlists: [], // New state
+    ticketOrders: [], // New state
+    paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
         global: false,
@@ -45,6 +48,16 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 }
 
+                // Sort messages by createdAt (descending)
+                if (colName === 'messages') {
+                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                }
+
+                // Sort ticket orders by createdAt (descending)
+                if (colName === 'ticket_orders') {
+                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                }
+
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
@@ -67,6 +80,8 @@ export const useStore = create((set, get) => ({
         const unsub8 = sub('upcoming_events', 'upcomingEvents');
         const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
         const unsubGuestlist = sub('guestlists', 'guestlists'); // New sub
+        const unsubMessages = sub('messages', 'messages');
+        const unsubTicketOrders = sub('ticket_orders', 'ticketOrders'); // New sub
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -85,6 +100,13 @@ export const useStore = create((set, get) => ({
                 set({ siteDetails: docSnap.data() });
             }
         }, (error) => console.error("Error fetching site details:", error));
+
+        // Payment Info Subscription
+        const unsub12 = onSnapshot(doc(db, 'site_settings', 'payment_info'), (docSnap) => {
+            if (docSnap.exists()) {
+                set({ paymentDetails: docSnap.data() });
+            }
+        }, (error) => console.error("Error fetching payment details:", error));
 
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -117,7 +139,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsubCategory(); unsubGuestlist();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders();
         };
     },
 
@@ -348,6 +370,54 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'guestlists', id));
     },
 
+    // Messages
+    markMessageRead: async (id, status = 'read') => {
+        await updateDoc(doc(db, 'messages', id), { status });
+    },
+    deleteMessage: async (id) => {
+        await deleteDoc(doc(db, 'messages', id));
+    },
+
+    deleteMessage: async (id) => {
+        await deleteDoc(doc(db, 'messages', id));
+    },
+
+    // Ticket Orders (Offline System)
+    addTicketOrder: async (order) => {
+        await addDoc(collection(db, 'ticket_orders'), {
+            ...order,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        });
+    },
+    updateTicketOrder: async (id, updates) => {
+        await updateDoc(doc(db, 'ticket_orders', id), updates);
+    },
+    approveTicketOrder: async (id) => {
+        // Generate Unique Booking ID: NB-YYYY-XXXX (4 random chars)
+        const year = new Date().getFullYear();
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const bookingRef = `NB-${year}-${random}`;
+
+        await updateDoc(doc(db, 'ticket_orders', id), {
+            status: 'approved',
+            bookingRef,
+            approvedAt: new Date().toISOString()
+        });
+        return bookingRef;
+    },
+    rejectTicketOrder: async (id) => {
+        await updateDoc(doc(db, 'ticket_orders', id), {
+            status: 'rejected',
+            rejectedAt: new Date().toISOString()
+        });
+    },
+
+    // Payment Settings
+    updatePaymentDetails: async (details) => {
+        await setDoc(doc(db, 'site_settings', 'payment_info'), details, { merge: true });
+    },
+
     // Auth & Roles
     user: null, // { email, uid, role, displayName, hasJoinedTribe }
     isAuthOpen: false,
@@ -528,13 +598,34 @@ export const useStore = create((set, get) => ({
                     [key]: !current[category]?.[key]
                 }
             };
-            console.log(`[Maintenance] New State:`, newState);
-            await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
+
+            await setDoc(doc(db, 'app_state', maintenanceDocId), newState);
+            set({ maintenanceState: newState });
         } catch (error) {
-            console.error(`[Maintenance] Failed to update ${maintenanceDocId}:`, error);
-            alert(`Firestore Update Failed: ${error.message}`);
+            console.error("Error toggling maintenance:", error);
+            throw error;
         }
     },
+
+    // Ticket Orders
+    updateTicketOrder: async (id, data) => {
+        try {
+            await updateDoc(doc(db, 'ticket_orders', id), data);
+        } catch (error) {
+            console.error("Error updating ticket order:", error);
+            throw error;
+        }
+    },
+
+    deleteTicketOrder: async (id) => {
+        try {
+            await deleteDoc(doc(db, 'ticket_orders', id));
+        } catch (error) {
+            console.error("Error deleting ticket order:", error);
+            throw error;
+        }
+    },
+
 
     toggleGlobalMaintenance: async () => {
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
