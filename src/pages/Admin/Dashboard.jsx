@@ -423,19 +423,16 @@ const Dashboard = () => {
                 {/* SUPER ADMIN ONLY SECTION */}
                 {(user.role === 'super_admin' || user.role === 'developer') && (
                     <div className="mb-8 flex flex-col md:flex-row gap-4">
-                        <Link to="/admin/manage-admins" className="flex-1">
-                            <div className="bg-gradient-to-r from-neon-purple/20 to-neon-blue/20 border border-neon-purple/50 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-neon-purple/20 rounded-full text-neon-purple">
-                                        <Shield size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-white group-hover:text-neon-purple transition-colors">Manage Admins</h3>
-                                        <p className="text-sm text-gray-400">Add or remove other administrators and editors.</p>
-                                    </div>
+                        <Link to="/admin/manage-admins" className="block h-full">
+                            <Card className="h-full p-6 border-white/10 bg-white/5 hover:bg-white/10 transition-colors group flex flex-col items-center text-center justify-center gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-purple/20 to-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                    <Users className="w-8 h-8 text-neon-purple" />
                                 </div>
-                                <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
-                            </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-neon-purple transition-colors">Manage Members</h3>
+                                    <p className="text-sm text-gray-400">View all users, block/unblock members & manage admins.</p>
+                                </div>
+                            </Card>
                         </Link>
                         {user.role === 'developer' && (
                             <Link to="/admin/dev-settings" className="flex-1">
