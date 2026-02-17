@@ -27,8 +27,6 @@ import TicketManager from './pages/Admin/TicketManager';
 import DevSettings from './pages/Admin/DevSettings';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import ActionHandler from './pages/Auth/ActionHandler';
-import AuthOverlay from './components/auth/AuthOverlay';
-
 function App() {
   const { subscribeToData, checkUserRole } = useStore();
 

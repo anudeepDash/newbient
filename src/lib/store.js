@@ -492,15 +492,33 @@ export const useStore = create((set, get) => ({
 
             if (userDoc.exists()) {
                 const userData = userDoc.data();
+
+                // CHECK BLOCK STATUS
+                if (userData.isBlocked) {
+                    console.warn("User is blocked. Denying access.");
+                    set({ user: null, authInitialized: true });
+                    // Force logout if currently signed in
+                    const { getAuth } = await import('firebase/auth');
+                    const auth = getAuth();
+                    await auth.signOut();
+                    alert("Your account has been suspended. Please contact support.");
+                    return;
+                }
+
                 hasJoinedTribe = userData.hasJoinedTribe || false;
                 displayName = userData.displayName || displayName;
+
+                // Update Last Active Timestamp (Fire and forget)
+                setDoc(userRef, { lastActive: new Date().toISOString() }, { merge: true });
+
             } else if (firebaseUser.providerData[0]?.providerId === 'google.com') {
                 // Auto-create profile for Google users if missing
                 await setDoc(userRef, {
                     email: firebaseUser.email,
                     displayName: firebaseUser.displayName,
                     hasJoinedTribe: false,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    lastActive: new Date().toISOString()
                 }, { merge: true });
             }
         } catch (error) {
@@ -517,6 +535,14 @@ export const useStore = create((set, get) => ({
             },
             authInitialized: true
         });
+    },
+
+    // User Management Actions
+    blockUser: async (uid) => {
+        await updateDoc(doc(db, 'users', uid), { isBlocked: true });
+    },
+    unblockUser: async (uid) => {
+        await updateDoc(doc(db, 'users', uid), { isBlocked: false });
     },
 
     markFormAsSubmitted: async () => {
