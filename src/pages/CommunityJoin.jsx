@@ -108,8 +108,8 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                             <Calendar size={14} className={isGig ? "text-neon-green" : "text-neon-blue"} />
                                             <span className="text-white/60">
                                                 {isGig
-                                                    ? `${item.dates && item.dates.length > 0 ? item.dates.join(', ') : item.date} | ${item.time}`
-                                                    : (item.date || 'Upcoming')}
+                                                    ? `${item.dates && item.dates.length > 0 ? item.dates.map(d => d.split('-').reverse().join('-')).join(', ') : (item.date ? item.date.split('-').reverse().join('-') : 'Upcoming')} | ${item.time}`
+                                                    : (item.date ? item.date.split('-').reverse().join('-') : 'Upcoming')}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">

@@ -4,6 +4,12 @@ import { Button } from '../ui/Button';
 import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+const formatDate = (dateStr) => {
+    if (!dateStr) return 'TBD';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}-${m}-${y}`;
+};
+
 const LivePreview = ({ type, data }) => {
     return (
         <div className="h-full flex flex-col">
@@ -122,7 +128,7 @@ const LivePreview = ({ type, data }) => {
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                         <Calendar size={12} className="text-neon-green" />
                                         <span className="text-white/60">
-                                            {data.dates && data.dates.length > 0 ? data.dates.join(', ') : (data.date || 'TBD')} | {data.time || 'TBD'}
+                                            {data.dates && data.dates.length > 0 ? data.dates.map(formatDate).join(', ') : formatDate(data.date)} | {data.time || 'TBD'}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">

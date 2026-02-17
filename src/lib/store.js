@@ -39,7 +39,7 @@ export const useStore = create((set, get) => ({
                 });
 
                 // Sort by 'order' field if available (ascending)
-                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements') {
+                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs') {
                     data.sort((a, b) => (a.order || 0) - (b.order || 0));
                 }
 
@@ -350,7 +350,15 @@ export const useStore = create((set, get) => ({
 
     // Volunteer Gigs
     addVolunteerGig: async (gig) => {
-        await addDoc(collection(db, 'volunteer_gigs'), { ...gig, createdAt: new Date().toISOString() });
+        const currentItems = get().volunteerGigs;
+        const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
+        await addDoc(collection(db, 'volunteer_gigs'), { ...gig, order: maxOrder + 1, createdAt: new Date().toISOString() });
+    },
+    reorderVolunteerGigs: async (items) => {
+        const updates = items.map((item, index) =>
+            updateDoc(doc(db, 'volunteer_gigs', item.id), { order: index })
+        );
+        await Promise.all(updates);
     },
     updateVolunteerGig: async (id, updates) => {
         await updateDoc(doc(db, 'volunteer_gigs', id), updates);
