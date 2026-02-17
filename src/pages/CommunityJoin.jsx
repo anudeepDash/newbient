@@ -482,7 +482,9 @@ const CommunityJoin = () => {
                                 </div>
                                 <div className="flex-1 text-center md:text-left">
                                     <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
-                                        <span className="px-3 py-1 bg-[#25D366]/10 text-[#25D366] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#25D366]/20">Step 2: Complete</span>
+                                        {siteSettings.enableTribeForm !== false && (
+                                            <span className="px-3 py-1 bg-[#25D366]/10 text-[#25D366] text-[10px] font-bold uppercase tracking-widest rounded-full border border-[#25D366]/20">Step 2: Complete</span>
+                                        )}
                                     </div>
                                     <h3 className="text-2xl md:text-3xl font-bold mb-4 font-heading">Welcome to the Inner Circle</h3>
                                     <p className="text-gray-400 text-lg max-w-xl leading-relaxed font-medium">
