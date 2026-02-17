@@ -47,15 +47,26 @@ const CommunityCard = ({ item, type, handleShare }) => {
                         isForm ? "from-neon-pink via-neon-pink/50 to-transparent" : (isGig ? "from-neon-green via-neon-green/50 to-transparent" : "from-neon-blue via-neon-blue/50 to-transparent")
                     )}></div>
 
-                    <div className="flex flex-col sm:flex-row h-full">
+                    <div className={cn(
+                        "flex h-full",
+                        isGig ? "flex-col" : "flex-col sm:flex-row"
+                    )}>
                         {/* Main Info Section */}
-                        <div className="flex-1 p-6 md:p-8 flex flex-col relative overflow-hidden">
+                        <div className="flex-1 p-5 md:p-6 flex flex-col relative overflow-hidden">
+                            {!isForm && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleShare(isGig ? 'gig' : 'gl', item.id); }}
+                                    className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors z-20 bg-black/20 rounded-full backdrop-blur-sm"
+                                >
+                                    <Share2 size={16} />
+                                </button>
+                            )}
                             {/* Decorative Background Icon */}
                             <div className="absolute -right-8 -bottom-8 opacity-[0.03] rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                                 <Icon size={180} />
                             </div>
 
-                            <div className="flex items-start justify-between mb-6 gap-4">
+                            <div className="flex items-center mb-6 gap-4">
                                 <div className={cn(
                                     "p-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg group-hover:scale-110 transition-all duration-500 shrink-0",
                                     isForm ? "text-neon-pink group-hover:bg-neon-pink/10" : (isGig ? "text-neon-green group-hover:bg-neon-green/10" : "text-neon-blue group-hover:bg-neon-blue/10")
@@ -65,7 +76,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 {!isForm && (
                                     <div className="flex items-center gap-2">
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-right",
+                                            "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
                                             item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                                         )}>
                                             {item.status || 'Open'}
@@ -73,21 +84,21 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     </div>
                                 )}
                                 {isForm && (
-                                    <span className="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10 text-right">{item.activeLabel ?? 'Active Pulse'}</span>
+                                    <span className="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-white/5 text-gray-500 border-white/10">{item.activeLabel ?? 'Active Pulse'}</span>
                                 )}
                             </div>
 
                             <div className="flex-1">
                                 <h3 className={cn(
-                                    "text-xl md:text-2xl font-bold font-heading leading-tight mb-3 transition-colors break-words pr-2",
+                                    "text-lg md:text-xl font-bold font-heading leading-tight mb-3 transition-colors",
                                     isForm ? "group-hover:text-neon-pink" : (isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue")
                                 )}>
                                     {item.title}
                                 </h3>
 
-                                {item.description && (
+                                {(item.description || item.roles) && (
                                     <p className="text-gray-400 text-sm line-clamp-2 italic font-medium opacity-70 leading-relaxed mb-4">
-                                        "{item.description}"
+                                        "{item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}"
                                     </p>
                                 )}
 
@@ -95,7 +106,11 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     <div className="flex flex-wrap gap-x-6 gap-y-3 mt-auto">
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                             <Calendar size={14} className={isGig ? "text-neon-green" : "text-neon-blue"} />
-                                            <span className="text-white/60">{isGig ? `${item.date} | ${item.time}` : (item.date || 'Upcoming')}</span>
+                                            <span className="text-white/60">
+                                                {isGig
+                                                    ? `${item.dates && item.dates.length > 0 ? item.dates.join(', ') : item.date} | ${item.time}`
+                                                    : (item.date || 'Upcoming')}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                             <MapPin size={14} className="text-neon-pink" />
@@ -112,33 +127,23 @@ const CommunityCard = ({ item, type, handleShare }) => {
                             </div>
                         </div>
 
-                        {/* Perforated Divider */}
-                        <div className="hidden sm:flex flex-col items-center justify-between py-4 relative w-px h-full">
-                            <div className="w-5 h-5 rounded-full bg-black -mt-7 -ml-[2px] border-b border-white/5 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.5)]"></div>
-                            <div className="flex-1 border-l border-dashed border-white/20 my-2"></div>
-                            <div className="w-5 h-5 rounded-full bg-black -mb-7 -ml-[2px] border-t border-white/5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"></div>
-                        </div>
+                        {/* Perforated Divider - Hide for Gigs */}
+                        {!isGig && (
+                            <div className="hidden sm:flex flex-col items-center justify-between py-4 relative w-px h-full">
+                                <div className="w-5 h-5 rounded-full bg-black -mt-7 -ml-[2px] border-b border-white/5 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.5)]"></div>
+                                <div className="flex-1 border-l border-dashed border-white/20 my-2"></div>
+                                <div className="w-5 h-5 rounded-full bg-black -mb-7 -ml-[2px] border-t border-white/5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"></div>
+                            </div>
+                        )}
 
                         {/* Action Section */}
-                        <div className="sm:w-[220px] p-6 md:p-8 bg-white/[0.02] flex flex-col justify-between items-center relative gap-4">
-                            {!isForm && (
-                                <button
-                                    onClick={() => handleShare(isGig ? 'gig' : 'gl', item.id)}
-                                    className="absolute top-4 right-4 p-2 text-gray-600 hover:text-white transition-colors"
-                                >
-                                    <Share2 size={16} />
-                                </button>
-                            )}
+                        <div className={cn(
+                            "p-5 md:p-6 bg-white/[0.02] flex flex-col justify-between items-center relative gap-3",
+                            isGig ? "w-full border-t border-white/5" : "sm:w-[220px]"
+                        )}>
 
                             <div className="w-full space-y-4 pt-4 sm:pt-0 mt-auto">
-                                {item.description && (
-                                    <button
-                                        onClick={() => setIsFlipped(true)}
-                                        className="w-full text-center py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors border-b border-dashed border-white/10 mb-2"
-                                    >
-                                        [ View Details ]
-                                    </button>
-                                )}
+
 
                                 <div className="space-y-3">
                                     {isForm ? (
@@ -158,7 +163,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                             className={cn(
                                                 "w-full h-14 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading transition-all shadow-xl group-hover:scale-[1.02]",
                                                 isGig
-                                                    ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80 shadow-neon-green/20")
+                                                    ? (isWhatsApp ? "bg-[#25D366] text-black hover:bg-[#128C7E]" : "bg-neon-green text-black hover:bg-neon-green/80 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)]")
                                                     : "bg-neon-blue text-black hover:bg-neon-blue/80 shadow-neon-blue/20"
                                             )}
                                         >
@@ -167,16 +172,26 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                         </Button>
                                     )}
 
-                                    {(!isGig && !isForm && item.whatsappLink) && (
+                                    {item.whatsappLink && (
                                         <Button
                                             as="a"
                                             href={item.whatsappLink}
                                             target="_blank"
-                                            className="w-full h-14 bg-zinc-800/80 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-2xl font-bold uppercase tracking-widest text-xs gap-2 font-heading"
+                                            className="w-full h-12 bg-zinc-800/80 text-green-400 border border-green-400/20 hover:bg-green-400/10 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading"
                                         >
                                             Join WhatsApp
                                             <ExternalLink size={14} />
                                         </Button>
+                                    )}
+
+
+                                    {(item.description || item.roles) && (
+                                        <button
+                                            onClick={() => setIsFlipped(true)}
+                                            className="w-full text-center py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors pt-2"
+                                        >
+                                            [ View Details ]
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -207,7 +222,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-4">
                         <p className="text-gray-300 text-sm italic font-medium leading-relaxed whitespace-pre-wrap">
-                            "{item.description}"
+                            "{item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}"
                         </p>
                     </div>
 

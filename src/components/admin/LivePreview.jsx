@@ -92,7 +92,14 @@ const LivePreview = ({ type, data }) => {
                                     <Users size={120} />
                                 </div>
 
-                                <div className="flex items-start justify-between mb-4">
+                                <Button
+                                    className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors z-20 bg-black/20 rounded-full backdrop-blur-sm h-8 w-8 flex items-center justify-center border-none shadow-none"
+                                    variant="ghost"
+                                >
+                                    <Share2 size={14} />
+                                </Button>
+
+                                <div className="flex items-center gap-3 mb-4">
                                     <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-green">
                                         <Users size={20} />
                                     </div>
@@ -114,7 +121,9 @@ const LivePreview = ({ type, data }) => {
                                 <div className="space-y-2 mt-auto">
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                         <Calendar size={12} className="text-neon-green" />
-                                        <span className="text-white/60">{data.date || 'TBD'} | {data.time || 'TBD'}</span>
+                                        <span className="text-white/60">
+                                            {data.dates && data.dates.length > 0 ? data.dates.join(', ') : (data.date || 'TBD')} | {data.time || 'TBD'}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                         <MapPin size={12} className="text-neon-pink" />
@@ -125,11 +134,20 @@ const LivePreview = ({ type, data }) => {
                                 <div className="mt-6 pt-4 border-t border-white/5 space-y-3">
                                     <Button className={cn(
                                         "w-full h-12 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading",
-                                        data.applyType === 'whatsapp' ? "bg-[#25D366] text-black" : "bg-neon-green text-black"
+                                        data.applyType === 'whatsapp'
+                                            ? "bg-[#25D366] text-black"
+                                            : "bg-neon-green text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]"
                                     )}>
                                         {data.applyType === 'whatsapp' ? 'Apply via WA' : 'Apply for Gig'}
                                         <ArrowRight size={14} />
                                     </Button>
+
+                                    {data.whatsappLink && (
+                                        <Button className="w-full h-12 bg-zinc-800/80 text-green-400 border border-green-400/20 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 font-heading">
+                                            Join WhatsApp
+                                            <Share2 size={12} />
+                                        </Button>
+                                    )}
                                     <button className="w-full text-center text-[8px] font-bold uppercase tracking-[0.2em] text-gray-500">
                                         [ View Details ]
                                     </button>

@@ -15,16 +15,18 @@ const VolunteerGigManager = () => {
     // Form State
     const [formData, setFormData] = useState({
         title: '',
-        date: '',
+        dates: [],
+        time: '',
         location: '',
         description: '',
         status: 'Open',
         applyType: 'link', // 'link' | 'whatsapp'
-        applyLink: '' // URL or Phone Number
+        applyLink: '', // URL or Phone Number
+        whatsappLink: '' // Optional Group Link
     });
 
     const resetForm = () => {
-        setFormData({ title: '', date: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '' });
+        setFormData({ title: '', dates: [], time: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '', whatsappLink: '' });
         setIsAdding(false);
         setEditingId(null);
         setSaving(false);
@@ -33,15 +35,14 @@ const VolunteerGigManager = () => {
     const handleEdit = (gig) => {
         setFormData({
             title: gig.title,
-            date: gig.date,
-            location: gig.location,
-            title: gig.title,
-            date: gig.date,
+            dates: gig.dates || (gig.date ? [gig.date] : []),
+            time: gig.time || '',
             location: gig.location,
             description: gig.description || '',
             status: gig.status || 'Open',
             applyType: gig.applyType || 'link',
-            applyLink: gig.applyLink || ''
+            applyLink: gig.applyLink || '',
+            whatsappLink: gig.whatsappLink || ''
         });
         setEditingId(gig.id);
         setIsAdding(true);
@@ -58,12 +59,15 @@ const VolunteerGigManager = () => {
 
             const gigData = {
                 title: formData.title,
-                date: formData.date,
+                dates: formData.dates,
+                date: formData.dates[0] || '', // Fallback
+                time: formData.time,
                 location: formData.location,
                 description: formData.description,
                 status: formData.status,
                 applyType: formData.applyType,
-                applyLink: formData.applyLink
+                applyLink: formData.applyLink,
+                whatsappLink: formData.whatsappLink
             };
 
             if (editingId) {
@@ -126,13 +130,44 @@ const VolunteerGigManager = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Working Days</label>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {formData.dates.map((d, index) => (
+                                                <div key={index} className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full text-sm">
+                                                    <span>{d}</span>
+                                                    <button type="button" onClick={() => setFormData({ ...formData, dates: formData.dates.filter((_, i) => i !== index) })} className="text-red-400 hover:text-red-300">
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input type="date" id="datePicker" className="flex-1" />
+                                            <Button type="button" variant="outline" onClick={() => {
+                                                const dateVal = document.getElementById('datePicker').value;
+                                                if (dateVal && !formData.dates.includes(dateVal)) {
+                                                    setFormData({ ...formData, dates: [...formData.dates, dateVal].sort() });
+                                                    document.getElementById('datePicker').value = '';
+                                                }
+                                            }}>Add Day</Button>
+                                        </div>
+                                    </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
-                                        <Input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Time (Optional)</label>
+                                        <Input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
                                         <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Make WhatsApp Button (Optional)</label>
+                                        <Input
+                                            value={formData.whatsappLink}
+                                            onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })}
+                                            placeholder="https://chat.whatsapp.com/..."
+                                        />
                                     </div>
                                 </div>
 
@@ -197,7 +232,7 @@ const VolunteerGigManager = () => {
                                             {gig.applyType === 'whatsapp' && <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-green-400">WA</span>}
                                         </div>
                                         <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
-                                            <span className="flex items-center gap-1"><Calendar size={14} /> {gig.date}</span>
+                                            <span className="flex items-center gap-1"><Calendar size={14} /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} Days` : gig.dates[0]) : gig.date}</span>
                                             <span className="flex items-center gap-1"><MapPin size={14} /> {gig.location}</span>
                                             {gig.description && <span className="flex items-center gap-1 line-clamp-1 max-w-md italic opacity-70">"{gig.description}"</span>}
                                         </div>
