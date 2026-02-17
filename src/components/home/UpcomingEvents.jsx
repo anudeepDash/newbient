@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { Calendar, MapPin, ArrowRight, Share2, Copy, Download, Check } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Share2, Copy, Download, Check, Ticket } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import BuyTicketModal from '../tickets/BuyTicketModal';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings } = useStore();
     const carouselRef = useRef();
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     // handle share logic
     const handleShare = async (e, event) => {
@@ -76,7 +78,9 @@ const UpcomingEvents = () => {
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
                     No Image
                 </div>
-            )/* Branding Tag for Captured Image */}
+            )}
+
+            {/* Branding Tag */}
             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                 <span className="text-[10px] font-bold text-neon-green tracking-widest uppercase">Newbi Ent.</span>
             </div>
@@ -93,32 +97,49 @@ const UpcomingEvents = () => {
 
             {/* Hover Revealed Text (Hover State) */}
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
-                <div className="flex flex-col items-center">
-                    <h3 className="text-2xl font-bold text-white mb-2">{event.title}</h3>
-                    <span className="text-neon-green font-bold uppercase tracking-wider text-sm mb-4">
+                <div className="flex flex-col items-center w-full">
+                    <h3 className="text-xl font-bold text-white mb-2">{event.title}</h3>
+                    <span className="text-neon-green font-bold uppercase tracking-wider text-sm mb-3">
                         {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
                     </span>
 
                     {/* Description Section */}
                     {event.description && (
-                        <p className="text-gray-300 text-xs mb-4 max-w-[200px] whitespace-pre-line text-center">
+                        <p className="text-gray-300 text-[10px] mb-4 line-clamp-2 max-w-[200px] text-center">
                             {event.description}
                         </p>
                     )}
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium">
+                    <div className="flex flex-col gap-2 w-full max-w-[200px] items-center">
+                        <div className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium mb-1">
                             {event.buttonText || 'view event'}
                             <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                         </div>
 
-                        <button
-                            onClick={(e) => handleShare(e, event)}
-                            className="p-2 bg-white/10 hover:bg-neon-green hover:text-black rounded-full transition-all text-white group/share"
-                            title="Share Event"
-                        >
-                            <Share2 size={16} />
-                        </button>
+                        <div className="flex gap-2 justify-center w-full">
+                            {/* Ticket Sales temporarily disabled
+                            {event.isTicketed && (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedEvent(event);
+                                    }}
+                                    className="bg-neon-green text-black px-4 py-2 rounded-full font-bold uppercase text-[10px] tracking-wider hover:bg-white hover:text-black transition-colors flex items-center gap-1 flex-1 justify-center whitespace-nowrap"
+                                >
+                                    <Ticket size={12} /> Get Tickets
+                                </button>
+                            )}
+                            */}
+
+                            <button
+                                onClick={(e) => handleShare(e, event)}
+                                className="p-2 bg-white/10 hover:bg-neon-green hover:text-black rounded-full transition-all text-white"
+                                title="Share Event"
+                            >
+                                <Share2 size={16} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -169,6 +190,13 @@ const UpcomingEvents = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Ticket Modal */}
+            <BuyTicketModal
+                event={selectedEvent || {}}
+                isOpen={!!selectedEvent}
+                onClose={() => setSelectedEvent(null)}
+            />
         </section>
     );
 };

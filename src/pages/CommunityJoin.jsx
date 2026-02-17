@@ -3,8 +3,9 @@ import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2, Ticket } from 'lucide-react';
 import AuthOverlay from '../components/auth/AuthOverlay';
+import BuyTicketModal from '../components/tickets/BuyTicketModal';
 import { cn } from '../lib/utils';
 
 const CommunityCard = ({ item, type, handleShare }) => {
@@ -78,7 +79,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
                             <div className="flex-1">
                                 <h3 className={cn(
-                                    "text-2xl md:text-3xl font-bold font-heading leading-tight mb-3 transition-colors",
+                                    "text-xl md:text-2xl font-bold font-heading leading-tight mb-3 transition-colors break-words pr-2",
                                     isForm ? "group-hover:text-neon-pink" : (isGig ? "group-hover:text-neon-green" : "group-hover:text-neon-blue")
                                 )}>
                                     {item.title}
@@ -225,10 +226,14 @@ const CommunityCard = ({ item, type, handleShare }) => {
 };
 
 const CommunityJoin = () => {
-    const { forms, siteDetails, volunteerGigs, guestlists, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
+    const { forms, siteDetails, volunteerGigs, guestlists, upcomingEvents, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
+    const [selectedTicketEvent, setSelectedTicketEvent] = useState(null);
     const hasJoined = user && user.hasJoinedTribe;
+
+    // Filter ticketed events
+    const ticketedEvents = upcomingEvents?.filter(e => e.isTicketed) || [];
 
     // Auto-trigger sign-in if not authenticated
     useEffect(() => {
@@ -570,38 +575,81 @@ const CommunityJoin = () => {
                             )}
                         </section>
 
-                        {/* Secret Store */}
+                        {/* Secret Store - Hidden for now
                         <section className="pb-20">
                             <div className="flex items-center gap-5 mb-12">
-                                <div className="h-12 w-1.5 bg-neon-pink rounded-full shadow-[0_0_20px_rgba(255,0,255,0.3)]"></div>
-                                <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Secret Store</h2>
-                            </div>
-
-                            <div className="relative bg-zinc-900 border border-white/10 rounded-[4rem] p-24 md:p-32 overflow-hidden text-center group backdrop-blur-3xl shadow-2xl">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-neon-pink/5 blur-[120px] rounded-full pointer-events-none transition-all duration-1000"></div>
-
-                                <div className="relative z-10 flex flex-col items-center">
-                                    <div className="mb-12 p-12 bg-zinc-800/40 rounded-full border border-white/10 group-hover:border-neon-pink/30 group-hover:shadow-3xl transition-all duration-700">
-                                        <Lock className="w-16 h-16 md:w-24 md:h-24 text-gray-500 group-hover:text-neon-pink transition-colors" />
-                                    </div>
-
-                                    <h3 className="text-5xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/20 font-heading tracking-tighter uppercase italic pr-4">
-                                        Coming Soon
-                                    </h3>
-
-                                    <div className="mt-16">
-                                        <Button disabled className="bg-zinc-800 text-gray-500 border-zinc-700 cursor-not-allowed uppercase tracking-widest font-bold text-xs h-16 px-16 rounded-2xl">
-                                            Locked for Now
-                                        </Button>
-                                    </div>
+                                <div className="h-12 w-1.5 bg-yellow-500 rounded-full shadow-[0_0_20px_rgba(234,179,8,0.3)]"></div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-1">Members Only</p>
+                                    <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase tracking-tight text-white">Secret Store</h2>
                                 </div>
                             </div>
+
+                            {ticketedEvents.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-12">
+                                    {ticketedEvents.map((event) => (
+                                        <div key={event.id} className="relative group perspective-1000">
+                                            <div className="relative bg-zinc-900 border border-yellow-500/20 rounded-[2.5rem] overflow-hidden hover:border-yellow-500/50 transition-all duration-500 shadow-2xl hover:shadow-yellow-500/10">
+                                                
+                                                <div className="relative h-64 overflow-hidden">
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent z-10"></div>
+                                                    {event.image ? (
+                                                        <img
+                                                            src={event.image}
+                                                            alt={event.title}
+                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-gray-600">
+                                                            <Ticket size={48} />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-4 right-4 z-20 bg-yellow-500 text-black font-bold px-3 py-1 rounded-full text-xs uppercase tracking-widest shadow-lg">
+                                                        {event.ticketCategories?.length > 0 && <span className="text-[10px] mr-1">FROM</span>}
+                                                        ₹{event.ticketPrice}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-8 relative">
+                                                    <h3 className="text-2xl font-bold font-heading text-white mb-2 group-hover:text-yellow-500 transition-colors">
+                                                        {event.title}
+                                                    </h3>
+                                                    <div className="flex items-center gap-4 text-xs text-gray-400 font-bold uppercase tracking-widest mb-6">
+                                                        <span className="flex items-center gap-1"><Calendar size={12} /> {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</span>
+                                                        <span className="flex items-center gap-1 text-yellow-500/80"><Sparkles size={12} /> Exclusive</span>
+                                                    </div>
+
+                                                    <Button
+                                                        onClick={() => setSelectedTicketEvent(event)}
+                                                        className="w-full h-14 bg-yellow-500 text-black hover:bg-yellow-400 font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-yellow-500/10 group-hover:shadow-yellow-500/30"
+                                                    >
+                                                        Get Tickets <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/10 text-gray-500">
+                                    <Lock className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                    <p className="font-heading uppercase tracking-widest text-sm">Reviewing Data...</p>
+                                </div>
+                            )}
                         </section>
-                    </motion.div>
+                        */}
+                    </motion.div >
                 )}
 
-            </div>
-        </div>
+                {/* Ticket Modal */}
+                <BuyTicketModal
+                    event={selectedTicketEvent || {}}
+                    isOpen={!!selectedTicketEvent}
+                    onClose={() => setSelectedTicketEvent(null)}
+                />
+
+            </div >
+        </div >
     );
 };
 

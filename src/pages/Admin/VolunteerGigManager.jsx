@@ -17,14 +17,14 @@ const VolunteerGigManager = () => {
         title: '',
         date: '',
         location: '',
-        roles: '', // Comma separated for input
+        description: '',
         status: 'Open',
         applyType: 'link', // 'link' | 'whatsapp'
         applyLink: '' // URL or Phone Number
     });
 
     const resetForm = () => {
-        setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyType: 'link', applyLink: '' });
+        setFormData({ title: '', date: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '' });
         setIsAdding(false);
         setEditingId(null);
         setSaving(false);
@@ -35,7 +35,10 @@ const VolunteerGigManager = () => {
             title: gig.title,
             date: gig.date,
             location: gig.location,
-            roles: Array.isArray(gig.roles) ? gig.roles.join(', ') : gig.roles,
+            title: gig.title,
+            date: gig.date,
+            location: gig.location,
+            description: gig.description || '',
             status: gig.status || 'Open',
             applyType: gig.applyType || 'link',
             applyLink: gig.applyLink || ''
@@ -49,15 +52,15 @@ const VolunteerGigManager = () => {
         console.log("Starting handleSave...");
         setSaving(true);
         try {
-            // Parse roles
-            const rolesArray = formData.roles.split(',').map(r => r.trim()).filter(r => r);
-            console.log("Parsed roles:", rolesArray);
+            // Parse roles - No longer needed for description
+            // const rolesArray = formData.roles.split(',').map(r => r.trim()).filter(r => r);
+            // console.log("Parsed roles:", rolesArray);
 
             const gigData = {
                 title: formData.title,
                 date: formData.date,
                 location: formData.location,
-                roles: rolesArray,
+                description: formData.description,
                 status: formData.status,
                 applyType: formData.applyType,
                 applyLink: formData.applyLink
@@ -157,12 +160,13 @@ const VolunteerGigManager = () => {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Roles (comma separated)</label>
-                                    <Input
-                                        value={formData.roles}
-                                        onChange={e => setFormData({ ...formData, roles: e.target.value })}
-                                        placeholder="e.g. Runner, Hospitality, Ticketing"
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Description (shown in card details & overlay)</label>
+                                    <textarea
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue min-h-[100px]"
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="Enter full gig details, requirements, etc..."
                                     />
                                 </div>
 
@@ -195,7 +199,7 @@ const VolunteerGigManager = () => {
                                         <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
                                             <span className="flex items-center gap-1"><Calendar size={14} /> {gig.date}</span>
                                             <span className="flex items-center gap-1"><MapPin size={14} /> {gig.location}</span>
-                                            <span className="flex items-center gap-1"><Users size={14} /> {Array.isArray(gig.roles) ? gig.roles.join(', ') : gig.roles}</span>
+                                            {gig.description && <span className="flex items-center gap-1 line-clamp-1 max-w-md italic opacity-70">"{gig.description}"</span>}
                                         </div>
                                     </div>
                                     <div className="flex gap-2 self-end md:self-center">

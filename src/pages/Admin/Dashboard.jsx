@@ -500,6 +500,16 @@ const Dashboard = () => {
                         isUnderMaintenance={maintenanceState.features?.announcements}
                     />
 
+                    {/* Ticket Manager */}
+                    <MaintenanceCard
+                        title="Ticketing"
+                        description="Manage offline orders and approvals."
+                        icon={FileText} // Start with FileText, or QrCode if imported
+                        color="yellow-400"
+                        link="/admin/tickets"
+                        isUnderMaintenance={maintenanceState.features?.tickets}
+                    />
+
                     {/* Forms / Community */}
                     <MaintenanceCard
                         title="Community Hub"
