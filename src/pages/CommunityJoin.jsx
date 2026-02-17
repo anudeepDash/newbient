@@ -47,20 +47,22 @@ const CommunityCard = ({ item, type, handleShare }) => {
                         isForm ? "from-neon-pink via-neon-pink/50 to-transparent" : (isGig ? "from-neon-green via-neon-green/50 to-transparent" : "from-neon-blue via-neon-blue/50 to-transparent")
                     )}></div>
 
+                    {!isForm && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleShare(isGig ? 'gig' : 'gl', item.id); }}
+                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors z-20 bg-black/20 rounded-full backdrop-blur-sm"
+                        >
+                            <Share2 size={16} />
+                        </button>
+                    )}
+
                     <div className={cn(
                         "flex h-full",
                         isGig ? "flex-col" : "flex-col sm:flex-row"
                     )}>
                         {/* Main Info Section */}
                         <div className="flex-1 p-5 md:p-6 flex flex-col relative overflow-hidden">
-                            {!isForm && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleShare(isGig ? 'gig' : 'gl', item.id); }}
-                                    className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors z-20 bg-black/20 rounded-full backdrop-blur-sm"
-                                >
-                                    <Share2 size={16} />
-                                </button>
-                            )}
+
                             {/* Decorative Background Icon */}
                             <div className="absolute -right-8 -bottom-8 opacity-[0.03] rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                                 <Icon size={180} />
