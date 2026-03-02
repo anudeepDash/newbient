@@ -186,7 +186,7 @@ export const useStore = create((set, get) => ({
 
     // Auto-Archive Logic
     archivePastEvents: async () => {
-        const { upcomingEvents, addPortfolioItem, deleteUpcomingEvent, portfolioCategories } = get();
+        const { upcomingEvents, volunteerGigs, guestlists, forms, addPortfolioItem, deleteUpcomingEvent, deleteVolunteerGig, deleteGuestlist, deleteForm, portfolioCategories } = get();
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Compare dates only
 
@@ -209,13 +209,83 @@ export const useStore = create((set, get) => ({
                 title: event.title,
                 image: event.image,
                 category: event.category || defaultCategory, // Use event's category if present
-                highlightUrl: event.link || '', // Map link to highlight if present
+                highlightUrl: '', // Do not carry over link automatically
                 date: event.date // Preserve date if useful
             });
 
             // 2. Remove from Upcoming
             await deleteUpcomingEvent(event.id);
             console.log(`[Auto-Archive] Moved "${event.title}" to Past Events.`);
+        }
+
+        // --- Archive Community Features (Gigs, Guestlists, Forms) ---
+
+        // 1. Volunteer Gigs
+        const gigsToArchive = volunteerGigs.filter(gig => {
+            if (gig.status && gig.status.toLowerCase() === 'closed') return true;
+            if (gig.date) {
+                const gigDate = new Date(gig.date);
+                if (gigDate < today) return true;
+            }
+            // Check dates array if applicable
+            if (gig.dates && gig.dates.length > 0) {
+                // Sort dates and check the last one
+                const sortedDates = [...gig.dates].sort((a, b) => new Date(b) - new Date(a));
+                if (new Date(sortedDates[0]) < today) return true;
+            }
+            return false;
+        });
+
+        for (const gig of gigsToArchive) {
+            await addPortfolioItem({
+                title: gig.title,
+                image: '', // Community items might not have a dedicated card image
+                category: defaultCategory,
+                highlightUrl: '',
+                date: gig.date || (gig.dates && gig.dates.length > 0 ? gig.dates[0] : null)
+            });
+            await deleteVolunteerGig(gig.id);
+            console.log(`[Auto-Archive] Moved Volunteer Gig "${gig.title}" to Past Events.`);
+        }
+
+        // 2. Guestlists
+        const guestlistsToArchive = guestlists.filter(gl => {
+            if (gl.status && gl.status.toLowerCase() === 'closed') return true;
+            if (gl.date) {
+                const glDate = new Date(gl.date);
+                return glDate < today;
+            }
+            return false;
+        });
+
+        for (const gl of guestlistsToArchive) {
+            await addPortfolioItem({
+                title: gl.title,
+                image: '',
+                category: defaultCategory,
+                highlightUrl: '',
+                date: gl.date
+            });
+            await deleteGuestlist(gl.id);
+            console.log(`[Auto-Archive] Moved Guestlist "${gl.title}" to Past Events.`);
+        }
+
+        // 3. Forms
+        const formsToArchive = forms.filter(form => {
+            if (form.status && form.status.toLowerCase() === 'closed') return true;
+            return false;
+        });
+
+        for (const form of formsToArchive) {
+            await addPortfolioItem({
+                title: form.title,
+                image: '',
+                category: defaultCategory,
+                highlightUrl: '',
+                date: null // Forms usually don't have event dates
+            });
+            await deleteForm(form.id);
+            console.log(`[Auto-Archive] Moved Form "${form.title}" to Past Events.`);
         }
     },
 

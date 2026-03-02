@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { Calendar, MapPin, ArrowRight, Share2, Copy, Download, Check, Ticket } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Share2, Copy, Download, Check, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import BuyTicketModal from '../tickets/BuyTicketModal';
 
@@ -9,6 +9,34 @@ const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings } = useStore();
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
+
+    const scroll = (direction) => {
+        if (carouselRef.current) {
+            const scrollAmount = direction === 'left' ? -350 : 350;
+            carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
+
+    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
+    // Auto-scroll logic for carousel items
+    useEffect(() => {
+        if (!isAutoScrolling || upcomingEvents.length <= 1) return;
+
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+                // Check if we've reached the end
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carouselRef.current.scrollBy({ left: 350, behavior: 'smooth' });
+                }
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [isAutoScrolling, upcomingEvents.length]);
 
     // handle share logic
     const handleShare = async (e, event) => {
@@ -151,7 +179,11 @@ const UpcomingEvents = () => {
     }
 
     return (
-        <section className="py-20 bg-black text-white overflow-hidden relative border-t border-white/5">
+        <section
+            className="py-20 bg-black text-white overflow-hidden relative border-t border-white/5"
+            onMouseEnter={() => setIsAutoScrolling(false)}
+            onMouseLeave={() => setIsAutoScrolling(true)}
+        >
             {/* Neon Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -166,7 +198,25 @@ const UpcomingEvents = () => {
                 </div>
 
                 {/* Carousel Container */}
-                <div className="relative">
+                <div className="relative group/carousel">
+                    {upcomingEvents.length > 0 && (
+                        <>
+                            <button
+                                onClick={() => scroll('left')}
+                                className="absolute left-2 top-[40%] sm:-left-6 lg:-left-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                aria-label="Scroll left"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={() => scroll('right')}
+                                className="absolute right-2 top-[40%] sm:-right-6 lg:-right-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                aria-label="Scroll right"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                        </>
+                    )}
                     <div
                         ref={carouselRef}
                         className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"

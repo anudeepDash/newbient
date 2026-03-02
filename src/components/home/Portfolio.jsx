@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Portfolio = () => {
     const { portfolio, portfolioCategories } = useStore();
+    const carouselRef = useRef(null);
+
+    const scroll = (direction) => {
+        if (carouselRef.current) {
+            const scrollAmount = direction === 'left' ? -350 : 350;
+            carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
 
     // Sort categories (optional order field, or just by insertion)
     // Map to simple structure if needed, but store already has { id, label }
@@ -36,6 +44,25 @@ const Portfolio = () => {
     }, [isAutoPlaying, categories]);
 
     const filteredItems = portfolio.filter(item => item.category === activeTab);
+
+    // Auto-scroll logic for carousel items
+    useEffect(() => {
+        if (!isAutoPlaying || filteredItems.length <= 1) return;
+
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+                // Check if we've reached the end
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carouselRef.current.scrollBy({ left: 350, behavior: 'smooth' });
+                }
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [isAutoPlaying, filteredItems.length, activeTab]);
 
     return (
         <section className="py-20 bg-black text-white relative overflow-hidden border-t border-white/5"
@@ -83,7 +110,25 @@ const Portfolio = () => {
                 </div>
 
                 {/* Carousel Content */}
-                <div className="min-h-[300px] relative">
+                <div className="min-h-[300px] relative group/carousel">
+                    {filteredItems.length > 0 && (
+                        <>
+                            <button
+                                onClick={() => scroll('left')}
+                                className="absolute left-2 top-[40%] sm:-left-6 lg:-left-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                aria-label="Scroll left"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={() => scroll('right')}
+                                className="absolute right-2 top-[40%] sm:-right-6 lg:-right-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                aria-label="Scroll right"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                        </>
+                    )}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
@@ -92,7 +137,9 @@ const Portfolio = () => {
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.3 }}
                         >
-                            <div className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+                            <div
+                                ref={carouselRef}
+                                className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {filteredItems.map((item) => (
