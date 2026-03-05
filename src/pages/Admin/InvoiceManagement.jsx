@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, ArrowLeft, Plus, Eye } from 'lucide-react';
+import { Edit, Trash2, Copy, ArrowLeft, Plus, Eye, CheckCircle } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -64,6 +64,17 @@ const InvoiceManagement = () => {
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
+        }
+    };
+
+    const handleMarkAsPaid = async (invoice) => {
+        if (window.confirm('Are you sure you want to mark this invoice as paid?')) {
+            try {
+                await updateInvoice(invoice.id, { status: 'Paid' });
+            } catch (error) {
+                console.error("Error marking invoice as paid:", error);
+                alert("Failed to update status.");
+            }
         }
     };
 
@@ -217,6 +228,15 @@ const InvoiceManagement = () => {
                                         </button>
                                     </div>
                                     <div className="flex gap-1">
+                                        {invoice.status !== 'Paid' && (
+                                            <button
+                                                onClick={() => handleMarkAsPaid(invoice)}
+                                                className="p-2 text-gray-400 hover:text-green-500 transition-colors"
+                                                title="Mark as Paid"
+                                            >
+                                                <CheckCircle size={18} />
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => handleEdit(invoice)}
                                             className="p-2 text-gray-400 hover:text-white transition-colors"
@@ -283,6 +303,15 @@ const InvoiceManagement = () => {
                                                 >
                                                     <Copy size={18} />
                                                 </button>
+                                                {invoice.status !== 'Paid' && (
+                                                    <button
+                                                        onClick={() => handleMarkAsPaid(invoice)}
+                                                        className="p-2 text-gray-400 hover:text-green-500 transition-colors"
+                                                        title="Mark as Paid"
+                                                    >
+                                                        <CheckCircle size={18} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleEdit(invoice)}
                                                     className="p-2 text-gray-400 hover:text-white transition-colors"
