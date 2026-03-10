@@ -5,7 +5,7 @@ import logo from '../../assets/logo.png';
 
 const Hero = () => {
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden pb-20 bg-[#020202]">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-20 bg-[#020202]">
             {/* Immersive Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* Dynamic Glows */}
