@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Sparkles, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
@@ -8,7 +8,7 @@ import NotificationBell from './NotificationBell';
 import { useStore } from '../lib/store';
 
 const Navbar = () => {
-    const { maintenanceState, siteSettings, user } = useStore();
+    const { maintenanceState, user, siteSettings, creators } = useStore();
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
@@ -91,11 +91,15 @@ const Navbar = () => {
                             {user ? (
                                 <div className="flex items-center gap-4 pl-4 border-l border-white/10">
                                     <div className="text-right">
-                                        <div className="text-xs font-bold text-white leading-none capitalize">{user.displayName || 'Tribe Member'}</div>
+                                        <div className="text-xs font-bold text-white leading-none capitalize flex items-center gap-1 justify-end">
+                                            {user.displayName || 'Tribe Member'}
+                                            {user.hasJoinedTribe && <Users size={10} className="text-neon-blue" title="Tribe Member" />}
+                                            {creators?.some(c => c.uid === user.uid) && <Sparkles size={10} className="text-neon-pink" title="Creator Hub" />}
+                                        </div>
                                         <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
                                             {['developer', 'super_admin', 'editor'].includes(user.role)
                                                 ? user.role.replace('_', ' ')
-                                                : 'Tribe Member'}
+                                                : 'Member'}
                                         </div>
                                     </div>
                                     <button
@@ -174,11 +178,15 @@ const Navbar = () => {
                                     {user ? (
                                         <div className="flex items-center justify-between group">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-white capitalize">{user.displayName || 'Tribe Member'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-white capitalize">{user.displayName || 'Tribe Member'}</span>
+                                                    {user.hasJoinedTribe && <Users size={12} className="text-neon-blue" />}
+                                                    {creators?.some(c => c.uid === user.uid) && <Sparkles size={12} className="text-neon-pink" />}
+                                                </div>
                                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-1">
                                                     {['developer', 'super_admin', 'editor'].includes(user.role)
                                                         ? user.role.replace('_', ' ')
-                                                        : 'Tribe Member'}
+                                                        : 'Member'}
                                                 </span>
                                             </div>
                                             <button

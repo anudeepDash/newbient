@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle, Sparkles, Users } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
@@ -10,7 +10,7 @@ import { Input } from '../../components/ui/Input';
 import { useStore } from '../../lib/store';
 
 const AdminManager = () => {
-    const { user, blockUser, unblockUser } = useStore();
+    const { user, blockUser, unblockUser, creators } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
@@ -264,7 +264,16 @@ const AdminManager = () => {
                                                             <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded text-xs font-bold uppercase border border-green-500/20">Active</span>
                                                         )}
                                                         {member.hasJoinedTribe && (
-                                                            <span className="ml-2 px-2 py-1 bg-neon-blue/10 text-neon-blue rounded text-xs font-bold uppercase border border-neon-blue/20">Tribe</span>
+                                                            <span className="ml-2 px-2 py-1 bg-neon-blue/10 text-neon-blue rounded text-[10px] font-bold uppercase border border-neon-blue/20 flex items-center gap-1 inline-flex">
+                                                                <Users size={10} />
+                                                                Tribe
+                                                            </span>
+                                                        )}
+                                                        {creators?.some(c => c.uid === member.id) && (
+                                                            <span className="ml-2 px-2 py-1 bg-neon-pink/10 text-neon-pink rounded text-[10px] font-bold uppercase border border-neon-pink/20 flex items-center gap-1 inline-flex">
+                                                                <Sparkles size={10} />
+                                                                Creator
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4">
