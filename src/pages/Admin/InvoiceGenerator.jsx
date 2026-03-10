@@ -18,22 +18,33 @@ const InvoiceGenerator = () => {
     const { addInvoice, updateInvoice, invoices } = useStore();
     const invoiceRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(0.65);
+    const previewContainerRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 1280) {
-                const containerWidth = window.innerWidth - 32;
-                const newScale = Math.min(0.9, containerWidth / 794);
-                setPreviewScale(newScale);
-            } else if (window.innerWidth < 1536) {
-                setPreviewScale(0.55);
-            } else {
-                setPreviewScale(0.65);
+            if (previewContainerRef.current) {
+                const containerWidth = previewContainerRef.current.clientWidth;
+                // 794 is approx 210mm. Subtract padding (e.g. 64px) to ensure no overflow
+                const newScale = Math.min(1, (containerWidth - 64) / 794);
+                setPreviewScale(Math.max(0.3, newScale));
             }
         };
+
         handleResize();
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        
+        let observer;
+        if (window.ResizeObserver) {
+            observer = new ResizeObserver(handleResize);
+            if (previewContainerRef.current) {
+                observer.observe(previewContainerRef.current);
+            }
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (observer) observer.disconnect();
+        };
     }, []);
 
     const [customColumns, setCustomColumns] = useState([]);
@@ -598,7 +609,7 @@ const InvoiceGenerator = () => {
                     </div>
 
                     {/* LIVE PREVIEW SECTION */}
-                    <div className="bg-[#111] rounded-[2.5rem] overflow-hidden relative flex items-start justify-center min-h-[500px] sticky top-8 max-h-[calc(100vh-100px)] border border-white/5">
+                    <div ref={previewContainerRef} className="bg-[#111] rounded-[2.5rem] overflow-hidden relative flex items-start justify-center min-h-[500px] sticky top-8 max-h-[calc(100vh-100px)] border border-white/5">
                         <div className="absolute top-6 right-6 z-10 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest">Digital Twin</div>
                         <div className="p-8 transition-all duration-300" style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}>
                             <div ref={invoiceRef} className="bg-[#E5E7EB] text-black shadow-2xl p-[12mm] flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm', fontFamily: "'Inter', sans-serif" }}>

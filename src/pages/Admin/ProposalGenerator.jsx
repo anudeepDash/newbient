@@ -19,20 +19,33 @@ const ProposalGenerator = () => {
     const { addProposal, updateProposal, proposals } = useStore();
     const proposalRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(0.65);
+    const previewContainerRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 1280) {
-                const containerWidth = window.innerWidth - 32;
-                const newScale = Math.min(0.9, containerWidth / 794);
-                setPreviewScale(newScale);
-            } else {
-                setPreviewScale(0.65);
+            if (previewContainerRef.current) {
+                const containerWidth = previewContainerRef.current.clientWidth;
+                // 794 is approx 210mm. Subtract padding (e.g. 64px) to ensure no overflow
+                const newScale = Math.min(1, (containerWidth - 64) / 794);
+                setPreviewScale(Math.max(0.3, newScale));
             }
         };
+
         handleResize();
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        
+        let observer;
+        if (window.ResizeObserver) {
+            observer = new ResizeObserver(handleResize);
+            if (previewContainerRef.current) {
+                observer.observe(previewContainerRef.current);
+            }
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (observer) observer.disconnect();
+        };
     }, []);
 
     const [formData, setFormData] = useState({
@@ -443,7 +456,7 @@ const ProposalGenerator = () => {
                     </div>
 
                     {/* Preview Panel */}
-                    <div className="sticky top-12 bg-[#111] rounded-[3rem] p-8 border border-white/5 flex items-start justify-center overflow-hidden h-[calc(100vh-100px)]">
+                    <div ref={previewContainerRef} className="sticky top-12 bg-[#111] rounded-[3rem] p-8 border border-white/5 flex items-start justify-center overflow-hidden h-[calc(100vh-100px)]">
                         <div className="absolute top-6 right-6 z-10 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest">Strategic Twin</div>
                         <div 
                             className="origin-top transition-all duration-300" 
