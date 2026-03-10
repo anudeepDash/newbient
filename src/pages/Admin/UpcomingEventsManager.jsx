@@ -19,9 +19,9 @@ const UpcomingEventsManager = () => {
     const [newEvent, setNewEvent] = useState({
         title: '',
         date: '',
-        time: '',
         category: '',
         description: '',
+        location: '',
         buttonText: '',
         image: '',
         link: '',
@@ -35,7 +35,7 @@ const UpcomingEventsManager = () => {
 
     const resetForm = () => {
         setNewEvent({
-            title: '', date: '', time: '', category: '', description: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false
+            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false
         });
         setIsAdding(false);
         setEditingId(null);
@@ -204,6 +204,15 @@ const UpcomingEventsManager = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Location</label>
+                                                <Input
+                                                    placeholder="E.G. MAINLAND INDIA, VENUE NAME..."
+                                                    value={newEvent.location}
+                                                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                                                    className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                                />
+                                            </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action Button Text</label>
                                                 <Input
