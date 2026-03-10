@@ -12,7 +12,7 @@ const Layout = () => {
     return (
         <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white">
             <Navbar />
-            <main className={cn("flex-grow transition-all duration-300", isBypassing ? "pt-0" : "pt-0")}>
+            <main className={cn("flex-grow transition-all duration-300 pb-24 md:pb-0", isBypassing ? "pt-0" : "pt-0")}>
                 <Outlet />
             </main>
             <Footer />

@@ -70,16 +70,16 @@ const Services = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-5xl md:text-7xl font-black mb-6 text-white tracking-tighter"
+                            className="font-heading text-4xl md:text-7xl font-black mb-6 text-white tracking-tighter italic"
                         >
-                            OUR <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">CAPABILITIES.</span>
+                            OUR <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue not-italic">CAPABILITIES.</span>
                         </motion.h2>
                     </div>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
-                        className="text-gray-500 max-w-sm text-lg font-medium leading-relaxed pb-2"
+                        className="text-gray-500 max-w-sm text-base md:text-lg font-medium leading-relaxed pb-2"
                     >
                         We bridge the gap between brands and the audience through high-octane activations and digital dominance.
                     </motion.p>
@@ -134,7 +134,7 @@ const ServiceCard = ({ service, index }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
             className={cn(
-                "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-white/20 flex flex-col min-h-[340px]",
+                "group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:border-white/20 flex flex-col min-h-[280px] md:min-h-[340px]",
                 service.className
             )}
         >
@@ -153,7 +153,7 @@ const ServiceCard = ({ service, index }) => {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-3xl font-black font-heading text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500">
+                    <h3 className="text-xl md:text-3xl font-black font-heading text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500 italic">
                         {service.title}
                     </h3>
 

@@ -28,10 +28,11 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
         const templateParams = {
             to_name: toName,
             to_email: toEmail,
-            ticket_url: ticketUrl,
+            ticket_url: Array.isArray(ticketUrl) ? ticketUrl[0] : ticketUrl, // Fallback for email templates
+            ticket_links: Array.isArray(ticketUrl) ? ticketUrl.join('\n') : ticketUrl,
             event_name: eventName,
             booking_ref: bookingRef,
-            message: `Here is your ticket for ${eventName}. We look forward to seeing you there!`
+            message: `Here are your tickets for ${eventName}. We look forward to seeing you there!`
         };
 
         const response = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);

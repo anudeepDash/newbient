@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sparkles, Users, LogOut, Settings } from 'lucide-react';
+import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
@@ -13,12 +13,20 @@ const Navbar = () => {
     const location = useLocation();
 
     const allLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts' },
-        { name: 'Gallery', path: '/gallery', featureId: 'gallery' },
-        { name: 'Community', path: '/community-join', featureId: 'community' },
-        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer' },
-        { name: 'Contact', path: '/contact', featureId: 'contact' },
+        { name: 'Home', path: '/', icon: Home },
+        { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
+        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
+        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
+        { name: 'Gallery', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
+        { name: 'Contact', path: '/contact', featureId: 'contact', icon: LayoutGrid },
+    ];
+
+    const mobilePrimaryLinks = [
+        { name: 'Home', path: '/', icon: Home },
+        { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
+        { name: 'Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
+        { name: 'Concerts', path: '/concerts', featureId: 'concerts', icon: Music },
+        { name: 'More', action: () => setIsOpen(true), icon: Menu },
     ];
 
     const hideMaintenance = siteSettings.hideMaintenancePages && user?.role !== 'developer';
@@ -38,15 +46,17 @@ const Navbar = () => {
                     ⚠️ Global Maintenance Active - Bypassing as {user.role?.replace('_', ' ')} ⚠️
                 </div>
             )}
+
+            {/* Top Navbar */}
             <nav className={cn(
                 "fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
                 maintenanceState.global && user?.role === 'developer' ? "top-10" : "top-4 md:top-6"
             )}>
                 {/* Main Menu Pill */}
-                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                     <div className="flex items-center h-14">
                         {/* Logo */}
-                        <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity mr-6 px-2">
+                        <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity mr-0 md:mr-6 px-2">
                             <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto" />
                         </Link>
 
@@ -81,17 +91,24 @@ const Navbar = () => {
                             </div>
                         </div>
 
-                        {/* Mobile Menu Toggle (Simplified) */}
-                        <div className="md:hidden ml-auto flex items-center gap-4">
+                        {/* Top Right Actions (Mobile) */}
+                        <div className="md:hidden ml-auto flex items-center gap-2">
                             <NotificationBell />
-                            <button onClick={toggleMenu} className="text-gray-400 hover:text-white">
-                                {isOpen ? <X size={20} /> : <Menu size={20} />}
-                            </button>
+                            {user && (
+                                <div className="h-4 w-px bg-white/10 mx-1" />
+                            )}
+                            {user && (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <UserIcon size={14} className="text-gray-400" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Right Action/User Pill */}
+                {/* Right Action/User Pill (Desktop Only) */}
                 <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
                     <div className="flex items-center h-14 gap-4">
                         <NotificationBell />
@@ -129,85 +146,138 @@ const Navbar = () => {
                         )}
                     </div>
                 </div>
+            </nav>
 
-                {/* Mobile Menu */}
-                <AnimatePresence>
-                    {isOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="md:hidden bg-dark border-b border-white/10 overflow-hidden"
+            {/* Bottom Navigation (Mobile Only) */}
+            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
+                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center justify-around">
+                        {mobilePrimaryLinks.map((link) => {
+                            const isActive = location.pathname === link.path;
+                            const Icon = link.icon;
+
+                            if (link.action) {
+                                return (
+                                    <button
+                                        key={link.name}
+                                        onClick={link.action}
+                                        className="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-white transition-all relative"
+                                    >
+                                        <Icon size={20} />
+                                        <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
+                                    </button>
+                                );
+                            }
+
+                            return (
+                                <Link
+                                    key={link.name}
+                                    to={link.path}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1 p-2 transition-all relative",
+                                        isActive ? "text-neon-green" : "text-gray-400 hover:text-white"
+                                    )}
+                                >
+                                    <Icon size={20} />
+                                    <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="bottom-nav-active"
+                                            className="absolute -bottom-1 w-1 h-1 bg-neon-green rounded-full shadow-[0_0_8px_#00E6A8]"
+                                        />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Full-screen Mobile Menu */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center px-6"
+                    >
+                        <button 
+                            onClick={() => setIsOpen(false)}
+                            className="absolute top-10 right-10 p-4 rounded-full bg-white/5 border border-white/10 text-white"
                         >
-                            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                                {links.map((link) => {
-                                    const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                                    return link.path.startsWith('http') ? (
-                                        <a
-                                            key={link.name}
-                                            href={link.path}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={() => setIsOpen(false)}
-                                            className={cn(
-                                                'block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5 hover:text-neon-green transition-colors',
-                                                location.pathname === link.path ? 'text-neon-green bg-white/5' : 'text-gray-300'
-                                            )}
-                                        >
-                                            {link.name}
-                                        </a>
-                                    ) : (
+                            <X size={24} />
+                        </button>
+
+                        <div className="w-full space-y-2 mb-12">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 text-center">Navigation</p>
+                            {links.map((link, idx) => {
+                                const isActive = location.pathname === link.path;
+                                const Icon = link.icon;
+                                return (
+                                    <motion.div
+                                        key={link.name}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                    >
                                         <Link
-                                            key={link.name}
                                             to={link.path}
                                             onClick={() => setIsOpen(false)}
                                             className={cn(
-                                                'flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium hover:bg-white/5 hover:text-neon-green transition-all',
-                                                location.pathname === link.path ? 'text-neon-green bg-white/5' : 'text-gray-300',
-                                                isUnderMaintenance && 'opacity-50 grayscale'
+                                                "flex items-center gap-6 p-6 rounded-3xl border border-transparent transition-all group",
+                                                isActive 
+                                                    ? "bg-white/5 border-white/10 text-neon-green" 
+                                                    : "text-gray-400 hover:text-white hover:bg-white/5"
                                             )}
                                         >
-                                            {isUnderMaintenance && <span>🔧</span>}
-                                            {link.name}
-                                        </Link>
-                                    );
-                                })}
-                                <div className="pt-4 mt-4 border-t border-white/10 px-3 pb-3">
-                                    {user ? (
-                                        <div className="flex items-center justify-between group">
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold text-white capitalize">{user.displayName || 'Tribe Member'}</span>
-                                                    {user.hasJoinedTribe && <Users size={12} className="text-neon-blue" />}
-                                                    {creators?.some(c => c.uid === user.uid) && <Sparkles size={12} className="text-neon-pink" />}
-                                                </div>
-                                                <span className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-1">
-                                                    {['developer', 'super_admin', 'editor'].includes(user.role)
-                                                        ? user.role.replace('_', ' ')
-                                                        : 'Member'}
-                                                </span>
+                                            <div className={cn(
+                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                                                isActive ? "bg-neon-green/10 text-neon-green" : "bg-white/5 text-gray-500 group-hover:text-white"
+                                            )}>
+                                                <Icon size={22} />
                                             </div>
-                                            <button
-                                                onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
-                                                className="text-xs font-bold text-neon-pink uppercase tracking-widest p-2"
-                                            >
-                                                Logout
-                                            </button>
+                                            <span className="text-2xl font-black uppercase italic tracking-tighter">{link.name}</span>
+                                        </Link>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="w-full pt-8 border-t border-white/10 flex flex-col items-center gap-6">
+                            {user ? (
+                                <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                                            <UserIcon size={20} />
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
-                                            className="w-full py-3 rounded-xl border border-neon-blue text-neon-blue text-sm font-bold uppercase tracking-[0.2em] hover:bg-neon-blue hover:text-black transition-all"
-                                        >
-                                            Sign In / Join Tribe
-                                        </button>
-                                    )}
+                                        <div className="flex flex-col">
+                                            <span className="text-lg font-black text-white italic capitalize">{user.displayName || 'Tribe Member'}</span>
+                                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">
+                                                {user.role?.replace('_', ' ') || 'Member'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
+                                        className="p-3 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                    >
+                                        <LogOut size={20} />
+                                    </button>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </nav>
+                            ) : (
+                                <button
+                                    onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
+                                    className="w-full h-16 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(56,182,255,0.3)]"
+                                >
+                                    Join the Tribe
+                                </button>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };

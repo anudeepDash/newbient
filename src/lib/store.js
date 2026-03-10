@@ -15,6 +15,7 @@ export const useStore = create((set, get) => ({
     proposals: [], // New Proposal Generator state
     creators: [], // Influencer Marketing
     campaigns: [], // Influencer Marketing
+    ticketVault: [], // Bulk ticket storage
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
@@ -93,6 +94,7 @@ export const useStore = create((set, get) => ({
         const unsubCreators = sub('creators', 'creators');
         const unsubCampaigns = sub('campaigns', 'campaigns');
         const unsubProposals = sub('proposals', 'proposals');
+        const unsubTicketVault = sub('ticket_vault', 'ticketVault');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -150,7 +152,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault();
         };
     },
 
@@ -569,16 +571,54 @@ export const useStore = create((set, get) => ({
         await updateDoc(doc(db, 'ticket_orders', id), updates);
     },
     approveTicketOrder: async (id) => {
+        const state = get();
+        const order = state.ticketOrders.find(o => o.id === id);
+        if (!order) return;
+
         // Generate Unique Booking ID: NB-YYYY-XXXX (4 random chars)
         const year = new Date().getFullYear();
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
         const bookingRef = `NB-${year}-${random}`;
 
+        const assignedTickets = [];
+        const ticketsToDelete = [];
+
+        // For each item in the order, find tickets from the vault
+        if (order.items && order.items.length > 0) {
+            let vaultCopy = [...state.ticketVault];
+            
+            for (const item of order.items) {
+                const countNeeded = item.count || 1;
+                // Find tickets matching eventId and category (case insensitive comparison)
+                const matchingTickets = vaultCopy.filter(t => 
+                    t.eventId === order.eventId && 
+                    (t.category?.toUpperCase() === item.categoryId?.toUpperCase() || t.category?.toUpperCase() === item.name?.toUpperCase())
+                ).slice(0, countNeeded);
+
+                if (matchingTickets.length > 0) {
+                    assignedTickets.push(...matchingTickets.map(t => t.url));
+                    ticketsToDelete.push(...matchingTickets.map(t => t.id));
+                    
+                    const matchingIds = matchingTickets.map(t => t.id);
+                    vaultCopy = vaultCopy.filter(t => !matchingIds.includes(t.id));
+                }
+            }
+        }
+
+        // Update Order
         await updateDoc(doc(db, 'ticket_orders', id), {
             status: 'approved',
-            bookingRef,
+            bookingRef: bookingRef,
+            ticketUrls: assignedTickets,
+            ticketUrl: assignedTickets[0] || '', // Fallback
             approvedAt: new Date().toISOString()
         });
+
+        // Cleanup Vault
+        for (const ticketId of ticketsToDelete) {
+            await deleteDoc(doc(db, 'ticket_vault', ticketId));
+        }
+
         return bookingRef;
     },
     rejectTicketOrder: async (id) => {
@@ -586,6 +626,21 @@ export const useStore = create((set, get) => ({
             status: 'rejected',
             rejectedAt: new Date().toISOString()
         });
+    },
+
+    // Ticket Vault (Bulk Assets)
+    addTicketToVault: async (ticket) => {
+        await addDoc(collection(db, 'ticket_vault'), {
+            ...ticket,
+            createdAt: new Date().toISOString(),
+            status: 'available'
+        });
+    },
+    updateTicketInVault: async (id, updates) => {
+        await updateDoc(doc(db, 'ticket_vault', id), updates);
+    },
+    deleteTicketFromVault: async (id) => {
+        await deleteDoc(doc(db, 'ticket_vault', id));
     },
 
     // Payment Settings

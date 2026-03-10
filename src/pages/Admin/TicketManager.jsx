@@ -10,9 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 const TicketManager = () => {
-    const { ticketOrders, approveTicketOrder, rejectTicketOrder, deleteTicketOrder, paymentDetails, updatePaymentDetails, updateTicketOrder } = useStore();
-    const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'approved', 'settings'
+    const { 
+        ticketOrders, approveTicketOrder, rejectTicketOrder, deleteTicketOrder, 
+        paymentDetails, updatePaymentDetails, updateTicketOrder, upcomingEvents, 
+        addTicketOrder, ticketVault, addTicketToVault, deleteTicketFromVault 
+    } = useStore();
+    const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'approved', 'settings', 'vault'
     const [searchTerm, setSearchTerm] = useState('');
+    const [eventFilter, setEventFilter] = useState('all');
     const [isUploading, setIsUploading] = useState(false);
     const [uploadCategory, setUploadCategory] = useState('all');
 
@@ -31,18 +36,23 @@ const TicketManager = () => {
         items: []
     });
 
-    const { upcomingEvents, addTicketOrder } = useStore();
+    const [emailOption, setEmailOption] = useState('attached'); // 'attached' or 'later'
 
     const [settingsForm, setSettingsForm] = useState(paymentDetails);
 
     const pendingOrders = ticketOrders.filter(o => o.status === 'pending');
     const approvedOrders = ticketOrders.filter(o => o.status === 'approved');
 
-    const filteredOrders = (activeTab === 'pending' ? pendingOrders : approvedOrders).filter(o =>
-        o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        o.paymentRef?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        o.bookingRef?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredOrders = (activeTab === 'pending' ? pendingOrders : approvedOrders).filter(o => {
+        const matchesSearch = 
+            o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            o.paymentRef?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            o.bookingRef?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesEvent = eventFilter === 'all' || o.eventId === eventFilter;
+        
+        return matchesSearch && matchesEvent;
+    });
 
     const handleApprove = async (id) => {
         if (window.confirm("Confirm payment verification? This will authorize ticket issuance.")) {
@@ -75,7 +85,7 @@ const TicketManager = () => {
             const result = await sendTicketEmail(
                 order.customerName,
                 order.customerEmail,
-                order.ticketUrl,
+                order.ticketUrls || order.ticketUrl,
                 order.eventTitle,
                 order.bookingRef
             );
@@ -153,24 +163,30 @@ const TicketManager = () => {
         alert(`Ticket Issued! Ref: ${bookingRef}`);
     };
 
-    const copyEmailToClipboard = (order) => {
-        const emailContent = `Subject: Your Access Code for ${order.eventTitle}
+    const copyEmailToClipboard = (order, option = 'attached') => {
+        const event = upcomingEvents.find(e => e.id === order.eventId) || { title: order.eventTitle };
+        const locationStr = event.location ? `\nLocation: ${event.location}` : '';
+        const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+
+        const body = option === 'attached' 
+            ? `Your ticket has been attached to this email. Please find it below.`
+            : `Your ticket will be shared with you via email in some time. Please keep an eye on your inbox.`;
+
+        const emailContent = `Subject: Your Newbi reference code for the ticket
 
 Hi ${order.customerName},
 
-Thank you for your purchase for ${order.eventTitle}!
+Thank you for your purchase for ${event.title}! ${locationStr}${dateStr}
 
-Your unique access code for entry is:
+${body}
+
+Your unique reference code is:
 CODE: ${order.bookingRef}
 
 Order Details:
 - Item: ${order.items?.[0]?.name || 'Standard Entry'}
 - Amount Paid: ₹${order.totalAmount.toLocaleString()}
-- Transaction ID: ${order.paymentRef}
 
-Please show this code at the venue. (A formal ticket PDF might be attached to this email if available).
-
-See you at the event!
 NewBi Entertainment`;
 
         navigator.clipboard.writeText(emailContent);
@@ -207,6 +223,7 @@ NewBi Entertainment`;
                         {[
                             { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
                             { id: 'approved', label: 'Archived', count: approvedOrders.length, icon: ShieldCheck },
+                            { id: 'vault', label: 'Ticket Vault', icon: Upload },
                             { id: 'settings', label: 'Payment Config', icon: QrCode }
                         ].map(tab => (
                             <button
@@ -301,6 +318,21 @@ NewBi Entertainment`;
                                 </form>
                             </Card>
                         </motion.div>
+                    ) : activeTab === 'vault' ? (
+                        <motion.div
+                            key="vault"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                        >
+                            <TicketVaultTab 
+                                ticketVault={ticketVault}
+                                upcomingEvents={upcomingEvents}
+                                onAddTicket={addTicketToVault}
+                                onDeleteTicket={deleteTicketFromVault}
+                                handleFileUpload={handleFileUpload}
+                            />
+                        </motion.div>
                     ) : (
                         <motion.div
                             key="orders"
@@ -309,8 +341,8 @@ NewBi Entertainment`;
                             exit={{ opacity: 0 }}
                         >
                             {/* Search & Intelligence */}
-                            <div className="flex flex-col md:flex-row justify-between gap-6 mb-12">
-                                <div className="relative flex-1 max-w-2xl group">
+                            <div className="flex flex-col lg:flex-row justify-between gap-6 mb-12">
+                                <div className="relative flex-1 group">
                                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
                                     <input
                                         placeholder="Search by client identifier, reference, or booking hash..."
@@ -318,6 +350,19 @@ NewBi Entertainment`;
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full h-16 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] pl-16 pr-8 text-sm font-medium focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
                                     />
+                                </div>
+                                <div className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 p-2 rounded-[2rem]">
+                                    <Filter className="ml-4 text-gray-500" size={18} />
+                                    <select
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none pr-8 h-12 text-white"
+                                        value={eventFilter}
+                                        onChange={(e) => setEventFilter(e.target.value)}
+                                    >
+                                        <option value="all">ALL ACTIVE EVENTS</option>
+                                        {upcomingEvents.map(event => (
+                                            <option key={event.id} value={event.id}>{event.title}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -549,55 +594,217 @@ NewBi Entertainment`;
                                     EMAIL DRAFT FOR CLIENT
                                 </h3>
 
-                                <div className="bg-black/50 rounded-2xl p-6 border border-white/5 font-mono text-xs text-gray-300 whitespace-pre-wrap max-h-[400px] overflow-y-auto custom-scrollbar">
-{`Subject: Your Access Code for ${viewingTicket.eventTitle}
+                                <div className="space-y-6">
+                                    <div className="bg-black/50 p-6 rounded-2xl border border-white/5 space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email Standard Draft</span>
+                                            <div className="flex bg-black p-1 rounded-xl border border-white/5">
+                                                <button 
+                                                    onClick={() => setEmailOption('attached')}
+                                                    className={cn(
+                                                        "px-4 py-1.5 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                                        emailOption === 'attached' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white"
+                                                    )}
+                                                >Option 1: Attached</button>
+                                                <button 
+                                                    onClick={() => setEmailOption('later')}
+                                                    className={cn(
+                                                        "px-4 py-1.5 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                                        emailOption === 'later' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white"
+                                                    )}
+                                                >Option 2: Share Later</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="p-4 bg-black/30 rounded-xl border border-white/5 font-mono text-[10px] text-gray-400 whitespace-pre-wrap leading-relaxed select-all max-h-[300px] overflow-y-auto custom-scrollbar">
+                                            {(() => {
+                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const locationStr = event.location ? `\nLocation: ${event.location}` : '';
+                                                const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+                                                const bodyText = emailOption === 'attached' 
+                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                    : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
+                                                
+                                                return `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
+                                            })()}
+                                        </div>
+                                    </div>
 
-Hi ${viewingTicket.customerName},
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Button 
+                                            onClick={() => {
+                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const locationStr = event.location ? `\nLocation: ${event.location}` : '';
+                                                const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+                                                const bodyText = emailOption === 'attached' 
+                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                    : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
-Thank you for your purchase for ${viewingTicket.eventTitle}!
+                                                const content = `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
+                                                navigator.clipboard.writeText(content);
+                                                alert("Email draft copied to clipboard!");
+                                            }}
+                                            className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                        >
+                                            <Copy size={16} />
+                                            Copy Draft
+                                        </Button>
+                                        <Button 
+                                            onClick={() => {
+                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const locationStr = event.location ? `\nLocation: ${event.location}` : '';
+                                                const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+                                                const bodyText = emailOption === 'attached' 
+                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                    : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
-Your unique access code for entry is:
-CODE: ${viewingTicket.bookingRef}
-
-Order Details:
-- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}
-- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}
-- Transaction ID: ${viewingTicket.paymentRef}
-
-Please show this code at the venue. (A formal ticket PDF might be attached to this email if available).
-
-See you at the event!
-NewBi Entertainment`}
-                                </div>
-
-                                <div className="mt-8 grid grid-cols-2 gap-4">
-                                    <Button 
-                                        onClick={() => copyEmailToClipboard(viewingTicket)}
-                                        className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
-                                    >
-                                        <Copy size={16} />
-                                        Copy Draft
-                                    </Button>
-                                    <Button 
-                                        onClick={() => {
-                                            const subject = encodeURIComponent(`Your Access Code for ${viewingTicket.eventTitle}`);
-                                            const body = encodeURIComponent(`Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${viewingTicket.eventTitle}!\n\nYour unique access code for entry is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n- Transaction ID: ${viewingTicket.paymentRef}\n\nPlease show this code at the venue.\n\nSee you at the event!\nNewBi Entertainment`);
-                                            window.location.href = `mailto:${viewingTicket.customerEmail}?subject=${subject}&body=${body}`;
-                                        }}
-                                        className="h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
-                                    >
-                                        <ArrowRight size={16} />
-                                        Compose Mail
-                                    </Button>
+                                                const subject = encodeURIComponent(`Your Newbi reference code for the ticket`);
+                                                const body = encodeURIComponent(`Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`);
+                                                window.location.href = `mailto:${viewingTicket.customerEmail}?subject=${subject}&body=${body}`;
+                                            }}
+                                            className="h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                        >
+                                            <ArrowRight size={16} />
+                                            Compose Mail
+                                        </Button>
+                                    </div>
                                 </div>
                                 <p className="text-center text-[10px] text-gray-500 mt-4 uppercase font-bold tracking-widest">
-                                    Copy the content above and paste it into your email client.
+                                    Copy the content above and paste it into your email client or use the compose button.
                                 </p>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
+        </div>
+    );
+};
+
+const TicketVaultTab = ({ ticketVault, upcomingEvents, onAddTicket, onDeleteTicket, handleFileUpload }) => {
+    const [isUploading, setIsUploading] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [ticketCategory, setTicketCategory] = useState('');
+
+    const onFilesSelect = async (e) => {
+        if (!selectedEventId || !ticketCategory) {
+            alert("Please select event and category first.");
+            return;
+        }
+
+        const files = Array.from(e.target.files);
+        setIsUploading(true);
+
+        try {
+            for (const file of files) {
+                const url = await handleFileUpload(file);
+                if (url) {
+                    await onAddTicket({
+                        eventId: selectedEventId,
+                        category: ticketCategory,
+                        url,
+                        fileName: file.name
+                    });
+                }
+            }
+            alert(`Successfully uploaded ${files.length} tickets.`);
+        } catch (error) {
+            console.error("Bulk upload failed:", error);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const groupedVault = ticketVault.reduce((acc, ticket) => {
+        const key = `${ticket.eventId}-${ticket.category}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(ticket);
+        return acc;
+    }, {});
+
+    return (
+        <div className="space-y-12">
+            <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2.5rem]">
+                <h2 className="text-xl font-black italic uppercase mb-8 flex items-center gap-3">
+                    <Upload className="text-neon-blue" /> BULK INGESTION
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Event</label>
+                        <select 
+                            className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/30 transition-all text-white"
+                            value={selectedEventId}
+                            onChange={(e) => setSelectedEventId(e.target.value)}
+                        >
+                            <option value="">Select Event...</option>
+                            {upcomingEvents.map(event => (
+                                <option key={event.id} value={event.id}>{event.title}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Category / Tier</label>
+                        <Input 
+                            placeholder="e.g. EARLY_BIRD, FAN_PIT"
+                            value={ticketCategory}
+                            onChange={(e) => setTicketCategory(e.target.value.toUpperCase())}
+                            className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest"
+                        />
+                    </div>
+                    <div className="flex items-end">
+                        <div className="relative w-full">
+                            <Button className={cn(
+                                "w-full h-14 uppercase text-[10px] font-black tracking-widest rounded-2xl",
+                                isUploading ? "bg-gray-700 cursor-not-allowed" : "bg-neon-blue text-black hover:scale-[1.02]"
+                            )}>
+                                {isUploading ? "PROCESS INGESTION..." : "SELECT ASSETS (BULK)"}
+                            </Button>
+                            {!isUploading && (
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                                    onChange={onFilesSelect}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {Object.entries(groupedVault).map(([key, tickets]) => {
+                    const [eventId, category] = key.split('-');
+                    const event = upcomingEvents.find(e => e.id === eventId);
+                    return (
+                        <Card key={key} className="p-8 bg-[#111] border border-white/5 rounded-[2.5rem] flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="px-3 py-1 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[8px] font-black">
+                                        {category}
+                                    </span>
+                                    <span className="text-[10px] font-black text-white">{tickets.length} ASSETS</span>
+                                </div>
+                                <h3 className="text-lg font-black italic uppercase text-white truncate mb-4">{event?.title || 'Unknown Event'}</h3>
+                            </div>
+                            
+                            <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar mb-6 px-1">
+                                {tickets.map(ticket => (
+                                    <div key={ticket.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+                                        <span className="text-[8px] font-medium text-gray-500 truncate mr-2">{ticket.fileName || 'Asset'}</span>
+                                        <button onClick={() => onDeleteTicket(ticket.id)} className="text-gray-600 hover:text-red-500">
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="pt-4 border-t border-white/5 h-2 bg-gradient-to-r from-neon-blue/20 to-transparent rounded-full" />
+                        </Card>
+                    );
+                })}
+            </div>
         </div>
     );
 };
