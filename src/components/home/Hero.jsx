@@ -127,13 +127,13 @@ const Hero = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5, duration: 1 }}
-                className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
+                className="absolute bottom-4 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4 hidden lg:flex"
             >
                 <div className="flex flex-col items-center gap-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">EXPLORE SPACE</span>
-                    <div className="w-px h-16 bg-gradient-to-b from-neon-green via-neon-green/20 to-transparent relative">
+                    <div className="w-px h-10 md:h-16 bg-gradient-to-b from-neon-green via-neon-green/20 to-transparent relative">
                         <motion.div 
-                            animate={{ y: [0, 40, 0] }}
+                            animate={{ y: [0, 24, 0] }}
                             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                             className="absolute top-0 left-[-1px] w-[3px] h-4 bg-neon-green blur-[1px] rounded-full"
                         />
