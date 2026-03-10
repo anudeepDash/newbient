@@ -47,7 +47,7 @@ const Portfolio = () => {
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neon-green/5 blur-[150px] rounded-full pointer-events-none" />
             
             <div className="max-w-7xl mx-auto px-4 relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-12">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-24 gap-8 md:gap-12">
                     <div className="max-w-2xl">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -62,14 +62,14 @@ const Portfolio = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-5xl md:text-7xl font-black tracking-tighter"
+                            className="font-heading text-4xl md:text-5xl lg:text-7xl font-black tracking-tighter"
                         >
                             OUR <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">IMPACT.</span>
                         </motion.h2>
                     </div>
 
                     {/* Tabs with selection bar */}
-                    <div className="flex flex-wrap gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl">
+                    <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl md:flex-wrap w-full md:w-auto">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
@@ -77,7 +77,7 @@ const Portfolio = () => {
                                     setActiveTab(cat.id);
                                     setIsAutoPlaying(false);
                                 }}
-                                className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden ${activeTab === cat.id
+                                className={`snap-center px-5 py-3 md:px-6 md:py-3 rounded-[1rem] md:rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden flex-shrink-0 ${activeTab === cat.id
                                     ? 'text-black bg-white'
                                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                                     }`}
@@ -199,15 +199,15 @@ const PortfolioCard = ({ item, categories }) => {
             {/* Premium Interaction Layer */}
             <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
             
-            <div className="absolute top-12 right-12 opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-700 z-30">
+            <div className="absolute top-4 right-4 md:top-12 md:right-12 opacity-0 group-hover:opacity-100 md:-translate-y-4 md:group-hover:translate-y-0 transition-all duration-700 z-30">
                 {item.highlightUrl && (
                     <a
                         href={item.highlightUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-16 h-16 rounded-3xl bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)]"
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-3xl bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)]"
                     >
-                        <ArrowRight size={28} />
+                        <ArrowRight className="w-5 h-5 md:w-7 md:h-7" />
                     </a>
                 )}
             </div>
