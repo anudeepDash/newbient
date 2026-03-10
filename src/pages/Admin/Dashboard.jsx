@@ -209,7 +209,7 @@ const Dashboard = () => {
                     <DashboardSection title="Finance & Management" gradient="from-neon-green via-neon-blue to-white">
                         <ControlCard title="Invoices" desc="Manage billing and check payment cycles." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} />
                         <ControlCard title="Proposals" desc="Generate premium quotations for clients." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isNew />
-                        <ControlCard title="Events" desc="Offline order management and check-ins." icon={Ticket} color="neon-pink" link="/admin/tickets" />
+                        <ControlCard title="Ticketing" desc="Offline order management and check-ins." icon={Ticket} color="neon-pink" link="/admin/tickets" />
                     </DashboardSection>
 
                     <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
@@ -233,12 +233,16 @@ const Dashboard = () => {
 
 const DashboardSection = ({ title, gradient, children }) => (
     <section>
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6 md:mb-8">
             <h2 className={cn("text-2xl font-black font-heading tracking-tight uppercase italic bg-clip-text text-transparent bg-gradient-to-r", gradient)}>{title}</h2>
             <div className="flex-1 h-px bg-white/5" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {children}
+        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
+            {React.Children.map(children, (child) => (
+                <div className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                    {child}
+                </div>
+            ))}
         </div>
     </section>
 );

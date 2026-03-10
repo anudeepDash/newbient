@@ -102,7 +102,7 @@ const Contact = () => {
                         <div className="space-y-6">
                             <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"WE DON'T DO ORDINARY."</h3>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                                 <ContactMethod 
                                     icon={MessageSquare} 
                                     label="Quick Chat" 
@@ -221,13 +221,13 @@ const ContactMethod = ({ icon: Icon, label, val, href, accent }) => (
         href={href} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="group p-8 bg-white/5 border border-white/5 rounded-[3rem] hover:border-white/10 hover:bg-white/10 transition-all duration-500"
+        className="group p-5 md:p-8 bg-white/5 border border-white/5 rounded-[2rem] md:rounded-[3rem] hover:border-white/10 hover:bg-white/10 transition-all duration-500"
     >
         <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 group-hover:scale-110",
+            "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-all duration-500 group-hover:scale-110",
             accent === 'neon-green' ? 'bg-neon-green/10 text-neon-green' : (accent === 'neon-blue' ? 'bg-neon-blue/10 text-neon-blue' : (accent === 'neon-pink' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-white/10 text-white'))
         )}>
-            <Icon size={24} />
+            <Icon size={20} className="md:w-6 md:h-6" />
         </div>
         <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{label}</p>

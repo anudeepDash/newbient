@@ -110,10 +110,10 @@ const Card = ({ reason, index }) => {
             transition={{ duration: 0.6, delay: index * 0.15 }}
             className="group relative"
         >
-            <div className={`absolute -inset-px rounded-[2rem] bg-gradient-to-b ${reason.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
+            <div className={`absolute -inset-px rounded-[2rem] bg-gradient-to-b ${reason.gradient} opacity-0 md:group-hover:opacity-10 transition-opacity duration-500 blur-xl`} />
             
-            <div className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] p-10 h-full flex flex-col transition-all duration-500 group-hover:border-white/10 group-hover:-translate-y-2">
-                <div className={`w-16 h-16 bg-gradient-to-br ${reason.gradient} rounded-2xl flex items-center justify-center mb-8 shadow-2xl ${reason.shadow} group-hover:scale-110 transition-transform duration-500`}>
+            <div className="relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] p-10 h-full flex flex-col transition-all duration-500 md:group-hover:border-white/10 md:group-hover:-translate-y-2">
+                <div className={`w-16 h-16 bg-gradient-to-br ${reason.gradient} rounded-2xl flex items-center justify-center mb-8 shadow-2xl ${reason.shadow} md:group-hover:scale-110 transition-transform duration-500`}>
                     <reason.icon size={32} className="text-black" />
                 </div>
 
