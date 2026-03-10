@@ -36,6 +36,7 @@ const DevSettings = () => {
                 { label: "Concert Zone", id: "concerts" },
                 { label: "Contact", id: "contact" },
                 { label: "Community Join", id: "community" },
+                { label: "Creator Hub", id: "influencer" },
             ]
         },
         {

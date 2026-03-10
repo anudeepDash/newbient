@@ -8,11 +8,11 @@ import NotificationBell from './NotificationBell';
 import { useStore } from '../lib/store';
 
 const Navbar = () => {
-    const { maintenanceState, user } = useStore();
+    const { maintenanceState, siteSettings, user } = useStore();
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
-    const links = [
+    const allLinks = [
         { name: 'Home', path: '/' },
         { name: 'Concert Zone', path: '/concerts', featureId: 'concerts' },
         { name: 'Gallery', path: '/gallery', featureId: 'gallery' },
@@ -20,6 +20,13 @@ const Navbar = () => {
         { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer' },
         { name: 'Contact', path: '/contact', featureId: 'contact' },
     ];
+
+    const hideMaintenance = siteSettings.hideMaintenancePages && user?.role !== 'developer';
+    const links = allLinks.filter(link => {
+        if (!hideMaintenance || !link.featureId) return true;
+        const isUnderMaintenance = maintenanceState.global || maintenanceState.pages?.[link.featureId];
+        return !isUnderMaintenance;
+    });
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
