@@ -4,6 +4,7 @@ import { Mail, Trash2, CheckCircle, ArrowLeft, Clock, User, AlertCircle, Sparkle
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
