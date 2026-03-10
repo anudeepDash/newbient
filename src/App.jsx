@@ -12,9 +12,12 @@ import InvoiceGenerator from './pages/Admin/InvoiceGenerator';
 import InvoiceManagement from './pages/Admin/InvoiceManagement';
 import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
 import ConcertManager from './pages/Admin/ConcertManager';
-import SiteContentManager from './pages/Admin/SiteContentManager';
+import SiteSettings from './pages/Admin/SiteSettings';
 import MessageManager from './pages/Admin/MessageManager';
 import GalleryManager from './pages/Admin/GalleryManager';
+import ProposalManagement from './pages/Admin/ProposalManagement';
+import ProposalGenerator from './pages/Admin/ProposalGenerator';
+import Proposal from './pages/Proposal';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
@@ -65,6 +68,7 @@ function App() {
           <Route path="concerts" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZone /></MaintenanceGuard>} />
           <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
           <Route path="invoice/:id" element={<Invoice />} />
+          <Route path="proposal/:id" element={<Proposal />} />
           <Route path="community-join" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
           <Route path="creator-join" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
@@ -80,7 +84,10 @@ function App() {
           <Route path="admin/announcements" element={<MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard>} />
           <Route path="admin/concerts" element={<MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard>} />
           <Route path="admin/messages" element={<MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard>} />
-          <Route path="admin/site-content" element={<MaintenanceGuard featureId="site_content"><SiteContentManager /></MaintenanceGuard>} />
+          <Route path="admin/site-settings" element={<MaintenanceGuard featureId="site_content"><SiteSettings /></MaintenanceGuard>} />
+          <Route path="admin/proposals" element={<ProposalManagement />} />
+          <Route path="admin/create-proposal" element={<ProposalGenerator />} />
+          <Route path="admin/edit-proposal/:id" element={<ProposalGenerator />} />
           <Route path="admin/gallery-manager" element={<MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard>} />
           <Route path="admin/forms" element={<MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard>} />
 

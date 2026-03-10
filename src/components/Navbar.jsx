@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sparkles, Users } from 'lucide-react';
+import { Menu, X, Sparkles, Users, LogOut, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
@@ -39,96 +39,94 @@ const Navbar = () => {
                 </div>
             )}
             <nav className={cn(
-                "fixed left-0 right-0 z-50 bg-dark/80 backdrop-blur-md border-b border-white/10 transition-all duration-300",
-                maintenanceState.global && user?.role === 'developer' ? "top-6" : "top-0"
+                "fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-6 flex items-center justify-center",
+                maintenanceState.global && user?.role === 'developer' ? "top-10" : "top-6"
             )}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-20">
+                {/* Main Menu Pill */}
+                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                    <div className="flex items-center h-14">
                         {/* Logo */}
-                        <Link to="/" className="flex-shrink-0">
-                            <img src={logo} alt="Newbi Entertainments" className="h-12 w-auto" />
+                        <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity mr-6 px-2">
+                            <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto" />
                         </Link>
 
                         {/* Desktop Menu */}
                         <div className="hidden md:block">
-                            <div className="ml-10 flex items-baseline space-x-8">
+                            <div className="flex items-center space-x-1">
                                 {links.map((link) => {
                                     const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                                    return link.path.startsWith('http') ? (
-                                        <a
-                                            key={link.name}
-                                            href={link.path}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={cn(
-                                                'text-sm font-medium transition-colors duration-300 hover:text-neon-green',
-                                                location.pathname === link.path ? 'text-neon-green' : 'text-gray-300'
-                                            )}
-                                        >
-                                            {link.name}
-                                        </a>
-                                    ) : (
+                                    const isActive = location.pathname === link.path;
+                                    
+                                    return (
                                         <Link
                                             key={link.name}
                                             to={link.path}
                                             className={cn(
-                                                'text-sm font-medium transition-all duration-300 hover:text-neon-green flex items-center gap-1',
-                                                location.pathname === link.path ? 'text-neon-green' : 'text-gray-300',
+                                                'px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group',
+                                                isActive ? 'text-white' : 'text-gray-400 hover:text-white',
                                                 isUnderMaintenance && 'opacity-50 grayscale'
                                             )}
                                         >
-                                            {isUnderMaintenance && <span className="text-[10px]">🔧</span>}
                                             {link.name}
+                                            {isActive && (
+                                                <motion.div 
+                                                    layoutId="nav-active"
+                                                    className="absolute inset-0 bg-white/10 rounded-full -z-10"
+                                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                                />
+                                            )}
                                         </Link>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        {/* Notification & Desktop Menu Right */}
-                        <div className="hidden md:flex items-center ml-4 gap-4">
+                        {/* Mobile Menu Toggle (Simplified) */}
+                        <div className="md:hidden ml-auto flex items-center gap-4">
                             <NotificationBell />
-                            {user ? (
-                                <div className="flex items-center gap-4 pl-4 border-l border-white/10">
-                                    <div className="text-right">
-                                        <div className="text-xs font-bold text-white leading-none capitalize flex items-center gap-1 justify-end">
-                                            {user.displayName || 'Tribe Member'}
-                                            {user.hasJoinedTribe && <Users size={10} className="text-neon-blue" title="Tribe Member" />}
-                                            {creators?.some(c => c.uid === user.uid) && <Sparkles size={10} className="text-neon-pink" title="Creator Hub" />}
-                                        </div>
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-                                            {['developer', 'super_admin', 'editor'].includes(user.role)
-                                                ? user.role.replace('_', ' ')
-                                                : 'Member'}
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => useStore.getState().logout()}
-                                        className="text-xs font-bold text-gray-400 hover:text-neon-pink uppercase tracking-widest transition-colors"
-                                    >
-                                        Logout
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => useStore.getState().setAuthModal(true)}
-                                    className="px-4 py-2 rounded-full border border-neon-blue text-neon-blue text-xs font-bold uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,243,255,0.1)] hover:shadow-[0_0_20px_rgba(0,243,255,0.3)]"
-                                >
-                                    Sign In
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Mobile Menu Button */}
-                        <div className="md:hidden flex items-center gap-4">
-                            <NotificationBell />
-                            <button
-                                onClick={toggleMenu}
-                                className="text-gray-300 hover:text-white focus:outline-none"
-                            >
-                                {isOpen ? <X size={24} /> : <Menu size={24} />}
+                            <button onClick={toggleMenu} className="text-gray-400 hover:text-white">
+                                {isOpen ? <X size={20} /> : <Menu size={20} />}
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Right Action/User Pill */}
+                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
+                    <div className="flex items-center h-14 gap-4">
+                        <NotificationBell />
+                        <div className="h-4 w-px bg-white/10" />
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-[10px] font-black text-white leading-none capitalize flex items-center gap-1 justify-end tracking-tight">
+                                        {user.displayName?.split(' ')[0] || 'Tribe'}
+                                        {user.hasJoinedTribe && <Users size={10} className="text-neon-blue" />}
+                                    </div>
+                                    <div className="text-[8px] text-gray-500 uppercase tracking-widest mt-1 font-bold">
+                                        {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : 'MEMBER')}
+                                    </div>
+                                </div>
+                                {['developer', 'super_admin'].includes(user.role) && (
+                                    <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-500 hover:text-white transition-all">
+                                        <Settings size={14} />
+                                    </Link>
+                                )}
+                                <button
+                                    onClick={() => useStore.getState().logout()}
+                                    className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all"
+                                >
+                                    <LogOut size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => useStore.getState().setAuthModal(true)}
+                                className="px-4 py-2 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                            >
+                                Login
+                            </button>
+                        )}
                     </div>
                 </div>
 

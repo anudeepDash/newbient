@@ -17,7 +17,7 @@ const ConcertZone = () => {
     }, []);
 
     return (
-        <div className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
             {/* Background */}
             <div className="absolute inset-0 bg-black z-0" />
             <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black z-0 pointer-events-none" />

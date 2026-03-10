@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle, Sparkles, Users, Search, Mail, ShieldAlert, UserCheck, Activity } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
@@ -8,6 +8,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useStore } from '../../lib/store';
+import { cn } from '../../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminManager = () => {
     const { user, blockUser, unblockUser, creators } = useStore();
@@ -48,7 +50,6 @@ const AdminManager = () => {
                 id: doc.id,
                 ...doc.data()
             }));
-            // Sort by joinedAt desc
             memberList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
             setMembers(memberList);
         } catch (error) {
@@ -69,7 +70,7 @@ const AdminManager = () => {
             const q = query(collection(db, "admins"), where("email", "==", newAdminEmail));
             const existing = await getDocs(q);
             if (!existing.empty) {
-                alert("Admin with this email already exists!");
+                alert("Conflict: Administrator record already exists.");
                 return;
             }
 
@@ -82,10 +83,10 @@ const AdminManager = () => {
 
             setNewAdminEmail('');
             fetchAdmins();
-            alert("Admin added to database. \n\nIMPORTANT: They must still 'Sign Up' or be created in Firebase Authentication to log in.");
+            alert("Authorization recorded. \n\nNote: User must complete registration to activate access.");
         } catch (error) {
             console.error("Error adding admin:", error);
-            alert("Failed to add admin.");
+            alert("System error: Failed to authorize user.");
         }
     };
 
@@ -93,10 +94,10 @@ const AdminManager = () => {
         try {
             await updateDoc(doc(db, "admins", id), { role: role });
             fetchAdmins();
-            alert(`User approved as ${role}!`);
+            alert(`Authorization updated: Rank set to ${role}.`);
         } catch (error) {
             console.error("Error approving admin:", error);
-            alert("Failed to approve user.");
+            alert("System error: Authorization failed.");
         }
     };
 
@@ -106,50 +107,49 @@ const AdminManager = () => {
             fetchAdmins();
         } catch (error) {
             console.error("Error updating role:", error);
-            alert("Failed to update role.");
+            alert("System error: Role update failed.");
         }
     };
 
     const handleRemoveAdmin = async (id, targetRole) => {
         if (!canEditRoles(targetRole)) {
-            alert("You do not have permission to remove this user.");
+            alert("Permission denied: Level mismatch.");
             return;
         }
 
-        if (window.confirm('Are you sure you want to remove/deny this user? They will lose access immediately.')) {
+        if (window.confirm('REVOKE ACCESS: Immediate termination of privileges. Proceed?')) {
             try {
                 await deleteDoc(doc(db, "admins", id));
                 fetchAdmins();
             } catch (error) {
                 console.error("Error removing admin:", error);
-                alert("Failed to remove admin.");
+                alert("System error: Revocation failed.");
             }
         }
     };
 
     const handleBlockUser = async (member) => {
-        if (window.confirm(`Are you sure you want to BLOCK ${member.email}? They will be logged out immediately.`)) {
+        if (window.confirm(`RESTRICTION: Suspend all privileges for ${member.email}?`)) {
             try {
                 await blockUser(member.id);
-                fetchMembers(); // Refresh list
+                fetchMembers();
             } catch (error) {
-                alert("Failed to block user: " + error.message);
+                alert("Operation failed: " + error.message);
             }
         }
     };
 
     const handleUnblockUser = async (member) => {
-        if (window.confirm(`Unblock ${member.email}?`)) {
+        if (window.confirm(`REINSTATE: Restore access for ${member.email}?`)) {
             try {
                 await unblockUser(member.id);
                 fetchMembers();
             } catch (error) {
-                alert("Failed to unblock: " + error.message);
+                alert("Operation failed: " + error.message);
             }
         }
     };
 
-    const [searchTerm, setSearchTerm] = useState('');
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
     const canManageDevelopers = user?.role === 'developer';
@@ -165,19 +165,19 @@ const AdminManager = () => {
 
     if (user?.role !== 'super_admin' && user?.role !== 'developer') {
         return (
-            <div className="min-h-screen flex items-center justify-center text-white">
-                <div className="text-center">
-                    <Shield size={48} className="mx-auto mb-4 text-red-500" />
-                    <h1 className="text-2xl font-bold">Access Denied</h1>
-                    <p className="text-gray-400 mt-2">You do not have permission to view this page.</p>
-                    <Link to="/admin" className="text-neon-blue mt-4 inline-block hover:underline">Back to Dashboard</Link>
+            <div className="min-h-screen flex items-center justify-center bg-[#020202]">
+                <div className="text-center p-12 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] max-w-md mx-auto">
+                    <ShieldAlert size={48} className="mx-auto mb-6 text-red-500" />
+                    <h1 className="text-3xl font-black uppercase tracking-tighter italic text-white">NEWBI: ACCESS DENIED</h1>
+                    <p className="text-gray-500 mt-4 text-sm font-medium">Insufficient clearance for this directory.</p>
+                    <Link to="/admin" className="text-neon-blue mt-8 inline-block font-black uppercase text-[10px] tracking-widest hover:underline">Return to Newbi Hub</Link>
                 </div>
             </div>
         );
     }
 
     const filteredAdmins = displayAdmins.filter(a =>
-        a.email.toLowerCase().includes(searchTerm.toLowerCase())
+        a.email.toLowerCase().includes((memberSearch || '').toLowerCase())
     );
 
     const filteredMembers = members.filter(m =>
@@ -186,452 +186,315 @@ const AdminManager = () => {
     );
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
-                            <ArrowLeft className="h-6 w-6" />
+        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-20">
+            {/* Immersive Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
+            </div>
+
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32">
+                {/* Modern Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+                    <div className="space-y-2">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4 group">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Newbi Hub
                         </Link>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-white">Manage Members</h1>
-                            <p className="text-gray-400 text-xs md:text-sm">Control user access, roles, and moderation</p>
-                        </div>
+                        <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                            ACCESS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">REGISTRY.</span>
+                        </h1>
                     </div>
-                </div>
 
-                {/* Tabs */}
-                <div className="flex gap-4 mb-8 border-b border-white/10">
-                    <button
-                        onClick={() => setActiveTab('members')}
-                        className={`pb-4 px-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'members' ? 'border-neon-blue text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-                    >
-                        All Members
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('admins')}
-                        className={`pb-4 px-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'admins' ? 'border-neon-blue text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-                    >
-                        Administrators
-                    </button>
-                </div>
-
-                {/* MEMBERS TAB */}
-                {activeTab === 'members' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="mb-6 flex justify-between items-center">
-                            <Input
-                                placeholder="Search members by name or email..."
-                                value={memberSearch}
-                                onChange={(e) => setMemberSearch(e.target.value)}
-                                className="bg-white/5 border-white/10 focus:border-white/30 max-w-md"
-                            />
-                            <div className="text-gray-400 text-xs text-right">
-                                Total Members: <span className="text-white font-bold">{members.length}</span>
-                            </div>
-                        </div>
-
-                        <Card className="p-0 overflow-hidden border-white/10 bg-black/40 backdrop-blur-md">
-                            {loadingMembers ? (
-                                <div className="p-12 text-center">
-                                    <div className="animate-spin w-8 h-8 border-2 border-neon-blue border-t-transparent rounded-full mx-auto mb-4"></div>
-                                    <p className="text-gray-500">Loading members...</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm text-gray-400">
-                                        <thead className="bg-white/5 text-xs uppercase font-bold text-gray-300">
-                                            <tr>
-                                                <th className="px-6 py-4">User</th>
-                                                <th className="px-6 py-4">Status</th>
-                                                <th className="px-6 py-4">Joined</th>
-                                                <th className="px-6 py-4">Last Active</th>
-                                                <th className="px-6 py-4 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {filteredMembers.map(member => (
-                                                <tr key={member.id} className="hover:bg-white/5 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="font-bold text-white">{member.displayName || 'No Name'}</div>
-                                                        <div className="text-xs text-gray-500">{member.email}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {member.isBlocked ? (
-                                                            <span className="px-2 py-1 bg-red-500/10 text-red-500 rounded text-xs font-bold uppercase border border-red-500/20">Blocked</span>
-                                                        ) : (
-                                                            <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded text-xs font-bold uppercase border border-green-500/20">Active</span>
-                                                        )}
-                                                        {member.hasJoinedTribe && (
-                                                            <span className="ml-2 px-2 py-1 bg-neon-blue/10 text-neon-blue rounded text-[10px] font-bold uppercase border border-neon-blue/20 flex items-center gap-1 inline-flex">
-                                                                <Users size={10} />
-                                                                Tribe
-                                                            </span>
-                                                        )}
-                                                        {creators?.some(c => c.uid === member.id) && (
-                                                            <span className="ml-2 px-2 py-1 bg-neon-pink/10 text-neon-pink rounded text-[10px] font-bold uppercase border border-neon-pink/20 flex items-center gap-1 inline-flex">
-                                                                <Sparkles size={10} />
-                                                                Creator
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {member.lastActive ? (
-                                                            <span title={new Date(member.lastActive).toLocaleString()}>
-                                                                {new Date(member.lastActive).toLocaleDateString()}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-600">Never</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        {member.isBlocked ? (
-                                                            <button
-                                                                onClick={() => handleUnblockUser(member)}
-                                                                className="text-green-500 hover:text-green-400 font-bold text-xs uppercase hover:underline"
-                                                            >
-                                                                Unblock
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => handleBlockUser(member)}
-                                                                className="text-red-500 hover:text-red-400 font-bold text-xs uppercase hover:underline"
-                                                            >
-                                                                Block
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {filteredMembers.length === 0 && (
-                                                <tr>
-                                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                                                        No members found.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </Card>
-                    </div>
-                )}
-
-                {/* ADMINS TAB */}
-                {activeTab === 'admins' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="mb-6 flex justify-between items-center">
-                            <Input
-                                placeholder="Search admins by email..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="bg-white/5 border-white/10 focus:border-white/30 max-w-md"
-                            />
+                    <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                        {[
+                            { id: 'members', label: 'Newbi Personnel', count: members.length, icon: Users },
+                            { id: 'admins', label: 'Newbi Command Staff', count: admins.length, icon: Shield }
+                        ].map(tab => (
                             <button
-                                onClick={() => setIsInviteOpen(!isInviteOpen)}
-                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${isInviteOpen ? 'bg-white/10 text-white' : 'bg-neon-blue text-black hover:bg-neon-blue/80 shadow-lg shadow-neon-blue/20'}`}
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={cn(
+                                    "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    activeTab === tab.id 
+                                        ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
+                                        : "text-gray-500 hover:text-white"
+                                )}
                             >
-                                <UserPlus size={18} />
-                                {isInviteOpen ? 'Close Invite' : 'Invite New Admin'}
+                                <tab.icon size={14} />
+                                {tab.label}
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded-md text-[8px]",
+                                    activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
+                                )}>{tab.count}</span>
                             </button>
-                        </div>
+                        ))}
+                    </div>
+                </div>
 
-                        {/* Invite Form (Collapsible) */}
-                        {isInviteOpen && (
-                            <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-300">
-                                <Card className="p-6 border-neon-blue/30 bg-neon-blue/5">
-                                    <h2 className="text-lg font-bold text-white mb-4">Send Invitation</h2>
-                                    <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-4 items-end">
-                                        <div className="flex-grow w-full">
-                                            <label className="text-xs text-gray-400 mb-1 block">Email Address</label>
-                                            <Input
-                                                type="email"
-                                                placeholder="colleague@newbi.live"
-                                                value={newAdminEmail}
-                                                onChange={(e) => setNewAdminEmail(e.target.value)}
-                                                required
-                                                className="bg-black/50"
-                                            />
-                                        </div>
-                                        <div className="w-full md:w-64">
-                                            <label className="text-xs text-gray-400 mb-1 block">Permission Level</label>
-                                            <select
-                                                value={newAdminRole}
-                                                onChange={(e) => setNewAdminRole(e.target.value)}
-                                                className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 py-2 pr-10 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue appearance-none cursor-pointer"
-                                                style={{
-                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                                    backgroundRepeat: 'no-repeat',
-                                                    backgroundPosition: 'right 1rem center',
-                                                    backgroundSize: '1.25rem'
-                                                }}
-                                            >
-                                                <option value="editor">Editor (Content Only)</option>
-                                                <option value="super_admin">Super Admin (Full Access)</option>
-                                                {canManageDevelopers && <option value="developer">Developer Admin (System Overlord)</option>}
-                                            </select>
-                                        </div>
-                                        <Button type="submit" variant="primary" className="w-full md:w-auto h-12 rounded-lg">
-                                            Send Invite
-                                        </Button>
-                                    </form>
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        * The user must sign up with this email on the login screen to access the account.
-                                    </p>
-                                </Card>
-                            </div>
-                        )}
-
-                        {/* Pending Requests Section */}
-                        {admins.filter(a => a.role === 'pending').length > 0 && (
-                            <div className="mb-12">
-                                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 text-yellow-500">
-                                    <Clock size={20} />
-                                    Pending Access Requests
-                                </h2>
-                                <div className="grid gap-4">
-                                    {admins.filter(a => a.role === 'pending').map((admin) => (
-                                        <Card key={admin.id} className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-yellow-500/30 bg-yellow-500/5">
-                                            <div className="flex-grow">
-                                                <h3 className="font-bold text-white">{admin.email}</h3>
-                                                <div className="flex gap-2 text-sm mt-1">
-                                                    <span className="text-gray-400 text-xs">Requested: {new Date(admin.createdAt).toLocaleDateString()}</span>
-                                                    <span className="text-yellow-500 font-bold uppercase text-[10px] px-2 py-0.5 bg-yellow-500/20 rounded-full">Pending Approval</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                    className="bg-red-500/10 text-red-500 border-red-500/50 hover:bg-red-500 hover:text-white"
-                                                >
-                                                    <Trash2 size={16} className="mr-2" /> Deny
-                                                </Button>
-                                                <div className="flex gap-2 bg-black/30 p-1 rounded-lg border border-white/10">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleApprove(admin.id, 'editor')}
-                                                        className="bg-neon-green/10 text-neon-green border-transparent hover:bg-neon-green hover:text-black"
-                                                    >
-                                                        <CheckCircle size={16} className="mr-2" /> Editor
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleApprove(admin.id, 'super_admin')}
-                                                        className="bg-neon-purple/10 text-neon-purple border-transparent hover:bg-neon-purple hover:text-white"
-                                                    >
-                                                        <Shield size={16} className="mr-2" /> Super Admin
-                                                    </Button>
-                                                    {canManageDevelopers && (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleApprove(admin.id, 'developer')}
-                                                            className="bg-white/10 text-white border-transparent hover:bg-white hover:text-black"
-                                                        >
-                                                            <Shield size={16} className="mr-2" /> Developer
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    ))}
+                <AnimatePresence mode="wait">
+                    {activeTab === 'members' ? (
+                        <motion.div
+                            key="members"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-8"
+                        >
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="relative flex-1 max-w-2xl group">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                                    <input
+                                        placeholder="Search Newbi personnel and assets..."
+                                        value={memberSearch}
+                                        onChange={(e) => setMemberSearch(e.target.value)}
+                                        className="w-full h-16 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] pl-16 pr-8 text-sm font-medium focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
+                                    />
                                 </div>
                             </div>
-                        )}
 
-                        {/* Active Admins List */}
-                        <Card className="p-0 overflow-hidden border-white/10 bg-black/40 backdrop-blur-md">
-                            <div className="p-6 border-b border-white/10">
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <Shield size={20} className="text-neon-blue" />
-                                    Current Administrators
-                                </h2>
+                            <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem]">
+                                {loadingMembers ? (
+                                    <div className="p-32 text-center text-gray-500">
+                                        <Activity className="animate-spin mx-auto mb-4 text-neon-blue" size={32} />
+                                        <p className="text-[10px] font-black uppercase tracking-widest italic">Synchronizing Registry...</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-white/5 border-b border-white/5">
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Subject</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Status</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Registration</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Last Vital</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Directives</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {filteredMembers.map(member => (
+                                                    <tr key={member.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                        <td className="px-8 py-6">
+                                                            <div className="font-bold text-white text-base">{member.displayName || 'UNNAMED_SUBJECT'}</div>
+                                                            <div className="text-[10px] text-gray-500 font-mono mt-0.5">{member.email}</div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <div className="flex items-center gap-3">
+                                                                {member.isBlocked ? (
+                                                                    <span className="px-3 py-1 bg-red-500/10 text-red-500 rounded-full text-[8px] font-black uppercase border border-red-500/20">SUSPENDED</span>
+                                                                ) : (
+                                                                    <span className="px-3 py-1 bg-neon-green/10 text-neon-green rounded-full text-[8px] font-black uppercase border border-neon-green/20">AUTHORIZED</span>
+                                                                )}
+                                                                {member.hasJoinedTribe && (
+                                                                    <span title="TRIBE_AFFILIATE" className="p-1 px-2 bg-neon-blue/10 text-neon-blue rounded-full text-[8px] font-black border border-neon-blue/20">
+                                                                        TRIBE
+                                                                    </span>
+                                                                )}
+                                                                {creators?.some(c => c.uid === member.id) && (
+                                                                    <span title="CREATOR_CERTIFIED" className="p-1 px-2 bg-neon-pink/10 text-neon-pink rounded-full text-[8px] font-black border border-neon-pink/20">
+                                                                        CREATOR
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6 text-xs font-bold text-gray-400">
+                                                            {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : 'N/A'}
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            {member.lastActive ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-xs font-bold text-gray-400">{new Date(member.lastActive).toLocaleDateString()}</span>
+                                                                    <span className="text-[8px] text-gray-600 font-mono italic">{new Date(member.lastActive).toLocaleTimeString()}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-700 italic">OFFLINE</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-8 py-6 text-right">
+                                                            {member.isBlocked ? (
+                                                                <button onClick={() => handleUnblockUser(member)} className="text-[10px] font-black uppercase text-neon-green hover:underline tracking-widest decoration-2 underline-offset-4">Reinstate</button>
+                                                            ) : (
+                                                                <button onClick={() => handleBlockUser(member)} className="text-[10px] font-black uppercase text-red-500 hover:underline tracking-widest decoration-2 underline-offset-4">Suspend</button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </Card>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="admins"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-12"
+                        >
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="relative flex-1 max-w-2xl group">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                                    <input
+                                        placeholder="Query authorized staff members..."
+                                        value={memberSearch}
+                                        onChange={(e) => setMemberSearch(e.target.value)}
+                                        className="w-full h-16 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] pl-16 pr-8 text-sm font-medium focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => setIsInviteOpen(!isInviteOpen)}
+                                    className={cn(
+                                        "flex items-center gap-4 h-16 px-10 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] transition-all",
+                                        isInviteOpen ? "bg-white/10 text-white" : "bg-white text-black shadow-2xl hover:scale-105 active:scale-95"
+                                    )}
+                                >
+                                    <UserPlus size={18} />
+                                    {isInviteOpen ? 'Close Portal' : 'Authorize New Staff'}
+                                </button>
                             </div>
 
-                            {loadingAdmins ? (
-                                <div className="p-8 text-center text-gray-500">Loading admins...</div>
-                            ) : (
-                                <div>
-                                    {/* Desktop Table Header */}
-                                    <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                        <div className="col-span-4">User / Name</div>
-                                        <div className="col-span-3">Role</div>
-                                        <div className="col-span-2">Added Date</div>
-                                        <div className="col-span-3 text-right">Actions</div>
-                                    </div>
+                            <AnimatePresence>
+                                {isInviteOpen && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                                        <Card className="p-12 bg-neon-blue/[0.02] border-neon-blue/20 rounded-[3rem]">
+                                            <h2 className="text-xl font-black italic uppercase tracking-tighter mb-8 flex items-center gap-3">
+                                                <Shield className="text-neon-blue" /> INITIALIZE AUTHORIZATION
+                                            </h2>
+                                            <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-8 items-end">
+                                                <div className="flex-grow w-full space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Primary Email Endpoint</label>
+                                                    <Input type="email" value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} required placeholder="operative@newbi.live" className="h-14 bg-black/50 border-white/5 rounded-2xl" />
+                                                </div>
+                                                <div className="w-full md:w-80 space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Clearance Level</label>
+                                                    <select
+                                                        value={newAdminRole}
+                                                        onChange={(e) => setNewAdminRole(e.target.value)}
+                                                        className="w-full h-14 bg-black/50 border border-white/10 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest text-white appearance-none cursor-pointer outline-none focus:border-neon-blue"
+                                                    >
+                                                        <option value="editor">Editor (Production Only)</option>
+                                                        <option value="super_admin">Controller (Full Ops)</option>
+                                                        {canManageDevelopers && <option value="developer">Architect (System Root)</option>}
+                                                    </select>
+                                                </div>
+                                                <Button type="submit" className="w-full md:w-auto h-14 px-12 bg-neon-blue text-black font-black uppercase text-xs rounded-2xl hover:scale-105 transition-all">
+                                                    Grant Access
+                                                </Button>
+                                            </form>
+                                        </Card>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                                    {/* List Items */}
-                                    {filteredAdmins.filter(a => a.role !== 'pending').length === 0 ? (
-                                        <div className="p-8 text-center text-gray-500">No admins found matching "{searchTerm}"</div>
-                                    ) : (
-                                        filteredAdmins.filter(a => a.role !== 'pending').map((admin) => (
-                                            <div key={admin.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                                                {/* Desktop Row */}
-                                                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 items-center">
-                                                    <div className="col-span-4 font-medium text-white break-words">
-                                                        <div className="flex flex-col">
-                                                            <span>{admin.displayName || 'Unnamed Admin'}</span>
-                                                            <span className="text-[10px] text-gray-500">{admin.email}</span>
-                                                        </div>
-                                                        {admin.email === user.email && <span className="text-[10px] bg-white/10 px-1 rounded text-gray-400 mt-1 inline-block">(You)</span>}
-                                                    </div>
-                                                    <div className="col-span-3">
-                                                        {canManageDevelopers ? (
-                                                            <select
-                                                                value={admin.role}
-                                                                onChange={(e) => handleUpdateRole(admin.id, e.target.value)}
-                                                                disabled={admin.email === user.email}
-                                                                className="bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-bold uppercase text-neon-green focus:outline-none focus:border-neon-blue w-full"
-                                                            >
-                                                                <option value="editor">Editor</option>
-                                                                <option value="super_admin">Super Admin</option>
-                                                                <option value="developer">Developer</option>
-                                                            </select>
-                                                        ) : (
-                                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase inline-flex items-center gap-1 ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
-                                                                }`}>
-                                                                {admin.role === 'super_admin' && <Shield size={10} />}
-                                                                {admin.role === 'developer' && <Shield size={10} className="text-white fill-white" />}
-                                                                {admin.role.replace('_', ' ')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="col-span-2 text-sm text-gray-500">
-                                                        {new Date(admin.createdAt).toLocaleDateString()}
-                                                    </div>
-                                                    <div className="col-span-3 text-right flex justify-end gap-2">
-                                                        {(admin.email === user.email || user.role === 'developer') && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newName = prompt(`Enter new display name for ${admin.email}:`, admin.displayName || "");
-                                                                    if (newName !== null && newName.trim() !== "") {
-                                                                        useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName })
-                                                                            .then(() => {
-                                                                                fetchAdmins();
-                                                                                alert("Profile updated!");
-                                                                            })
-                                                                            .catch(err => alert("Error: " + err.message));
-                                                                    }
-                                                                }}
-                                                                className="text-[10px] font-bold text-neon-blue hover:text-white uppercase tracking-widest px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg transition-colors"
-                                                            >
-                                                                Edit Name
-                                                            </button>
-                                                        )}
-                                                        {(admin.email !== user.email && canEditRoles(admin.role)) && (
-                                                            <>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`Send password reset email to ${admin.email}?`)) {
-                                                                            try {
-                                                                                const actionCodeSettings = {
-                                                                                    url: `${window.location.origin}/auth/action?mode=resetPassword`,
-                                                                                    handleCodeInApp: true,
-                                                                                };
-                                                                                await sendPasswordResetEmail(auth, admin.email, actionCodeSettings);
-                                                                                alert(`Password reset email sent to ${admin.email}`);
-                                                                            } catch (err) {
-                                                                                alert("Error: " + err.message);
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    className="text-gray-500 hover:text-neon-blue transition-colors p-2 rounded hover:bg-white/5"
-                                                                    title="Send Password Reset Email"
-                                                                >
-                                                                    <Shield size={16} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                                    className="text-gray-500 hover:text-red-500 transition-colors p-2 rounded hover:bg-white/5"
-                                                                    title="Revoke Access"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                            </>
-                                                        )}
+                            {/* Pending Authorizations */}
+                            {admins.filter(a => a.role === 'pending').length > 0 && (
+                                <section className="space-y-6">
+                                    <h2 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <Clock size={14} /> PENDING AUTHORIZATIONS
+                                    </h2>
+                                    <div className="grid gap-4">
+                                        {admins.filter(a => a.role === 'pending').map((admin) => (
+                                            <Card key={admin.id} className="p-8 flex flex-col md:flex-row justify-between items-center bg-yellow-500/5 border-yellow-500/20 rounded-[2rem]">
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-white font-mono">{admin.email}</h3>
+                                                    <p className="text-[8px] font-black text-yellow-500/50 uppercase tracking-widest mt-1 italic">Waiting for verification</p>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">Deny</button>
+                                                    <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                                                        <button onClick={() => handleApprove(admin.id, 'editor')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-neon-green hover:bg-white/5 rounded-xl transition-all">Editor</button>
+                                                        <button onClick={() => handleApprove(admin.id, 'super_admin')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-neon-blue hover:bg-white/5 rounded-xl transition-all">Super</button>
+                                                        {canManageDevelopers && <button onClick={() => handleApprove(admin.id, 'developer')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Arch</button>}
                                                     </div>
                                                 </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
 
-                                                {/* Mobile Card View */}
-                                                <div className="md:hidden p-4 flex flex-col gap-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <div className="font-bold text-white mb-1">
-                                                                {admin.displayName || 'Unnamed Admin'}
-                                                                <span className="block text-[10px] text-gray-500 font-normal">{admin.email}</span>
-                                                                {admin.email === user.email && <span className="text-[10px] bg-white/10 px-1 rounded text-gray-400 mt-1 inline-block">(You)</span>}
+                            {/* Registry Table */}
+                            <section className="space-y-6">
+                                <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <Shield size={14} /> ACTIVE CLEARANCE REGISTRY
+                                </h2>
+                                <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem]">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="bg-white/5 border-b border-white/5">
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Subject / Clearance</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Operation Rank</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500">Authorization Date</th>
+                                                    <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-500 text-right">Overrides</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {filteredAdmins.filter(a => a.role !== 'pending').map((admin) => (
+                                                    <tr key={admin.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                        <td className="px-8 py-6">
+                                                            <div className="font-bold text-white flex items-center gap-3 italic tracking-tighter">
+                                                                {admin.displayName || 'UNIDENTIFIED_OPERATIVE'}
+                                                                {admin.email === user.email && <span className="bg-white text-black px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase not-italic">Self</span>}
                                                             </div>
-                                                            <div className="flex gap-2 text-xs mb-2">
-                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${admin.role === 'super_admin' ? 'bg-neon-pink/10 text-neon-pink' : 'bg-neon-green/10 text-neon-green'
-                                                                    }`}>
+                                                            <div className="text-[10px] text-gray-500 font-mono mt-0.5">{admin.email}</div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            {canManageDevelopers ? (
+                                                                <select
+                                                                    value={admin.role}
+                                                                    onChange={(e) => handleUpdateRole(admin.id, e.target.value)}
+                                                                    disabled={admin.email === user.email}
+                                                                    className="bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-[8px] font-black uppercase text-neon-green focus:border-neon-blue outline-none cursor-pointer"
+                                                                >
+                                                                    <option value="editor">Editor</option>
+                                                                    <option value="super_admin">Super Admin</option>
+                                                                    <option value="developer">Architect</option>
+                                                                </select>
+                                                            ) : (
+                                                                <span className={cn(
+                                                                    "px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                                                                    admin.role === 'super_admin' ? "bg-neon-pink/10 text-neon-pink border-neon-pink/20" : "bg-neon-green/10 text-neon-green border-neon-green/20"
+                                                                )}>
                                                                     {admin.role.replace('_', ' ')}
                                                                 </span>
-                                                                <span className="text-gray-500 flex items-center">{new Date(admin.createdAt).toLocaleDateString()}</span>
-                                                            </div>
-                                                        </div>
-                                                        {(admin.email === user.email || user.role === 'developer') && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newName = prompt(`Enter new display name for ${admin.email}:`, admin.displayName || "");
-                                                                    if (newName !== null && newName.trim() !== "") {
-                                                                        useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName })
-                                                                            .then(() => {
-                                                                                fetchAdmins();
-                                                                                alert("Profile updated!");
-                                                                            })
-                                                                            .catch(err => alert("Error: " + err.message));
-                                                                    }
-                                                                }}
-                                                                className="text-[10px] font-bold text-neon-blue px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg"
-                                                            >
-                                                                Edit Name
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    {(admin.email !== user.email && canEditRoles(admin.role)) && (
-                                                        <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (window.confirm(`Send password reset email to ${admin.email}?`)) {
-                                                                        try {
-                                                                            const actionCodeSettings = {
-                                                                                url: `${window.location.origin}/auth/action?mode=resetPassword`,
-                                                                                handleCodeInApp: true,
-                                                                            };
-                                                                            await sendPasswordResetEmail(auth, admin.email, actionCodeSettings);
-                                                                            alert(`Password reset email sent to ${admin.email}`);
-                                                                        } catch (err) {
-                                                                            alert("Error: " + err.message);
+                                                            )}
+                                                        </td>
+                                                        <td className="px-8 py-6 text-xs font-bold text-gray-500">{new Date(admin.createdAt).toLocaleDateString()}</td>
+                                                        <td className="px-8 py-6 text-right">
+                                                            <div className="flex justify-end gap-2">
+                                                                {(admin.email === user.email || user.role === 'developer') && (
+                                                                    <button onClick={() => {
+                                                                        const newName = prompt(`Modify identity for ${admin.email}:`, admin.displayName || "");
+                                                                        if (newName !== null && newName.trim() !== "") {
+                                                                            useStore.getState().updateAdminProfile(null, admin.email, { displayName: newName }).then(() => fetchAdmins());
                                                                         }
-                                                                    }
-                                                                }}
-                                                                className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-neon-blue bg-neon-blue/10 rounded-lg"
-                                                                title="Reset Password"
-                                                            >
-                                                                <Shield size={14} /> Reset Password
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleRemoveAdmin(admin.id, admin.role)}
-                                                                className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-500 bg-red-500/10 rounded-lg"
-                                                            >
-                                                                <Trash2 size={14} /> Remove
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            )}
-                        </Card>
-                    </div>
-                )}
+                                                                    }} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-all" title="Modify Identity"><UserCheck size={16} /></button>
+                                                                )}
+                                                                {(admin.email !== user.email && canEditRoles(admin.role)) && (
+                                                                    <>
+                                                                        <button onClick={async () => {
+                                                                            if (window.confirm(`Reset credentials for ${admin.email}?`)) {
+                                                                                await sendPasswordResetEmail(auth, admin.email);
+                                                                                alert("Instructional payload dispatched.");
+                                                                            }
+                                                                        }} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-all" title="Reset Credentials"><Shield size={16} /></button>
+                                                                        <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-all" title="Terminate Access"><Trash2 size={16} /></button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Card>
+                            </section>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

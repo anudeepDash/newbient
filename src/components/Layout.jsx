@@ -10,9 +10,9 @@ const Layout = () => {
     const isBypassing = maintenanceState.global && user?.role === 'developer';
 
     return (
-        <div className="flex flex-col min-h-screen bg-dark text-white selection:bg-neon-pink selection:text-white">
+        <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white">
             <Navbar />
-            <main className={cn("flex-grow transition-all duration-300", isBypassing ? "pt-28" : "pt-20")}>
+            <main className={cn("flex-grow transition-all duration-300", isBypassing ? "pt-0" : "pt-0")}>
                 <Outlet />
             </main>
             <Footer />

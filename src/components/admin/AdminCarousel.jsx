@@ -21,6 +21,20 @@ const AdminCarousel = ({ title, children }) => {
         return () => window.removeEventListener('resize', checkScroll);
     }, [children]);
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (scrollRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    scroll('right');
+                }
+            }
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [children]);
+
     const scroll = (direction) => {
         if (scrollRef.current) {
             const { clientWidth } = scrollRef.current;
@@ -65,7 +79,7 @@ const AdminCarousel = ({ title, children }) => {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {React.Children.map(children, (child) => (
-                    <div className="min-w-[280px] md:min-w-[320px] snap-start">
+                    <div className="min-w-[calc(100%/1.1)] md:min-w-[calc(100%/3)] snap-start px-2">
                         {child}
                     </div>
                 ))}

@@ -12,6 +12,7 @@ export const useStore = create((set, get) => ({
     messages: [], // New state
     guestlists: [], // New state
     ticketOrders: [], // New state
+    proposals: [], // New Proposal Generator state
     creators: [], // Influencer Marketing
     campaigns: [], // Influencer Marketing
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
@@ -60,6 +61,11 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 }
 
+                // Sort proposals by createdAt (descending)
+                if (colName === 'proposals') {
+                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                }
+
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
@@ -86,6 +92,7 @@ export const useStore = create((set, get) => ({
         const unsubTicketOrders = sub('ticket_orders', 'ticketOrders'); // New sub
         const unsubCreators = sub('creators', 'creators');
         const unsubCampaigns = sub('campaigns', 'campaigns');
+        const unsubProposals = sub('proposals', 'proposals');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -143,7 +150,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals();
         };
     },
 
@@ -404,6 +411,20 @@ export const useStore = create((set, get) => ({
     },
     deleteInvoice: async (id) => {
         await deleteDoc(doc(db, 'invoices', id));
+    },
+
+    // Proposals
+    addProposal: async (proposal) => {
+        return await addDoc(collection(db, 'proposals'), proposal);
+    },
+    updateProposal: async (id, updates) => {
+        await updateDoc(doc(db, 'proposals', id), updates);
+    },
+    updateProposalStatus: async (id, status) => {
+        await updateDoc(doc(db, 'proposals', id), { status });
+    },
+    deleteProposal: async (id) => {
+        await deleteDoc(doc(db, 'proposals', id));
     },
 
     // Forms

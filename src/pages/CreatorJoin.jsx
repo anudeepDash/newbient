@@ -3,9 +3,10 @@ import { useStore } from '../lib/store';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { motion } from 'framer-motion';
-import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 const CreatorJoin = () => {
     const { user, authInitialized, setAuthModal, addCreator, creators } = useStore();
@@ -34,24 +35,29 @@ const CreatorJoin = () => {
             const existingProfile = creators.find(c => c.uid === user.uid);
             if (existingProfile) {
                 setHasJoined(true);
-                // Optionally auto-redirect to dashboard: 
-                // navigate('/creator-dashboard');
             }
         }
-    }, [user, creators, navigate]);
+    }, [user, creators]);
 
-    // Auto-trigger sign-in if they try to start but aren't logged in
     const handleStart = () => {
         if (!user) {
             setAuthModal(true);
         } else {
-            // Scroll to form or show it
             document.getElementById('creator-form')?.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSocialChange = (e, platform) => {
+        const val = e.target.value;
+        if (platform === 'ig') {
+            setFormData(prev => ({ ...prev, instagramFollowers: val }));
+        } else {
+            setFormData(prev => ({ ...prev, youtubeSubscribers: val }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -67,8 +73,9 @@ const CreatorJoin = () => {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
-                profileStatus: 'pending', // or 'approved' based on your flow
+                profileStatus: 'pending',
                 ...formData,
+                isVerified: false,
                 niches: formData.niches.split(',').map(n => n.trim())
             });
             setHasJoined(true);
@@ -107,21 +114,17 @@ const CreatorJoin = () => {
     }
 
     return (
-        <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4">
-
-            {/* Hero Section */}
+        <div className="min-h-screen bg-black text-white pt-32 pb-20 px-4">
             <div className="max-w-4xl mx-auto text-center mb-16 relative">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-pink/10 blur-[120px] pointer-events-none rounded-full"></div>
-
+                
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
                 >
                     <Sparkles size={16} className="text-neon-pink" />
-                    <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
-                        Influencer Marketing
-                    </span>
+                    <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">Influencer Marketing</span>
                 </motion.div>
 
                 <motion.h1
@@ -147,7 +150,6 @@ const CreatorJoin = () => {
                 )}
             </div>
 
-            {/* Application Form */}
             {user && (
                 <motion.div
                     id="creator-form"
@@ -167,7 +169,6 @@ const CreatorJoin = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-                        {/* Basic Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Full Name</label>
@@ -183,16 +184,11 @@ const CreatorJoin = () => {
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Primary City</label>
                                 <select
-                                    required
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleChange}
+                                    required name="city" value={formData.city} onChange={handleChange}
                                     className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:outline-none focus:border-neon-pink transition-colors appearance-none"
                                 >
                                     <option value="" disabled className="text-gray-500 bg-zinc-900">Select City</option>
-                                    {PREDEFINED_CITIES.map(c => (
-                                        <option key={c} value={c} className="bg-zinc-900">{c}</option>
-                                    ))}
+                                    {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -201,86 +197,88 @@ const CreatorJoin = () => {
                             </div>
                         </div>
 
-                        {/* Social Links */}
                         <div className="pt-6 border-t border-white/5 space-y-6">
-                            <h3 className="text-sm font-bold text-neon-blue uppercase tracking-widest">Social Presence</h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <Instagram size={14} className="text-pink-500" /> Instagram Handle
-                                    </label>
-                                    <Input name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourusername" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <Activity size={14} className="text-gray-400" /> Followers (Approx)
-                                    </label>
-                                    <Input name="instagramFollowers" type="number" value={formData.instagramFollowers} onChange={handleChange} placeholder="e.g. 15000" />
-                                    <p className="text-[10px] text-gray-600 mt-1">*Will be verified via API automatically in V2</p>
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-neon-blue uppercase tracking-widest">Social Presence</h3>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <Youtube size={14} className="text-red-500" /> YouTube Channel
-                                    </label>
-                                    <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" />
+                            <div className="space-y-6">
+                                {/* Instagram */}
+                                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <Instagram size={14} className="text-pink-500" /> Instagram Handle
+                                            </label>
+                                            <Input name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourusername" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <Users size={14} className="text-neon-blue" /> Follower Count
+                                            </label>
+                                            <Input 
+                                                type="number" 
+                                                name="instagramFollowers" 
+                                                value={formData.instagramFollowers} 
+                                                onChange={(e) => handleSocialChange(e, 'ig')} 
+                                                placeholder="e.g. 15000" 
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <Activity size={14} className="text-gray-400" /> Subscribers (Approx)
-                                    </label>
-                                    <Input name="youtubeSubscribers" type="number" value={formData.youtubeSubscribers} onChange={handleChange} placeholder="e.g. 5000" />
-                                </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <Globe size={14} className="text-gray-400" /> Other Link (Blog, Twitter, etc)
-                                </label>
-                                <Input name="twitter" value={formData.twitter} onChange={handleChange} placeholder="Website or Profile URL" />
+                                {/* YouTube */}
+                                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <Youtube size={14} className="text-red-500" /> YouTube Channel
+                                            </label>
+                                            <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <Users size={14} className="text-neon-blue" /> Subscriber Count
+                                            </label>
+                                            <Input 
+                                                type="number" 
+                                                name="youtubeSubscribers" 
+                                                value={formData.youtubeSubscribers} 
+                                                onChange={(e) => handleSocialChange(e, 'yt')} 
+                                                placeholder="e.g. 5000" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Bio / Portfolio */}
                         <div className="pt-6 border-t border-white/5 space-y-6">
                             <h3 className="text-sm font-bold text-neon-green uppercase tracking-widest">About You</h3>
-
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Short Bio</label>
                                 <textarea
-                                    required
-                                    name="bio"
-                                    value={formData.bio}
-                                    onChange={handleChange}
+                                    required name="bio" value={formData.bio} onChange={handleChange}
                                     placeholder="Tell brands why they should work with you..."
                                     className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-neon-pink transition-colors h-32 resize-none"
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Past Campaigns / Portfolio Link (Optional)</label>
                                 <Input name="portfolioInfo" value={formData.portfolioInfo} onChange={handleChange} placeholder="Link to your media kit or past work" />
                             </div>
                         </div>
 
-                        {/* Submit */}
-                        <div className="pt-8">
+                        <div className="pt-8 text-center">
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full h-16 rounded-2xl text-lg font-bold font-heading uppercase tracking-widest bg-neon-pink text-black hover:bg-neon-pink/80 shadow-[0_0_30px_rgba(255,0,255,0.2)]"
+                                className="w-full h-16 rounded-2xl text-lg font-bold font-heading uppercase tracking-widest bg-white text-black hover:bg-neon-green transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
                             >
-                                {isSubmitting ? 'Submitting Application...' : 'Submit Profile'}
+                                {isSubmitting ? 'Submitting Application...' : 'Register as Creator'}
                             </Button>
-                            <p className="text-center text-xs text-gray-500 mt-4 leading-relaxed max-w-md mx-auto">
-                                By submitting, you agree to be contacted by Newbi Entertainments regarding marketing campaigns and brand deals.
-                            </p>
                         </div>
                     </form>
-
                 </motion.div>
             )}
         </div>
