@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
 
 const SiteSettings = () => {
-    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings } = useStore();
+    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings, maintenanceState, toggleMaintenanceFeature, toggleGlobalMaintenance } = useStore();
     const navigate = useNavigate();
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
 
@@ -75,8 +75,8 @@ const SiteSettings = () => {
                                         title="Global Maintenance" 
                                         desc="RESTRICT GLOBAL PUBLIC ACCESS." 
                                         icon={Shield}
-                                        checked={siteSettings.globalMaintenance === true}
-                                        onChange={(val) => updateGeneralSettings({ globalMaintenance: val })}
+                                        checked={maintenanceState.global === true}
+                                        onChange={() => toggleGlobalMaintenance()}
                                         variant="danger"
                                     />
                                     <ToggleCard 
@@ -94,24 +94,33 @@ const SiteSettings = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <MiniToggle 
                                             label="Events Page" 
-                                            checked={siteSettings.maintenancePages?.events === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenancePages: { ...siteSettings.maintenancePages, events: val } 
-                                            })}
+                                            checked={maintenanceState.pages?.upcoming_events === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'upcoming_events')}
                                         />
                                         <MiniToggle 
                                             label="Creator Hub" 
-                                            checked={siteSettings.maintenancePages?.creators === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenancePages: { ...siteSettings.maintenancePages, creators: val } 
-                                            })}
+                                            checked={maintenanceState.pages?.influencer === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'influencer')}
                                         />
                                         <MiniToggle 
-                                            label="About Section" 
-                                            checked={siteSettings.maintenancePages?.about === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenancePages: { ...siteSettings.maintenancePages, about: val } 
-                                            })}
+                                            label="Concert Zone" 
+                                            checked={maintenanceState.pages?.concerts === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'concerts')}
+                                        />
+                                        <MiniToggle 
+                                            label="Media Gallery" 
+                                            checked={maintenanceState.pages?.gallery === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'gallery')}
+                                        />
+                                        <MiniToggle 
+                                            label="Community" 
+                                            checked={maintenanceState.pages?.community === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'community')}
+                                        />
+                                        <MiniToggle 
+                                            label="Contact Page" 
+                                            checked={maintenanceState.pages?.contact === true}
+                                            onChange={() => toggleMaintenanceFeature('pages', 'contact')}
                                         />
                                     </div>
                                 </div>
@@ -122,24 +131,18 @@ const SiteSettings = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <MiniToggle 
                                             label="Ticket Booking" 
-                                            checked={siteSettings.maintenanceFeatures?.ticketing === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenanceFeatures: { ...siteSettings.maintenanceFeatures, ticketing: val } 
-                                            })}
+                                            checked={maintenanceState.features?.tickets === true}
+                                            onChange={() => toggleMaintenanceFeature('features', 'tickets')}
                                         />
                                         <MiniToggle 
-                                            label="Member Search" 
-                                            checked={siteSettings.maintenanceFeatures?.search === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenanceFeatures: { ...siteSettings.maintenanceFeatures, search: val } 
-                                            })}
+                                            label="Invoicing" 
+                                            checked={maintenanceState.features?.invoices === true}
+                                            onChange={() => toggleMaintenanceFeature('features', 'invoices')}
                                         />
                                         <MiniToggle 
                                             label="Form Submission" 
-                                            checked={siteSettings.maintenanceFeatures?.forms === true}
-                                            onChange={(val) => updateGeneralSettings({ 
-                                                maintenanceFeatures: { ...siteSettings.maintenanceFeatures, forms: val } 
-                                            })}
+                                            checked={maintenanceState.features?.forms === true}
+                                            onChange={() => toggleMaintenanceFeature('features', 'forms')}
                                         />
                                     </div>
                                 </div>
