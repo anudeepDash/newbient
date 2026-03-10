@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, ArrowRight, CheckCircle2, DollarSign, ExternalLink, Sparkles, MessageCircle, FileText, ChevronDown, ChevronUp, Target, Award, Star, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, ArrowRight, CheckCircle2, DollarSign, ExternalLink, Sparkles, MessageCircle, FileText, ChevronDown, ChevronUp, Target, Award, Star, Trash2, Ban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CreatorCampaignCard = ({ campaign, profile, type, handleApply, handleTaskToggle }) => {
@@ -240,6 +240,26 @@ const CreatorDashboard = () => {
 
     if (!profile) {
         return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-pink" size={48} /></div>;
+    }
+
+    if (profile.profileStatus === 'blocked') {
+        return (
+            <div className="min-h-screen bg-black text-white pt-32 pb-20 px-4 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    className="max-w-xl mx-auto p-12 bg-zinc-900 border border-red-500/30 rounded-[3rem] shadow-[0_0_50px_rgba(255,0,0,0.1)]"
+                >
+                    <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Ban size={40} className="text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold font-heading mb-4 text-red-500">Access Suspended</h2>
+                    <p className="text-gray-400 mb-8">Your access to the Creator Hub has been suspended by the administration. If you believe this is a mistake, please contact support.</p>
+                    <Button onClick={() => navigate('/')} className="w-full bg-white text-black hover:bg-gray-200 h-14 rounded-2xl font-bold uppercase tracking-widest gap-2">
+                        Back to Home
+                    </Button>
+                </motion.div>
+            </div>
+        );
     }
 
     // Filter campaigns based on tab and city

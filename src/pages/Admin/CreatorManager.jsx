@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity } from 'lucide-react';
+import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CreatorManager = () => {
-    const { creators, updateCreator } = useStore();
+    const { creators, updateCreator, deleteCreator } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('All');
     const [selectedCreator, setSelectedCreator] = useState(null);
@@ -33,12 +34,27 @@ const CreatorManager = () => {
         }
     };
 
+    const handleDeleteCreator = async (uid) => {
+        if (window.confirm("Are you sure you want to permanently delete this creator profile? This action cannot be undone.")) {
+            try {
+                await deleteCreator(uid);
+                setSelectedCreator(null);
+                alert("Creator profile deleted.");
+            } catch (error) {
+                alert("Failed to delete creator.");
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-black text-white">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                            <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
+                                <ArrowLeft className="h-6 w-6" />
+                            </Link>
                             <Users className="text-neon-pink" size={32} /> Creator Directory
                         </h1>
                         <p className="text-gray-400 mt-2">Manage influencers and brand ambassadors.</p>
@@ -78,7 +94,11 @@ const CreatorManager = () => {
                                 onClick={() => setSelectedCreator(creator)}
                                 className="bg-zinc-900 border border-white/10 rounded-2xl p-6 hover:border-neon-pink/50 cursor-pointer transition-colors group relative overflow-hidden"
                             >
-                                <div className={`absolute top-0 left-0 w-1 h-full ${creator.profileStatus === 'approved' ? 'bg-neon-green' : 'bg-yellow-500'}`}></div>
+                                <div className={`absolute top-0 left-0 w-1 h-full ${
+                                    creator.profileStatus === 'approved' ? 'bg-neon-green' : 
+                                    creator.profileStatus === 'blocked' ? 'bg-red-600' : 
+                                    'bg-yellow-500'
+                                }`}></div>
 
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl font-bold font-heading">
@@ -96,7 +116,9 @@ const CreatorManager = () => {
                                     {creator.niches.length > 3 && <span className="text-[9px] px-2 py-0.5 text-gray-500">+{creator.niches.length - 3} more</span>}
                                 </div>
                                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-                                    <span className="text-xs text-gray-500 capitalize">{creator.profileStatus || 'Pending'}</span>
+                                    <span className={`text-xs font-bold capitalize ${creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-gray-500'}`}>
+                                        {creator.profileStatus || 'Pending'}
+                                    </span>
                                     <div className="flex gap-2">
                                         {creator.instagram && <Instagram size={14} className="text-gray-400" />}
                                     </div>
@@ -206,15 +228,39 @@ const CreatorManager = () => {
                                         <CheckCircle2 size={18} /> Approve
                                     </Button>
                                 )}
-                                {selectedCreator.profileStatus !== 'rejected' && (
+                                {selectedCreator.profileStatus !== 'rejected' && selectedCreator.profileStatus !== 'blocked' && (
                                     <Button
                                         onClick={() => handleUpdateStatus(selectedCreator.uid, 'rejected')}
                                         variant="outline"
-                                        className="flex-1 border-red-500/50 text-red-500 hover:bg-red-500 hover:text-black font-bold gap-2"
+                                        className="flex-1 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500 hover:text-black font-bold gap-2"
                                     >
                                         <XCircle size={18} /> Reject
                                     </Button>
                                 )}
+                                {selectedCreator.profileStatus !== 'blocked' ? (
+                                    <Button
+                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'blocked')}
+                                        variant="outline"
+                                        className="flex-1 border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white font-bold gap-2"
+                                    >
+                                        <Ban size={18} /> Block
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
+                                        variant="outline"
+                                        className="flex-1 border-neon-green/50 text-neon-green hover:bg-neon-green hover:text-black font-bold gap-2"
+                                    >
+                                        <CheckCircle2 size={18} /> Unblock
+                                    </Button>
+                                )}
+                                <Button
+                                    onClick={() => handleDeleteCreator(selectedCreator.uid)}
+                                    variant="outline"
+                                    className="flex-1 border-gray-500/50 text-gray-500 hover:bg-red-600 hover:text-white hover:border-red-600 font-bold gap-2"
+                                >
+                                    <Trash2 size={18} /> Delete Profile
+                                </Button>
                             </div>
 
                         </motion.div>

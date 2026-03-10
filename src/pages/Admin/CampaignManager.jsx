@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles } from 'lucide-react';
+import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 
@@ -185,6 +186,9 @@ const CampaignManager = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                            <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
+                                <ArrowLeft className="h-6 w-6" />
+                            </Link>
                             <Megaphone className="text-neon-blue" size={32} /> Campaign Manager
                         </h1>
                         <p className="text-gray-400 mt-2">Create and manage influencer marketing campaigns.</p>
