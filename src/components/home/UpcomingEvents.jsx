@@ -161,10 +161,10 @@ const UpcomingEvents = () => {
 
 const EventTicket = ({ event, handleShare }) => {
     return (
-        <div id={`event-card-${event.id}`} className="relative bg-zinc-900 border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
+        <div id={`event-card-${event.id}`} className="relative bg-[#0a0a0a] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
             {/* Visual Perforations */}
-            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-[#111] rounded-full border border-white/5 z-20" />
-            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-[#111] rounded-full border border-white/5 z-20" />
+            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20" />
+            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20" />
             <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
 
             {/* Top Image Section */}
@@ -180,7 +180,7 @@ const EventTicket = ({ event, handleShare }) => {
                     </div>
                 )}
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
                 
                 <div className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 z-10 flex items-center gap-3">
                     <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
@@ -191,7 +191,7 @@ const EventTicket = ({ event, handleShare }) => {
             </div>
 
             {/* Bottom Content Section */}
-            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-zinc-900 z-10">
+            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#0a0a0a] z-10">
                 <div>
                     <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate">
                         {event.title}
@@ -210,8 +210,8 @@ const EventTicket = ({ event, handleShare }) => {
 
                 <div className="flex items-center justify-between pt-4">
                     <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                        <span className="text-[10px] uppercase">{event.buttonText || 'Access Event'}</span>
-                        <ArrowRight size={16} />
+                        <span className="text-[10px] uppercase text-cyan-400">{event.buttonText || 'GET TICKETS NOW'}</span>
+                        <ArrowRight size={16} className="text-cyan-400" />
                     </div>
                     
                     <button
