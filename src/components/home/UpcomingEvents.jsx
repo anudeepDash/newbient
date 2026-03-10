@@ -185,7 +185,7 @@ const EventTicket = ({ event, handleShare }) => {
                     <div className="flex items-center gap-4 text-gray-500">
                         <div className="flex items-center gap-1">
                             <MapPin size={12} className="text-neon-blue" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Mainland India</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{event.location || 'Mainland India'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <Calendar size={12} className="text-neon-blue" />
