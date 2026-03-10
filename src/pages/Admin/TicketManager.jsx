@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,7 +8,6 @@ import { Input } from '../../components/ui/Input';
 import { sendTicketEmail } from '../../lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import html2canvas from 'html2canvas';
 
 const TicketManager = () => {
     const { ticketOrders, approveTicketOrder, rejectTicketOrder, deleteTicketOrder, paymentDetails, updatePaymentDetails, updateTicketOrder } = useStore();
@@ -154,28 +153,28 @@ const TicketManager = () => {
         alert(`Ticket Issued! Ref: ${bookingRef}`);
     };
 
-    const downloadTicket = async (orderId) => {
-        const ticketElement = document.getElementById(`ticket-preview-${orderId}`);
-        if (!ticketElement) return;
+    const copyEmailToClipboard = (order) => {
+        const emailContent = `Subject: Your Access Code for ${order.eventTitle}
 
-        setIsDownloading(true);
-        try {
-            const canvas = await html2canvas(ticketElement, {
-                backgroundColor: '#0a0a0a',
-                scale: 2,
-                logging: false,
-                useCORS: true
-            });
-            const image = canvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.href = image;
-            link.download = `Ticket_${orderId}.png`;
-            link.click();
-        } catch (error) {
-            console.error("Download failed:", error);
-            alert("Failed to generate ticket image.");
-        }
-        setIsDownloading(false);
+Hi ${order.customerName},
+
+Thank you for your purchase for ${order.eventTitle}!
+
+Your unique access code for entry is:
+CODE: ${order.bookingRef}
+
+Order Details:
+- Item: ${order.items?.[0]?.name || 'Standard Entry'}
+- Amount Paid: ₹${order.totalAmount.toLocaleString()}
+- Transaction ID: ${order.paymentRef}
+
+Please show this code at the venue. (A formal ticket PDF might be attached to this email if available).
+
+See you at the event!
+NewBi Entertainment`;
+
+        navigator.clipboard.writeText(emailContent);
+        alert("Email draft copied to clipboard!");
     };
 
     return (
@@ -388,10 +387,10 @@ const TicketManager = () => {
                                                             </>
                                                         ) : (
                                                             <>
-                                                                {order.ticketUrl ? (
+                                                                {order.ticketUrl || order.status === 'approved' ? (
                                                                     <div className="flex flex-col gap-2 w-full">
                                                                         <Button onClick={() => setViewingTicket(order)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
-                                                                            <Eye size={14} className="mr-2" /> View Ticket
+                                                                            <Mail size={14} className="mr-2" /> Get Email Draft
                                                                         </Button>
                                                                         <Button onClick={() => handleSendEmail(order)} className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl hover:bg-neon-blue hover:text-black transition-all">
                                                                             Dispatch Digital
@@ -535,7 +534,7 @@ const TicketManager = () => {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="max-w-md w-full relative"
+                            className="max-w-xl w-full relative"
                         >
                             <button 
                                 onClick={() => setViewingTicket(null)}
@@ -544,95 +543,57 @@ const TicketManager = () => {
                                 <X size={24} />
                             </button>
 
-                            {/* Actual Ticket Element to Capture */}
-                            <div 
-                                id={`ticket-preview-${viewingTicket.id}`}
-                                className="bg-[#0a0a0a] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col shadow-2xl"
-                                style={{ width: '400px', margin: '0 auto' }}
-                            >
-                                {/* Ticket Header */}
-                                <div className="h-48 bg-zinc-900 relative flex flex-col items-center justify-center p-8 border-b border-dashed border-white/20 text-center">
-                                    <div className="absolute top-4 left-4">
-                                        <img src="/logo_full.png" alt="Logo" className="h-6 opacity-80" />
-                                    </div>
-                                    <h2 className="text-3xl font-black font-heading text-white italic tracking-tighter uppercase leading-none mb-2 mt-4">
-                                        {viewingTicket.eventTitle}
-                                    </h2>
-                                    <div className="flex items-center gap-2 text-neon-blue font-black text-[10px] uppercase tracking-widest bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
-                                        Confirmed Access
-                                    </div>
+                            <div className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden flex flex-col shadow-2xl">
+                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-3">
+                                    <Mail className="text-neon-blue" />
+                                    EMAIL DRAFT FOR CLIENT
+                                </h3>
 
-                                    {/* Perforation holes logic style visually */}
-                                    <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-black border border-white/10 rounded-full" />
-                                    <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-black border border-white/10 rounded-full" />
+                                <div className="bg-black/50 rounded-2xl p-6 border border-white/5 font-mono text-xs text-gray-300 whitespace-pre-wrap max-h-[400px] overflow-y-auto custom-scrollbar">
+{`Subject: Your Access Code for ${viewingTicket.eventTitle}
+
+Hi ${viewingTicket.customerName},
+
+Thank you for your purchase for ${viewingTicket.eventTitle}!
+
+Your unique access code for entry is:
+CODE: ${viewingTicket.bookingRef}
+
+Order Details:
+- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}
+- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}
+- Transaction ID: ${viewingTicket.paymentRef}
+
+Please show this code at the venue. (A formal ticket PDF might be attached to this email if available).
+
+See you at the event!
+NewBi Entertainment`}
                                 </div>
 
-                                {/* Ticket Details */}
-                                <div className="p-10 space-y-8 flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Guest Name</p>
-                                            <h3 className="text-xl font-black uppercase italic tracking-tight text-white">{viewingTicket.customerName}</h3>
-                                        </div>
-                                        <div className="text-right space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Booking ID</p>
-                                            <p className="font-mono text-xs font-bold text-neon-green">{viewingTicket.bookingRef}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <div className="space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Entry Tier</p>
-                                            <p className="text-xs font-bold text-gray-200 uppercase">{viewingTicket.items?.[0]?.name || 'Standard'}</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Value Paid</p>
-                                            <p className="text-xs font-bold text-gray-200">₹{viewingTicket.totalAmount.toLocaleString()}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* QR Section */}
-                                    <div className="flex flex-col items-center justify-center pt-8 border-t border-white/5 gap-4">
-                                        <div className="p-4 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-                                            <img 
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(viewingTicket.bookingRef)}`} 
-                                                alt="QR Code" 
-                                                className="w-24 h-24"
-                                            />
-                                        </div>
-                                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Scan for entry validation</p>
-                                    </div>
+                                <div className="mt-8 grid grid-cols-2 gap-4">
+                                    <Button 
+                                        onClick={() => copyEmailToClipboard(viewingTicket)}
+                                        className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                    >
+                                        <Copy size={16} />
+                                        Copy Draft
+                                    </Button>
+                                    <Button 
+                                        onClick={() => {
+                                            const subject = encodeURIComponent(`Your Access Code for ${viewingTicket.eventTitle}`);
+                                            const body = encodeURIComponent(`Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${viewingTicket.eventTitle}!\n\nYour unique access code for entry is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n- Transaction ID: ${viewingTicket.paymentRef}\n\nPlease show this code at the venue.\n\nSee you at the event!\nNewBi Entertainment`);
+                                            window.location.href = `mailto:${viewingTicket.customerEmail}?subject=${subject}&body=${body}`;
+                                        }}
+                                        className="h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                    >
+                                        <ArrowRight size={16} />
+                                        Compose Mail
+                                    </Button>
                                 </div>
-
-                                {/* Ticket Footer */}
-                                <div className="p-6 bg-black/60 border-t border-white/5 text-center">
-                                    <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">
-                                        Produced by NewBi Entertainment &copy; {new Date().getFullYear()}
-                                    </p>
-                                </div>
+                                <p className="text-center text-[10px] text-gray-500 mt-4 uppercase font-bold tracking-widest">
+                                    Copy the content above and paste it into your email client.
+                                </p>
                             </div>
-
-                            {/* Download Action */}
-                            <Button 
-                                onClick={() => downloadTicket(viewingTicket.id)}
-                                disabled={isDownloading}
-                                className="w-full mt-10 h-16 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
-                            >
-                                {isDownloading ? (
-                                    <>
-                                        <Loader className="animate-spin" size={20} />
-                                        Generating Manifest...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download size={20} />
-                                        Download Digital Ticket
-                                    </>
-                                )}
-                            </Button>
-                            <p className="text-center text-[10px] text-gray-500 mt-4 uppercase font-bold tracking-widest">
-                                Attach this image to your manual email dispatch
-                            </p>
                         </motion.div>
                     </div>
                 )}
