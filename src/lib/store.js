@@ -22,7 +22,7 @@ export const useStore = create((set, get) => ({
         features: {}, // e.g., invoices, announcements
         sections: {}, // e.g., home_upcoming, home_portfolio
     },
-    siteSettings: { showUpcomingEvents: true },
+    siteSettings: { showUpcomingEvents: true, hideMaintenancePages: false },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
     loading: true,
     authInitialized: false,
