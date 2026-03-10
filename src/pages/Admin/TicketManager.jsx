@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { sendTicketEmail } from '../../lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import html2canvas from 'html2canvas';
 
 const TicketManager = () => {
     const { ticketOrders, approveTicketOrder, rejectTicketOrder, deleteTicketOrder, paymentDetails, updatePaymentDetails, updateTicketOrder } = useStore();
@@ -15,6 +16,23 @@ const TicketManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [uploadCategory, setUploadCategory] = useState('all');
+
+    // Manual Ticket State
+    const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+    const [viewingTicket, setViewingTicket] = useState(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [manualTicket, setManualTicket] = useState({
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        eventId: '',
+        eventTitle: '',
+        totalAmount: '',
+        paymentRef: 'MANUAL_OFFLINE',
+        items: []
+    });
+
+    const { upcomingEvents, addTicketOrder } = useStore();
 
     const [settingsForm, setSettingsForm] = useState(paymentDetails);
 
@@ -106,6 +124,60 @@ const TicketManager = () => {
         setIsUploading(false);
     };
 
+    const handleManualSubmit = async (e) => {
+        e.preventDefault();
+        const event = upcomingEvents.find(ev => ev.id === manualTicket.eventId);
+        if (!event) return alert("Please select an event.");
+
+        const bookingRef = `NB-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        
+        await addTicketOrder({
+            ...manualTicket,
+            eventTitle: event.title,
+            bookingRef,
+            status: 'approved', // Manually issued tickets are pre-approved
+            createdAt: new Date().toISOString(),
+            items: [{ name: 'Manual Entry', price: Number(manualTicket.totalAmount), count: 1 }]
+        });
+
+        setIsManualModalOpen(false);
+        setManualTicket({
+            customerName: '',
+            customerEmail: '',
+            customerPhone: '',
+            eventId: '',
+            eventTitle: '',
+            totalAmount: '',
+            paymentRef: 'MANUAL_OFFLINE',
+            items: []
+        });
+        alert(`Ticket Issued! Ref: ${bookingRef}`);
+    };
+
+    const downloadTicket = async (orderId) => {
+        const ticketElement = document.getElementById(`ticket-preview-${orderId}`);
+        if (!ticketElement) return;
+
+        setIsDownloading(true);
+        try {
+            const canvas = await html2canvas(ticketElement, {
+                backgroundColor: '#0a0a0a',
+                scale: 2,
+                logging: false,
+                useCORS: true
+            });
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = `Ticket_${orderId}.png`;
+            link.click();
+        } catch (error) {
+            console.error("Download failed:", error);
+            alert("Failed to generate ticket image.");
+        }
+        setIsDownloading(false);
+    };
+
     return (
         <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-20">
             {/* Immersive Background */}
@@ -127,6 +199,12 @@ const TicketManager = () => {
                     </div>
 
                     <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                        <button
+                            onClick={() => setIsManualModalOpen(true)}
+                            className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black mr-2 hover:scale-105"
+                        >
+                            <Plus size={14} /> Issue Manual Ticket
+                        </button>
                         {[
                             { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
                             { id: 'approved', label: 'Archived', count: approvedOrders.length, icon: ShieldCheck },
@@ -312,9 +390,9 @@ const TicketManager = () => {
                                                             <>
                                                                 {order.ticketUrl ? (
                                                                     <div className="flex flex-col gap-2 w-full">
-                                                                        <a href={order.ticketUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full h-12 rounded-xl bg-white/10 text-white font-black uppercase text-[10px] border border-white/10 hover:bg-white/20 transition-all">
-                                                                            <FileText size={14} className="mr-2" /> Manifest
-                                                                        </a>
+                                                                        <Button onClick={() => setViewingTicket(order)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
+                                                                            <Eye size={14} className="mr-2" /> View Ticket
+                                                                        </Button>
                                                                         <Button onClick={() => handleSendEmail(order)} className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl hover:bg-neon-blue hover:text-black transition-all">
                                                                             Dispatch Digital
                                                                         </Button>
@@ -362,6 +440,203 @@ const TicketManager = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Manual Ticket Modal */}
+            <AnimatePresence>
+                {isManualModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative"
+                        >
+                            <button onClick={() => setIsManualModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                            <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-8 flex items-center gap-3">
+                                <Plus size={24} className="text-neon-blue" />
+                                MANUAL TICKET ISSUANCE
+                            </h2>
+
+                            <form onSubmit={handleManualSubmit} className="grid grid-cols-2 gap-6">
+                                <div className="col-span-2 space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Event</label>
+                                    <select 
+                                        required
+                                        className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/30 transition-all text-white"
+                                        value={manualTicket.eventId}
+                                        onChange={(e) => setManualTicket({...manualTicket, eventId: e.target.value})}
+                                    >
+                                        <option value="">Select Event...</option>
+                                        {upcomingEvents.map(event => (
+                                            <option key={event.id} value={event.id}>{event.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Customer Name</label>
+                                    <Input 
+                                        required
+                                        placeholder="RAHUL VERMA"
+                                        value={manualTicket.customerName}
+                                        onChange={(e) => setManualTicket({...manualTicket, customerName: e.target.value})}
+                                        className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Phone Number</label>
+                                    <Input 
+                                        required
+                                        placeholder="+91 00000 00000"
+                                        value={manualTicket.customerPhone}
+                                        onChange={(e) => setManualTicket({...manualTicket, customerPhone: e.target.value})}
+                                        className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                    />
+                                </div>
+                                <div className="col-span-2 space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
+                                    <Input 
+                                        required
+                                        type="email"
+                                        placeholder="ENTRY@NEWBIENT.COM"
+                                        value={manualTicket.customerEmail}
+                                        onChange={(e) => setManualTicket({...manualTicket, customerEmail: e.target.value})}
+                                        className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                    />
+                                </div>
+                                <div className="col-span-2 space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Amount Paid (₹)</label>
+                                    <Input 
+                                        required
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={manualTicket.totalAmount}
+                                        onChange={(e) => setManualTicket({...manualTicket, totalAmount: e.target.value})}
+                                        className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-lg font-black tracking-widest px-6 text-neon-green"
+                                    />
+                                </div>
+
+                                <Button type="submit" className="col-span-2 h-16 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all mt-4">
+                                    Generate & Issue Ticket
+                                </Button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Ticket Preview Modal */}
+            <AnimatePresence>
+                {viewingTicket && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="max-w-md w-full relative"
+                        >
+                            <button 
+                                onClick={() => setViewingTicket(null)}
+                                className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+
+                            {/* Actual Ticket Element to Capture */}
+                            <div 
+                                id={`ticket-preview-${viewingTicket.id}`}
+                                className="bg-[#0a0a0a] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col shadow-2xl"
+                                style={{ width: '400px', margin: '0 auto' }}
+                            >
+                                {/* Ticket Header */}
+                                <div className="h-48 bg-zinc-900 relative flex flex-col items-center justify-center p-8 border-b border-dashed border-white/20 text-center">
+                                    <div className="absolute top-4 left-4">
+                                        <img src="/logo_full.png" alt="Logo" className="h-6 opacity-80" />
+                                    </div>
+                                    <h2 className="text-3xl font-black font-heading text-white italic tracking-tighter uppercase leading-none mb-2 mt-4">
+                                        {viewingTicket.eventTitle}
+                                    </h2>
+                                    <div className="flex items-center gap-2 text-neon-blue font-black text-[10px] uppercase tracking-widest bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
+                                        Confirmed Access
+                                    </div>
+
+                                    {/* Perforation holes logic style visually */}
+                                    <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-black border border-white/10 rounded-full" />
+                                    <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-black border border-white/10 rounded-full" />
+                                </div>
+
+                                {/* Ticket Details */}
+                                <div className="p-10 space-y-8 flex-1">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Guest Name</p>
+                                            <h3 className="text-xl font-black uppercase italic tracking-tight text-white">{viewingTicket.customerName}</h3>
+                                        </div>
+                                        <div className="text-right space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Booking ID</p>
+                                            <p className="font-mono text-xs font-bold text-neon-green">{viewingTicket.bookingRef}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Entry Tier</p>
+                                            <p className="text-xs font-bold text-gray-200 uppercase">{viewingTicket.items?.[0]?.name || 'Standard'}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Value Paid</p>
+                                            <p className="text-xs font-bold text-gray-200">₹{viewingTicket.totalAmount.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* QR Section */}
+                                    <div className="flex flex-col items-center justify-center pt-8 border-t border-white/5 gap-4">
+                                        <div className="p-4 bg-white rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                                            <img 
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(viewingTicket.bookingRef)}`} 
+                                                alt="QR Code" 
+                                                className="w-24 h-24"
+                                            />
+                                        </div>
+                                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Scan for entry validation</p>
+                                    </div>
+                                </div>
+
+                                {/* Ticket Footer */}
+                                <div className="p-6 bg-black/60 border-t border-white/5 text-center">
+                                    <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">
+                                        Produced by NewBi Entertainment &copy; {new Date().getFullYear()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Download Action */}
+                            <Button 
+                                onClick={() => downloadTicket(viewingTicket.id)}
+                                disabled={isDownloading}
+                                className="w-full mt-10 h-16 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                            >
+                                {isDownloading ? (
+                                    <>
+                                        <Loader className="animate-spin" size={20} />
+                                        Generating Manifest...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={20} />
+                                        Download Digital Ticket
+                                    </>
+                                )}
+                            </Button>
+                            <p className="text-center text-[10px] text-gray-500 mt-4 uppercase font-bold tracking-widest">
+                                Attach this image to your manual email dispatch
+                            </p>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

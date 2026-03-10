@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, QrCode, CheckCircle, ArrowRight, Loader, Minus, Plus, ChevronDown, ChevronUp, Info, Map as MapIcon } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -22,7 +23,14 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
     const [cart, setCart] = useState({});
     const [paymentRef, setPaymentRef] = useState('');
 
-    const hasCategories = event.ticketCategories && event.ticketCategories.length > 0;
+    // Negotiated Price Logic
+    const urlParams = new URL(window.location.href).searchParams;
+    const customPriceParam = urlParams.get('customPrice');
+    const discountEventId = urlParams.get('discountEventId');
+    const isCustomPriceActive = !!(customPriceParam && discountEventId === event.id);
+    const urlCustomPrice = isCustomPriceActive ? Number(customPriceParam) : null;
+
+    const hasCategories = !isCustomPriceActive && event.ticketCategories && event.ticketCategories.length > 0;
     const hasLayout = !!event.venueLayout;
 
     // Initialize/Reset State
@@ -36,9 +44,11 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
     }, [isOpen, event]);
 
     // Calculate Total
+    const baseTicketPrice = isCustomPriceActive ? urlCustomPrice : (event.ticketPrice || 0);
+
     const totalAmount = hasCategories
         ? event.ticketCategories.reduce((acc, cat) => acc + (cat.price * (cart[cat.id] || 0)), 0)
-        : (event.ticketPrice || 0) * formData.count;
+        : baseTicketPrice * formData.count;
 
     const cartTotalCount = hasCategories
         ? Object.values(cart).reduce((a, b) => a + b, 0)
@@ -80,7 +90,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                     price: c.price,
                     count: cart[c.id]
                 }))
-                : [{ name: 'Standard Ticket', price: event.ticketPrice || 0, count: Number(formData.count) }];
+                : [{ name: isCustomPriceActive ? 'Negotiated Ticket' : 'Standard Ticket', price: baseTicketPrice, count: Number(formData.count) }];
 
             await addTicketOrder({
                 eventId: event.id,
@@ -182,8 +192,15 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="bg-white/5 p-6 rounded-xl border border-white/10 text-center">
-                                            <h3 className="font-bold text-lg mb-4">Standard Entry</h3>
+                                        <div className="bg-white/5 p-6 rounded-xl border border-white/10 text-center relative overflow-hidden">
+                                            {isCustomPriceActive && (
+                                                <div className="absolute top-0 inset-x-0 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest py-1">
+                                                    Custom Offer Applied
+                                                </div>
+                                            )}
+                                            <h3 className={cn("font-bold text-lg mb-4", isCustomPriceActive && "mt-4 text-neon-blue")}>
+                                                {isCustomPriceActive ? "Negotiated Access" : "Standard Entry"}
+                                            </h3>
                                             <div className="flex items-center justify-center gap-6">
                                                 <button
                                                     onClick={() => setFormData(p => ({ ...p, count: Math.max(1, p.count - 1) }))}
@@ -199,7 +216,8 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                                     <Plus />
                                                 </button>
                                             </div>
-                                            <p className="text-gray-400 mt-4 text-sm">Price per ticket: <span className="text-white">₹{event.ticketPrice || 0}</span></p>
+                                            <p className="text-gray-400 mt-4 text-sm">Price per ticket: <span className={cn("font-bold", isCustomPriceActive ? "text-neon-blue" : "text-white")}>₹{baseTicketPrice}</span></p>
+                                            {isCustomPriceActive && <p className="text-[10px] text-gray-500 line-through mt-1">Standard: ₹{event.ticketPrice}</p>}
                                         </div>
                                     )}
                                 </div>

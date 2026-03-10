@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +15,13 @@ const UpcomingEventsManager = () => {
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+
+    // Custom Link State
+    const [linkModalOpen, setLinkModalOpen] = useState(false);
+    const [linkEvent, setLinkEvent] = useState(null);
+    const [customPrice, setCustomPrice] = useState('');
+    const [generatedLink, setGeneratedLink] = useState('');
+    const [copiedLink, setCopiedLink] = useState(false);
 
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -42,6 +49,23 @@ const UpcomingEventsManager = () => {
         setSelectedFile(null);
         setVenueLayoutFile(null);
         setUploading(false);
+    };
+
+    const generateCustomLink = (e) => {
+        e.preventDefault();
+        if (!linkEvent || !customPrice) return;
+        const url = new URL(window.location.origin);
+        url.searchParams.set('customPrice', customPrice);
+        url.searchParams.set('discountEventId', linkEvent.id);
+        
+        setGeneratedLink(url.toString());
+        setCopiedLink(false);
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
     };
 
     const handleEdit = (item) => {
@@ -372,6 +396,9 @@ const UpcomingEventsManager = () => {
                                                     <button onClick={() => moveItem(index, 'down')} disabled={index === upcomingEvents.length - 1} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all disabled:opacity-0"><ChevronDown size={18} /></button>
                                                 </div>
                                                 <div className="flex gap-2">
+                                                    {item.isTicketed && (
+                                                        <button onClick={() => { setLinkEvent(item); setCustomPrice(''); setGeneratedLink(''); setLinkModalOpen(true); }} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all" title="Generate Custom Priced Link"><Link2 size={18} /></button>
+                                                    )}
                                                     <button onClick={() => handleEdit(item)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green transition-all"><Edit size={18} /></button>
                                                     <button onClick={() => deleteUpcomingEvent(item.id)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 transition-all"><Trash2 size={18} /></button>
                                                 </div>
@@ -402,6 +429,72 @@ const UpcomingEventsManager = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Custom Link Modal */}
+            <AnimatePresence>
+                {linkModalOpen && linkEvent && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-zinc-900 border border-white/10 rounded-[2rem] p-8 max-w-md w-full relative"
+                        >
+                            <button onClick={() => setLinkModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2 flex items-center gap-2">
+                                <Link2 className="text-neon-blue" size={20} />
+                                Generate Custom Link
+                            </h3>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-6 truncate">
+                                {linkEvent.title}
+                            </p>
+
+                            <form onSubmit={generateCustomLink} className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Negotiated Price (₹)</label>
+                                    <Input
+                                        type="number"
+                                        placeholder="E.G. 499"
+                                        value={customPrice}
+                                        onChange={(e) => setCustomPrice(e.target.value)}
+                                        required
+                                        className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-blue/30 px-6"
+                                    />
+                                    <p className="text-[9px] text-gray-500 pl-1 uppercase font-bold tracking-widest">
+                                        Standard Price: ₹{linkEvent.ticketPrice}
+                                    </p>
+                                </div>
+                                
+                                {!generatedLink ? (
+                                    <Button type="submit" className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-transform">
+                                        Generate Link
+                                    </Button>
+                                ) : (
+                                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="p-4 bg-black/50 rounded-2xl border border-white/5 flex items-center gap-3">
+                                            <p className="text-[10px] text-neon-blue font-medium truncate flex-1">
+                                                {generatedLink}
+                                            </p>
+                                            <button 
+                                                type="button" 
+                                                onClick={copyToClipboard}
+                                                className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all shrink-0"
+                                            >
+                                                {copiedLink ? <CheckCircle size={14} /> : <Copy size={14} />}
+                                            </button>
+                                        </div>
+                                        <Button type="button" onClick={() => { setLinkModalOpen(false); setGeneratedLink(''); setCustomPrice(''); }} className="w-full h-14 bg-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/10">
+                                            Done
+                                        </Button>
+                                    </div>
+                                )}
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
