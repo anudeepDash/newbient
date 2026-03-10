@@ -171,23 +171,23 @@ const ServiceCard = ({ service, index }) => {
             <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-auto">
                     <div className={cn(
-                        "w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-700 group-hover:bg-white group-hover:text-black group-hover:scale-110",
+                        "w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-700 md:group-hover:bg-white md:group-hover:text-black md:group-hover:scale-110",
                         service.color === 'neon-green' ? 'text-neon-green' : (service.color === 'neon-blue' ? 'text-neon-blue' : (service.color === 'neon-pink' ? 'text-neon-pink' : 'text-white'))
                     )}>
                         <service.icon size={32} />
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="text-xl md:text-3xl font-black font-heading text-white tracking-tight leading-none group-hover:translate-x-2 transition-transform duration-500 italic">
+                <div className="space-y-4 mt-6">
+                    <h3 className="text-xl md:text-3xl font-black font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500 italic">
                         {service.title}
                     </h3>
 
-                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] leading-tight">
                         {service.shortDesc}
                     </p>
 
-                    <p className="text-gray-400 text-sm font-medium leading-relaxed opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-700">
+                    <p className="text-gray-400 text-sm font-medium leading-relaxed opacity-100 translate-y-0 md:opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0 transition-all duration-700">
                         {service.fullDesc}
                     </p>
                 </div>

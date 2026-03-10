@@ -44,7 +44,7 @@ const NotificationBell = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 md:-right-4 top-full mt-4 w-[calc(100vw-3rem)] max-w-[340px] md:max-w-[400px] md:w-[400px] bg-[#0c0c0c]/95 border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] overflow-hidden z-[100] backdrop-blur-3xl"
+                        className="fixed md:absolute left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 top-20 md:top-full md:-right-4 md:mt-4 w-[calc(100vw-2rem)] max-w-[340px] md:max-w-[400px] md:w-[400px] bg-[#0c0c0c]/95 border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] overflow-hidden z-[100] backdrop-blur-3xl"
                     >
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h3 className="font-black text-[10px] md:text-sm uppercase tracking-widest text-white">Broadcast Signals</h3>

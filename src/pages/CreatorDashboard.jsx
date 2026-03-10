@@ -473,16 +473,17 @@ const CreatorDashboard = () => {
                                     <p className="text-gray-400 font-medium">No new campaigns found in {profile.city}. Check back soon!</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                                <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
                                     {availableCampaigns.map(campaign => (
-                                        <CreatorCampaignCard 
-                                            key={campaign.id} 
-                                            campaign={campaign} 
-                                            profile={profile} 
-                                            type="explore" 
-                                            handleApply={handleApply} 
-                                            handleTaskToggle={handleTaskToggle} 
-                                        />
+                                        <div key={campaign.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                                            <CreatorCampaignCard 
+                                                campaign={campaign} 
+                                                profile={profile} 
+                                                type="explore" 
+                                                handleApply={handleApply} 
+                                                handleTaskToggle={handleTaskToggle} 
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -515,16 +516,17 @@ const CreatorDashboard = () => {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                            <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
                                 {joinedCampaignsList.map(campaign => (
-                                    <CreatorCampaignCard 
-                                        key={campaign.id} 
-                                        campaign={campaign} 
-                                        profile={profile} 
-                                        type="joined" 
-                                        handleApply={handleApply} 
-                                        handleTaskToggle={handleTaskToggle} 
-                                    />
+                                    <div key={campaign.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                                        <CreatorCampaignCard 
+                                            campaign={campaign} 
+                                            profile={profile} 
+                                            type="joined" 
+                                            handleApply={handleApply} 
+                                            handleTaskToggle={handleTaskToggle} 
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         )}
