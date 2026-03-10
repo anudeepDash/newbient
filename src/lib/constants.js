@@ -15,5 +15,6 @@ export const PREDEFINED_CITIES = [
     "Lucknow",
     "Guwahati",
     "Bhubaneswar",
-    "Bhopal"
+    "Bhopal",
+    "Others"
 ];

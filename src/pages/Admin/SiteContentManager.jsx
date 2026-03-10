@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Users } from 'lucide-react';
+import { ArrowLeft, Save, Users, Globe, Settings, Bell, Shield, Sparkles, Zap, Heart, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { cn } from '../../lib/utils';
+import { motion } from 'framer-motion';
 
 const SiteContentManager = () => {
     const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings } = useStore();
     const navigate = useNavigate();
 
-    // Local state for form
     const [formData, setFormData] = useState({ ...siteDetails });
 
     const handleChange = (e) => {
@@ -18,185 +19,229 @@ const SiteContentManager = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        updateSiteDetails(formData);
-        alert('Site details updated successfully!');
-        navigate('/admin');
+        try {
+            await updateSiteDetails(formData);
+            alert('Site details updated successfully!');
+            navigate('/admin');
+        } catch (error) {
+            alert('Failed to update details.');
+        }
     };
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <Link to="/admin" className="text-gray-400 hover:text-white flex items-center transition-colors text-sm">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">Site Content</h1>
+        <div className="min-h-screen bg-[#020202] text-white pb-20">
+            {/* Immersive Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
+            </div>
+
+            <div className="relative z-10 max-w-5xl mx-auto px-6 pt-12">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
+                    <div className="space-y-2">
+                        <Link to="/admin" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4">
+                            <ArrowLeft size={14} /> Back to Hub
+                        </Link>
+                        <h1 className="text-4xl font-black font-heading tracking-tighter uppercase italic">
+                            SITE <span className="text-neon-green">CONFIG.</span>
+                        </h1>
+                    </div>
                 </div>
 
-                <Card className="p-8">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Feature Toggles */}
-                        <div className="p-6 border border-neon-blue/20 rounded-xl bg-neon-blue/5 mb-8">
-                            <h3 className="text-lg font-bold text-neon-blue mb-4 flex items-center gap-2">
-                                <span className="p-1 bg-neon-blue/20 rounded-lg"><Users size={16} /></span>
-                                Community Settings
-                            </h3>
-
-                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                                <div>
-                                    <h4 className="text-white font-bold text-sm">Enable Tribe Form (Step 1)</h4>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        If disabled, users will skip the Google Form and go directly to Step 2 (WhatsApp).
-                                    </p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={siteSettings.enableTribeForm !== false} // Default to true
-                                        onChange={(e) => {
-                                            const newValue = e.target.checked;
-                                            // Optimistic update locally not needed as we pull from store, but for fast feedback:
-                                            updateGeneralSettings({ enableTribeForm: newValue });
-                                        }}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
-                                </label>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5 mt-4">
-                                <div>
-                                    <h4 className="text-white font-bold text-sm">Show Past Clients Section</h4>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        If disabled, the "Past Clients" marquee will be hidden from the home page.
-                                    </p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={siteSettings.showPastClients !== false} // Default to true
-                                        onChange={(e) => {
-                                            const newValue = e.target.checked;
-                                            updateGeneralSettings({ showPastClients: newValue });
-                                        }}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
-                                </label>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5 mt-4">
-                                <div>
-                                    <h4 className="text-white font-bold text-sm">Show Creator Stats</h4>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        If disabled, the stats and campaign completion section will be hidden from the Creator Hub.
-                                    </p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={siteSettings.showCreatorStats !== false} // Default to true
-                                        onChange={(e) => {
-                                            const newValue = e.target.checked;
-                                            updateGeneralSettings({ showCreatorStats: newValue });
-                                        }}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
-                                </label>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5 mt-4">
-                                <div>
-                                    <h4 className="text-white font-bold text-sm">Hide pages in maintenance mode</h4>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        If enabled, pages under maintenance will be hidden from the navigation menu.
-                                    </p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={siteSettings.hideMaintenancePages === true}
-                                        onChange={(e) => {
-                                            const newValue = e.target.checked;
-                                            updateGeneralSettings({ hideMaintenancePages: newValue });
-                                        }}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
-                                </label>
-                            </div>
+                <form onSubmit={handleSubmit} className="space-y-16">
+                    {/* Critical Control */}
+                    <section>
+                        <div className="flex items-center gap-4 mb-8">
+                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-red-500">Critical Control</h2>
+                            <div className="flex-1 h-px bg-white/5" />
                         </div>
-
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2 p-4 border border-white/10 rounded-lg bg-white/5">
-                                <label className="block text-sm font-bold text-neon-green mb-2">Community Page: WhatsApp Group Link</label>
-                                <Input
-                                    name="whatsappCommunity"
-                                    value={formData.whatsappCommunity || ''}
-                                    onChange={handleChange}
-                                    placeholder="https://chat.whatsapp.com/..."
-                                />
-                                <p className="text-xs text-gray-500 mt-1">This link is used in Step 2 of the 'Community Join' page.</p>
-                            </div>
+                            <ToggleCard 
+                                title="Global Maintenance" 
+                                desc="Lock the entire site for visitors. Admins maintain access." 
+                                icon={Shield}
+                                checked={siteSettings.globalMaintenance === true}
+                                onChange={(val) => updateGeneralSettings({ globalMaintenance: val })}
+                                variant="danger"
+                            />
+                            <ToggleCard 
+                                title="Stealth Maintenance" 
+                                desc="Hide inactive pages from Navigation menus." 
+                                icon={Globe}
+                                checked={siteSettings.hideMaintenancePages === true}
+                                onChange={(val) => updateGeneralSettings({ hideMaintenancePages: val })}
+                            />
+                        </div>
+                    </section>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Contact Phone (WhatsApp)</label>
-                                <Input
-                                    name="phone"
-                                    value={formData.phone || ''}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    placeholder="+91..."
-                                />
-                                <p className="text-xs text-gray-500 mt-1">General contact number.</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
-                                <Input
-                                    name="email"
-                                    type="email"
-                                    value={formData.email || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Instagram URL</label>
-                                <Input
-                                    name="instagram"
-                                    value={formData.instagram || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">LinkedIn URL</label>
-                                <Input
-                                    name="linkedin"
-                                    value={formData.linkedin || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Physical Address</label>
-                                <Input
-                                    name="address"
-                                    value={formData.address || ''}
-                                    onChange={handleChange}
-                                    placeholder="e.g. 123 Music Lane, Creative City"
-                                />
-                            </div>
+                    {/* Site Identity */}
+                    <section>
+                        <div className="flex items-center gap-4 mb-8">
+                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-blue">Site Identity</h2>
+                            <div className="flex-1 h-px bg-white/5" />
                         </div>
 
-                        <div className="pt-6 border-t border-white/10">
-                            <Button type="submit" variant="primary" className="w-full md:w-auto">
-                                <Save className="mr-2 h-4 w-4" />
-                                Save Changes
-                            </Button>
+                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <InputGroup label="Site Title" name="title" icon={Settings} value={formData.title} onChange={handleChange} placeholder="Newbi | Disrupting Marketing" />
+                                <InputGroup label="Tagline" name="tagline" icon={Sparkles} value={formData.tagline} onChange={handleChange} placeholder="The future of creator marketing" />
+                                
+                                <div className="md:col-span-2 space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">SEO Description</label>
+                                    <div className="relative">
+                                        <FileText className="absolute left-4 top-4 text-gray-500" size={16} />
+                                        <textarea
+                                            name="description"
+                                            value={formData.description || ''}
+                                            onChange={handleChange}
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-blue/50 outline-none transition-colors"
+                                            placeholder="Write a compelling meta description for search engines..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </section>
+
+                    {/* System Intelligence */}
+                    <section>
+                        <div className="flex items-center gap-4 mb-8">
+                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green">Feature Control</h2>
+                            <div className="flex-1 h-px bg-white/5" />
                         </div>
-                    </form>
-                </Card>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <ToggleCard 
+                                title="Tribe Intake Form" 
+                                desc="Enable Step 1 Google Form for new members." 
+                                icon={Heart}
+                                checked={siteSettings.enableTribeForm !== false}
+                                onChange={(val) => updateGeneralSettings({ enableTribeForm: val })}
+                            />
+                            <ToggleCard 
+                                title="Client Showcase" 
+                                desc="Display the animated past clients marquee." 
+                                icon={Zap}
+                                checked={siteSettings.showPastClients !== false}
+                                onChange={(val) => updateGeneralSettings({ showPastClients: val })}
+                            />
+                            <ToggleCard 
+                                title="Creator Insights" 
+                                desc="Show campaign stats in Creator Hub dashboard." 
+                                icon={Sparkles}
+                                checked={siteSettings.showCreatorStats !== false}
+                                onChange={(val) => updateGeneralSettings({ showCreatorStats: val })}
+                            />
+                        </div>
+                    </section>
+
+                    {/* Contact & Socials */}
+                    <section>
+                        <div className="flex items-center gap-4 mb-8">
+                            <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-pink">Communication Endpoint</h2>
+                            <div className="flex-1 h-px bg-white/5" />
+                        </div>
+
+                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="md:col-span-2 space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WhatsApp Community Endpoint</label>
+                                    <div className="relative">
+                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-green" size={16} />
+                                        <Input
+                                            name="whatsappCommunity"
+                                            value={formData.whatsappCommunity || ''}
+                                            onChange={handleChange}
+                                            className="h-12 pl-12 bg-black/50 border-white/5 rounded-xl font-medium"
+                                            placeholder="https://chat.whatsapp.com/..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <InputGroup label="Official Phone" name="phone" icon={Phone} value={formData.phone} onChange={handleChange} placeholder="+91..." />
+                                <InputGroup label="Corporate Email" name="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="hello@newbi.live" />
+                                <InputGroup label="Instagram Handle" name="instagram" icon={Instagram} value={formData.instagram} onChange={handleChange} placeholder="Handle or URL" />
+                                <InputGroup label="LinkedIn Profile" name="linkedin" icon={Linkedin} value={formData.linkedin} onChange={handleChange} placeholder="Handle or URL" />
+                                
+                                <div className="md:col-span-2 space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">HQ Physical Location</label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-4 top-4 text-gray-500" size={16} />
+                                        <textarea
+                                            name="address"
+                                            value={formData.address || ''}
+                                            onChange={handleChange}
+                                            className="w-full bg-black/50 border border-white/5 rounded-xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-pink/50 outline-none transition-colors"
+                                            placeholder="Full office address..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </section>
+
+                    {/* Footer Actions */}
+                    <div className="flex justify-end pt-8 border-t border-white/5">
+                        <Button type="submit" className="bg-neon-green text-black font-black font-heading uppercase tracking-widest text-xs h-16 px-16 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
+                            <Save className="mr-3 h-5 w-5" /> Commit Site Configuration
+                        </Button>
+                    </div>
+                </form>
             </div>
         </div>
     );
 };
+
+const ToggleCard = ({ title, desc, icon: Icon, checked, onChange, variant = 'primary' }) => (
+    <div className={cn(
+        "p-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] flex items-center justify-between group hover:border-white/10 transition-all",
+        variant === 'danger' && "hover:border-red-500/30"
+    )}>
+        <div className="flex items-center gap-5">
+            <div className={cn(
+                "p-3 rounded-xl bg-white/5 text-gray-500 group-hover:text-white transition-colors",
+                variant === 'danger' && "group-hover:text-red-500"
+            )}>
+                <Icon size={20} />
+            </div>
+            <div>
+                <h4 className="text-sm font-black uppercase tracking-tight text-white">{title}</h4>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 tracking-wider leading-relaxed">{desc}</p>
+            </div>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+            <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+            />
+            <div className={cn(
+                "w-12 h-6 bg-white/5 border border-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:bg-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-gray-700 after:rounded-full after:h-4 after:w-4 after:transition-all",
+                variant === 'danger' ? "peer-checked:bg-red-500 peer-checked:border-red-500" : "peer-checked:bg-neon-green peer-checked:border-neon-green"
+            )}></div>
+        </label>
+    </div>
+);
+
+const InputGroup = ({ label, name, icon: Icon, value, onChange, placeholder }) => (
+    <div className="space-y-2">
+        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">{label}</label>
+        <div className="relative">
+            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+            <Input
+                name={name}
+                value={value || ''}
+                onChange={onChange}
+                className="h-12 pl-12 bg-black/50 border-white/5 rounded-xl font-medium text-sm"
+                placeholder={placeholder}
+            />
+        </div>
+    </div>
+);
 
 export default SiteContentManager;

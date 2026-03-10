@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 
 const Portfolio = () => {
     const { portfolio, portfolioCategories } = useStore();
@@ -9,202 +9,209 @@ const Portfolio = () => {
 
     const scroll = (direction) => {
         if (carouselRef.current) {
-            const scrollAmount = direction === 'left' ? -350 : 350;
+            const scrollAmount = direction === 'left' ? -400 : 400;
             carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
         }
     };
 
-    // Sort categories (optional order field, or just by insertion)
-    // Map to simple structure if needed, but store already has { id, label }
     const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
-
     const [activeTab, setActiveTab] = useState(categories.length > 0 ? categories[0].id : '');
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-    // Update active tab if categories load late
     useEffect(() => {
         if (!activeTab && categories.length > 0) {
             setActiveTab(categories[0].id);
         }
     }, [categories, activeTab]);
 
-    // Auto-rotation logic
     useEffect(() => {
         if (!isAutoPlaying || categories.length <= 1) return;
-
         const interval = setInterval(() => {
             setActiveTab(prev => {
                 const currentIndex = categories.findIndex(c => c.id === prev);
                 const nextIndex = (currentIndex + 1) % categories.length;
                 return categories[nextIndex].id;
             });
-        }, 5000);
-
+        }, 8000);
         return () => clearInterval(interval);
     }, [isAutoPlaying, categories]);
 
     const filteredItems = portfolio.filter(item => item.category === activeTab);
 
-    // Auto-scroll logic for carousel items
-    useEffect(() => {
-        if (!isAutoPlaying || filteredItems.length <= 1) return;
-
-        const interval = setInterval(() => {
-            if (carouselRef.current) {
-                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-                // Check if we've reached the end
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    carouselRef.current.scrollBy({ left: 350, behavior: 'smooth' });
-                }
-            }
-        }, 3000);
-
-        return () => clearInterval(interval);
-    }, [isAutoPlaying, filteredItems.length, activeTab]);
-
     return (
-        <section className="py-20 bg-black text-white relative overflow-hidden border-t border-white/5"
+        <section className="py-40 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
         >
-            {/* Neon Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-12">
-                    <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
-                        Our <span className="text-neon-green">Portfolio</span>
-                    </h2>
-                    <p className="text-gray-400">Highlights from the incredible events we've powered.</p>
-                </div>
-
-                {/* Tabs with Selection Feedback */}
-                <div className="flex flex-wrap justify-center gap-4 mb-12">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => {
-                                setActiveTab(cat.id);
-                                setIsAutoPlaying(false);
-                            }}
-                            className={`px-6 py-3 rounded-full font-medium transition-all duration-500 relative group overflow-hidden ${activeTab === cat.id
-                                ? 'text-black bg-neon-green shadow-[0_0_20px_rgba(57,255,20,0.4)]'
-                                : 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10'
-                                }`}
+            {/* Background Atmosphere */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neon-green/5 blur-[150px] rounded-full pointer-events-none" />
+            
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-12">
+                    <div className="max-w-2xl">
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6"
                         >
-                            <span className="relative z-10">{cat.label}</span>
+                            <Zap size={14} className="text-neon-green" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-neon-green">Portfolio Archive</span>
+                        </motion.div>
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="font-heading text-5xl md:text-7xl font-black tracking-tighter"
+                        >
+                            OUR <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">IMPACT.</span>
+                        </motion.h2>
+                    </div>
 
-                            {/* Auto-play Progress Bar */}
-                            {activeTab === cat.id && isAutoPlaying && (
-                                <motion.div
-                                    className="absolute bottom-0 left-0 h-1 bg-black/20"
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: "100%" }}
-                                    transition={{ duration: 5, ease: "linear" }}
-                                />
-                            )}
-                        </button>
-                    ))}
+                    {/* Tabs with selection bar */}
+                    <div className="flex flex-wrap gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => {
+                                    setActiveTab(cat.id);
+                                    setIsAutoPlaying(false);
+                                }}
+                                className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden ${activeTab === cat.id
+                                    ? 'text-black bg-white'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                <span className="relative z-10">{cat.label}</span>
+                                {activeTab === cat.id && isAutoPlaying && (
+                                    <motion.div
+                                        className="absolute bottom-0 left-0 h-[3px] bg-neon-green"
+                                        initial={{ width: "0%" }}
+                                        animate={{ width: "100%" }}
+                                        transition={{ duration: 8, ease: "linear" }}
+                                    />
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Carousel Content */}
-                <div className="min-h-[300px] relative group/carousel">
-                    {filteredItems.length > 0 && (
-                        <>
-                            <button
-                                onClick={() => scroll('left')}
-                                className="absolute left-2 top-[40%] sm:-left-6 lg:-left-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
-                                aria-label="Scroll left"
-                            >
-                                <ChevronLeft size={24} />
-                            </button>
-                            <button
-                                onClick={() => scroll('right')}
-                                className="absolute right-2 top-[40%] sm:-right-6 lg:-right-12 z-20 p-2 sm:p-3 bg-black/80 border border-white/20 hover:bg-neon-green hover:text-black hover:border-neon-green text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 backdrop-blur-md hidden sm:flex shadow-[0_0_15px_rgba(0,0,0,0.5)]"
-                                aria-label="Scroll right"
-                            >
-                                <ChevronRight size={24} />
-                            </button>
-                        </>
-                    )}
+                {/* Carousel Container */}
+                <div className="relative group/carousel">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
+                            exit={{ opacity: 0, y: -30 }}
+                            transition={{ duration: 0.6 }}
+                            className="relative"
                         >
                             <div
                                 ref={carouselRef}
-                                className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 sm:px-6 lg:px-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+                                className="flex gap-10 overflow-x-auto pb-20 scrollbar-hide snap-x snap-mandatory scroll-smooth -mx-4 px-4"
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {filteredItems.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="min-w-[280px] sm:min-w-[320px] aspect-[4/5] relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 flex-shrink-0 shadow-lg snap-start"
-                                    >
-                                        {/* Image Background */}
-                                        {item.image ? (
-                                            <div
-                                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                                style={{ backgroundImage: `url(${item.image})` }}
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
-                                                No Image
-                                            </div>
-                                        )}
-
-                                        {/* Gradient Overlay & Text */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300 flex flex-col justify-end p-6">
-                                            <h3 className="text-xl font-bold text-white transform translate-y-0 group-hover:translate-y-4 transition-transform duration-300">
-                                                {item.title}
-                                            </h3>
-                                            <p className="text-neon-green text-sm opacity-100 group-hover:opacity-0 transition-opacity duration-300">
-                                                {categories.find(c => c.id === item.category)?.label}
-                                            </p>
-                                        </div>
-
-                                        {/* Hover Revealed Text */}
-                                        <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
-                                                <span className="text-neon-green font-bold uppercase tracking-wider text-sm mb-4">
-                                                    {categories.find(c => c.id === item.category)?.label}
-                                                </span>
-
-                                                {item.highlightUrl && (
-                                                    <a
-                                                        href={item.highlightUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center gap-1 text-white hover:text-neon-green transition-colors text-sm font-medium group/link"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        view event highlight
-                                                        <ArrowRight className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" />
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <PortfolioCard key={item.id} item={item} categories={categories} />
                                 ))}
 
                                 {filteredItems.length === 0 && (
-                                    <div className="w-full text-center text-gray-500 py-12 flex-shrink-0">
-                                        No events added in this category yet.
+                                    <div className="w-full text-center py-40 flex flex-col items-center gap-6 bg-white/[0.02] rounded-[4rem] border border-dashed border-white/10 mx-4">
+                                        <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                                            <Zap size={24} />
+                                        </div>
+                                        <p className="text-gray-600 font-black font-heading uppercase tracking-widest text-[10px]">Awaiting Data Deployment...</p>
                                     </div>
                                 )}
                             </div>
                         </motion.div>
                     </AnimatePresence>
+
+                    {/* Nav Buttons */}
+                    {filteredItems.length > 2 && (
+                        <div className="absolute top-1/2 -translate-y-1/2 w-full left-0 flex justify-between pointer-events-none z-30 px-6">
+                            <button
+                                onClick={() => scroll('left')}
+                                className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all pointer-events-auto opacity-0 group-hover/carousel:opacity-100 -translate-x-12 group-hover/carousel:translate-x-0"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={() => scroll('right')}
+                                className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all pointer-events-auto opacity-0 group-hover/carousel:opacity-100 translate-x-12 group-hover/carousel:translate-x-0"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>
+    );
+};
+
+const PortfolioCard = ({ item, categories }) => {
+    return (
+        <div className="min-w-[300px] md:min-w-[380px] aspect-[4/5] relative rounded-[3.5rem] overflow-hidden group border border-white/5 bg-zinc-900 snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
+            {/* Visual Perforation (Premium Ticket Style) */}
+            <div className="absolute top-[70%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
+            <div className="absolute top-[70%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
+            <div className="absolute top-[71.5%] left-6 right-6 h-px border-t border-dashed border-white/10 z-10" />
+
+            {/* High-fidelity Background Image */}
+            {item.image ? (
+                <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${item.image})` }}
+                >
+                    {/* Organic Vignette Gradient Overlay */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(2,2,2,0.4)_50%,_rgba(2,2,2,0.95)_95%)]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent opacity-80" />
+                </div>
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 text-gray-500 font-black uppercase tracking-[0.5em] text-[10px]">
+                    NO VISUAL ASSET
+                </div>
+            )}
+
+            {/* Content Layer */}
+            <div className="absolute inset-0 p-12 flex flex-col justify-end z-10">
+                <div className="overflow-hidden">
+                    <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        className="flex flex-col"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="w-8 h-px bg-neon-green" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-green">
+                                {categories.find(c => c.id === item.category)?.label}
+                            </span>
+                        </div>
+                        <h3 className="text-3xl md:text-4xl font-black text-white leading-[0.95] tracking-tighter group-hover:translate-x-3 transition-transform duration-700 whitespace-nowrap overflow-hidden text-ellipsis">
+                            {item.title}
+                        </h3>
+                    </motion.div>
+                </div>
+            </div>
+
+            {/* Premium Interaction Layer */}
+            <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
+            
+            <div className="absolute top-12 right-12 opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-700 z-30">
+                {item.highlightUrl && (
+                    <a
+                        href={item.highlightUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-16 h-16 rounded-3xl bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)]"
+                    >
+                        <ArrowRight size={28} />
+                    </a>
+                )}
+            </div>
+        </div>
     );
 };
 

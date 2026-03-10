@@ -3,46 +3,67 @@ import { motion } from 'framer-motion';
 
 const About = () => {
     const stats = [
-        { label: "Events Organized", value: "250+", sub: "Successful shows across India" },
-        { label: "Cities Covered", value: "17+", sub: "Nationwide event presence" },
-        { label: "Attendees Served", value: "150K+", sub: "Memorable experiences delivered" },
+        { label: "Events Managed", value: "250+", sub: "Successful shows and activations across India" },
+        { label: "Cities Covered", value: "17+", sub: "Nationwide presence in major youth hubs" },
+        { label: "GenZ Reach", value: "2M+", sub: "Monthly impressions through our massive network" },
     ];
 
     return (
-        <section className="py-24 bg-black relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-32 bg-[#020202] relative overflow-hidden">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-1/4 left-1/4 w-[40%] h-[40%] bg-neon-green/5 blur-[120px] rounded-full" />
+            <div className="absolute bottom-1/4 right-1/4 w-[40%] h-[40%] bg-neon-blue/5 blur-[120px] rounded-full" />
+
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
                 {/* Section Header */}
-                <div className="text-center mb-16 relative z-10">
-                    <h3 className="relative text-3xl md:text-4xl font-bold text-white mb-4">
-                        Making <span className="text-neon-green">Impact</span>
-                    </h3>
-                    <p className="text-gray-400 max-w-2xl mx-auto relative">
-                        We believe in the power of shared moments and specialize in event and artist management with a unique blend of creativity and professionalism.
-                    </p>
+                <div className="text-center mb-24">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md mb-8"
+                    >
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Our Track Record</span>
+                    </motion.div>
+                    <motion.h2
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-4xl md:text-7xl font-black text-white mb-8 tracking-tighter"
+                    >
+                        MAKING <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">IMPACT.</span>
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-gray-400 max-w-2xl mx-auto text-lg font-medium leading-relaxed"
+                    >
+                        We specialize in bridging the gap between global brands and the Indian youth through high-fidelity campus activations and disruptive marketing.
+                    </motion.p>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {stats.map((stat, index) => (
                         <motion.div
                             key={index}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                            className="bg-black/40 border border-white/10 rounded-xl p-8 hover:border-neon-green/50 transition-colors group relative overflow-hidden"
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                            className="relative group p-1"
                         >
-                            <p className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">{stat.label}</p>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <h4 className="text-6xl md:text-7xl font-black font-heading text-white group-hover:text-neon-green transition-colors tracking-tighter">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative bg-zinc-900/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-10 h-full flex flex-col items-center text-center group-hover:border-white/20 transition-all duration-500 group-hover:-translate-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-neon-green mb-8">{stat.label}</span>
+                                <h4 className="text-6xl md:text-8xl font-black text-white mb-4 tracking-tighter group-hover:scale-110 transition-transform duration-500">
                                     {stat.value}
                                 </h4>
-                                <span className="text-xl md:text-2xl text-white/40 font-bold">{stat.sub.split(" ")[0]}</span>
+                                <p className="text-sm text-gray-400 font-bold leading-relaxed max-w-[200px]">
+                                    {stat.sub}
+                                </p>
                             </div>
-                            <p className="text-sm text-gray-400 font-medium leading-relaxed border-t border-white/5 pt-4 mt-2">{stat.sub.substring(stat.sub.indexOf(" ") + 1)}</p>
-
-                            {/* Subtle gradient glow */}
-                            <div className="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-0 group-hover:animate-shine" />
                         </motion.div>
                     ))}
                 </div>

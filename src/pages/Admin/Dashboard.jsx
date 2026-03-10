@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield, Clock, Radio, Star, Target, Image, Ticket } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    DollarSign, Users, Calendar, Plus, FileText, Megaphone, 
+    Music, Mail, Shield, Clock, Radio, Star, Target, Image, 
+    Ticket, LayoutDashboard, Settings, LogOut, Search, 
+    Bell, Zap, FileSpreadsheet, Sparkles, TrendingUp
+} from 'lucide-react';
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
@@ -10,78 +15,63 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
+import { cn } from '../../lib/utils';
 
 const Dashboard = () => {
-    const { invoices, concerts, announcements, user, checkUserRole, logout, maintenanceState, archivePastEvents } = useStore();
+    const { 
+        invoices, proposals, concerts, announcements, user, 
+        checkUserRole, logout, maintenanceState, archivePastEvents 
+    } = useStore();
+    
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [isFirstRun, setIsFirstRun] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     useEffect(() => {
         if (user && (user.role === 'super_admin' || user.role === 'developer')) {
             archivePastEvents();
         }
     }, [user, archivePastEvents]);
-    const [password, setPassword] = useState('');
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [authLoading, setAuthLoading] = useState(true);
-    const [isFirstRun, setIsFirstRun] = useState(false);
-    const [isRegistering, setIsRegistering] = useState(false);
 
-    const [isResetting, setIsResetting] = useState(false);
-
-    const handleResetPassword = async (e) => {
-        e.preventDefault();
-        try {
-            const actionCodeSettings = {
-                url: `${window.location.origin}/auth/action?mode=resetPassword`,
-                handleCodeInApp: true,
-            };
-            await sendPasswordResetEmail(auth, email, actionCodeSettings);
-            alert("Password reset email sent! Check your inbox.");
-            setIsResetting(false);
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send reset email: " + error.message);
-        }
-    };
-
-    const handleSignUp = async (e) => {
-        e.preventDefault();
-        try {
-            // 1. Create Auth User
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // 2. Create 'admins' doc with 'pending' role
-            await addDoc(collection(db, 'admins'), {
-                email: user.email,
-                role: 'pending',
-                addedBy: 'SELF_REGISTRATION',
-                createdAt: new Date().toISOString()
-            });
-
-            // 3. Force token refresh/role check might happen automatically via onAuthStateChanged, 
-            // but we can ensure checkUserRole is called.
-            alert("Registration successful! Please wait for approval.");
-        } catch (error) {
-            console.error(error);
-            alert("Registration Failed: " + error.message);
-        }
-    };
-
-    // Check if system is uninitialized (no admins yet)
+    // Check if system is uninitialized
     useEffect(() => {
         const checkInit = async () => {
             if (!user) return;
-            // Only check if we are logged in but have no role
             if (user.role === 'unauthorized') {
                 const snapshot = await getDocs(collection(db, 'admins'));
-                if (snapshot.empty) {
-                    setIsFirstRun(true);
-                }
+                if (snapshot.empty) setIsFirstRun(true);
             }
         };
         checkInit();
     }, [user]);
+
+    // Auth Listener
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) checkUserRole(currentUser);
+            else checkUserRole(null);
+            setAuthLoading(false);
+        });
+        return () => unsubscribe();
+    }, [checkUserRole]);
+
+    // Message Count Listener
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "messages"), where("status", "==", "new"));
+        const unsubscribe = onSnapshot(q, (snapshot) => setUnreadCount(snapshot.size));
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        try { await signInWithEmailAndPassword(auth, email, password); } 
+        catch (error) { alert("Login Failed: " + error.message); }
+    };
 
     const handleClaimOwnership = async () => {
         if (!user) return;
@@ -92,555 +82,242 @@ const Dashboard = () => {
                 addedBy: 'SYSTEM_BOOTSTRAP',
                 createdAt: new Date().toISOString()
             });
-            alert("Ownership Claimed! You are now the Super Admin. Refreshing profile...");
-            checkUserRole(user); // Refresh role
+            alert("Ownership Claimed!");
+            checkUserRole(user);
             setIsFirstRun(false);
-        } catch (error) {
-            console.error("Error claiming ownership:", error);
-            alert("Failed to claim ownership.");
-        }
+        } catch (error) { alert("Failed to claim ownership."); }
     };
-
-    // Auth Listener
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) {
-                checkUserRole(currentUser);
-            } else {
-                checkUserRole(null);
-            }
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, [checkUserRole]);
-
-    // Message Count Listener
-    useEffect(() => {
-        if (!user) return;
-        const q = query(collection(db, "messages"), where("status", "==", "new"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setUnreadCount(snapshot.size);
-        });
-        return () => unsubscribe();
-    }, [user]);
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            console.error(error);
-            alert("Login Failed: " + error.message);
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const user = result.user;
-
-            // Check if user exists in admins collection
-            const adminsRef = collection(db, 'admins');
-            const q = query(adminsRef, where("email", "==", user.email));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                // If not, create a new admin doc with 'pending' role
-                await addDoc(collection(db, 'admins'), {
-                    email: user.email,
-                    role: 'pending',
-                    addedBy: 'GOOGLE_AUTH',
-                    createdAt: new Date().toISOString()
-                });
-                alert("Google Sign In Successful! Please wait for approval.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Google Sign In Failed: " + error.message);
-        }
-    };
-
-    const totalRevenue = invoices.reduce((acc, inv) => acc + inv.amount, 0);
-    const pendingInvoices = invoices.filter(inv => inv.status === 'Pending').length;
 
     const stats = [
-        { label: 'Total Invoices', value: invoices.length, icon: FileText, color: 'text-neon-blue' },
-        { label: 'Pending Payments', value: pendingInvoices, icon: DollarSign, color: 'text-neon-pink' },
-        { label: 'Recent Concert Updates', value: concerts.length, icon: Music, color: 'text-neon-green' },
-        { label: 'Latest Announcements', value: announcements.length, icon: Megaphone, color: 'text-yellow-400' },
+        { label: 'Financials', value: `₹${invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()}`, icon: DollarSign, color: 'neon-green', detail: `${invoices.length} Total Invoices` },
+        { label: 'Proposals', value: proposals?.length || 0, icon: FileSpreadsheet, color: 'neon-blue', detail: 'Quotation Pipeline' },
+        { label: 'Portfolio', value: concerts.length, icon: Music, color: 'neon-pink', detail: 'Live Concerts' },
+        { label: 'Updates', value: announcements.length, icon: Radio, color: 'yellow-400', detail: 'Public Announcements' },
     ];
 
-    if (authLoading) {
-        return <div className="min-h-screen flex items-center justify-center text-white">Loading Security...</div>;
-    }
+    if (authLoading) return (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                <Zap className="text-neon-green" size={48} />
+            </motion.div>
+        </div>
+    );
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4 flex-col">
-                <Card className="p-8 w-full max-w-md border-neon-pink/30 shadow-neon-pink/20">
-                    <h1 className="text-2xl font-bold text-white mb-6 text-center">
-                        {isResetting ? 'Reset Password' : (isRegistering ? 'Request Admin Access' : 'Admin Login')}
-                    </h1>
-
-                    {isResetting ? (
-                        <form onSubmit={handleResetPassword} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                                <Input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="name@newbi.live"
-                                    required
-                                />
-                            </div>
-                            <Button type="submit" variant="primary" className="w-full">
-                                Send Reset Link
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => setIsResetting(false)}
-                                className="w-full text-sm text-gray-400 hover:text-white underline mt-2"
-                            >
-                                Back to Login
-                            </button>
-                        </form>
-                    ) : (
-                        <form onSubmit={isRegistering ? handleSignUp : handleLogin} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                                <Input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="name@newbi.live"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
-                                <Input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
-                            <Button type="submit" variant="primary" className="w-full">
-                                {isRegistering ? 'Submit Request' : 'Sign In'}
-                            </Button>
-
-                            {!isRegistering && (
-                                <div className="text-center pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsResetting(true)}
-                                        className="text-xs text-neon-blue hover:text-white transition-colors"
-                                    >
-                                        Forgot Password?
-                                    </button>
-                                </div>
-                            )}
-                        </form>
-                    )}
-
-                    {!isResetting && !isRegistering && (
-                        <div className="mt-4">
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t border-gray-600" />
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-zinc-900 px-2 text-gray-400">Or continue with</span>
-                                </div>
-                            </div>
-                            <Button
-                                type="button"
-                                onClick={handleGoogleLogin}
-                                variant="outline"
-                                className="w-full mt-4 flex items-center justify-center gap-2 border-white/20 text-white hover:bg-white hover:text-black"
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                    <path
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                        fill="#4285F4"
-                                    />
-                                    <path
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                        fill="#34A853"
-                                    />
-                                    <path
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                        fill="#FBBC05"
-                                    />
-                                    <path
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                        fill="#EA4335"
-                                    />
-                                </svg>
-                                Sign in with Google
-                            </Button>
-                        </div>
-                    )}
-
-                    {!isResetting && (
-                        <div className="mt-6 text-center">
-                            <button
-                                onClick={() => setIsRegistering(!isRegistering)}
-                                className="text-sm text-gray-400 hover:text-white underline transition-colors"
-                            >
-                                {isRegistering ? 'Already have an account? Login' : 'Need access? Request an account'}
-                            </button>
-                        </div>
-                    )}
-                </Card>
-            </div>
-        );
-    }
-
-    // PENDING APPROVAL STATE
-    if (user.role === 'pending') {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4">
-                <Card className="p-8 w-full max-w-md border-yellow-500/30 shadow-yellow-500/20 text-center">
-                    <div className="mb-4 flex justify-center">
-                        <Clock size={48} className="text-yellow-500" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Approval Pending</h1>
-                    <p className="text-gray-400 mb-6">
-                        Your account has been created but requires Super Admin approval before you can access the dashboard.
-                    </p>
-
-                    <div className="bg-white/5 p-4 rounded mb-6 text-left">
-                        <p className="text-sm text-gray-300">
-                            <strong>Email:</strong> {user.email}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                            Please contact a Super Admin to approve your request.
-                        </p>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <Button onClick={logout} variant="outline" className="flex-1 text-white border-white hover:bg-white hover:text-black">
-                            Logout
-                        </Button>
-                        <Button
-                            onClick={() => checkUserRole(user)}
-                            variant="primary"
-                            className="flex-1 bg-yellow-500/20 text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-black"
-                        >
-                            Check Status
-                        </Button>
-                    </div>
-                </Card>
-            </div>
-        );
-    }
-
-    if (user.role === 'unauthorized' && !isFirstRun) {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4">
-                <Card className="p-8 w-full max-w-md border-red-500/30 shadow-red-500/20 text-center">
-                    <div className="mb-4 flex justify-center">
-                        <Shield size={48} className="text-red-500" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-                    <p className="text-gray-400 mb-6">
-                        You do not have permission to access the admin dashboard.
-                    </p>
-
-                    <div className="bg-white/5 p-4 rounded mb-6 text-left">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Troubleshooting</h3>
-                        <p className="text-sm text-gray-400 mb-1">Your email:</p>
-                        <div className="font-mono text-neon-blue bg-black/50 p-2 rounded mb-3 break-all select-all">
-                            {user.email}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            If you believe this is an error, ask a Super Admin to check the "Manage Admins" page.
-                        </p>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <Button onClick={logout} variant="outline" className="flex-1 text-white border-white hover:bg-white hover:text-black">
-                            Logout
-                        </Button>
-                        <Button
-                            onClick={() => checkUserRole(user)}
-                            variant="primary"
-                            className="flex-1 bg-neon-blue/20 text-neon-blue border-neon-blue hover:bg-neon-blue hover:text-black"
-                        >
-                            Refresh Status
-                        </Button>
-                    </div>
-                </Card>
-            </div>
-        );
-    }
+    if (!user) return <AuthSection email={email} setEmail={setEmail} password={password} setPassword={setPassword} isResetting={isResetting} setIsResetting={setIsResetting} isRegistering={isRegistering} setIsRegistering={setIsRegistering} handleLogin={handleLogin} />;
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter">Dashboard</h1>
-                        <p className="text-gray-400 text-sm mt-1">
-                            Logged in as <span className="text-neon-blue font-medium">{user.email}</span>
-                            <span className="ml-2 text-[10px] bg-white/10 px-2 py-1 rounded font-black uppercase tracking-widest">{user.role?.replace('_', ' ')}</span>
+        <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden pb-20">
+            {/* Immersive Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
+                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+                {/* Modern Header */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+                                <LayoutDashboard className="text-neon-green" size={24} />
+                            </div>
+                            <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTER.</span></h1>
+                        </div>
+                        <p className="text-gray-500 text-sm font-bold uppercase tracking-widest pl-1 flex items-center gap-2">
+                            Newbi Management System <span className="mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
+                            {maintenanceState.global && (
+                                <>
+                                    <span className="mx-2">•</span>
+                                    <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[8px] font-black border border-red-500/20 animate-pulse">
+                                        <Shield size={10} /> GLOBAL MAINTENANCE ACTIVE
+                                    </span>
+                                </>
+                            )}
                         </p>
                     </div>
-                    <div className="flex items-center justify-between w-full md:w-auto gap-6 bg-white/5 md:bg-transparent p-4 md:p-0 rounded-2xl border border-white/10 md:border-0">
-                        <Link to="/admin/messages" className="relative text-gray-400 hover:text-white transition-all hover:scale-110 active:scale-95">
-                            <Mail size={24} />
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-black animate-bounce">
-                                    {unreadCount}
-                                </span>
-                            )}
-                        </Link>
-                        <Button variant="outline" onClick={logout} className="border-white/20 hover:bg-white hover:text-black font-bold uppercase text-xs tracking-widest">
-                            Logout
-                        </Button>
-                    </div>
-                </div>
 
-                {isFirstRun && (
-                    <div className="mb-8 p-6 bg-gradient-to-r from-neon-green/20 to-black border border-neon-green rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <Shield className="text-neon-green" /> System Uninitialized
-                            </h2>
-                            <p className="text-gray-300 mt-1">
-                                No admins found in database. Since you are the first user, you can claim <strong>Super Admin</strong> ownership.
-                            </p>
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1.5 rounded-full backdrop-blur-2xl">
+                        <Link to="/admin/site-settings" className="p-2.5 hover:bg-white/10 rounded-full transition-all group">
+                            <Settings size={18} className="text-gray-400 group-hover:text-neon-blue transition-colors" />
+                        </Link>
+                        <Link to="/admin/messages" className="p-2.5 hover:bg-white/10 rounded-full transition-all relative group">
+                            <Bell size={18} className="text-gray-400 group-hover:text-white transition-colors" />
+                            {unreadCount > 0 && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-neon-pink rounded-full shadow-[0_0_10px_rgba(255,0,255,0.5)]" />}
+                        </Link>
+                        <div className="h-6 w-px bg-white/10 mx-1" />
+                        <div className="flex items-center gap-3 pl-1 pr-3 py-1">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-green to-neon-blue p-0.5">
+                                <div className="w-full h-full rounded-full bg-black flex items-center justify-center font-black text-xs">
+                                    {user.email?.[0].toUpperCase()}
+                                </div>
+                            </div>
+                            <div className="hidden sm:block">
+                                <p className="text-sm font-black text-white leading-none">{user.displayName || 'Admin'}</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter mt-1">{user.email}</p>
+                            </div>
+                            <button onClick={logout} className="ml-2 p-2 hover:bg-neon-pink/10 hover:text-neon-pink rounded-xl transition-all">
+                                <LogOut size={18} />
+                            </button>
                         </div>
-                        <Button onClick={handleClaimOwnership} variant="primary" className="whitespace-nowrap">
-                            Claim Super Admin Access
-                        </Button>
                     </div>
-                )}
+                </header>
 
-                {/* SUPER ADMIN ONLY SECTION */}
-                {(user.role === 'super_admin' || user.role === 'developer') && (
-                    <div className="mb-8 flex flex-col md:flex-row gap-4">
-                        <Link to="/admin/manage-admins" className="block h-full">
-                            <Card className="h-full p-6 border-white/10 bg-white/5 hover:bg-white/10 transition-colors group flex flex-col items-center text-center justify-center gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-purple/20 to-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                                    <Users className="w-8 h-8 text-neon-purple" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-neon-purple transition-colors">Manage Members</h3>
-                                    <p className="text-sm text-gray-400">View all users, block/unblock members & manage admins.</p>
-                                </div>
-                            </Card>
-                        </Link>
-                        {user.role === 'developer' && (
-                            <Link to="/admin/dev-settings" className="flex-1">
-                                <div className="bg-gradient-to-r from-white/10 to-transparent border border-white/20 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer group h-full">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white/10 rounded-full text-white">
-                                            <Shield size={24} className="fill-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">Dev Settings</h3>
-                                            <p className="text-sm text-gray-400">Maintenance, killswitches & feature flags.</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-gray-400 group-hover:translate-x-1 transition-transform">→</div>
-                                </div>
-                            </Link>
-                        )}
-                    </div>
-                )}
+                {isFirstRun && <BootstrapAlert onClaim={handleClaimOwnership} />}
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                    {stats.map((stat, index) => (
+                {/* Glass Stats Grid */}
+                {/* 
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                    {stats.map((stat, i) => (
                         <motion.div
-                            key={index}
+                            key={i}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="group relative"
                         >
-                            <Card className="p-5 flex flex-col justify-between h-full bg-white/5 border-white/10 hover:border-white/20 transition-all">
-                                <div className={`self-start p-2 rounded-lg bg-black/30 mb-4 ${stat.color}`}>
-                                    <stat.icon size={20} />
+                            <div className={cn("absolute -inset-px rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-opacity blur-xl bg-gradient-to-br", 
+                                stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
+                                (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
+                                (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500'))
+                            )} />
+                            <Card className="p-8 h-full bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] flex flex-col justify-between overflow-hidden">
+                                <div className="items-start justify-between mb-8 flex">
+                                    <div className={cn("p-4 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-500", 
+                                        stat.color === 'neon-green' ? 'text-neon-green' : (stat.color === 'neon-blue' ? 'text-neon-blue' : (stat.color === 'neon-pink' ? 'text-neon-pink' : 'text-yellow-400'))
+                                    )}>
+                                        <stat.icon size={24} />
+                                    </div>
+                                    <TrendingUp size={20} className="text-white/10" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-1">{stat.value}</h3>
-                                    <p className="text-gray-400 text-xs md:text-sm font-medium">{stat.label}</p>
+                                    <h3 className="text-4xl font-black font-heading tracking-tighter text-white mb-2 leading-none uppercase">{stat.value}</h3>
+                                    <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em]">{stat.label}</p>
+                                    <p className="text-gray-600 text-[10px] mt-4 font-bold uppercase">{stat.detail}</p>
+                                </div>
+                                <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none">
+                                    <stat.icon size={120} />
                                 </div>
                             </Card>
                         </motion.div>
                     ))}
                 </div>
+                */}
 
-                {/* Quick Actions Carousel */}
-                <AdminCarousel title="Quick Actions">
-                    {/* Invoices */}
-                    <MaintenanceCard
-                        title="Invoices"
-                        description="Create and track client payments securely."
-                        icon={FileText}
-                        color="neon-blue"
-                        link="/admin/invoices"
-                        isUnderMaintenance={maintenanceState.features?.invoices}
-                    />
+                {/* Control Sections */}
+                <div className="space-y-20">
+                    <DashboardSection title="Finance & Management" gradient="from-neon-green via-neon-blue to-white">
+                        <ControlCard title="Invoices" desc="Manage billing and check payment cycles." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} />
+                        <ControlCard title="Proposals" desc="Generate premium quotations for clients." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isNew />
+                        <ControlCard title="Events" desc="Offline order management and check-ins." icon={Ticket} color="neon-pink" link="/admin/tickets" />
+                    </DashboardSection>
 
-                    {/* Announcements */}
-                    <MaintenanceCard
-                        title="Announcements"
-                        description="Post news updates and pin important info."
-                        icon={Radio}
-                        color="neon-pink"
-                        link="/admin/announcements"
-                        isUnderMaintenance={maintenanceState.features?.announcements}
-                    />
-                    
-                     {/* Messages */}
-                     <MaintenanceCard
-                        title="Messages"
-                        description="View generic contact and booking queries."
-                        icon={Mail}
-                        color="yellow-400"
-                        link="/admin/messages"
-                        isUnderMaintenance={false}
-                    />
-                </AdminCarousel>
+                    <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
+                        <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" />
+                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concerts" />
+                        <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" />
+                        <ControlCard title="Broadcast" desc="Post announcements and site news." icon={Radio} color="yellow-400" link="/admin/announcements" />
+                    </DashboardSection>
 
-                {/* Event Management Carousel */}
-                <AdminCarousel title="Event Management">
-                    {/* Ticket Manager */}
-                    <MaintenanceCard
-                        title="Ticketing"
-                        description="Manage offline orders and approvals."
-                        icon={Ticket}
-                        color="neon-blue"
-                        link="/admin/tickets"
-                        isUnderMaintenance={maintenanceState.features?.tickets}
-                    />
-                    {/* Upcoming Events */}
-                    <MaintenanceCard
-                        title="Upcoming Events"
-                        description="Homepage pinned events."
-                        icon={Calendar}
-                        color="yellow-400"
-                        link="/admin/upcoming-events"
-                        isUnderMaintenance={maintenanceState.features?.upcoming_events}
-                    />
-                    {/* Concerts Manager */}
-                    <MaintenanceCard
-                        title="Past Events"
-                        description="Manage portfolio and past event records."
-                        icon={Music}
-                        color="neon-green"
-                        link="/admin/concerts"
-                        isUnderMaintenance={maintenanceState.features?.concerts}
-                    />
-                </AdminCarousel>
-
-                {/* People & Community Carousel */}
-                 <AdminCarousel title="People & Community">
-                     {/* Influencer Creators */}
-                    <MaintenanceCard
-                        title="Creators"
-                        description="Manage influencers and brand ambassadors."
-                        icon={Star}
-                        color="neon-pink"
-                        link="/admin/creators"
-                        isUnderMaintenance={maintenanceState.features?.influencer}
-                    />
-
-                    {/* Influencer Campaigns */}
-                    <MaintenanceCard
-                        title="Campaigns"
-                        description="Create and manage marketing campaigns."
-                        icon={Target}
-                        color="neon-blue"
-                        link="/admin/campaigns"
-                        isUnderMaintenance={maintenanceState.features?.influencer}
-                    />
-                    {/* Forms / Community */}
-                    <MaintenanceCard
-                        title="Community Hub"
-                        description="Volunteer gigs, guestlists, and forms."
-                        icon={Users}
-                        color="neon-green"
-                        link="/admin/forms?tab=forms"
-                        isUnderMaintenance={maintenanceState.features?.forms}
-                    />
-                 </AdminCarousel>
-
-                {/* System & Media Carousel */}
-                <AdminCarousel title="System & Media">
-                    {/* Gallery Manager */}
-                    <MaintenanceCard
-                        title="Gallery"
-                        description="Photos and media uploads."
-                        icon={Image}
-                        color="neon-pink"
-                        link="/admin/gallery-manager"
-                        isUnderMaintenance={maintenanceState.features?.gallery_manager}
-                    />
-
-                    {/* Site Info */}
-                    <MaintenanceCard
-                        title="Site Info"
-                        description="Contact details and footer links."
-                        icon={FileText}
-                        color="white"
-                        link="/admin/site-content"
-                        isUnderMaintenance={maintenanceState.features?.site_content}
-                    />
-                </AdminCarousel>
-            </div>
-        </div >
-    );
-};
-
-// Sub-component for maintenance-aware cards
-const MaintenanceCard = ({ title, description, icon: Icon, color, link, isUnderMaintenance }) => {
-    if (isUnderMaintenance) {
-        return (
-            <div
-                onClick={() => alert(`The ${title} module is currently undergoing maintenance. Please check back later.`)}
-                className="group block h-full cursor-not-allowed"
-            >
-                <Card className="p-8 h-full flex flex-col justify-between border-white/10 opacity-75 bg-gradient-to-br from-white/5 to-transparent transition-all duration-300 relative overflow-hidden">
-                    <div className="absolute top-4 right-4 px-2 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-[10px] font-bold text-neon-pink uppercase tracking-widest animate-pulse">
-                        Maintenance 🔧
-                    </div>
-                    <div>
-                        <div className="p-4 rounded-full bg-white/5 text-gray-500 mb-6 w-16 h-16 flex items-center justify-center grayscale">
-                            <Icon size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-400 mb-2">{title}</h3>
-                        <p className="text-gray-500 text-sm mb-6 line-clamp-2 italic">Scheduled update in progress...</p>
-                    </div>
-                    <span className="text-gray-600 text-sm font-bold flex items-center gap-2">
-                        Module Offline <span className="text-lg">×</span>
-                    </span>
-                </Card>
-            </div>
-        );
-    }
-
-    return (
-        <Link to={link} className="group block h-full">
-            <Card className={`p-8 h-full flex flex-col justify-between border-white/10 hover:border-${color} bg-gradient-to-br from-white/5 to-transparent hover:from-${color}/10 hover:to-transparent transition-all group-hover:-translate-y-1 duration-300`}>
-                <div>
-                    <div className={`p-4 rounded-full bg-${color}/10 text-${color} mb-6 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,0,0,0.1)]`}>
-                        <Icon size={32} />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-                    <p className="text-gray-400 text-sm mb-6 line-clamp-2">{description}</p>
+                    <DashboardSection title="Social & Community" gradient="from-neon-blue via-neon-green to-white">
+                        <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" />
+                        <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" />
+                        <ControlCard title="Members" desc="Community access and admin roles." icon={Users} color="neon-green" link="/admin/manage-admins" />
+                        <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} />
+                    </DashboardSection>
                 </div>
-                <span className={`text-${color} text-sm font-bold flex items-center gap-2`}>
-                    Open Manager <span className="text-lg">→</span>
-                </span>
-            </Card>
-        </Link>
+            </div>
+        </div>
     );
 };
+
+const DashboardSection = ({ title, gradient, children }) => (
+    <section>
+        <div className="flex items-center gap-4 mb-8">
+            <h2 className={cn("text-2xl font-black font-heading tracking-tight uppercase italic bg-clip-text text-transparent bg-gradient-to-r", gradient)}>{title}</h2>
+            <div className="flex-1 h-px bg-white/5" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {children}
+        </div>
+    </section>
+);
+
+const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew }) => (
+    <Link to={link || '#'} className="group relative block h-full">
+        <div className={cn("absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity blur-md bg-white")} />
+        <Card className="relative p-8 h-full bg-[#111] hover:bg-zinc-900 border-white/5 hover:border-white/10 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border">
+            {isNew && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
+            <div className={cn("w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700", 
+                color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
+            )}>
+                <Icon size={32} />
+            </div>
+            <h3 className="text-xl font-black font-heading text-white mb-2 tracking-tight uppercase group-hover:text-neon-green transition-colors">{title}</h3>
+            <p className="text-gray-500 text-xs font-medium leading-relaxed px-2">{desc}</p>
+            
+            {count !== undefined && (
+                <div className="mt-6 px-4 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {count} Recorded
+                </div>
+            )}
+            
+            <div className="absolute top-full left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:top-[98%] transition-all duration-500" />
+        </Card>
+    </Link>
+);
+
+const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setIsResetting, isRegistering, setIsRegistering, handleLogin, handleResetPassword, handleSignUp }) => (
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-pink/5 blur-[120px] rounded-full" />
+        <Card className="p-10 w-full max-w-md border-white/10 bg-zinc-900/40 backdrop-blur-3xl rounded-[3rem] relative z-10 shadow-2xl">
+            <div className="text-center mb-10">
+                <div className="w-16 h-16 bg-neon-pink/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-neon-pink/20">
+                    <Shield size={32} className="text-neon-pink" />
+                </div>
+                <h1 className="text-3xl font-black font-heading text-white uppercase tracking-tighter italic">
+                    {isResetting ? 'RESTORE ACCESS' : (isRegistering ? 'REQUEST AUTH' : 'SECURE LOGIN')}
+                </h1>
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2">{isResetting ? 'Password Recovery' : 'Newbi Internal Systems'}</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Email Authority</label>
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-12 bg-black/50 border-white/5 focus:border-neon-pink/50 rounded-xl" required />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Security Key</label>
+                    <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-12 bg-black/50 border-white/5 focus:border-neon-pink/50 rounded-xl" required />
+                </div>
+                <Button type="submit" className="w-full h-14 bg-neon-pink text-black font-black font-heading uppercase tracking-widest text-sm rounded-xl hover:bg-neon-pink/80 transition-all shadow-[0_10px_30px_rgba(255,0,255,0.2)]">
+                    {isRegistering ? 'INITIALIZE REQUEST' : 'AUTHENTICATE'}
+                </Button>
+            </form>
+
+            <div className="mt-8 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                <button onClick={() => setIsResetting(!isResetting)} className="text-gray-500 hover:text-white transition-colors">Forgot Key?</button>
+                <button onClick={() => setIsRegistering(!isRegistering)} className="text-neon-blue hover:underline underline-offset-4">{isRegistering ? 'Back to Login' : 'Request Access'}</button>
+            </div>
+        </Card>
+    </div>
+);
+
+const BootstrapAlert = ({ onClaim }) => (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-12 p-8 bg-gradient-to-r from-neon-green/10 via-black to-black border border-neon-green/30 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-xl">
+        <div className="flex items-center gap-6">
+            <div className="p-4 rounded-2xl bg-neon-green/20 text-neon-green">
+                <Sparkles size={32} />
+            </div>
+            <div>
+                <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">System Initialization Required</h2>
+                <p className="text-gray-400 text-sm mt-1">No admins detected. Claim <strong>SUPER ADMIN</strong> ownership to initialize the command center.</p>
+            </div>
+        </div>
+        <Button onClick={onClaim} className="bg-white text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all">
+            Initialize Authority
+        </Button>
+    </motion.div>
+);
 
 export default Dashboard;

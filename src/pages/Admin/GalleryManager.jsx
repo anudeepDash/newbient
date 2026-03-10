@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Loader } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Loader, Image as ImageIcon, Sparkles, Filter, X } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '../../lib/utils';
 
 const GalleryManager = () => {
-    console.log("Gallery Manager Loaded");
     const { galleryImages, addGalleryImage, deleteGalleryImage } = useStore();
-    const navigate = useNavigate();
-
     const [newImage, setNewImage] = useState({
         type: 'image',
         src: '',
@@ -31,8 +30,7 @@ const GalleryManager = () => {
             const uploadedImage = await res.json();
             return uploadedImage.secure_url;
         } catch (error) {
-            console.error("Error uploading:", error);
-            alert("Upload failed");
+            alert("Network error during uplink.");
             return null;
         }
     };
@@ -45,95 +43,141 @@ const GalleryManager = () => {
     };
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
-                            <ArrowLeft className="h-6 w-6" />
+        <div className="min-h-screen bg-[#020202] text-white pb-20">
+            {/* Atmos */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[10%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                    <div className="space-y-4">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
+                            <ArrowLeft size={14} /> Back to Hub
                         </Link>
-                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Gallery Manager</h1>
+                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                            VISUAL <span className="text-neon-blue">ARCHIVE.</span>
+                        </h1>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Add New Image Form */}
-                    <div className="lg:col-span-1">
-                        <Card className="p-6 md:sticky md:top-24">
-                            <h2 className="text-xl font-bold text-white mb-4">Add New Media</h2>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Upload Image</label>
-                                <div className="flex gap-2 items-center">
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={async (e) => {
-                                            if (e.target.files[0]) {
-                                                setUploading(true);
-                                                const url = await handleFileUpload(e.target.files[0]);
-                                                if (url) setNewImage({ ...newImage, src: url });
-                                                setUploading(false);
-                                            }
-                                        }}
-                                        className="text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-green/10 file:text-neon-green hover:file:bg-neon-green/20"
-                                    />
-                                    {uploading && <Loader className="animate-spin text-neon-green" size={20} />}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Or paste URL below</p>
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    {/* Control Panel */}
+                    <div className="lg:col-span-4">
+                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] sticky top-12">
+                            <h2 className="text-2xl font-black font-heading uppercase italic tracking-tight text-white mb-8 flex items-center gap-3">
+                                <Plus className="text-neon-blue" size={20} /> INGEST MEDIA
+                            </h2>
 
-                            <form onSubmit={handleAdd} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Image URL</label>
-                                    <Input
-                                        value={newImage.src}
-                                        onChange={(e) => setNewImage({ ...newImage, src: e.target.value })}
-                                        placeholder="https://..."
-                                        required
-                                        disabled={uploading}
-                                    />
+                            <div className="space-y-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Source Uplink</label>
+                                    <div className="relative group">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={async (e) => {
+                                                if (e.target.files[0]) {
+                                                    setUploading(true);
+                                                    const url = await handleFileUpload(e.target.files[0]);
+                                                    if (url) setNewImage({ ...newImage, src: url });
+                                                    setUploading(false);
+                                                }
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            disabled={uploading}
+                                        />
+                                        <div className={cn(
+                                            "h-32 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:border-neon-blue/40 transition-all",
+                                            uploading && "animate-pulse"
+                                        )}>
+                                            {uploading ? (
+                                                <Loader className="animate-spin text-neon-blue" size={24} />
+                                            ) : (
+                                                <Upload className="text-gray-500 group-hover:text-neon-blue" size={24} />
+                                            )}
+                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">
+                                                {uploading ? 'SYNCING...' : 'SELECT ASSET'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[8px] font-black text-gray-700 uppercase tracking-[0.2em] text-center pt-2">OR PASTE EXTERNAL URL BELOW</p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Title</label>
-                                    <Input
-                                        value={newImage.title}
-                                        onChange={(e) => setNewImage({ ...newImage, title: e.target.value })}
-                                        placeholder="Event Name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Category</label>
-                                    <Input
-                                        value={newImage.category}
-                                        onChange={(e) => setNewImage({ ...newImage, category: e.target.value })}
-                                        placeholder="e.g. Concert, BTS"
-                                    />
-                                </div>
-                                <Button type="submit" variant="primary" className="w-full">
-                                    <Plus className="mr-2 h-4 w-4" /> Add to Gallery
-                                </Button>
-                            </form>
+
+                                <form onSubmit={handleAdd} className="space-y-6">
+                                    <div className="space-y-3">
+                                        <Input
+                                            value={newImage.src}
+                                            onChange={(e) => setNewImage({ ...newImage, src: e.target.value })}
+                                            placeholder="HTTPS://CDN.SOURCE.COM/..."
+                                            required
+                                            disabled={uploading}
+                                            className="h-14 bg-black/50 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Media Title / Event</label>
+                                        <Input
+                                            value={newImage.title}
+                                            onChange={(e) => setNewImage({ ...newImage, title: e.target.value })}
+                                            placeholder="E.G. SUMMER ROOFTOP SESSION"
+                                            className="h-14 bg-black/50 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Sector (Category)</label>
+                                        <Input
+                                            value={newImage.category}
+                                            onChange={(e) => setNewImage({ ...newImage, category: e.target.value })}
+                                            placeholder="E.G. BTS, EVENT, PRESS"
+                                            className="h-14 bg-black/50 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                        />
+                                    </div>
+                                    <Button type="submit" className="w-full h-16 bg-white text-black font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl" disabled={uploading}>
+                                        COMMIT TO DATABASE
+                                    </Button>
+                                </form>
+                            </div>
                         </Card>
                     </div>
 
-                    {/* Gallery Grid */}
-                    <div className="lg:col-span-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Matrix View */}
+                    <div className="lg:col-span-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <AnimatePresence mode="popLayout">
                             {galleryImages.map((item, index) => (
-                                <div key={index} className="group relative aspect-video bg-black/50 rounded-lg overflow-hidden border border-white/10">
-                                    <img src={item.src} alt={item.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex flex-col justify-end">
-                                        <h3 className="text-white font-medium truncate">{item.title || 'Untitled'}</h3>
-                                        <p className="text-xs text-gray-400">{item.category}</p>
+                                <motion.div 
+                                    key={item.id || index}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className="group relative aspect-video bg-zinc-900 border border-white/5 rounded-[2rem] overflow-hidden hover:border-neon-blue/30 transition-all duration-500"
+                                >
+                                    <img src={item.src} alt={item.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent p-8 flex flex-col justify-end">
+                                        <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-[0.3em] mb-2 inline-block">{item.category || 'GENERAL'}</span>
+                                            <h3 className="text-lg font-black font-heading text-white uppercase italic tracking-tight truncate">{item.title || 'ARCHIVE_DATA'}</h3>
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => deleteGalleryImage(item.id)}
-                                        className="absolute top-2 right-2 p-2.5 md:p-2 bg-red-500/80 md:bg-red-500/80 text-white rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-sm"
+                                        className="absolute top-6 right-6 w-10 h-10 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                                     >
                                         <Trash2 size={16} />
                                     </button>
-                                </div>
+                                </motion.div>
                             ))}
+                            </AnimatePresence>
+                            {galleryImages.length === 0 && (
+                                <div className="col-span-full py-40 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
+                                    <ImageIcon size={48} className="text-gray-700" />
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">THE ARCHIVE IS CURRENTLY DEPLETED.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
