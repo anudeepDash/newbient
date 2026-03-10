@@ -24,8 +24,13 @@ const InvoiceGenerator = () => {
         const handleResize = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
-                // 794 is approx 210mm. Subtract padding (e.g. 64px) to ensure no overflow
-                const newScale = Math.min(1, (containerWidth - 64) / 794);
+                const containerHeight = previewContainerRef.current.clientHeight;
+                
+                // A4 dimensions at 96dpi are roughly 794x1123
+                const scaleWidth = (containerWidth - 64) / 794;
+                const scaleHeight = (containerHeight - 64) / 1123;
+                
+                const newScale = Math.min(1, scaleWidth, scaleHeight);
                 setPreviewScale(Math.max(0.3, newScale));
             }
         };
@@ -609,10 +614,10 @@ const InvoiceGenerator = () => {
                     </div>
 
                     {/* LIVE PREVIEW SECTION */}
-                    <div ref={previewContainerRef} className="bg-[#111] rounded-[2.5rem] overflow-hidden relative flex items-start justify-center min-h-[500px] sticky top-8 max-h-[calc(100vh-100px)] border border-white/5">
+                    <div ref={previewContainerRef} className="bg-[#111] rounded-[2.5rem] p-8 overflow-hidden relative flex items-start justify-center h-[calc(100vh-100px)] sticky top-8 border border-white/5">
                         <div className="absolute top-6 right-6 z-10 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest">Digital Twin</div>
-                        <div className="p-8 transition-all duration-300" style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}>
-                            <div ref={invoiceRef} className="bg-[#E5E7EB] text-black shadow-2xl p-[12mm] flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm', fontFamily: "'Inter', sans-serif" }}>
+                        <div className="origin-top transition-all duration-300" style={{ transform: `scale(${previewScale})` }}>
+                            <div ref={invoiceRef} className="w-[794px] min-h-[1123px] bg-[#E5E7EB] text-black shadow-2xl p-[12mm] relative overflow-hidden flex flex-col justify-between" style={{ fontFamily: "'Inter', sans-serif" }}>
                                 <div>
                                     {/* Header */}
                                     <div className="flex justify-between items-start mb-10">
