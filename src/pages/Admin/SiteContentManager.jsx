@@ -66,6 +66,46 @@ const SiteContentManager = () => {
                                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
                                 </label>
                             </div>
+                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5 mt-4">
+                                <div>
+                                    <h4 className="text-white font-bold text-sm">Show Past Clients Section</h4>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        If disabled, the "Past Clients" marquee will be hidden from the home page.
+                                    </p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={siteSettings.showPastClients !== false} // Default to true
+                                        onChange={(e) => {
+                                            const newValue = e.target.checked;
+                                            updateGeneralSettings({ showPastClients: newValue });
+                                        }}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
+                                </label>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5 mt-4">
+                                <div>
+                                    <h4 className="text-white font-bold text-sm">Show Creator Stats</h4>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        If disabled, the stats and campaign completion section will be hidden from the Creator Hub.
+                                    </p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={siteSettings.showCreatorStats !== false} // Default to true
+                                        onChange={(e) => {
+                                            const newValue = e.target.checked;
+                                            updateGeneralSettings({ showCreatorStats: newValue });
+                                        }}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neon-blue/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-blue"></div>
+                                </label>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

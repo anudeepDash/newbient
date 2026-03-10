@@ -20,7 +20,11 @@ import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
 import CommunityJoin from './pages/CommunityJoin';
+import CreatorJoin from './pages/CreatorJoin';
+import CreatorDashboard from './pages/CreatorDashboard';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
+import CreatorManager from './pages/Admin/CreatorManager';
+import CampaignManager from './pages/Admin/CampaignManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
 import TicketManager from './pages/Admin/TicketManager';
@@ -62,6 +66,8 @@ function App() {
           <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
           <Route path="invoice/:id" element={<Invoice />} />
           <Route path="community-join" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
+          <Route path="creator-join" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
+          <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
 
           {/* Admin Routes */}
@@ -84,6 +90,8 @@ function App() {
           <Route path="admin/tickets" element={<MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard>} />
           <Route path="admin/volunteer-gigs" element={<MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard>} />
           <Route path="admin/upcoming-events" element={<MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard>} />
+          <Route path="admin/creators" element={<MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard>} />
+          <Route path="admin/campaigns" element={<MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard>} />
 
           {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
           <Route path="auth/action" element={<ActionHandler />} />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield, Clock } from 'lucide-react';
+import { DollarSign, Users, Calendar, Plus, FileText, Megaphone, Music, Mail, Shield, Clock, Radio, Star, Target, Image, Ticket } from 'lucide-react';
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
@@ -491,35 +491,43 @@ const Dashboard = () => {
                     <MaintenanceCard
                         title="Announcements"
                         description="Post news updates and pin important info."
-                        icon={Megaphone}
+                        icon={Radio}
                         color="neon-pink"
                         link="/admin/announcements"
                         isUnderMaintenance={maintenanceState.features?.announcements}
                     />
+                    
+                     {/* Messages */}
+                     <MaintenanceCard
+                        title="Messages"
+                        description="View generic contact and booking queries."
+                        icon={Mail}
+                        color="yellow-400"
+                        link="/admin/messages"
+                        isUnderMaintenance={false}
+                    />
+                </AdminCarousel>
 
+                {/* Event Management Carousel */}
+                <AdminCarousel title="Event Management">
                     {/* Ticket Manager */}
                     <MaintenanceCard
                         title="Ticketing"
                         description="Manage offline orders and approvals."
-                        icon={FileText} // Start with FileText, or QrCode if imported
-                        color="yellow-400"
+                        icon={Ticket}
+                        color="neon-blue"
                         link="/admin/tickets"
                         isUnderMaintenance={maintenanceState.features?.tickets}
                     />
-
-                    {/* Forms / Community */}
+                    {/* Upcoming Events */}
                     <MaintenanceCard
-                        title="Community Hub"
-                        description="Volunteer gigs, guestlists, and forms."
-                        icon={Users}
-                        color="neon-green"
-                        link="/admin/forms?tab=forms"
-                        isUnderMaintenance={maintenanceState.features?.forms}
+                        title="Upcoming Events"
+                        description="Homepage pinned events."
+                        icon={Calendar}
+                        color="yellow-400"
+                        link="/admin/upcoming-events"
+                        isUnderMaintenance={maintenanceState.features?.upcoming_events}
                     />
-                </AdminCarousel>
-
-                {/* Content Management Carousel */}
-                <AdminCarousel title="Content Management">
                     {/* Concerts Manager */}
                     <MaintenanceCard
                         title="Past Events"
@@ -529,22 +537,47 @@ const Dashboard = () => {
                         link="/admin/concerts"
                         isUnderMaintenance={maintenanceState.features?.concerts}
                     />
+                </AdminCarousel>
 
-                    {/* Upcoming Events */}
+                {/* People & Community Carousel */}
+                 <AdminCarousel title="People & Community">
+                     {/* Influencer Creators */}
                     <MaintenanceCard
-                        title="Upcoming"
-                        description="Homepage pinned events."
-                        icon={Calendar}
-                        color="yellow-400"
-                        link="/admin/upcoming-events"
-                        isUnderMaintenance={maintenanceState.features?.upcoming_events}
+                        title="Creators"
+                        description="Manage influencers and brand ambassadors."
+                        icon={Star}
+                        color="neon-pink"
+                        link="/admin/creators"
+                        isUnderMaintenance={maintenanceState.features?.influencer}
                     />
 
+                    {/* Influencer Campaigns */}
+                    <MaintenanceCard
+                        title="Campaigns"
+                        description="Create and manage marketing campaigns."
+                        icon={Target}
+                        color="neon-blue"
+                        link="/admin/campaigns"
+                        isUnderMaintenance={maintenanceState.features?.influencer}
+                    />
+                    {/* Forms / Community */}
+                    <MaintenanceCard
+                        title="Community Hub"
+                        description="Volunteer gigs, guestlists, and forms."
+                        icon={Users}
+                        color="neon-green"
+                        link="/admin/forms?tab=forms"
+                        isUnderMaintenance={maintenanceState.features?.forms}
+                    />
+                 </AdminCarousel>
+
+                {/* System & Media Carousel */}
+                <AdminCarousel title="System & Media">
                     {/* Gallery Manager */}
                     <MaintenanceCard
                         title="Gallery"
                         description="Photos and media uploads."
-                        icon={Users}
+                        icon={Image}
                         color="neon-pink"
                         link="/admin/gallery-manager"
                         isUnderMaintenance={maintenanceState.features?.gallery_manager}
