@@ -64,10 +64,10 @@ const LivePreview = ({ type, data }) => {
 
                     {/* EVENT PREVIEW */}
                     {type === 'event' && (
-                        <div className="relative bg-[#0a0a0a] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
+                        <div className="relative bg-[#111] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
                             {/* Visual Perforations */}
-                            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20" />
-                            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
                             <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
 
                             {/* Top Image Section */}
@@ -83,7 +83,7 @@ const LivePreview = ({ type, data }) => {
                                     </div>
                                 )}
                                 {/* Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+                                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111] to-transparent" />
                                 
                                 <div className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 z-10 flex items-center gap-3">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
@@ -94,7 +94,7 @@ const LivePreview = ({ type, data }) => {
                             </div>
 
                             {/* Bottom Content Section */}
-                            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#0a0a0a] z-10">
+                            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#111] z-10">
                                 <div>
                                     <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate">
                                         {data.title || 'EVENT TITLE'}
