@@ -25,8 +25,13 @@ const ProposalGenerator = () => {
         const handleResize = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
-                // 794 is approx 210mm. Subtract padding (e.g. 64px) to ensure no overflow
-                const newScale = Math.min(1, (containerWidth - 64) / 794);
+                const containerHeight = previewContainerRef.current.clientHeight;
+                
+                // A4 dimensions at 96dpi are roughly 794x1123
+                const scaleWidth = (containerWidth - 64) / 794;
+                const scaleHeight = (containerHeight - 64) / 1123;
+                
+                const newScale = Math.min(1, scaleWidth, scaleHeight);
                 setPreviewScale(Math.max(0.3, newScale));
             }
         };
