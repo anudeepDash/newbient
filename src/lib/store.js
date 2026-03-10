@@ -12,6 +12,8 @@ export const useStore = create((set, get) => ({
     messages: [], // New state
     guestlists: [], // New state
     ticketOrders: [], // New state
+    creators: [], // Influencer Marketing
+    campaigns: [], // Influencer Marketing
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
@@ -82,6 +84,8 @@ export const useStore = create((set, get) => ({
         const unsubGuestlist = sub('guestlists', 'guestlists'); // New sub
         const unsubMessages = sub('messages', 'messages');
         const unsubTicketOrders = sub('ticket_orders', 'ticketOrders'); // New sub
+        const unsubCreators = sub('creators', 'creators');
+        const unsubCampaigns = sub('campaigns', 'campaigns');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -139,7 +143,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns();
         };
     },
 
@@ -459,8 +463,77 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'messages', id));
     },
 
-    deleteMessage: async (id) => {
-        await deleteDoc(doc(db, 'messages', id));
+    // Creators / Influencers
+    addCreator: async (creator) => {
+        await setDoc(doc(db, 'creators', creator.uid), { ...creator, createdAt: new Date().toISOString() });
+    },
+    updateCreator: async (uid, updates) => {
+        await updateDoc(doc(db, 'creators', uid), updates);
+    },
+    deleteCreator: async (uid) => {
+        await deleteDoc(doc(db, 'creators', uid));
+    },
+
+    // Campaigns / Gigs
+    addCampaign: async (campaign) => {
+        await addDoc(collection(db, 'campaigns'), {
+            ...campaign,
+            tasks: [], // Store tasks directly in campaign structure for now
+            createdAt: new Date().toISOString()
+        });
+    },
+    updateCampaign: async (id, updates) => {
+        await updateDoc(doc(db, 'campaigns', id), updates);
+    },
+    deleteCampaign: async (id) => {
+        await deleteDoc(doc(db, 'campaigns', id));
+    },
+
+    // Bulk Shortlist Helpers
+    bulkUpdateCreatorStatus: async (uidArray, status) => {
+        const updatePromises = uidArray.map(uid => updateDoc(doc(db, 'creators', uid), { profileStatus: status }));
+        await Promise.all(updatePromises);
+    },
+
+    bulkShortlistCreators: async (campaignId, uidArray, shouldShortlist = true) => {
+        const { creators } = get();
+        const updatePromises = uidArray.map(async (uid) => {
+            const creator = creators.find(c => c.uid === uid);
+            if (!creator) return;
+
+            const shortlisted = creator.shortlistedCampaigns || [];
+            if (shouldShortlist) {
+                if (!shortlisted.includes(campaignId)) {
+                    await updateDoc(doc(db, 'creators', uid), { 
+                        shortlistedCampaigns: [...shortlisted, campaignId] 
+                    });
+                }
+            } else {
+                await updateDoc(doc(db, 'creators', uid), { 
+                    shortlistedCampaigns: shortlisted.filter(id => id !== campaignId) 
+                });
+            }
+        });
+        await Promise.all(updatePromises);
+    },
+
+    toggleShortlistStatus: async (campaignId, creatorUid) => {
+        const { creators } = get();
+        const creator = creators.find(c => c.uid === creatorUid);
+        if (!creator) return;
+
+        const shortlisted = creator.shortlistedCampaigns || [];
+        const isCurrentlyShortlisted = shortlisted.includes(campaignId);
+
+        if (isCurrentlyShortlisted) {
+            await updateDoc(doc(db, 'creators', creatorUid), {
+                shortlistedCampaigns: shortlisted.filter(id => id !== campaignId)
+            });
+        } else {
+            await updateDoc(doc(db, 'creators', creatorUid), {
+                shortlistedCampaigns: [...shortlisted, campaignId]
+            });
+        }
     },
 
     // Ticket Orders (Offline System)

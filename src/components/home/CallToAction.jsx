@@ -17,16 +17,7 @@ const CallToAction = () => {
                     Empowering Events, <br />
                     <span className="text-gray-400">Inspiring Lives</span>
                 </motion.h2>
-
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.2 }}
-                    className="text-neon-green font-mono mb-12"
-                >
-                    &gt;&gt; Event Production + Artist Bookings + Promotions
-                </motion.p>
+                {/* Hidden Event Production Line */}
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

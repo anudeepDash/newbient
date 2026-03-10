@@ -17,6 +17,7 @@ const Navbar = () => {
         { name: 'Concert Zone', path: '/concerts', featureId: 'concerts' },
         { name: 'Gallery', path: '/gallery', featureId: 'gallery' },
         { name: 'Community', path: '/community-join', featureId: 'community' },
+        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer' },
         { name: 'Contact', path: '/contact', featureId: 'contact' },
     ];
 

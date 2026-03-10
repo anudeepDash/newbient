@@ -40,6 +40,13 @@ const Services = () => {
             icon: CheckCircle,
             className: "md:col-span-1 md:row-span-1"
         },
+        {
+            title: "Influencer Marketing",
+            shortDesc: "Creator campaigns & brand deals.",
+            fullDesc: "Amplify your brand with targeted creator campaigns. We connect brands with our network of top influencers for authentic, city-focused promotions.",
+            icon: Megaphone, // Reusing Megaphone or you can import a different icon
+            className: "md:col-span-2 md:row-span-1 bg-gradient-to-r from-neon-pink/10 to-transparent border-neon-pink/20"
+        },
     ];
 
     return (
