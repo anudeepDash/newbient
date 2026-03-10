@@ -64,33 +64,61 @@ const LivePreview = ({ type, data }) => {
 
                     {/* EVENT PREVIEW */}
                     {type === 'event' && (
-                        <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col h-[400px] shadow-2xl relative w-full group transition-all duration-500">
-                            <div className="aspect-[3/4] relative overflow-hidden bg-black/50 h-full">
+                        <div className="relative bg-zinc-900 border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
+                            {/* Visual Perforations */}
+                            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-[#111] rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-[#111] rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
+
+                            {/* Top Image Section */}
+                            <div className="h-[65%] relative overflow-hidden bg-zinc-800">
                                 {data.image ? (
-                                    <img src={data.image} alt={data.title} className="w-full h-full object-cover opacity-80" />
+                                    <div
+                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                                        style={{ backgroundImage: `url(${data.image})` }}
+                                    />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500 text-[10px] font-black tracking-widest uppercase">No Image</div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-6 flex flex-col justify-end">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">
-                                            {formatDate(data.date)}
-                                        </span>
-                                        {data.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest text-xs">
+                                        TBA
                                     </div>
-                                    <h3 className="text-2xl font-black font-heading text-white uppercase italic tracking-tighter mb-2 leading-none">
-                                        {data.title || 'UN40: MUSIC & BEYOND'}
+                                )}
+                                {/* Gradient Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+                                
+                                <div className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 z-10">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
+                                        {data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Bottom Content Section */}
+                            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-zinc-900 z-10">
+                                <div>
+                                    <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate">
+                                        {data.title || 'EVENT TITLE'}
                                     </h3>
-                                    {data.description && (
-                                        <p className="text-[10px] font-medium text-gray-400 line-clamp-2 leading-relaxed">
-                                            {data.description}
-                                        </p>
-                                    )}
-                                    {data.buttonText && (
-                                        <div className="mt-4 flex items-center gap-2 text-neon-blue text-[10px] font-black uppercase tracking-widest">
-                                            {data.buttonText} <ArrowRight size={12} />
+                                    <div className="flex items-center gap-4 text-gray-500">
+                                        <div className="flex items-center gap-1">
+                                            <MapPin size={12} className="text-neon-blue" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Mainland India</span>
                                         </div>
-                                    )}
+                                        <div className="flex items-center gap-1">
+                                            <Calendar size={12} className="text-neon-blue" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">{data.date ? 'Confirmed' : 'Pending'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4">
+                                    <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all">
+                                        <span className="text-[10px] uppercase">{data.buttonText || 'Access Event'}</span>
+                                        <ArrowRight size={16} />
+                                    </div>
+                                    
+                                    <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all">
+                                        <Share2 size={14} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
