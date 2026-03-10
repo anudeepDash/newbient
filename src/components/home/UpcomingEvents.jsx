@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import BuyTicketModal from '../tickets/BuyTicketModal';
 
@@ -34,27 +34,84 @@ const UpcomingEvents = () => {
         return () => clearInterval(interval);
     }, [isAutoScrolling, upcomingEvents.length]);
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event');
+        if (eventId && upcomingEvents.length > 0) {
+            const element = document.getElementById(`event-card-${eventId}`);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 800);
+            }
+        } else if (upcomingEvents.length > 0 && window.location.hash) {
+            const hashId = window.location.hash.slice(1);
+            if (hashId.startsWith('event-card-')) {
+                const element = document.getElementById(hashId);
+                if (element) {
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 800);
+                }
+            }
+        }
+    }, [upcomingEvents]);
+
     const handleShare = async (e, event) => {
         e.preventDefault();
         e.stopPropagation();
         const cardElement = document.getElementById(`event-card-${event.id}`);
         if (!cardElement) return;
+
         try {
+            // Temporarily remove truncation and line-clamping for full title capture
+            const titleEl = cardElement.querySelector('.event-title');
+            if (titleEl) {
+                titleEl.classList.remove('truncate', 'line-clamp-2');
+                titleEl.style.webkitLineClamp = 'unset';
+                titleEl.style.display = 'block';
+            }
+
             const canvas = await html2canvas(cardElement, {
                 useCORS: true,
                 scale: 3,
                 backgroundColor: '#020202',
                 logging: false,
+                onclone: (clonedDoc) => {
+                    // Ensure full visibility in clone
+                    const clonedCard = clonedDoc.getElementById(`event-card-${event.id}`);
+                    if (clonedCard) {
+                        clonedCard.style.height = 'auto';
+                        clonedCard.style.overflow = 'visible';
+                        const clonedTitle = clonedCard.querySelector('.event-title');
+                        if (clonedTitle) {
+                            clonedTitle.classList.remove('truncate', 'line-clamp-2');
+                            clonedTitle.style.webkitLineClamp = 'unset';
+                            clonedTitle.style.display = 'block';
+                        }
+                    }
+                }
             });
+
+            if (titleEl) {
+                titleEl.classList.add('line-clamp-2');
+                titleEl.style.webkitLineClamp = '';
+                titleEl.style.display = '';
+            }
+
             const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
             const imageFile = new File([imageBlob], `${event.title.replace(/\s+/g, '_')}_event.png`, { type: 'image/png' });
-            const eventUrl = event.link || window.location.origin;
+            
+            // Shared link defaults to home page with event param
+            const eventUrl = `${window.location.origin}/?event=${event.id}`;
+            
             const shareData = {
                 title: event.title,
-                text: `${event.title} - ${event.date ? new Date(event.date).toLocaleDateString() : 'Upcoming Event'}\n\nAccess it here: ${eventUrl}`,
+                text: `${event.title} - ${event.date ? new Date(event.date).toLocaleDateString() : 'Upcoming Event'}\n\nView event: ${eventUrl}`,
                 url: eventUrl,
                 files: [imageFile],
             };
+
             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
                 await navigator.share(shareData);
             } else {
@@ -62,19 +119,15 @@ const UpcomingEvents = () => {
                 link.href = canvas.toDataURL('image/png');
                 link.download = `${event.title.replace(/\s+/g, '_')}_event.png`;
                 link.click();
-                if (event.link) {
-                    await navigator.clipboard.writeText(event.link);
-                    alert("Image downloaded and event link copied to clipboard!");
-                } else {
-                    alert("Image downloaded!");
-                }
+                
+                await navigator.clipboard.writeText(eventUrl);
+                alert("Image downloaded and event link copied to clipboard!");
             }
         } catch (error) {
             console.error("Share failed:", error);
-            if (event.link) {
-                await navigator.clipboard.writeText(event.link);
-                alert("Link copied to clipboard!");
-            }
+            const eventUrl = `${window.location.origin}/?event=${event.id}`;
+            await navigator.clipboard.writeText(eventUrl);
+            alert("Link copied to clipboard!");
         }
     };
 
@@ -92,7 +145,7 @@ const UpcomingEvents = () => {
             <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-neon-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-24 gap-8">
                     <div className="max-w-xl">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -106,9 +159,9 @@ const UpcomingEvents = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="font-heading text-4xl md:text-6xl font-black tracking-tight"
+                            className="font-heading text-4xl md:text-6xl font-black tracking-tight italic"
                         >
-                            UPCOMING <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-cyan-400 to-neon-green">EVENTS.</span>
+                            UPCOMING <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-cyan-400 to-neon-green not-italic">EVENTS.</span>
                         </motion.h2>
                     </div>
                 </div>
@@ -121,7 +174,7 @@ const UpcomingEvents = () => {
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {upcomingEvents.map((event) => (
-                            <div key={event.id} className="min-w-[320px] md:min-w-[400px] snap-start">
+                            <div key={event.id} className="min-w-[280px] md:min-w-[400px] snap-start">
                                 {event.isTicketed ? (
                                     <div 
                                         onClick={() => {
@@ -164,7 +217,7 @@ const UpcomingEvents = () => {
 
 const EventTicket = ({ event, handleShare }) => {
     return (
-        <div id={`event-card-${event.id}`} className="relative bg-[#111] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
+        <div id={`event-card-${event.id}`} className="relative bg-[#111] border border-white/5 rounded-3xl md:rounded-[3rem] overflow-hidden flex flex-col h-[420px] md:h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
             {/* Visual Perforations */}
             <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
             <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
@@ -196,7 +249,7 @@ const EventTicket = ({ event, handleShare }) => {
             {/* Bottom Content Section */}
             <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#111] z-10">
                 <div>
-                    <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate">
+                    <h3 className="event-title text-xl md:text-2xl font-black text-white leading-tight tracking-tight mb-2 line-clamp-2 italic">
                         {event.title}
                     </h3>
                     <div className="flex items-center gap-4 text-gray-500">

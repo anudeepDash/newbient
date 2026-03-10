@@ -5,29 +5,32 @@ const Footer = () => {
     const { siteDetails } = useStore();
 
     return (
-        <footer className="bg-dark border-t border-white/10 py-8 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="text-center md:text-left">
+        <footer className="bg-[#020202] border-t border-white/5 py-12 md:py-8 mt-auto px-6 overflow-hidden relative">
+            {/* Subtle Footer Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            
+            <div className="max-w-7xl mx-auto">
+                <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-12 md:gap-8">
+                    <div className="text-center md:text-left space-y-4">
                         <Link to="/" className="inline-block group">
-                            <h2 className="text-3xl md:text-4xl font-heading font-black tracking-tighter text-white group-hover:text-neon-green transition-colors uppercase">
-                                NewBi <span className="text-stroke-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Entertainment</span>
+                            <h2 className="text-4xl md:text-4xl font-heading font-black tracking-tighter text-white group-hover:text-neon-green transition-colors uppercase italic">
+                                NewBi <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">ENT.</span>
                             </h2>
                         </Link>
-                        <p className="text-gray-400 text-sm mt-2 max-w-md">Creating energetic experiences that resonate with the pulse of the youth.</p>
+                        <p className="text-gray-500 text-sm max-w-xs mx-auto md:mx-0 font-medium leading-relaxed">
+                            Creating energetic experiences that resonate with the pulse of the youth.
+                        </p>
                     </div>
 
-                    <div className="flex flex-col items-center md:items-end space-y-4">
-                        <div className="flex items-center space-x-6 text-sm font-medium text-gray-300">
-                            <Link to="/contact" className="hover:text-neon-green transition-colors hover:underline decoration-neon-green underline-offset-4">Contact</Link>
-                            <span className="text-gray-600">|</span>
-                            <a href={siteDetails?.instagram || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">Instagram</a>
-                            <a href={siteDetails?.linkedin || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-green transition-colors">LinkedIn</a>
-                            <span className="text-gray-600">|</span>
-                            <Link to="/admin" className="text-gray-600 hover:text-white transition-colors text-xs">Admin</Link>
+                    <div className="flex flex-col items-center md:items-end gap-6">
+                        <div className="flex flex-wrap justify-center items-center gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                            <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
+                            <a href={siteDetails?.instagram || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-pink transition-colors">Instagram</a>
+                            <a href={siteDetails?.linkedin || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-neon-blue transition-colors">LinkedIn</a>
+                            <Link to="/admin" className="hover:text-white transition-colors">Admin</Link>
                         </div>
-                        <div className="text-xs text-gray-500">
-                            &copy; {new Date().getFullYear()} NewBi Entertainment. All rights reserved.
+                        <div className="text-[10px] text-gray-600 font-bold uppercase tracking-widest text-center md:text-right">
+                            &copy; {new Date().getFullYear()} NewBi Entertainment. <br className="md:hidden" /> All rights reserved.
                         </div>
                     </div>
                 </div>

@@ -60,10 +60,10 @@ const Hero = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    className="mb-12 relative flex justify-center"
+                    className="mb-8 md:mb-12 relative flex justify-center"
                 >
                     <div className="absolute inset-0 bg-neon-green/20 blur-[60px] rounded-full scale-75 animate-pulse"></div>
-                    <img src={logo} alt="NewBi Entertainment" className="h-28 md:h-40 lg:h-48 w-auto relative z-10 drop-shadow-[0_0_20px_rgba(57,255,20,0.3)]" />
+                    <img src={logo} alt="NewBi Entertainment" className="h-20 md:h-40 lg:h-48 w-auto relative z-10 drop-shadow-[0_0_20px_rgba(57,255,20,0.3)]" />
                 </motion.div>
 
                 {/* Cyberpunk Title */}
@@ -82,9 +82,9 @@ const Hero = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.4 }}
-                        className="font-heading text-5xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white"
+                        className="font-heading text-4xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white italic"
                     >
-                        PULSE OF <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">YOUTH.</span>
+                        PULSE OF <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue not-italic">YOUTH.</span>
                     </motion.h1>
                 </div>
 
@@ -92,7 +92,7 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.5 }}
-                    className="text-lg md:text-2xl text-gray-400 mb-16 max-w-3xl mx-auto font-medium leading-relaxed"
+                    className="text-base md:text-2xl text-gray-400 mb-12 md:mb-16 max-w-3xl mx-auto font-medium leading-relaxed px-4"
                 >
                     India's leading specialized agency for <span className="text-white">College Activations</span>, high-impact marketing, and <span className="text-white">Revolutionary Events</span>.
                 </motion.p>
@@ -102,19 +102,19 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-8"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 px-6"
                 >
                     <a
                         href="/contact"
-                        className="group relative h-20 px-12 flex items-center justify-center bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-sm rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+                        className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
                     >
                         Contact Us
-                        <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-3 w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
                     </a>
 
                     <a
                         href="/community-join"
-                        className="group relative h-20 px-12 flex items-center justify-center bg-zinc-900 border border-white/10 text-white font-black font-heading uppercase tracking-[0.2em] text-sm rounded-2xl transition-all duration-300 hover:border-neon-blue/50 hover:shadow-[0_0_40px_rgba(0,255,255,0.1)] overflow-hidden"
+                        className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-zinc-900 border border-white/10 text-white font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:border-neon-blue/50 hover:shadow-[0_0_40px_rgba(0,255,255,0.1)] overflow-hidden"
                     >
                         <span className="relative z-10">Join the Tribe</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/0 via-neon-blue/5 to-neon-blue/0 opacity-0 group-hover:opacity-100 transition-opacity" />
