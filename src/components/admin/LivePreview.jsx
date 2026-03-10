@@ -1,13 +1,24 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles } from 'lucide-react';
+import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles, Ticket } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'TBD';
+    if (dateStr.includes('T')) {
+        try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const datePart = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+                const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
+                return `${datePart} • ${timePart}`;
+            }
+        } catch (e) {}
+    }
     const [y, m, d] = dateStr.split('-');
-    return `${d}-${m}-${y}`;
+    const day = d ? d.split('T')[0] : '';
+    return `${day}-${m}-${y}`;
 };
 
 const LivePreview = ({ type, data }) => {
@@ -53,36 +64,33 @@ const LivePreview = ({ type, data }) => {
 
                     {/* EVENT PREVIEW */}
                     {type === 'event' && (
-                        <div className="aspect-[4/5] relative rounded-xl overflow-hidden group border border-white/10 bg-gray-900 shadow-lg">
-                            {data.image ? (
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${data.image})` }}
-                                />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-500">
-                                    No Image
-                                </div>
-                            )}
-
-                            {/* Hover Overlay Simulation (Always partially visible in preview) */}
-                            <div className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center p-4 text-center">
-                                <h3 className="text-xl font-bold text-white mb-1">
-                                    {data.title || 'Event Title'}
-                                </h3>
-                                <p className="text-neon-green text-[10px] font-bold uppercase tracking-wider mb-2">
-                                    {data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Upcoming'}
-                                </p>
-
-                                {data.description && (
-                                    <p className="text-gray-300 text-[10px] mb-3 whitespace-pre-line line-clamp-4">
-                                        {data.description}
-                                    </p>
+                        <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden flex flex-col h-[400px] shadow-2xl relative w-full group transition-all duration-500">
+                            <div className="aspect-[3/4] relative overflow-hidden bg-black/50 h-full">
+                                {data.image ? (
+                                    <img src={data.image} alt={data.title} className="w-full h-full object-cover opacity-80" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500 text-[10px] font-black tracking-widest uppercase">No Image</div>
                                 )}
-
-                                <div className="flex items-center gap-1 text-white text-[10px] font-medium border border-white/20 px-2 py-1 rounded">
-                                    {data.buttonText || 'view event'}
-                                    <ArrowRight size={10} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-6 flex flex-col justify-end">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">
+                                            {formatDate(data.date)}
+                                        </span>
+                                        {data.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
+                                    </div>
+                                    <h3 className="text-2xl font-black font-heading text-white uppercase italic tracking-tighter mb-2 leading-none">
+                                        {data.title || 'UN40: MUSIC & BEYOND'}
+                                    </h3>
+                                    {data.description && (
+                                        <p className="text-[10px] font-medium text-gray-400 line-clamp-2 leading-relaxed">
+                                            {data.description}
+                                        </p>
+                                    )}
+                                    {data.buttonText && (
+                                        <div className="mt-4 flex items-center gap-2 text-neon-blue text-[10px] font-black uppercase tracking-widest">
+                                            {data.buttonText} <ArrowRight size={12} />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
