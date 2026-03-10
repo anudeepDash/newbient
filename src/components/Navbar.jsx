@@ -39,8 +39,8 @@ const Navbar = () => {
                 </div>
             )}
             <nav className={cn(
-                "fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-6 flex items-center justify-center",
-                maintenanceState.global && user?.role === 'developer' ? "top-10" : "top-6"
+                "fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
+                maintenanceState.global && user?.role === 'developer' ? "top-10" : "top-4 md:top-6"
             )}>
                 {/* Main Menu Pill */}
                 <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
