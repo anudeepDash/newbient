@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
 import BuyTicketModal from '../tickets/BuyTicketModal';
 
 const UpcomingEvents = () => {
-    const { upcomingEvents, siteSettings } = useStore();
+    const { upcomingEvents, siteSettings, maintenanceState } = useStore();
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -123,7 +123,16 @@ const UpcomingEvents = () => {
                         {upcomingEvents.map((event) => (
                             <div key={event.id} className="min-w-[320px] md:min-w-[400px] snap-start">
                                 {event.isTicketed ? (
-                                    <div onClick={() => setSelectedEvent(event)} className="block w-full h-full relative cursor-pointer group">
+                                    <div 
+                                        onClick={() => {
+                                            if (maintenanceState.features?.tickets) {
+                                                alert("Ticketing is currently paused for maintenance. Please check back later.");
+                                            } else {
+                                                setSelectedEvent(event);
+                                            }
+                                        }} 
+                                        className="block w-full h-full relative cursor-pointer group"
+                                    >
                                         <EventTicket event={event} handleShare={handleShare} />
                                     </div>
                                 ) : event.link ? (
