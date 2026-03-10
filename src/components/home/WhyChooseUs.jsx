@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Megaphone, Calendar, ArrowUpRight } from 'lucide-react';
 
 const WhyChooseUs = () => {
+    const carouselRef = useRef(null);
+    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
     const reasons = [
         {
             title: "Campus Marketing",
@@ -29,6 +32,21 @@ const WhyChooseUs = () => {
             shadow: "shadow-neon-blue/20"
         },
     ];
+
+    useEffect(() => {
+        if (!isAutoScrolling) return;
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+            }
+        }, 1500);
+        return () => clearInterval(interval);
+    }, [isAutoScrolling]);
 
     return (
         <section className="py-32 bg-[#020202] relative px-4 overflow-hidden">
@@ -65,9 +83,17 @@ const WhyChooseUs = () => {
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div 
+                    ref={carouselRef}
+                    className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+                    onMouseEnter={() => setIsAutoScrolling(false)}
+                    onMouseLeave={() => setIsAutoScrolling(true)}
+                    onTouchStart={() => setIsAutoScrolling(false)}
+                >
                     {reasons.map((reason, index) => (
-                        <Card key={index} reason={reason} index={index} />
+                        <div key={index} className="min-w-[85vw] md:min-w-0 snap-center">
+                            <Card reason={reason} index={index} />
+                        </div>
                     ))}
                 </div>
             </div>

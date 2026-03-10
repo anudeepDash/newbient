@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Mic2, Megaphone, CalendarCheck, Music, Globe, Users, BarChart3, Zap, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Link } from 'react-router-dom';
 
 const Services = () => {
+    const carouselRef = useRef(null);
+    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
     const services = [
         {
             title: "College Activations",
@@ -48,6 +51,21 @@ const Services = () => {
         },
     ];
 
+    useEffect(() => {
+        if (!isAutoScrolling) return;
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+            }
+        }, 1500);
+        return () => clearInterval(interval);
+    }, [isAutoScrolling]);
+
     return (
         <section id="capabilities" className="py-32 bg-[#020202] relative px-4 overflow-hidden">
              {/* Background Atmosphere */}
@@ -85,9 +103,17 @@ const Services = () => {
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-24">
+                <div 
+                    ref={carouselRef}
+                    className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+                    onMouseEnter={() => setIsAutoScrolling(false)}
+                    onMouseLeave={() => setIsAutoScrolling(true)}
+                    onTouchStart={() => setIsAutoScrolling(false)}
+                >
                     {services.map((service, index) => (
-                        <ServiceCard key={index} service={service} index={index} />
+                        <div key={index} className={cn("min-w-[85vw] md:min-w-0 snap-center", service.className)}>
+                            <ServiceCard service={service} index={index} />
+                        </div>
                     ))}
                 </div>
 

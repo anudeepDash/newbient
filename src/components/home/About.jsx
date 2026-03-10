@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const About = () => {
+    const carouselRef = useRef(null);
+    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
     const stats = [
         { label: "Events Managed", value: "250+", sub: "Successful shows and activations across India" },
         { label: "Cities Covered", value: "17+", sub: "Nationwide presence in major youth hubs" },
         { label: "GenZ Reach", value: "2M+", sub: "Monthly impressions through our massive network" },
     ];
+
+    useEffect(() => {
+        if (!isAutoScrolling) return;
+        const interval = setInterval(() => {
+            if (carouselRef.current) {
+                const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+            }
+        }, 1500);
+        return () => clearInterval(interval);
+    }, [isAutoScrolling]);
 
     return (
         <section className="py-32 bg-[#020202] relative overflow-hidden">
@@ -44,7 +62,13 @@ const About = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div 
+                    ref={carouselRef}
+                    className="flex md:grid md:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+                    onMouseEnter={() => setIsAutoScrolling(false)}
+                    onMouseLeave={() => setIsAutoScrolling(true)}
+                    onTouchStart={() => setIsAutoScrolling(false)}
+                >
                     {stats.map((stat, index) => (
                         <motion.div
                             key={index}
@@ -52,12 +76,12 @@ const About = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: index * 0.1 }}
-                            className="relative group p-1"
+                            className="relative group p-1 min-w-[85vw] md:min-w-0 snap-center"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="relative bg-zinc-900/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-10 h-full flex flex-col items-center text-center group-hover:border-white/20 transition-all duration-500 group-hover:-translate-y-2">
                                 <span className="text-[10px] font-black uppercase tracking-[0.5em] text-neon-green mb-8">{stat.label}</span>
-                                <h4 className="text-6xl md:text-8xl font-black text-white mb-4 tracking-tighter group-hover:scale-110 transition-transform duration-500">
+                                <h4 className="text-5xl md:text-8xl font-black text-white mb-4 tracking-tighter group-hover:scale-110 transition-transform duration-500">
                                     {stat.value}
                                 </h4>
                                 <p className="text-sm text-gray-400 font-bold leading-relaxed max-w-[200px]">
