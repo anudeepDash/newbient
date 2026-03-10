@@ -560,9 +560,9 @@ export const useStore = create((set, get) => ({
     // Ticket Orders (Offline System)
     addTicketOrder: async (order) => {
         await addDoc(collection(db, 'ticket_orders'), {
+            createdAt: new Date().toISOString(),
             ...order,
-            status: 'pending',
-            createdAt: new Date().toISOString()
+            status: order.status || 'pending'
         });
     },
     updateTicketOrder: async (id, updates) => {
