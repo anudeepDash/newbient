@@ -564,7 +564,8 @@ export const useStore = create((set, get) => ({
         await addDoc(collection(db, 'ticket_orders'), {
             createdAt: new Date().toISOString(),
             ...order,
-            status: order.status || 'pending'
+            status: order.status || 'pending',
+            fulfillmentStatus: 'pending_verification' // new state
         });
     },
     updateTicketOrder: async (id, updates) => {
@@ -578,10 +579,11 @@ export const useStore = create((set, get) => ({
         // Generate Unique Booking ID: NB-YYYY-XXXX (4 random chars)
         const year = new Date().getFullYear();
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const bookingRef = `NB-${year}-${random}`;
+        const bookingRef = order.bookingRef || `NB-${year}-${random}`; // Keep existing if retry
 
         const assignedTickets = [];
         const ticketsToDelete = [];
+        let allItemsFulfilled = true;
 
         // For each item in the order, find tickets from the vault
         if (order.items && order.items.length > 0) {
@@ -590,33 +592,50 @@ export const useStore = create((set, get) => ({
             for (const item of order.items) {
                 const countNeeded = item.count || 1;
                 // Find tickets matching eventId and category (case insensitive comparison)
+                // Defaulting standard fallback if no category id matches exactly
+                const matchCategory = item.categoryId?.toUpperCase() || item.name?.toUpperCase() || 'STANDARD TICKET';
+
                 const matchingTickets = vaultCopy.filter(t => 
                     t.eventId === order.eventId && 
-                    (t.category?.toUpperCase() === item.categoryId?.toUpperCase() || t.category?.toUpperCase() === item.name?.toUpperCase())
+                    (t.category?.toUpperCase() === matchCategory)
                 ).slice(0, countNeeded);
 
-                if (matchingTickets.length > 0) {
+                if (matchingTickets.length === countNeeded) {
                     assignedTickets.push(...matchingTickets.map(t => t.url));
                     ticketsToDelete.push(...matchingTickets.map(t => t.id));
                     
                     const matchingIds = matchingTickets.map(t => t.id);
                     vaultCopy = vaultCopy.filter(t => !matchingIds.includes(t.id));
+                } else {
+                    allItemsFulfilled = false;
+                    break; // If we can't fulfill this item completely, abort fulfilling the whole order
                 }
             }
         }
 
-        // Update Order
-        await updateDoc(doc(db, 'ticket_orders', id), {
-            status: 'approved',
-            bookingRef: bookingRef,
-            ticketUrls: assignedTickets,
-            ticketUrl: assignedTickets[0] || '', // Fallback
-            approvedAt: new Date().toISOString()
-        });
+        if (allItemsFulfilled && assignedTickets.length > 0) {
+            // Update Order as Fulfilled
+            await updateDoc(doc(db, 'ticket_orders', id), {
+                status: 'approved',
+                fulfillmentStatus: 'fulfilled',
+                bookingRef: bookingRef,
+                ticketUrls: assignedTickets,
+                ticketUrl: assignedTickets[0] || '', // Fallback
+                approvedAt: new Date().toISOString()
+            });
 
-        // Cleanup Vault
-        for (const ticketId of ticketsToDelete) {
-            await deleteDoc(doc(db, 'ticket_vault', ticketId));
+            // Cleanup Vault
+            for (const ticketId of ticketsToDelete) {
+                await deleteDoc(doc(db, 'ticket_vault', ticketId));
+            }
+        } else {
+            // Not enough tickets, put On Hold
+            await updateDoc(doc(db, 'ticket_orders', id), {
+                status: 'approved',
+                fulfillmentStatus: 'on_hold',
+                bookingRef: bookingRef,
+                approvedAt: new Date().toISOString()
+            });
         }
 
         return bookingRef;
@@ -635,6 +654,17 @@ export const useStore = create((set, get) => ({
             createdAt: new Date().toISOString(),
             status: 'available'
         });
+    },
+    attemptAutoFulfill: async () => {
+        // Find all orders that are approved but on_hold
+        const { ticketOrders, approveTicketOrder } = get();
+        const onHoldOrders = ticketOrders.filter(o => o.status === 'approved' && o.fulfillmentStatus === 'on_hold')
+                                         .sort((a, b) => new Date(a.approvedAt || 0) - new Date(b.approvedAt || 0)); // Oldest first (FIFO)
+        
+        for (const order of onHoldOrders) {
+            // Re-attempt approval process to pull from vault
+            await approveTicketOrder(order.id);
+        }
     },
     updateTicketInVault: async (id, updates) => {
         await updateDoc(doc(db, 'ticket_vault', id), updates);

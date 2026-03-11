@@ -123,9 +123,10 @@ NewBi Entertainment`;
         data.append("cloud_name", "dgtalrz4n");
 
         try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
-            const uploadedImage = await res.json();
-            return uploadedImage.secure_url;
+            // Using /auto/upload safely accepts both images and pdfs
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/auto/upload", { method: "POST", body: data });
+            const uploadedFile = await res.json();
+            return uploadedFile.secure_url;
         } catch (error) {
             console.error("Storage error:", error);
             return null;
@@ -447,14 +448,19 @@ NewBi Entertainment`;
                                                             </>
                                                         ) : (
                                                             <>
-                                                                {order.ticketUrl || order.status === 'approved' ? (
+                                                                {order.fulfillmentStatus === 'fulfilled' || order.ticketUrl ? (
                                                                     <div className="flex flex-col gap-2 w-full">
                                                                         <Button onClick={() => setViewingTicket(order)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
                                                                             <Mail size={14} className="mr-2" /> Get Email Draft
                                                                         </Button>
-                                                                        <Button onClick={() => handleSendEmail(order)} className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl hover:bg-neon-blue hover:text-black transition-all">
-                                                                            Dispatch Digital
+                                                                        <Button disabled className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl opacity-50 cursor-not-allowed transition-all">
+                                                                            Dispatch Digital (Soon)
                                                                         </Button>
+                                                                    </div>
+                                                                ) : order.fulfillmentStatus === 'on_hold' ? (
+                                                                    <div className="flex flex-col gap-2 w-full items-center justify-center p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
+                                                                        <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest"><Clock size={12} className="inline mr-1" /> On Hold</span>
+                                                                        <span className="text-gray-400 text-[8px] uppercase font-bold">Waiting for tickets in vault</span>
                                                                     </div>
                                                                 ) : (
                                                                     <div className="relative group/upload">
@@ -468,7 +474,7 @@ NewBi Entertainment`;
                                                                         />
                                                                     </div>
                                                                 )}
-                                                                <div className="flex items-center justify-between px-2">
+                                                                <div className="flex items-center justify-between px-2 mt-2">
                                                                     <div className={cn(
                                                                         "text-[8px] font-black uppercase tracking-widest",
                                                                         order.ticketSent ? "text-neon-green" : "text-yellow-500"
@@ -636,8 +642,8 @@ NewBi Entertainment`;
                                                 const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
-                                                const bodyText = emailOption === 'attached' 
-                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                                                const bodyText = emailOption === 'attached' 
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi-entertainment.vercel.app/ticket/${viewingTicket.bookingRef}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
                                                 
                                                 return `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
@@ -652,7 +658,7 @@ NewBi Entertainment`;
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
                                                 const bodyText = emailOption === 'attached' 
-                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${viewingTicket.bookingRef}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
                                                 const content = `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
@@ -670,7 +676,7 @@ NewBi Entertainment`;
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
                                                 const bodyText = emailOption === 'attached' 
-                                                    ? `Your ticket(s) have been attached to this email. Please find them below.\n\nTicket Links:\n${(viewingTicket.ticketUrls || [viewingTicket.ticketUrl]).filter(Boolean).map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}`
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${viewingTicket.bookingRef}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
                                                 const subject = encodeURIComponent(`Your Newbi reference code for the ticket`);
@@ -722,7 +728,14 @@ const TicketVaultTab = ({ ticketVault, upcomingEvents, onAddTicket, onDeleteTick
                     });
                 }
             }
-            alert(`Successfully uploaded ${files.length} tickets.`);
+
+            // Immediately attempt to fulfill any on_hold orders
+            const { attemptAutoFulfill } = useStore.getState();
+            if (attemptAutoFulfill) {
+                await attemptAutoFulfill();
+            }
+
+            alert(`Successfully uploaded ${files.length} tickets. Orders on hold have automatically been assigned tickets.`);
         } catch (error) {
             console.error("Bulk upload failed:", error);
         } finally {
@@ -750,7 +763,10 @@ const TicketVaultTab = ({ ticketVault, upcomingEvents, onAddTicket, onDeleteTick
                         <select 
                             className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/30 transition-all text-white"
                             value={selectedEventId}
-                            onChange={(e) => setSelectedEventId(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedEventId(e.target.value);
+                                setTicketCategory(''); // Reset category when event changes
+                            }}
                         >
                             <option value="" className="bg-zinc-900 text-white font-black">Select Event...</option>
                             {upcomingEvents.map(event => (
@@ -760,22 +776,41 @@ const TicketVaultTab = ({ ticketVault, upcomingEvents, onAddTicket, onDeleteTick
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Category / Tier</label>
-                        <Input 
-                            placeholder="e.g. EARLY_BIRD, FAN_PIT"
+                        <select 
+                            className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/30 transition-all text-white"
                             value={ticketCategory}
-                            onChange={(e) => setTicketCategory(e.target.value.toUpperCase())}
-                            className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest"
-                        />
+                            onChange={(e) => setTicketCategory(e.target.value)}
+                            disabled={!selectedEventId}
+                        >
+                            <option value="" className="bg-zinc-900 text-white font-black">Select Category...</option>
+                            {(() => {
+                                const selectedEvent = upcomingEvents.find(e => e.id === selectedEventId);
+                                const cats = selectedEvent?.ticketCategories || [];
+                                const fallbackCats = ['STANDARD TICKET', 'NEGOTIATED TICKET'];
+                                
+                                // Merge defined categories with fallbacks for simple events
+                                const allOptions = [
+                                    ...cats.map(c => c.name.toUpperCase()),
+                                    ...fallbackCats
+                                ];
+                                // Keep unique
+                                return [...new Set(allOptions)].map((catName, idx) => (
+                                    <option key={idx} value={catName} className="bg-zinc-900 text-white font-black">
+                                        {catName}
+                                    </option>
+                                ));
+                            })()}
+                        </select>
                     </div>
                     <div className="flex items-end">
                         <div className="relative w-full">
                             <Button className={cn(
                                 "w-full h-14 uppercase text-[10px] font-black tracking-widest rounded-2xl",
-                                isUploading ? "bg-gray-700 cursor-not-allowed" : "bg-neon-blue text-black hover:scale-[1.02]"
+                                isUploading || !selectedEventId || !ticketCategory ? "bg-gray-700 cursor-not-allowed opacity-50" : "bg-neon-blue text-black hover:scale-[1.02]"
                             )}>
                                 {isUploading ? "PROCESS INGESTION..." : "SELECT ASSETS (BULK)"}
                             </Button>
-                            {!isUploading && (
+                            {!isUploading && selectedEventId && ticketCategory && (
                                 <input 
                                     type="file" 
                                     multiple 

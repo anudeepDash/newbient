@@ -99,9 +99,12 @@ const Navbar = () => {
                             )}
                             {user && (
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <button 
+                                        onClick={() => setIsOpen(true)}
+                                        className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all outline-none"
+                                    >
                                         <UserIcon size={14} className="text-gray-400" />
-                                    </div>
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -201,7 +204,7 @@ const Navbar = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center px-6"
+                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col justify-start px-6 pt-24 pb-8 overflow-y-auto"
                     >
                         <button 
                             onClick={() => setIsOpen(false)}
@@ -210,7 +213,7 @@ const Navbar = () => {
                             <X size={24} />
                         </button>
 
-                        <div className="w-full space-y-2 mb-12">
+                        <div className="w-full space-y-2 mb-auto shrink-0 pb-12">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 text-center">Navigation</p>
                             {links.map((link, idx) => {
                                 const isActive = location.pathname === link.path;
@@ -245,7 +248,7 @@ const Navbar = () => {
                             })}
                         </div>
 
-                        <div className="w-full pt-8 border-t border-white/10 flex flex-col items-center gap-6">
+                        <div className="w-full pt-8 mt-4 border-t border-white/10 flex flex-col items-center gap-6 shrink-0">
                             {user ? (
                                 <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
                                     <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">

@@ -297,9 +297,11 @@ const CommunityJoin = () => {
                                 </div>
 
                                 {section.items?.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                                    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
                                         {section.items.map((item) => (
-                                            <CommunityCard key={item.id} item={item} type={section.type} handleShare={handleShare} />
+                                            <div key={item.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                                                <CommunityCard item={item} type={section.type} handleShare={handleShare} />
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (
