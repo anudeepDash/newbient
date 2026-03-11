@@ -54,7 +54,7 @@ const Hero = () => {
             </div>
 
             {/* Content Container */}
-            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-20 md:pt-32 pb-32">
+            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-0 md:pt-4 pb-32">
                 {/* Floating Logo with Aura */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}

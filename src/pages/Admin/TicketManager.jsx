@@ -72,32 +72,41 @@ const TicketManager = () => {
         }
     };
 
-    const handleSendEmail = async (order) => {
-        if (!order.ticketUrl) {
-            alert("Authorization pending: Upload manifest first.");
-            return;
+    const handleSendEmail = (order) => {
+        const event = upcomingEvents.find(e => e.id === order.eventId) || { title: order.eventTitle };
+        
+        const subject = encodeURIComponent(`Your Access Code for ${event.title}`);
+        
+        let ticketsText = '';
+        if (order.ticketUrls && order.ticketUrls.length > 0) {
+            ticketsText = `\nTicket Links:\n${order.ticketUrls.map((url, i) => `Ticket ${i+1}: ${url}`).join('\n')}\n`;
+        } else if (order.ticketUrl) {
+            ticketsText = `\nTicket Link:\n${order.ticketUrl}\n`;
         }
 
-        const confirmSend = window.confirm(`Dispatch digital credentials to ${order.customerEmail}?`);
-        if (!confirmSend) return;
+        const bodyText = `Hi ${order.customerName},
 
-        try {
-            const result = await sendTicketEmail(
-                order.customerName,
-                order.customerEmail,
-                order.ticketUrls || order.ticketUrl,
-                order.eventTitle,
-                order.bookingRef
-            );
+Thank you for your purchase for ${event.title}!
 
-            if (result.success) {
-                alert("Transmission successful.");
-            } else {
-                alert("Protocol failure: Verify API configuration.");
-            }
-        } catch (error) {
-            console.error("Transmission error:", error);
-            alert("System error during dispatch.");
+Your unique access code for entry is:
+CODE: ${order.bookingRef}
+
+Order Details:
+- Item: ${order.items?.[0]?.name || 'Standard Entry'}
+- Amount Paid: ₹${order.totalAmount.toLocaleString()}
+- Transaction ID: ${order.paymentRef || 'N/A'}
+${ticketsText}
+(A formal ticket PDF might be attached to this email if available).
+
+See you at the event!
+NewBi Entertainment`;
+
+        const body = encodeURIComponent(bodyText);
+        window.location.href = `mailto:${order.customerEmail}?subject=${subject}&body=${body}`;
+        
+        // Optionally mark as sent
+        if (!order.ticketSent) {
+            updateTicketOrder(order.id, { ticketSent: true });
         }
     };
 
@@ -209,43 +218,62 @@ NewBi Entertainment`;
                             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
                         </Link>
                         <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">
-                            ORDER <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">LOGS.</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">TICKETING</span> PORTAL.
                         </h1>
                     </div>
-
-                    <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
-                        <button
-                            onClick={() => setIsManualModalOpen(true)}
-                            className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black mr-2 hover:scale-105"
-                        >
-                            <Plus size={14} /> Issue Manual Ticket
-                        </button>
-                        {[
-                            { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
-                            { id: 'approved', label: 'Archived', count: approvedOrders.length, icon: ShieldCheck },
-                            { id: 'vault', label: 'Ticket Vault', icon: Upload },
-                            { id: 'settings', label: 'Payment Config', icon: QrCode }
-                        ].map(tab => (
+                    
+                    <div className="space-y-4 w-full md:w-auto">
+                        <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
                             <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    activeTab === tab.id 
-                                        ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
-                                        : "text-gray-500 hover:text-white"
-                                )}
+                                onClick={() => setIsManualModalOpen(true)}
+                                className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black mr-2 hover:scale-105"
                             >
-                                <tab.icon size={14} />
-                                {tab.label}
-                                {tab.count !== undefined && (
-                                    <span className={cn(
-                                        "px-1.5 py-0.5 rounded-md text-[8px]",
-                                        activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
-                                    )}>{tab.count}</span>
-                                )}
+                                <Plus size={14} /> Issue Manual Ticket
                             </button>
-                        ))}
+                            {[
+                                { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
+                                { id: 'approved', label: 'Archived', count: approvedOrders.length, icon: ShieldCheck },
+                                { id: 'vault', label: 'Ticket Vault', icon: Upload },
+                                { id: 'settings', label: 'Payment Config', icon: QrCode }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                        activeTab === tab.id 
+                                            ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
+                                            : "text-gray-500 hover:text-white"
+                                    )}
+                                >
+                                    <tab.icon size={14} />
+                                    {tab.label}
+                                    {tab.count !== undefined && (
+                                        <span className={cn(
+                                            "px-1.5 py-0.5 rounded-md text-[8px]",
+                                            activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
+                                        )}>{tab.count}</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className="flex items-center bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                            <div className="px-6 py-4 bg-white/5 border-r border-white/10 flex items-center gap-3">
+                                <Filter className="text-neon-pink" size={18} />
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Global Event Filter</span>
+                            </div>
+                            <select
+                                className="flex-1 bg-transparent text-sm font-black uppercase tracking-widest outline-none px-6 py-4 text-white appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                                value={eventFilter}
+                                onChange={(e) => setEventFilter(e.target.value)}
+                            >
+                                <option value="all" className="bg-zinc-900 text-white font-black">ALL ACTIVE EVENTS AND FESTIVALS</option>
+                                {upcomingEvents.map(event => (
+                                    <option key={event.id} value={event.id} className="bg-zinc-900 text-white font-black">{event.title}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -350,19 +378,6 @@ NewBi Entertainment`;
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full h-16 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] pl-16 pr-8 text-sm font-medium focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
                                     />
-                                </div>
-                                <div className="flex items-center gap-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 p-2 rounded-[2rem]">
-                                    <Filter className="ml-4 text-gray-500" size={18} />
-                                    <select
-                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none pr-8 h-12 text-white"
-                                        value={eventFilter}
-                                        onChange={(e) => setEventFilter(e.target.value)}
-                                    >
-                                        <option value="all">ALL ACTIVE EVENTS</option>
-                                        {upcomingEvents.map(event => (
-                                            <option key={event.id} value={event.id}>{event.title}</option>
-                                        ))}
-                                    </select>
                                 </div>
                             </div>
 
@@ -512,9 +527,9 @@ NewBi Entertainment`;
                                         value={manualTicket.eventId}
                                         onChange={(e) => setManualTicket({...manualTicket, eventId: e.target.value})}
                                     >
-                                        <option value="">Select Event...</option>
+                                        <option value="" className="bg-zinc-900 text-white font-black">Select Event...</option>
                                         {upcomingEvents.map(event => (
-                                            <option key={event.id} value={event.id}>{event.title}</option>
+                                            <option key={event.id} value={event.id} className="bg-zinc-900 text-white font-black">{event.title}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -737,9 +752,9 @@ const TicketVaultTab = ({ ticketVault, upcomingEvents, onAddTicket, onDeleteTick
                             value={selectedEventId}
                             onChange={(e) => setSelectedEventId(e.target.value)}
                         >
-                            <option value="">Select Event...</option>
+                            <option value="" className="bg-zinc-900 text-white font-black">Select Event...</option>
                             {upcomingEvents.map(event => (
-                                <option key={event.id} value={event.id}>{event.title}</option>
+                                <option key={event.id} value={event.id} className="bg-zinc-900 text-white font-black">{event.title}</option>
                             ))}
                         </select>
                     </div>
