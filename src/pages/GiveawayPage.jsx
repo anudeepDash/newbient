@@ -186,30 +186,6 @@ const GiveawayPage = () => {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/20 to-[#020202]/10" />
 
-                {/* Winner overlay */}
-                {winner && giveaway.status === 'Closed' && (
-                    <div className="absolute inset-0 flex items-center justify-center z-20">
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-black/70 backdrop-blur-3xl border border-yellow-500/30 p-10 md:p-20 rounded-[3rem] text-center shadow-[0_0_120px_rgba(234,179,8,0.15)] relative"
-                        >
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-yellow-500 rounded-[2rem] flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.4)]">
-                                <Trophy size={44} className="text-black" />
-                            </div>
-                            <p className="text-yellow-500 font-black uppercase tracking-[0.4em] text-[10px] mb-6 mt-4">We Have a Winner</p>
-                            <h1 className="text-4xl md:text-8xl font-black font-heading text-white uppercase italic tracking-tighter leading-none mb-4">
-                                {winner.name}
-                            </h1>
-                            <div className="flex items-center justify-center gap-2 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                                <Sparkles size={12} className="text-yellow-500" />
-                                CONGRATULATIONS
-                                <Sparkles size={12} className="text-yellow-500" />
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-
                 {/* Hero content */}
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-16 z-10">
                     <div className="max-w-7xl mx-auto">
@@ -237,6 +213,31 @@ const GiveawayPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Winner full-screen overlay */}
+            {winner && giveaway.status === 'Closed' && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-2xl">
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', damping: 18, stiffness: 200 }}
+                        className="bg-black/80 backdrop-blur-3xl border border-yellow-500/30 p-10 md:p-20 rounded-[3rem] text-center shadow-[0_0_120px_rgba(234,179,8,0.2)] relative mx-4 w-full max-w-2xl"
+                    >
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-yellow-500 rounded-[2rem] flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.4)]">
+                            <Trophy size={44} className="text-black" />
+                        </div>
+                        <p className="text-yellow-500 font-black uppercase tracking-[0.4em] text-[10px] mb-6 mt-4">We Have a Winner</p>
+                        <h1 className="text-4xl md:text-8xl font-black font-heading text-white uppercase italic tracking-tighter leading-none mb-4">
+                            {winner.name}
+                        </h1>
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                            <Sparkles size={12} className="text-yellow-500" />
+                            CONGRATULATIONS
+                            <Sparkles size={12} className="text-yellow-500" />
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             {/* ─── MAIN CONTENT ─── */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 pb-40 space-y-32 mt-16 md:mt-20">

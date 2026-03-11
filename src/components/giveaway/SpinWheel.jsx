@@ -35,7 +35,7 @@ const WheelSVG = ({ rewards, rotation }) => {
     const textRadius = r * 0.62;
 
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: `rotate(${rotation}deg)`, filter: 'drop-shadow(0 0 40px rgba(0,0,0,0.8))' }}>
+        <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} style={{ transform: `rotate(${rotation}deg)`, filter: 'drop-shadow(0 0 40px rgba(0,0,0,0.8))' }}>
             <defs>
                 <filter id="glow">
                     <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -181,7 +181,7 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                 <div
                     id="spin-wheel-svg"
                     style={{ transform: `rotate(${rotation}deg)` }}
-                    className="w-[340px] h-[340px] md:w-[420px] md:h-[420px] rounded-full overflow-hidden"
+                    className="w-[min(340px,80vw)] h-[min(340px,80vw)] md:w-[420px] md:h-[420px] rounded-full overflow-hidden"
                 >
                     <WheelSVG rewards={availableRewards} rotation={0} />
                 </div>
@@ -202,17 +202,46 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                 {isSpinning ? 'SPINNING...' : alreadySpun ? 'SPUN ALREADY' : 'SPIN TO WIN'}
             </Button>
 
-            <AnimatePresence>
+<AnimatePresence>
                 {result && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="w-full max-w-sm p-8 bg-zinc-900/60 border border-white/10 rounded-[2.5rem] backdrop-blur-xl text-center relative overflow-hidden"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-xl"
+                        onClick={() => setResult(null)}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-neon-blue/5" />
-                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.3em] mb-3 relative z-10">You Won</p>
-                        <h3 className="text-4xl font-black font-heading text-white uppercase italic tracking-tighter relative z-10">{result.label}</h3>
+                        <motion.div
+                            initial={{ scale: 0.7, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 18, stiffness: 250 }}
+                            className="relative mx-4 w-full max-w-md p-10 bg-zinc-900/90 border border-white/10 rounded-[2.5rem] backdrop-blur-3xl text-center overflow-hidden shadow-[0_0_100px_rgba(168,85,247,0.25)]"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/15 to-neon-blue/10" />
+                            {/* Decorative glow ring */}
+                            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl" />
+                            <div className="relative z-10 space-y-5">
+                                <div className="w-20 h-20 mx-auto rounded-[1.5rem] flex items-center justify-center text-4xl"
+                                    style={{ background: result.color, color: result.textColor, boxShadow: `0 0 40px ${result.color}66` }}>
+                                    {result.jackpot ? '🏆' : '🎉'}
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.4em] mb-2">You Won</p>
+                                    <h3 className="text-5xl font-black font-heading text-white uppercase italic tracking-tighter leading-none">{result.label}</h3>
+                                    {result.jackpot && (
+                                        <p className="text-yellow-400 text-sm font-black uppercase tracking-widest mt-3">INSTANT WIN — You're a winner! 🎊</p>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => setResult(null)}
+                                    className="mt-2 px-8 py-3 rounded-2xl bg-white/10 border border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all"
+                                >
+                                    AWESOME, CLOSE
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
