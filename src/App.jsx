@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; // Import store
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -66,6 +67,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />

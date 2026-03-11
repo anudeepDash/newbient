@@ -107,6 +107,7 @@ const Contact = () => {
                                     icon={MessageSquare} 
                                     label="Quick Chat" 
                                     val="WHATSAPP LIVE" 
+                                    revealVal={siteDetails.phone}
                                     href={`https://wa.me/${siteDetails.phone?.replace(/[^0-9]/g, '')}`} 
                                     accent="neon-green"
                                 />
@@ -128,6 +129,7 @@ const Contact = () => {
                                     icon={MapPin} 
                                     label="Base" 
                                     val="Mainland India" 
+                                    revealVal={siteDetails.address}
                                     href="#" 
                                     accent="white"
                                 />
@@ -216,12 +218,12 @@ const Contact = () => {
     );
 };
 
-const ContactMethod = ({ icon: Icon, label, val, href, accent }) => (
+const ContactMethod = ({ icon: Icon, label, val, revealVal, href, accent }) => (
     <a 
         href={href} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="group p-5 md:p-8 bg-white/5 border border-white/5 rounded-[2rem] md:rounded-[3rem] hover:border-white/10 hover:bg-white/10 transition-all duration-500"
+        className="group p-5 md:p-8 bg-white/5 border border-white/5 rounded-[2rem] md:rounded-[3rem] hover:border-white/10 hover:bg-white/10 transition-all duration-500 block"
     >
         <div className={cn(
             "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-all duration-500 group-hover:scale-110",
@@ -232,6 +234,15 @@ const ContactMethod = ({ icon: Icon, label, val, href, accent }) => (
         <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{label}</p>
             <p className="text-sm font-black text-white truncate">{val}</p>
+            {revealVal && (
+                <p className={cn(
+                    "text-[11px] font-medium leading-snug mt-2 transition-all duration-500 overflow-hidden",
+                    "max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100",
+                    accent === 'neon-green' ? 'text-neon-green' : (accent === 'neon-blue' ? 'text-neon-blue' : (accent === 'neon-pink' ? 'text-neon-pink' : 'text-gray-300'))
+                )}>
+                    {revealVal}
+                </p>
+            )}
         </div>
     </a>
 );

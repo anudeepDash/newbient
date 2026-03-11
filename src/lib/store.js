@@ -25,6 +25,7 @@ export const useStore = create((set, get) => ({
         pages: {}, // e.g., gallery, concerts
         features: {}, // e.g., invoices, announcements
         sections: {}, // e.g., home_upcoming, home_portfolio
+        cards: {}, // e.g., invoices, proposals, tickets (admin dashboard cards)
     },
     siteSettings: { showUpcomingEvents: true, hideMaintenancePages: false },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
@@ -138,7 +139,8 @@ export const useStore = create((set, get) => ({
                         global: data.global ?? false,
                         pages: data.pages ?? {},
                         features: data.features ?? {},
-                        sections: data.sections ?? {}
+                        sections: data.sections ?? {},
+                        cards: data.cards ?? {},
                     }
                 });
             } else {
@@ -148,7 +150,8 @@ export const useStore = create((set, get) => ({
                         global: false,
                         pages: {},
                         features: {},
-                        sections: {}
+                        sections: {},
+                        cards: {},
                     }
                 });
             }
@@ -659,6 +662,9 @@ export const useStore = create((set, get) => ({
     },
     updateGiveawayEntry: async (id, updates) => {
         await updateDoc(doc(db, 'giveaway_entries', id), updates);
+    },
+    deleteGiveawayEntry: async (id) => {
+        await deleteDoc(doc(db, 'giveaway_entries', id));
     },
 
     // Bulk Shortlist Helpers

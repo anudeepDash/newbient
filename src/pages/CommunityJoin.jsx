@@ -128,7 +128,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
 const CommunityJoin = () => {
     const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, giveaways, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
-    const activeGiveaway = giveaways.find(g => g.status === 'Open' && new Date(g.endDate) >= new Date());
+    const activeGiveaway = giveaways.find(g => g.status === 'Open' && (!g.endDate || new Date(g.endDate) >= new Date()));
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
@@ -169,39 +169,40 @@ const CommunityJoin = () => {
 
             <div className="max-w-7xl mx-auto space-y-32">
                 {/* Immersive Header */}
-                <div className="text-center relative py-20 overflow-hidden">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-neon-blue/10 blur-[150px] pointer-events-none rounded-full" />
-                    
+                <div className="text-center relative py-10 overflow-hidden">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-pink/8 blur-[100px] pointer-events-none rounded-full" />
+
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-12"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
                     >
                         <Sparkles size={16} className="text-neon-pink" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Access Unlocked</span>
+                        <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
+                            {user ? 'Access Unlocked' : 'The Tribe'}
+                        </span>
                     </motion.div>
 
                     <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-5xl md:text-9xl font-black font-heading mb-8 tracking-tighter leading-none uppercase"
+                        transition={{ delay: 0.2 }}
+                        className="text-4xl md:text-8xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6 tracking-tight leading-none"
                     >
                         {user ? (
-                            <>
-                                HELLO, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">{user.displayName?.split(' ')[0]}.</span>
-                            </>
+                            <>Hello, {user.displayName?.split(' ')[0]}</>
                         ) : (
-                            <>THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">TRIBE.</span></>
+                            <>The Tribe.</>
                         )}
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-lg md:text-2xl font-medium leading-relaxed"
+                        transition={{ delay: 0.3 }}
+                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
                     >
-                        {user ? "Explosive opportunities await in the hub." : 'Join India\'s most disruptive youth community.'}
+                        {user ? "Explosive opportunities await in the hub." : "Join India's most disruptive youth community."}
                     </motion.p>
                 </div>
 

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Instagram } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Instagram, Music, Zap } from 'lucide-react';
 
 const ConcertZone = () => {
     useEffect(() => {
@@ -11,64 +10,107 @@ const ConcertZone = () => {
         document.head.appendChild(script);
 
         return () => {
-            // Cleanup not strictly necessary for script but good practice
             document.head.removeChild(script);
         };
     }, []);
 
     return (
-        <div className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-            {/* Background */}
-            <div className="absolute inset-0 bg-black z-0" />
-            <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black z-0 pointer-events-none" />
+        <div className="min-h-screen bg-[#020202] text-white pt-28 pb-32 px-4 relative overflow-hidden">
+            {/* Background Glows */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/6 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-purple-600/6 rounded-full blur-[150px] animate-pulse delay-1000" />
+            </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <motion.h1
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-5xl md:text-7xl font-bold font-heading mb-8 text-white"
-                >
-                    CONCERT <span className="text-neon-pink text-glow-pink">ZONE</span>
-                </motion.h1>
+            <div className="relative z-10 max-w-4xl mx-auto">
 
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-xl text-gray-300 max-w-2xl mb-12"
-                >
-                    Experience the energy. Relive the moments. Join the movement.
-                </motion.p>
+                {/* Header */}
+                <div className="text-center mb-16">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-8"
+                    >
+                        <Music size={16} className="text-neon-pink" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Live Music & Events</span>
+                    </motion.div>
 
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-5xl md:text-8xl font-black font-heading mb-6 tracking-tighter leading-none uppercase"
+                    >
+                        CONCERT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-purple-500">ZONE.</span>
+                    </motion.h1>
+
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
+                    >
+                        Experience the energy. Relive the moments. Join the movement.
+                    </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+                    >
+                        <a
+                            href="https://www.instagram.com/concert.zone/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-3 h-14 px-8 rounded-2xl font-black font-heading uppercase tracking-widest bg-neon-pink text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,0,255,0.2)] text-sm"
+                        >
+                            <Instagram size={18} />
+                            Visit Concert.zone
+                        </a>
+                    </motion.div>
+                </div>
+
+                {/* Instagram Feed */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="flex flex-col sm:flex-row gap-6"
+                    className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden"
                 >
-                    <a href="https://www.instagram.com/concert.zone/" target="_blank" rel="noopener noreferrer">
-                        <Button variant="primary" className="text-lg px-8 py-4 bg-neon-pink hover:bg-neon-pink/80 border-neon-pink text-white rounded-full">
-                            Visit Concert.zone <Instagram className="ml-2 h-5 w-5" />
-                        </Button>
-                    </a>
-                </motion.div>
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-neon-pink/5 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
 
-                {/* Instagram Embed Placeholder */}
-                <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="mt-20 w-full max-w-4xl"
-                >
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm min-h-[400px]">
-                        <div className="flex items-center justify-center mb-6 text-neon-pink">
-                            <Instagram size={40} className="mr-3" />
-                            <h3 className="text-2xl font-bold">Latest Vibes</h3>
+                    <div className="flex items-center gap-4 mb-8 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center">
+                            <Instagram size={22} className="text-neon-pink" />
                         </div>
-                        {/* Behold Widget */}
-                        <div className="w-full">
-                            <behold-widget feed-id="GIVp2cgj7qbBGl85DK4U"></behold-widget>
+                        <div>
+                            <h2 className="text-lg font-black font-heading tracking-tight uppercase">Latest Vibes</h2>
+                            <p className="text-gray-500 text-xs font-medium mt-0.5">Live from @concert.zone</p>
                         </div>
+                    </div>
+
+                    <div className="w-full relative z-10">
+                        <behold-widget feed-id="GIVp2cgj7qbBGl85DK4U"></behold-widget>
+                    </div>
+
+                    {/* Bottom CTA */}
+                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-pink opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-neon-pink"></span>
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Feed Live</span>
+                        </div>
+                        <a
+                            href="https://www.instagram.com/concert.zone/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neon-pink hover:text-white transition-colors"
+                        >
+                            Follow <Zap size={12} />
+                        </a>
                     </div>
                 </motion.div>
             </div>

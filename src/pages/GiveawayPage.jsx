@@ -150,6 +150,7 @@ const GiveawayPage = () => {
 
     const taskIcons = {
         instagram: Instagram,
+        instagram_like_comment: Instagram,
         twitter: Twitter,
         telegram: Send,
         discord: MessageCircle,
@@ -322,6 +323,15 @@ const GiveawayPage = () => {
                                             />
                                         </div>
                                     ))}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Why should you win?</label>
+                                    <textarea
+                                        placeholder="TELL US WHY YOU DESERVE TO WIN..."
+                                        value={formData.answer}
+                                        onChange={e => setFormData({ ...formData, answer: e.target.value })}
+                                        className="w-full h-20 bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-wider focus:border-purple-500/50 outline-none text-white resize-none placeholder:text-gray-700"
+                                    />
                                 </div>
                                 <Button
                                     onClick={handleRegister}

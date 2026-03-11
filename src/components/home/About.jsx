@@ -27,7 +27,7 @@ const About = () => {
     }, [isAutoScrolling]);
 
     return (
-        <section className="py-32 bg-[#020202] relative overflow-hidden">
+        <section className="py-16 md:py-32 bg-[#020202] relative overflow-hidden">
             {/* Ambient Background Glows */}
             <div className="absolute top-1/4 left-1/4 w-[40%] h-[40%] bg-neon-green/5 blur-[120px] rounded-full" />
             <div className="absolute bottom-1/4 right-1/4 w-[40%] h-[40%] bg-neon-blue/5 blur-[120px] rounded-full" />

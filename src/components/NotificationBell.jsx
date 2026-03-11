@@ -46,25 +46,23 @@ const NotificationBell = () => {
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            "fixed md:absolute z-[100] backdrop-blur-3xl overflow-hidden",
-                            // Mobile: Centered at top
-                            "inset-x-4 top-24 md:inset-auto md:right-0 md:-right-4 md:top-full md:mt-4",
-                            // Sizing
-                            "w-[calc(100vw-2rem)] max-w-[380px] md:w-[400px] md:max-w-[400px]",
-                            // Styling
-                            "bg-[#0c0c0c]/95 border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] origin-top md:origin-top-right",
-                            // Horizontal centering on mobile if we use fixed and inset-x
-                            "mx-auto left-0 right-0"
+                            "z-[100] flex flex-col overflow-hidden",
+                            // Mobile: fill the safe zone between top nav and bottom nav
+                            "fixed inset-x-3 top-20 bottom-24 rounded-[2rem]",
+                            // Desktop: normal dropdown
+                            "md:absolute md:inset-auto md:bottom-auto md:top-full md:mt-4 md:right-0 md:w-[400px] md:rounded-[2.5rem]",
+                            // Solid background — no backdrop-blur so inner cards don't bleed through
+                            "bg-[#0d0d0d] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.9)]"
                         )}
                     >
-                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                        <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02] shrink-0">
                             <h3 className="font-black text-[10px] md:text-sm uppercase tracking-widest text-white">Broadcast Signals</h3>
                             <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
                                 <X size={14} />
                             </button>
                         </div>
 
-                        <div className="max-h-[70vh] overflow-y-auto scrollbar-hide py-4 px-4">
+                        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide py-4 px-4">
                             {recentAnnouncements.length === 0 ? (
                                 <div className="p-10 text-center flex flex-col items-center gap-4 bg-white/[0.02] rounded-[2.5rem] border border-white/5">
                                     <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center text-gray-600 bg-black/40">
@@ -95,7 +93,7 @@ const NotificationBell = () => {
                                                         }
                                                         setIsOpen(false);
                                                     }}
-                                                    className="p-5 rounded-[2rem] bg-[#111]/80 backdrop-blur-xl border border-white/10 hover:border-neon-blue/40 transition-all group cursor-pointer overflow-hidden block shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative"
+                                                    className="p-5 rounded-[2rem] bg-[#1a1a1a] border border-white/10 hover:border-neon-blue/40 transition-all group cursor-pointer overflow-hidden block shadow-[0_4px_16px_rgba(0,0,0,0.4)] relative"
                                                 >
                                                     {/* Glow effect on hover */}
                                                     <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -129,7 +127,8 @@ const NotificationBell = () => {
                         </div>
 
                         {recentAnnouncements.length > 0 && (
-                            <div className="p-4 border-t border-white/5 bg-white/[0.02]">
+                            // shrink-0 keeps this footer always visible
+                            <div className="p-4 border-t border-white/5 bg-white/[0.02] shrink-0">
                                 <Link to="/" className="w-full h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-[10px] font-black text-white uppercase tracking-widest transition-all" onClick={() => setIsOpen(false)}>
                                     Access Full Archive
                                 </Link>

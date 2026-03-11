@@ -54,7 +54,7 @@ const ProposalGenerator = () => {
     }, []);
 
     const [formData, setFormData] = useState({
-        senderName: 'NewBi Entertainment & Marketing',
+        senderName: 'Newbi Entertainment & Marketing LLP',
         senderContact: '+91 93043 72773',
         senderEmail: 'partnership@newbi.live',
         clientName: '',

@@ -54,7 +54,7 @@ const InvoiceGenerator = () => {
 
     const [customColumns, setCustomColumns] = useState([]);
     const [formData, setFormData] = useState({
-        senderName: 'NewBi Entertainment',
+        senderName: 'Newbi Entertainment & Marketing LLP',
         senderContact: '+91 93043 72773',
         senderEmail: 'partnership@newbi.live',
         senderPan: 'ETXPA9107A',

@@ -138,7 +138,7 @@ const UpcomingEvents = () => {
 
     return (
         <section
-            className="py-32 bg-[#020202] text-white overflow-hidden relative border-t border-white/5"
+            className="py-16 md:py-32 bg-[#020202] text-white overflow-hidden relative border-t border-white/5"
             onMouseEnter={() => setIsAutoScrolling(false)}
             onMouseLeave={() => setIsAutoScrolling(true)}
         >

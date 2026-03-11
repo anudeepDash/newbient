@@ -4,13 +4,16 @@ import { useStore } from '../../lib/store';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
-import { X, Mail, Lock, User, Chrome, ArrowRight, Loader2 } from 'lucide-react';
+import { X, Mail, Lock, User, Chrome, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 
 const AuthOverlay = () => {
     const { loginWithGoogle, signUpWithEmail, signInWithEmail, isAuthOpen, setAuthModal } = useStore();
     const [mode, setMode] = useState('signIn'); // 'signIn', 'signUp', 'forgot'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [resetSent, setResetSent] = useState(false);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -31,10 +34,14 @@ const AuthOverlay = () => {
             if (mode === 'signUp') {
                 if (!formData.name) throw new Error('Please enter your name');
                 await signUpWithEmail(formData.email, formData.password, formData.name);
+                onClose();
             } else if (mode === 'signIn') {
                 await signInWithEmail(formData.email, formData.password);
+                onClose();
+            } else if (mode === 'forgot') {
+                await sendPasswordResetEmail(auth, formData.email);
+                setResetSent(true);
             }
-            onClose();
         } catch (err) {
             setError(err.message || 'Authentication failed');
         } finally {
@@ -97,6 +104,14 @@ const AuthOverlay = () => {
                             </div>
                         )}
 
+                        {resetSent ? (
+                            <div className="flex flex-col items-center gap-4 py-6 text-center">
+                                <CheckCircle2 size={40} className="text-neon-green" />
+                                <p className="text-sm font-bold text-white">Reset link sent!</p>
+                                <p className="text-xs text-gray-500">Check your inbox at <span className="text-neon-blue">{formData.email}</span></p>
+                                <button onClick={() => { setMode('signIn'); setResetSent(false); }} className="text-xs text-neon-pink hover:underline mt-2">Back to Sign In</button>
+                            </div>
+                        ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {mode === 'signUp' && (
                                 <div className="space-y-1">
@@ -166,6 +181,7 @@ const AuthOverlay = () => {
                                 {loading ? <Loader2 className="animate-spin" /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
                             </Button>
                         </form>
+                        )}
 
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
