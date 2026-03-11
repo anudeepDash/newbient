@@ -389,7 +389,7 @@ const UpcomingEventsManager = () => {
                             </div>
                         </motion.div>
                     ) : (
-                        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
+                        <div className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-8 md:pb-0">
                             <AnimatePresence mode="popLayout">
                             {upcomingEvents.map((item, index) => (
                                 <motion.div 
@@ -398,7 +398,7 @@ const UpcomingEventsManager = () => {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
-                                    className="min-w-[85vw] md:min-w-0 snap-center shrink-0 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/20 transition-all duration-500 flex flex-col h-full"
+                                    className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/20 transition-all duration-500 flex flex-col h-full"
                                 >
                                     <div className="aspect-[3/4] relative overflow-hidden bg-black/50">
                                         <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" />

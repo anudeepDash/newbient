@@ -72,7 +72,7 @@ const ProposalManagement = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {['All', 'Draft', 'Sent', 'Accepted'].map((status) => (
                                 <button
                                     key={status}
@@ -127,8 +127,8 @@ const ProposalManagement = () => {
                                         </p>
                                     </div>
 
-                                    <div className="flex items-center gap-2 pt-6 border-t border-white/5">
-                                        <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
+                                        <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[30%]">
                                             <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5">
                                                 Edit
                                             </button>

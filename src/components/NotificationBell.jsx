@@ -106,11 +106,11 @@ const NotificationBell = () => {
                                                             </div>
                                                         )}
                                                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                            <div className="flex items-center justify-between mb-2 gap-2">
-                                                                <h4 className="text-[12px] font-black text-white uppercase tracking-wider truncate group-hover:text-neon-blue transition-colors">{item.title}</h4>
-                                                                <span className="text-[8px] text-neon-green uppercase tracking-widest font-black shrink-0 px-2 py-0.5 rounded-full bg-neon-green/5 border border-neon-green/10">{item.date}</span>
+                                                            <div className="flex items-start justify-between mb-2 gap-2">
+                                                                <h4 className="text-[12px] font-black text-white uppercase tracking-wider group-hover:text-neon-blue transition-colors">{item.title}</h4>
+                                                                <span className="text-[8px] text-neon-green uppercase tracking-widest font-black shrink-0 px-2 py-0.5 rounded-full bg-neon-green/5 border border-neon-green/10 mt-0.5">{item.date}</span>
                                                             </div>
-                                                            <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">{item.content}</p>
+                                                            <p className="text-[10px] text-gray-400 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">{item.content}</p>
                                                             {item.isPinned && (
                                                                 <div className="mt-3 inline-flex items-center">
                                                                     <span className="text-[8px] bg-neon-pink/10 border border-neon-pink/20 text-neon-pink px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none shadow-[0_0_15px_rgba(255,0,255,0.1)]">Priority Alert</span>

@@ -102,7 +102,7 @@ const Contact = () => {
                         <div className="space-y-6">
                             <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"WE DON'T DO ORDINARY."</h3>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <ContactMethod 
                                     icon={MessageSquare} 
                                     label="Quick Chat" 

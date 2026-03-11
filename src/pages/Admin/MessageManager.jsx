@@ -116,8 +116,8 @@ const MessageManager = () => {
                                             : "bg-zinc-900/30 border-white/5 hover:border-white/10"
                                     )}>
                                         {/* Top row: Avatar + name + email + status + actions */}
-                                        <div className="flex items-start justify-between gap-6 mb-6">
-                                            <div className="flex items-center gap-4">
+                                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6 mb-6">
+                                            <div className="flex items-center gap-4 w-full sm:w-auto">
                                                 <div className={cn(
                                                     "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 transition-all duration-300",
                                                     msg.status === 'new' ? "bg-neon-pink text-black" : "bg-white/5 text-gray-400 group-hover:bg-white/10"
@@ -126,8 +126,8 @@ const MessageManager = () => {
                                                 </div>
                                                 <div>
                                                     <h3 className="font-black text-sm uppercase tracking-tight text-white leading-none mb-1">{msg.name || 'ANONYMOUS'}</h3>
-                                                    <div className="flex items-center flex-wrap gap-3">
-                                                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{msg.email}</span>
+                                                    <div className="flex items-center flex-wrap gap-2 sm:gap-3">
+                                                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest break-all">{msg.email}</span>
                                                         <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest flex items-center gap-1">
                                                             <Clock size={9} />{formatDate(msg.createdAt)}
                                                         </span>
@@ -141,7 +141,7 @@ const MessageManager = () => {
                                             </div>
 
                                             {/* Action buttons — compact row */}
-                                            <div className="flex items-center gap-2 shrink-0">
+                                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto w-full sm:w-auto mt-2 sm:mt-0 justify-end">
                                                 <button
                                                     onClick={() => markMessageRead(msg.id, msg.status === 'new' ? 'read' : 'new')}
                                                     className={cn(
