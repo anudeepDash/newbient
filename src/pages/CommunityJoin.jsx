@@ -3,7 +3,7 @@ import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Users, Lock, Share2, ClipboardList, ExternalLink, ArrowRight, Loader2, Sparkles, CheckCircle2, Ticket, Gift } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const CommunityCard = ({ item, type, handleShare }) => {
@@ -127,7 +127,8 @@ const CommunityCard = ({ item, type, handleShare }) => {
 };
 
 const CommunityJoin = () => {
-    const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
+    const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, giveaways, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
+    const activeGiveaway = giveaways.find(g => g.status === 'Open' && new Date(g.endDate) >= new Date());
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
@@ -280,6 +281,40 @@ const CommunityJoin = () => {
                                 </a>
                              </div>
                         </section>
+
+                        {/* Active Giveaway Banner */}
+                        <AnimatePresence>
+                            {activeGiveaway && (
+                                <section className="max-w-7xl mx-auto px-4">
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="group relative block overflow-hidden rounded-[3rem] border border-purple-500/30 bg-purple-600/10 p-1 md:p-2 backdrop-blur-3xl"
+                                    >
+                                        <Link to={`/giveaway/${activeGiveaway.slug}`} className="flex flex-col md:flex-row items-center gap-10 p-8 md:p-12">
+                                            <div className="w-24 h-24 rounded-[2rem] bg-purple-600 flex items-center justify-center text-white shadow-2xl shadow-purple-500/40 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                                <Gift size={48} />
+                                            </div>
+                                            <div className="flex-1 text-center md:text-left space-y-4">
+                                                <div className="inline-flex px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-widest border border-purple-500/20">
+                                                    LIMITED OPPORTUNITY
+                                                </div>
+                                                <h3 className="text-3xl md:text-5xl font-black font-heading uppercase italic tracking-tighter text-white leading-tight">
+                                                    WIN ACCESS TO <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-neon-blue">{activeGiveaway.name}</span>
+                                                </h3>
+                                                <p className="text-sm md:text-lg font-medium text-gray-500 max-w-2xl">
+                                                    Exclusively for the Tribe. Join the giveaway, refer friends, and top the leaderboard to secure your tickets.
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-4 px-10 h-20 bg-purple-600 text-white rounded-2xl font-black font-heading tracking-widest uppercase text-sm shadow-2xl group-hover:gap-8 transition-all">
+                                                PARTICIPATE <ArrowRight size={20} />
+                                            </div>
+                                        </Link>
+                                        <div className="absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-purple-500 via-neon-blue to-purple-500 w-full opacity-30 animate-pulse" />
+                                    </motion.div>
+                                </section>
+                            )}
+                        </AnimatePresence>
 
                         {/* Grid Sections */}
                         {[

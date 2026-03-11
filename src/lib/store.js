@@ -16,6 +16,8 @@ export const useStore = create((set, get) => ({
     creators: [], // Influencer Marketing
     campaigns: [], // Influencer Marketing
     ticketVault: [], // Bulk ticket storage
+    giveaways: [], // Giveaway Campaigns
+    giveawayEntries: [], // Giveaway Entries
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
@@ -95,6 +97,8 @@ export const useStore = create((set, get) => ({
         const unsubCampaigns = sub('campaigns', 'campaigns');
         const unsubProposals = sub('proposals', 'proposals');
         const unsubTicketVault = sub('ticket_vault', 'ticketVault');
+        const unsubGiveaways = sub('giveaways', 'giveaways');
+        const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -152,7 +156,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
         };
     },
 
@@ -512,6 +516,151 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'campaigns', id));
     },
 
+    // Giveaways
+    addGiveaway: async (giveaway) => {
+        const giveawayData = {
+            ...giveaway,
+            createdAt: new Date().toISOString(),
+            status: giveaway.status || 'Open'
+        };
+
+        const docRef = await addDoc(collection(db, 'giveaways'), giveawayData);
+
+        // 1. Also Post to Upcoming Events (Home Card)
+        if (giveaway.alsoPostToUpcomingEvents) {
+            const eventData = {
+                title: giveaway.name,
+                date: giveaway.endDate + (giveaway.endTime ? `T${giveaway.endTime}` : ''),
+                category: 'giveaway',
+                description: giveaway.description,
+                location: giveaway.location || 'Online',
+                buttonText: giveaway.buttonText || 'PARTICIPATE NOW',
+                image: giveaway.posterUrl || '',
+                link: `/giveaway/${giveaway.slug}`,
+                isTicketed: giveaway.isTicketed || false,
+                ticketPrice: giveaway.ticketCategories?.[0]?.price || 0,
+                ticketCategories: giveaway.ticketCategories || [],
+                venueLayout: giveaway.venueLayout || '',
+                isGiveaway: true,
+                giveawayId: docRef.id,
+                giveawaySlug: giveaway.slug
+            };
+
+            const currentEvents = get().upcomingEvents;
+            const maxOrder = currentEvents.reduce((max, i) => Math.max(max, i.order || 0), 0);
+            
+            await addDoc(collection(db, 'upcoming_events'), {
+                ...eventData,
+                order: maxOrder + 1
+            });
+        }
+
+        // 2. Also Post to Announcements
+        if (giveaway.alsoPostToAnnouncements) {
+            const currentAnnouncements = get().announcements;
+            const minOrder = currentAnnouncements.reduce((min, i) => Math.min(min, i.order || 0), 0);
+            
+            await addDoc(collection(db, 'announcements'), {
+                title: `NEW GIVEAWAY: ${giveaway.name}`,
+                content: giveaway.description,
+                date: new Date().toISOString().split('T')[0],
+                image: giveaway.posterUrl || '',
+                isPinned: false,
+                order: minOrder - 1,
+                linkedGiveawayId: docRef.id,
+                link: `/giveaway/${giveaway.slug}`
+            });
+        }
+
+        return docRef;
+    },
+    updateGiveaway: async (id, updates) => {
+        await updateDoc(doc(db, 'giveaways', id), updates);
+
+        // Sync mirrored Upcoming Event
+        const eventQ = query(collection(db, 'upcoming_events'), where('giveawayId', '==', id));
+        const eventSnap = await getDocs(eventQ);
+        eventSnap.forEach(async (d) => {
+            await updateDoc(doc(db, 'upcoming_events', d.id), {
+                title: updates.name,
+                date: updates.endDate + (updates.endTime ? `T${updates.endTime}` : ''),
+                description: updates.description,
+                location: updates.location,
+                buttonText: updates.buttonText,
+                image: updates.posterUrl,
+                link: `/giveaway/${updates.slug}`,
+                isTicketed: updates.isTicketed,
+                ticketPrice: updates.ticketCategories?.[0]?.price || 0,
+                ticketCategories: updates.ticketCategories || [],
+                venueLayout: updates.venueLayout
+            });
+        });
+
+        // Sync mirrored Announcement
+        const announcementQ = query(collection(db, 'announcements'), where('linkedGiveawayId', '==', id));
+        const announcementSnap = await getDocs(announcementQ);
+        announcementSnap.forEach(async (d) => {
+            await updateDoc(doc(db, 'announcements', d.id), {
+                title: `NEW GIVEAWAY: ${updates.name}`,
+                content: updates.description,
+                image: updates.posterUrl,
+                link: `/giveaway/${updates.slug}`
+            });
+        });
+    },
+    deleteGiveaway: async (id) => {
+        await deleteDoc(doc(db, 'giveaways', id));
+    },
+    enterGiveaway: async (campaignId, userData) => {
+        const { user } = get();
+        if (!user) throw new Error("Authentication required");
+
+        // Check if user already entered
+        const q = query(
+            collection(db, 'giveaway_entries'), 
+            where('campaignId', '==', campaignId),
+            where('userId', '==', user.uid)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) throw new Error("Already participated in this giveaway");
+
+        await addDoc(collection(db, 'giveaway_entries'), {
+            campaignId,
+            userId: user.uid,
+            email: user.email,
+            ...userData,
+            entryScore: 1, // Initial entry
+            completedTasks: {}, 
+            hasFollowedInsta: false,
+            referralCount: 0,
+            hasSpunWheel: false,
+            referralCode: user.uid.substring(0, 8),
+            referredBy: userData.referredBy || null,
+            createdAt: new Date().toISOString()
+        });
+
+        // If referred by someone, increment their score
+        if (userData.referredBy) {
+            const refQ = query(
+                collection(db, 'giveaway_entries'),
+                where('campaignId', '==', campaignId),
+                where('referralCode', '==', userData.referredBy)
+            );
+            const refSnapshot = await getDocs(refQ);
+            if (!refSnapshot.empty) {
+                const refDoc = refSnapshot.docs[0];
+                const currentData = refDoc.data();
+                await updateDoc(doc(db, 'giveaway_entries', refDoc.id), {
+                    referralCount: (currentData.referralCount || 0) + 1,
+                    entryScore: (currentData.entryScore || 0) + 3
+                });
+            }
+        }
+    },
+    updateGiveawayEntry: async (id, updates) => {
+        await updateDoc(doc(db, 'giveaway_entries', id), updates);
+    },
+
     // Bulk Shortlist Helpers
     bulkUpdateCreatorStatus: async (uidArray, status) => {
         const updatePromises = uidArray.map(uid => updateDoc(doc(db, 'creators', uid), { profileStatus: status }));
@@ -593,7 +742,7 @@ export const useStore = create((set, get) => ({
                 const countNeeded = item.count || 1;
                 // Find tickets matching eventId and category (case insensitive comparison)
                 // Defaulting standard fallback if no category id matches exactly
-                const matchCategory = item.categoryId?.toUpperCase() || item.name?.toUpperCase() || 'STANDARD TICKET';
+                const matchCategory = item.name?.toUpperCase() || 'STANDARD TICKET';
 
                 const matchingTickets = vaultCopy.filter(t => 
                     t.eventId === order.eventId && 

@@ -22,6 +22,7 @@ const AnnouncementsManager = () => {
         date: new Date().toISOString().split('T')[0],
         content: '',
         image: '',
+        link: '',
         isPinned: false
     });
 
@@ -38,6 +39,7 @@ const AnnouncementsManager = () => {
                 date: new Date().toISOString().split('T')[0],
                 content: '',
                 image: '',
+                link: '',
                 isPinned: false
             });
         } catch (error) {
@@ -69,12 +71,12 @@ const AnnouncementsManager = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
-                    <div className="mb-12">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-8">
+                    <div className="mb-8 md:mb-12">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4 group">
                             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
                             SIGNAL <span className="text-neon-pink">CONTROL.</span>
                         </h1>
                     </div>
@@ -95,7 +97,7 @@ const AnnouncementsManager = () => {
                         >
                             {/* Editor Column */}
                             <div className="lg:col-span-7">
-                                <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem]">
+                                <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
                                     <div className="flex justify-between items-center mb-10">
                                         <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
                                             <Sparkles className="text-neon-pink" size={24} /> CREATE SIGNAL
@@ -114,7 +116,7 @@ const AnnouncementsManager = () => {
                                                 className="h-14 bg-black/50 border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest focus:border-neon-pink/30"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Effective Date</label>
                                                 <Input
@@ -131,6 +133,15 @@ const AnnouncementsManager = () => {
                                                     placeholder="HTTPS://..."
                                                     value={newAnnouncement.image}
                                                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image: e.target.value })}
+                                                    className="h-14 bg-black/50 border-white/5 rounded-xl text-xs font-bold"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Target Link (Optional)</label>
+                                                <Input
+                                                    placeholder="HTTPS://..."
+                                                    value={newAnnouncement.link}
+                                                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, link: e.target.value })}
                                                     className="h-14 bg-black/50 border-white/5 rounded-xl text-xs font-bold"
                                                 />
                                             </div>
@@ -201,7 +212,7 @@ const AnnouncementsManager = () => {
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={cn(
-                                                "p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] flex items-center gap-8 group hover:border-white/10 transition-all duration-500",
+                                                "p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] flex items-center gap-4 md:gap-8 group hover:border-white/10 transition-all duration-500",
                                                 item.isPinned && "border-neon-pink/20 bg-gradient-to-r from-neon-pink/[0.03] to-transparent"
                                             )}
                                         >

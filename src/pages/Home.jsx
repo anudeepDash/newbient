@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import Hero from '../components/home/Hero';
 import About from '../components/home/About';
@@ -18,6 +19,7 @@ const Home = () => {
     return (
         <main className="bg-dark min-h-screen">
             <Hero />
+
 
             <WhyChooseUs />
             <About />

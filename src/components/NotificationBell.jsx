@@ -3,6 +3,7 @@ import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../lib/store';
 import { Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 const NotificationBell = () => {
     const { announcements } = useStore();
@@ -44,7 +45,17 @@ const NotificationBell = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-[-1rem] sm:right-0 md:-right-4 top-full mt-4 w-[calc(100vw-2rem)] max-w-[340px] md:max-w-[400px] md:w-[400px] bg-[#0c0c0c]/95 border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] overflow-hidden z-[100] backdrop-blur-3xl origin-top-right"
+                        className={cn(
+                            "fixed md:absolute z-[100] backdrop-blur-3xl overflow-hidden",
+                            // Mobile: Centered at top
+                            "inset-x-4 top-24 md:inset-auto md:right-0 md:-right-4 md:top-full md:mt-4",
+                            // Sizing
+                            "w-[calc(100vw-2rem)] max-w-[380px] md:w-[400px] md:max-w-[400px]",
+                            // Styling
+                            "bg-[#0c0c0c]/95 border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.9)] origin-top md:origin-top-right",
+                            // Horizontal centering on mobile if we use fixed and inset-x
+                            "mx-auto left-0 right-0"
+                        )}
                     >
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h3 className="font-black text-[10px] md:text-sm uppercase tracking-widest text-white">Broadcast Signals</h3>
@@ -53,10 +64,10 @@ const NotificationBell = () => {
                             </button>
                         </div>
 
-                        <div className="max-h-[50vh] overflow-y-auto scrollbar-hide py-2 px-2">
+                        <div className="max-h-[70vh] overflow-y-auto scrollbar-hide py-4 px-4">
                             {recentAnnouncements.length === 0 ? (
-                                <div className="p-10 text-center flex flex-col items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center text-gray-600 bg-white/[0.02]">
+                                <div className="p-10 text-center flex flex-col items-center gap-4 bg-white/[0.02] rounded-[2.5rem] border border-white/5">
+                                    <div className="w-12 h-12 rounded-full border border-white/5 flex items-center justify-center text-gray-600 bg-black/40">
                                         <Bell size={20} />
                                     </div>
                                     <div>
@@ -64,28 +75,55 @@ const NotificationBell = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col space-y-2">
-                                    {recentAnnouncements.map((item) => (
-                                        <div key={item.id} className="p-4 rounded-[1.5rem] bg-white/[0.02] border border-white/5 hover:bg-white/5 hover:border-white/10 transition-all group cursor-pointer">
-                                            <div className="flex gap-4">
-                                                {item.image && (
-                                                    <img src={item.image} alt="" className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10 group-hover:scale-105 transition-transform" />
-                                                )}
-                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                    <div className="flex items-center justify-between mb-1.5 gap-2">
-                                                        <h4 className="text-[11px] font-black text-white uppercase tracking-wider truncate">{item.title}</h4>
-                                                        <span className="text-[8px] text-neon-green uppercase tracking-widest font-black shrink-0">{item.date}</span>
-                                                    </div>
-                                                    <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed font-medium">{item.content}</p>
-                                                    {item.isPinned && (
-                                                        <div className="mt-3 inline-flex items-center">
-                                                            <span className="text-[8px] bg-neon-pink/10 border border-neon-pink/20 text-neon-pink px-2.5 py-1 rounded-full font-black uppercase tracking-widest leading-none">Priority Alert</span>
+                                <div className="flex flex-col space-y-4">
+                                    {recentAnnouncements.map((item, index) => {
+                                        const CardWrapper = item.link ? 'a' : 'div';
+                                        return (
+                                            <motion.div
+                                                key={item.id}
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: index * 0.1 }}
+                                            >
+                                                <CardWrapper 
+                                                    href={item.link}
+                                                    target={item.link?.startsWith('http') ? '_blank' : undefined}
+                                                    rel={item.link?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                                                    onClick={() => {
+                                                        if (item.link && !item.link.startsWith('http')) {
+                                                            window.location.href = item.link;
+                                                        }
+                                                        setIsOpen(false);
+                                                    }}
+                                                    className="p-5 rounded-[2rem] bg-[#111]/80 backdrop-blur-xl border border-white/10 hover:border-neon-blue/40 transition-all group cursor-pointer overflow-hidden block shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative"
+                                                >
+                                                    {/* Glow effect on hover */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    
+                                                    <div className="flex gap-5 relative z-10">
+                                                        {item.image && (
+                                                            <div className="relative shrink-0">
+                                                                <img src={item.image} alt="" className="w-16 h-16 rounded-2xl object-cover border border-white/10 group-hover:scale-105 transition-transform" />
+                                                                <div className="absolute -inset-1 bg-neon-blue/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                            <div className="flex items-center justify-between mb-2 gap-2">
+                                                                <h4 className="text-[12px] font-black text-white uppercase tracking-wider truncate group-hover:text-neon-blue transition-colors">{item.title}</h4>
+                                                                <span className="text-[8px] text-neon-green uppercase tracking-widest font-black shrink-0 px-2 py-0.5 rounded-full bg-neon-green/5 border border-neon-green/10">{item.date}</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed font-medium group-hover:text-gray-300 transition-colors">{item.content}</p>
+                                                            {item.isPinned && (
+                                                                <div className="mt-3 inline-flex items-center">
+                                                                    <span className="text-[8px] bg-neon-pink/10 border border-neon-pink/20 text-neon-pink px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none shadow-[0_0_15px_rgba(255,0,255,0.1)]">Priority Alert</span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                    </div>
+                                                </CardWrapper>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

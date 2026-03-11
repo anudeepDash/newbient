@@ -57,14 +57,14 @@ const AuthOverlay = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto pt-24 md:pt-4 pb-20">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                    className="fixed inset-0 bg-transparent"
                 />
 
                 {/* Content */}
@@ -72,7 +72,7 @@ const AuthOverlay = () => {
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="relative w-full max-w-md z-10"
+                    className="relative w-full max-w-md z-10 shrink-0"
                 >
                     <Card className="p-8 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                         <button

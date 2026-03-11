@@ -291,10 +291,10 @@ const InvoiceManagement = () => {
             {/* Modals */}
             <AnimatePresence>
                 {showQuickUpload && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg">
-                            <Card className="p-10 border-neon-blue/30 bg-zinc-900 overflow-visible rounded-[3rem]">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="fixed inset-0 bg-black/90 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
+                            <Card className="p-8 md:p-10 border-neon-blue/30 bg-zinc-900 rounded-[3rem] max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar">
                                 <button onClick={() => setShowQuickUpload(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
                                 <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-white mb-2">IMPORT <span className="text-neon-blue">INVOICE.</span></h2>
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">UPLOAD EXTERNAL PDF INVOICES</p>
@@ -326,10 +326,10 @@ const InvoiceManagement = () => {
                 )}
 
                 {showEditModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg">
-                            <Card className="p-10 border-white/10 bg-zinc-900 rounded-[3rem]">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)} className="fixed inset-0 bg-black/90 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
+                            <Card className="p-8 md:p-10 border-white/10 bg-zinc-900 rounded-[3rem] max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar">
                                 <button onClick={() => setShowEditModal(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
                                 <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic text-white mb-8">EDIT <span className="text-gray-500">DETAILS.</span></h2>
                                 <form onSubmit={handleSaveEdit} className="space-y-8">

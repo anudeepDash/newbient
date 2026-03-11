@@ -267,9 +267,9 @@ const CampaignManager = () => {
             {/* CREATE/EDIT MODAL overlay */}
             <AnimatePresence>
                 {isCreating && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCreating(false)} className="absolute inset-0 bg-black/95 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-10 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-6 pt-20 pb-20 overflow-y-auto">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCreating(false)} className="fixed inset-0 bg-black/95 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-6 md:p-10 max-w-4xl w-full max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar shrink-0">
                             <button onClick={() => setIsCreating(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-20">
                                 <X size={20} className="group-hover:scale-110 transition-transform" />
                             </button>
@@ -385,10 +385,10 @@ const CampaignManager = () => {
             {/* EXPANDED MISSION ANALYTICS */}
             <AnimatePresence>
                 {expandedCampaign && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 pb-12 sm:pb-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setExpandedCampaignId(null)} />
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-6 pt-20 pb-20 overflow-y-auto">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setExpandedCampaignId(null)} />
                         
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-0 max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)] flex flex-col">
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-0 max-w-6xl w-full max-h-[85vh] md:max-h-[95vh] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)] flex flex-col shrink-0">
                             
                             <div className="p-10 border-b border-white/10 bg-gradient-to-r from-neon-blue/[0.05] to-transparent relative shrink-0">
                                 <button onClick={() => setExpandedCampaignId(null)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all z-20 group">

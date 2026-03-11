@@ -23,7 +23,8 @@ const TicketManager = () => {
 
     // Manual Ticket State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-    const [viewingTicket, setViewingTicket] = useState(null);
+    const [viewingTicketId, setViewingTicketId] = useState(null);
+    const order = ticketOrders.find(o => o.id === viewingTicketId);
     const [isDownloading, setIsDownloading] = useState(false);
     const [manualTicket, setManualTicket] = useState({
         customerName: '',
@@ -120,12 +121,20 @@ NewBi Entertainment`;
         const data = new FormData();
         data.append("file", file);
         data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
+        data.append("resource_type", "raw"); // Force raw for PDFs to ensure reliable byte storage
 
         try {
-            // Using /auto/upload safely accepts both images and pdfs
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/auto/upload", { method: "POST", body: data });
+            // Unsigned upload endpoint
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/upload", { 
+                method: "POST", 
+                body: data 
+            });
             const uploadedFile = await res.json();
+            
+            if (uploadedFile.error) {
+                console.error("Cloudinary Error:", uploadedFile.error);
+                return null;
+            }
             return uploadedFile.secure_url;
         } catch (error) {
             console.error("Storage error:", error);
@@ -233,7 +242,7 @@ NewBi Entertainment`;
                             </button>
                             {[
                                 { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
-                                { id: 'approved', label: 'Archived', count: approvedOrders.length, icon: ShieldCheck },
+                                { id: 'approved', label: 'Verified', count: approvedOrders.length, icon: ShieldCheck },
                                 { id: 'vault', label: 'Ticket Vault', icon: Upload },
                                 { id: 'settings', label: 'Payment Config', icon: QrCode }
                             ].map(tab => (
@@ -450,7 +459,7 @@ NewBi Entertainment`;
                                                             <>
                                                                 {order.fulfillmentStatus === 'fulfilled' || order.ticketUrl ? (
                                                                     <div className="flex flex-col gap-2 w-full">
-                                                                        <Button onClick={() => setViewingTicket(order)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
+                                                                        <Button onClick={() => setViewingTicketId(order.id)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
                                                                             <Mail size={14} className="mr-2" /> Get Email Draft
                                                                         </Button>
                                                                         <Button disabled className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl opacity-50 cursor-not-allowed transition-all">
@@ -509,12 +518,12 @@ NewBi Entertainment`;
             {/* Manual Ticket Modal */}
             <AnimatePresence>
                 {isManualModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 bg-black/90 backdrop-blur-md pt-20 pb-20 overflow-y-auto">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative"
+                            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-6 md:p-8 max-w-lg w-full relative shrink-0 max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar"
                         >
                             <button onClick={() => setIsManualModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
                                 <X size={20} />
@@ -594,43 +603,43 @@ NewBi Entertainment`;
 
             {/* Ticket Preview Modal */}
             <AnimatePresence>
-                {viewingTicket && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+                {viewingTicketId && order && (
+                    <div className="fixed inset-0 z-[120] flex items-start md:items-center justify-center p-4 bg-black/95 backdrop-blur-xl pt-20 pb-20 overflow-y-auto">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="max-w-xl w-full relative"
+                            className="max-w-xl w-full relative shrink-0 max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar"
                         >
-                            <button 
-                                onClick={() => setViewingTicket(null)}
-                                className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors"
-                            >
-                                <X size={24} />
-                            </button>
+                            <div className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden flex flex-col shadow-2xl relative">
+                                <button 
+                                    onClick={() => setViewingTicketId(null)}
+                                    className="absolute top-8 right-8 p-2 text-white/50 hover:text-white transition-colors z-[130]"
+                                >
+                                    <X size={24} />
+                                </button>
 
-                            <div className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden flex flex-col shadow-2xl">
                                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                                     <Mail className="text-neon-blue" />
                                     EMAIL DRAFT FOR CLIENT
                                 </h3>
 
-                                <div className="space-y-6">
+                                <div className="space-y-6 text-left">
                                     <div className="bg-black/50 p-6 rounded-2xl border border-white/5 space-y-4">
                                         <div className="flex justify-between items-center">
                                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email Standard Draft</span>
-                                            <div className="flex bg-black p-1 rounded-xl border border-white/5">
+                                            <div className="flex bg-black p-1 rounded-xl border border-white/5 text-[8px] font-black">
                                                 <button 
                                                     onClick={() => setEmailOption('attached')}
                                                     className={cn(
-                                                        "px-4 py-1.5 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                                        "px-4 py-1.5 uppercase tracking-widest rounded-lg transition-all",
                                                         emailOption === 'attached' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white"
                                                     )}
                                                 >Option 1: Attached</button>
                                                 <button 
                                                     onClick={() => setEmailOption('later')}
                                                     className={cn(
-                                                        "px-4 py-1.5 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                                        "px-4 py-1.5 uppercase tracking-widest rounded-lg transition-all",
                                                         emailOption === 'later' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white"
                                                     )}
                                                 >Option 2: Share Later</button>
@@ -639,14 +648,20 @@ NewBi Entertainment`;
                                         
                                         <div className="p-4 bg-black/30 rounded-xl border border-white/5 font-mono text-[10px] text-gray-400 whitespace-pre-wrap leading-relaxed select-all max-h-[300px] overflow-y-auto custom-scrollbar">
                                             {(() => {
-                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const event = upcomingEvents.find(e => e.id === order.eventId) || { title: order.eventTitle };
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
-                                                                                const bodyText = emailOption === 'attached' 
-                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi-entertainment.vercel.app/ticket/${viewingTicket.bookingRef}`
+                                                
+                                                const ticketsList = (order.ticketUrls || [order.ticketUrl])
+                                                    .filter(Boolean)
+                                                    .map((url, i) => `Ticket ${i+1}: ${url}`)
+                                                    .join('\n');
+                                                    
+                                                const bodyText = emailOption === 'attached' 
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${order.bookingRef}${ticketsList ? `\n\nDirect Download Links:\n${ticketsList}` : ''}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
                                                 
-                                                return `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
+                                                return `Hi ${order.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${order.bookingRef}\n\nOrder Details:\n- Item: ${order.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${order.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
                                             })()}
                                         </div>
                                     </div>
@@ -654,41 +669,56 @@ NewBi Entertainment`;
                                     <div className="grid grid-cols-2 gap-4">
                                         <Button 
                                             onClick={() => {
-                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const event = upcomingEvents.find(e => e.id === order.eventId) || { title: order.eventTitle };
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+                                                const ticketsList = (order.ticketUrls || [order.ticketUrl])
+                                                    .filter(Boolean)
+                                                    .map((url, i) => `Ticket ${i+1}: ${url}`)
+                                                    .join('\n');
                                                 const bodyText = emailOption === 'attached' 
-                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${viewingTicket.bookingRef}`
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${order.bookingRef}${ticketsList ? `\n\nDirect Download Links:\n${ticketsList}` : ''}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
-                                                const content = `Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
+                                                const content = `Hi ${order.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${order.bookingRef}\n\nOrder Details:\n- Item: ${order.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${order.totalAmount.toLocaleString()}\n\nNewBi Entertainment`;
                                                 navigator.clipboard.writeText(content);
                                                 alert("Email draft copied to clipboard!");
                                             }}
-                                            className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                            className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all text-[10px]"
                                         >
                                             <Copy size={16} />
                                             Copy Draft
                                         </Button>
                                         <Button 
                                             onClick={() => {
-                                                const event = upcomingEvents.find(e => e.id === viewingTicket.eventId) || { title: viewingTicket.eventTitle };
+                                                const event = upcomingEvents.find(e => e.id === order.eventId) || { title: order.eventTitle };
                                                 const locationStr = event.location ? `\nLocation: ${event.location}` : '';
                                                 const dateStr = event.date ? `\nDate: ${new Date(event.date).toLocaleDateString()}` : '';
+                                                const ticketsList = (order.ticketUrls || [order.ticketUrl])
+                                                    .filter(Boolean)
+                                                    .map((url, i) => `Ticket ${i+1}: ${url}`)
+                                                    .join('\n');
                                                 const bodyText = emailOption === 'attached' 
-                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${viewingTicket.bookingRef}`
+                                                    ? `Your official digital tickets are now ready to be downloaded.\n\nAccess them securely here:\nhttps://newbi.live/ticket/${order.bookingRef}${ticketsList ? `\n\nDirect Download Links:\n${ticketsList}` : ''}`
                                                     : `Your ticket will be shared with you via email shortly. Please keep an eye on your inbox.`;
 
                                                 const subject = encodeURIComponent(`Your Newbi reference code for the ticket`);
-                                                const body = encodeURIComponent(`Hi ${viewingTicket.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${viewingTicket.bookingRef}\n\nOrder Details:\n- Item: ${viewingTicket.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${viewingTicket.totalAmount.toLocaleString()}\n\nNewBi Entertainment`);
-                                                window.location.href = `mailto:${viewingTicket.customerEmail}?subject=${subject}&body=${body}`;
+                                                const body = encodeURIComponent(`Hi ${order.customerName},\n\nThank you for your purchase for ${event.title}! ${locationStr}${dateStr}\n\n${bodyText}\n\nYour unique reference code is:\nCODE: ${order.bookingRef}\n\nOrder Details:\n- Item: ${order.items?.[0]?.name || 'Standard Entry'}\n- Amount Paid: ₹${order.totalAmount.toLocaleString()}\n\nNewBi Entertainment`);
+                                                window.location.href = `mailto:${order.customerEmail}?subject=${subject}&body=${body}`;
                                             }}
-                                            className="h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all"
+                                            className="h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-all text-[10px]"
                                         >
                                             <ArrowRight size={16} />
                                             Compose Mail
                                         </Button>
                                     </div>
+                                    
+                                    <button 
+                                        onClick={() => setViewingTicketId(null)}
+                                        className="w-full py-4 text-center items-center justify-center text-[10px] font-black text-white/30 uppercase tracking-widest hover:text-white transition-colors flex gap-2"
+                                    >
+                                        <X size={14} /> Close Portal
+                                    </button>
                                 </div>
                                 <p className="text-center text-[10px] text-gray-500 mt-4 uppercase font-bold tracking-widest">
                                     Copy the content above and paste it into your email client or use the compose button.

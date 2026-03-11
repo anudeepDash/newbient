@@ -2,11 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    DollarSign, Users, Calendar, Plus, FileText, Megaphone, 
-    Music, Mail, Shield, Clock, Radio, Star, Target, Image, 
-    Ticket, LayoutDashboard, Settings, LogOut, Search, 
-    Bell, Zap, FileSpreadsheet, Sparkles, TrendingUp
+    DollarSign, 
+    Users, 
+    Calendar, 
+    Plus, 
+    FileText, 
+    Megaphone, 
+    Music, 
+    Mail, 
+    Shield, 
+    Clock, 
+    Radio, 
+    Star, 
+    Target, 
+    Image, 
+    Ticket, 
+    LayoutDashboard, 
+    Settings, 
+    LogOut, 
+    Search, 
+    Bell, 
+    Zap, 
+    FileSpreadsheet, 
+    Sparkles, 
+    TrendingUp, 
+    Gift
 } from 'lucide-react';
+
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
@@ -114,15 +136,15 @@ const Dashboard = () => {
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
                 {/* Modern Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 md:mb-16 gap-6 md:gap-8">
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-16 gap-6 md:gap-8">
                     <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="p-2 md:p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
                                 <LayoutDashboard className="text-neon-green" size={24} />
                             </div>
-                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTER.</span></h1>
+                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTER.</span></h1>
                         </div>
                         <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest pl-1 flex flex-wrap items-center gap-2">
                             Newbi Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
@@ -222,6 +244,7 @@ const Dashboard = () => {
                     <DashboardSection title="Social & Community" gradient="from-neon-blue via-neon-green to-white">
                         <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" />
                         <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" />
+                        <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew />
                         <ControlCard title="Members" desc="Community access and admin roles." icon={Users} color="neon-green" link="/admin/manage-admins" />
                         <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} />
                     </DashboardSection>
@@ -250,7 +273,7 @@ const DashboardSection = ({ title, gradient, children }) => (
 const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew }) => (
     <Link to={link || '#'} className="group relative block h-full">
         <div className={cn("absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity blur-md bg-white")} />
-        <Card className="relative p-8 h-full bg-[#111] hover:bg-zinc-900 border-white/5 hover:border-white/10 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border">
+        <Card className="relative p-6 md:p-8 h-full bg-[#111] hover:bg-zinc-900 border-white/5 hover:border-white/10 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border">
             {isNew && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
             <div className={cn("w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700", 
                 color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))

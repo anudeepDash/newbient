@@ -240,7 +240,7 @@ const UpcomingEventsManager = () => {
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action Button Text</label>
                                                 <Input
-                                                    placeholder="E.G. GET NEWBI TICKETS"
+                                                    placeholder="E.G. LEARN MORE"
                                                     value={newEvent.buttonText}
                                                     onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })}
                                                     className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
@@ -262,6 +262,19 @@ const UpcomingEventsManager = () => {
                                                     <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                                                Action Button Link
+                                                <span className="text-gray-600 ml-2 normal-case font-medium tracking-normal text-[9px]">(shown only when button text is set)</span>
+                                            </label>
+                                            <Input
+                                                placeholder="HTTPS://..."
+                                                value={newEvent.link}
+                                                onChange={(e) => setNewEvent({ ...newEvent, link: e.target.value })}
+                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6"
+                                            />
                                         </div>
 
                                         <div className="space-y-3">
@@ -433,12 +446,12 @@ const UpcomingEventsManager = () => {
             {/* Custom Link Modal */}
             <AnimatePresence>
                 {linkModalOpen && linkEvent && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto bg-black/90 backdrop-blur-sm">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-zinc-900 border border-white/10 rounded-[2rem] p-8 max-w-md w-full relative"
+                            className="bg-zinc-900 border border-white/10 rounded-[2rem] p-8 max-w-md w-full relative shrink-0 max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar"
                         >
                             <button onClick={() => setLinkModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
                                 <X size={20} />

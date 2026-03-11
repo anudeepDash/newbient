@@ -204,7 +204,7 @@ const Navbar = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col justify-start px-6 pt-24 pb-8 overflow-y-auto"
+                        className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-2xl flex flex-col justify-start px-6 pt-24 pb-32 overflow-y-auto"
                     >
                         <button 
                             onClick={() => setIsOpen(false)}
