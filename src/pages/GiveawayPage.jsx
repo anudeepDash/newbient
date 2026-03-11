@@ -103,10 +103,6 @@ const GiveawayPage = () => {
 
     const handleSpinResult = async (reward) => {
         if (!userEntry || userEntry.hasSpunWheel) return;
-        if (reward.jackpot) {
-            await updateGiveawayEntry(userEntry.id, { hasSpunWheel: true, isWinner: true, winnerReward: 'INSTANT WIN' });
-            return;
-        }
         await updateGiveawayEntry(userEntry.id, {
             hasSpunWheel: true,
             entryScore: (userEntry.entryScore || 0) + (reward.points || 0),
@@ -205,9 +201,17 @@ const GiveawayPage = () => {
                                     <Ticket size={14} className="text-purple-400" />
                                     {giveaway.ticketsAvailable} Available
                                 </span>
-                                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-white">
-                                    <Clock size={12} className="text-neon-blue" />
-                                    <span>Ends: <span className="text-neon-blue ml-1">{timeLeft}</span></span>
+                                <div className="flex flex-col sm:flex-row items-center gap-2">
+                                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-white">
+                                        <Clock size={12} className="text-neon-blue" />
+                                        <span>Ends: <span className="text-neon-blue ml-1">{timeLeft}</span></span>
+                                    </div>
+                                    {giveaway.winnerAnnouncementDate && (
+                                        <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md text-white">
+                                            <Trophy size={12} className="text-yellow-500" />
+                                            <span>Winners: <span className="text-yellow-500 ml-1">{new Date(giveaway.winnerAnnouncementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

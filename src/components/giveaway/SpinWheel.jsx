@@ -6,8 +6,7 @@ import { cn } from '../../lib/utils';
 const REWARDS = [
     { id: 'points_1', label: '+1 POINT', color: '#18181b', textColor: '#a1a1aa', probability: 0.4, points: 1 },
     { id: 'points_2', label: '+2 POINTS', color: '#1d4ed8', textColor: '#ffffff', probability: 0.3, points: 2 },
-    { id: 'points_5', label: '+5 POINTS', color: '#7c3aed', textColor: '#ffffff', probability: 0.2, points: 5 },
-    { id: 'jackpot', label: 'INSTANT WIN', color: '#db2777', textColor: '#ffffff', probability: 0.1, jackpot: true },
+    { id: 'points_5', label: '+5 POINTS', color: '#7c3aed', textColor: '#ffffff', probability: 0.3, points: 5 },
 ];
 
 const WheelSVG = ({ rewards, rotation }) => {
@@ -114,16 +113,7 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
     const [result, setResult] = useState(null);
     const [rotation, setRotation] = useState(0);
 
-    const isJackpotAvailable = () => {
-        if (!giveawayEndDate) return false;
-        const end = new Date(giveawayEndDate);
-        const now = new Date();
-        const diffHours = (end - now) / (1000 * 60 * 60);
-        return diffHours <= 48 && diffHours > 0;
-    };
-
-    const jackpotActive = isJackpotAvailable();
-    const availableRewards = jackpotActive ? REWARDS : REWARDS.filter(r => !r.jackpot);
+    const availableRewards = REWARDS;
 
     const spin = async () => {
         if (isSpinning || alreadySpun) return;
@@ -225,14 +215,11 @@ const SpinWheel = ({ onResult, alreadySpun, giveawayEndDate }) => {
                             <div className="relative z-10 space-y-5">
                                 <div className="w-20 h-20 mx-auto rounded-[1.5rem] flex items-center justify-center text-4xl"
                                     style={{ background: result.color, color: result.textColor, boxShadow: `0 0 40px ${result.color}66` }}>
-                                    {result.jackpot ? '🏆' : '🎉'}
+                                    {'🎉'}
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.4em] mb-2">You Won</p>
                                     <h3 className="text-5xl font-black font-heading text-white uppercase italic tracking-tighter leading-none">{result.label}</h3>
-                                    {result.jackpot && (
-                                        <p className="text-yellow-400 text-sm font-black uppercase tracking-widest mt-3">INSTANT WIN — You're a winner! 🎊</p>
-                                    )}
                                 </div>
                                 <button
                                     onClick={() => setResult(null)}
