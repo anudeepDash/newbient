@@ -35,6 +35,7 @@ import DevSettings from './pages/Admin/DevSettings';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import ActionHandler from './pages/Auth/ActionHandler';
 import AuthOverlay from './components/auth/AuthOverlay';
+import TicketViewer from './pages/TicketViewer';
 
 function App() {
   const { subscribeToData, checkUserRole } = useStore();
@@ -73,6 +74,7 @@ function App() {
           <Route path="creator-join" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
+          <Route path="ticket/:bookingRef" element={<TicketViewer />} />
 
           {/* Admin Routes */}
           <Route path="admin" element={<Dashboard />} />

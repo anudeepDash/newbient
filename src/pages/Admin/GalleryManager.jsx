@@ -145,7 +145,7 @@ const GalleryManager = () => {
 
                     {/* Matrix View */}
                     <div className="lg:col-span-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div className="flex sm:grid sm:grid-cols-2 gap-6 sm:gap-8 overflow-x-auto sm:overflow-visible pb-8 sm:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 sm:mx-0 sm:px-0">
                             <AnimatePresence mode="popLayout">
                             {galleryImages.map((item, index) => (
                                 <motion.div 
@@ -154,7 +154,7 @@ const GalleryManager = () => {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
-                                    className="group relative aspect-video bg-zinc-900 border border-white/5 rounded-[2rem] overflow-hidden hover:border-neon-blue/30 transition-all duration-500"
+                                    className="min-w-[85vw] sm:min-w-0 snap-center shrink-0 group relative aspect-video bg-zinc-900 border border-white/5 rounded-[2rem] overflow-hidden hover:border-neon-blue/30 transition-all duration-500"
                                 >
                                     <img src={item.src} alt={item.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent p-8 flex flex-col justify-end">

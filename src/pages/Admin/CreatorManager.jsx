@@ -101,7 +101,7 @@ const CreatorManager = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
                         <AnimatePresence mode="popLayout">
                         {filteredCreators.map(creator => (
                             <motion.div
@@ -111,7 +111,7 @@ const CreatorManager = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 onClick={() => setSelectedCreator(creator)}
-                                className="group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
+                                className="min-w-[85vw] md:min-w-0 snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
                             >
                                 {/* Status Light */}
                                 <div className={cn(
