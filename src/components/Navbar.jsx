@@ -24,8 +24,8 @@ const Navbar = () => {
     const mobilePrimaryLinks = [
         { name: 'Home', path: '/', icon: Home },
         { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
-        { name: 'Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
-        { name: 'Concerts', path: '/concerts', featureId: 'concerts', icon: Music },
+        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
+        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
         { name: 'More', action: () => setIsOpen(true), icon: Menu },
     ];
 
@@ -258,7 +258,7 @@ const Navbar = () => {
                                         <div className="flex flex-col flex-1 min-w-0">
                                             <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
                                             <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
-                                                {user.role?.replace('_', ' ') || 'Member'}
+                                                {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : 'MEMBER')}
                                             </span>
                                         </div>
                                     </div>

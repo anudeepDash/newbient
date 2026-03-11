@@ -17,6 +17,7 @@ const AdminManager = () => {
 
     // Admin State
     const [admins, setAdmins] = useState([]);
+    const pendingRequests = admins.filter(a => a.role === 'pending');
     const [loadingAdmins, setLoadingAdmins] = useState(true);
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminRole, setNewAdminRole] = useState('editor');
@@ -60,7 +61,7 @@ const AdminManager = () => {
     };
 
     useEffect(() => {
-        if (activeTab === 'admins') fetchAdmins();
+        if (activeTab === 'admins' || activeTab === 'requests') fetchAdmins();
         if (activeTab === 'members') fetchMembers();
     }, [activeTab]);
 
@@ -208,7 +209,8 @@ const AdminManager = () => {
                     <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
                         {[
                             { id: 'members', label: 'Newbi Personnel', count: members.length, icon: Users },
-                            { id: 'admins', label: 'Newbi Command Staff', count: admins.length, icon: Shield }
+                            { id: 'admins', label: 'Newbi Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
+                            { id: 'requests', label: 'Access Requests', count: pendingRequests.length, icon: Clock }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -323,6 +325,40 @@ const AdminManager = () => {
                                     </div>
                                 )}
                             </Card>
+                        </motion.div>
+                    ) : activeTab === 'requests' ? (
+                        <motion.div
+                            key="requests"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-8"
+                        >
+                            {pendingRequests.length === 0 ? (
+                                <div className="py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/5 text-center">
+                                    <Clock size={40} className="mx-auto text-gray-700 mb-4" />
+                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">No pending access requests</p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-6">
+                                    {pendingRequests.map((admin) => (
+                                        <Card key={admin.id} className="p-8 flex flex-col md:flex-row justify-between items-start md:items-center bg-yellow-500/5 border-yellow-500/20 rounded-[2rem] gap-6">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-white font-mono">{admin.email}</h3>
+                                                <p className="text-[8px] font-black text-yellow-500/50 uppercase tracking-widest mt-2 italic">Awaiting authorization — {new Date(admin.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">Deny</button>
+                                                <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                                                    <button onClick={() => handleApprove(admin.id, 'editor')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-neon-green hover:bg-white/5 rounded-xl transition-all">Editor</button>
+                                                    <button onClick={() => handleApprove(admin.id, 'super_admin')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-neon-blue hover:bg-white/5 rounded-xl transition-all">Super Admin</button>
+                                                    {canManageDevelopers && <button onClick={() => handleApprove(admin.id, 'developer')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Architect</button>}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </motion.div>
                     ) : (
                         <motion.div

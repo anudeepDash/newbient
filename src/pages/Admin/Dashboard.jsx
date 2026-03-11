@@ -44,6 +44,7 @@ const Dashboard = () => {
         invoices, proposals, concerts, announcements, user, 
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
+    const cards = maintenanceState?.cards || {};
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -229,24 +230,24 @@ const Dashboard = () => {
                 {/* Control Sections */}
                 <div className="space-y-20">
                     <DashboardSection title="Finance & Management" gradient="from-neon-green via-neon-blue to-white">
-                        <ControlCard title="Invoices" desc="Manage billing and check payment cycles." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} />
-                        <ControlCard title="Proposals" desc="Generate premium quotations for clients." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isNew />
-                        <ControlCard title="Ticketing" desc="Offline order management and check-ins." icon={Ticket} color="neon-pink" link="/admin/tickets" />
+                        <ControlCard title="Invoices" desc="Manage billing and check payment cycles." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
+                        <ControlCard title="Proposals" desc="Generate premium quotations for clients." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isNew isHidden={cards.proposals} />
+                        <ControlCard title="Ticketing" desc="Offline order management and check-ins." icon={Ticket} color="neon-pink" link="/admin/tickets" isHidden={cards.tickets} />
                     </DashboardSection>
 
                     <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
-                        <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" />
-                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concerts" />
-                        <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" />
-                        <ControlCard title="Broadcast" desc="Post announcements and site news." icon={Radio} color="yellow-400" link="/admin/announcements" />
+                        <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
+                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concerts" isHidden={cards.portfolio} />
+                        <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" isHidden={cards.gallery} />
+                        <ControlCard title="Broadcast" desc="Post announcements and site news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
                     </DashboardSection>
 
                     <DashboardSection title="Social & Community" gradient="from-neon-blue via-neon-green to-white">
-                        <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" />
-                        <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" />
-                        <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew />
-                        <ControlCard title="Members" desc="Community access and admin roles." icon={Users} color="neon-green" link="/admin/manage-admins" />
-                        <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} />
+                        <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
+                        <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
+                        <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
+                        <ControlCard title="Members" desc="Community access and admin roles." icon={Users} color="neon-green" link="/admin/manage-admins" isHidden={cards.members} />
+                        <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
                     </DashboardSection>
                 </div>
             </div>
@@ -270,11 +271,21 @@ const DashboardSection = ({ title, gradient, children }) => (
     </section>
 );
 
-const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew }) => (
-    <Link to={link || '#'} className="group relative block h-full">
-        <div className={cn("absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity blur-md bg-white")} />
-        <Card className="relative p-6 md:p-8 h-full bg-[#111] hover:bg-zinc-900 border-white/5 hover:border-white/10 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border">
-            {isNew && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
+const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHidden }) => (
+    <Link to={isHidden ? '#' : (link || '#')} className={cn("group relative block h-full", isHidden && "pointer-events-none")}>
+        <div className={cn("absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity blur-md bg-white", isHidden && "group-hover:opacity-0")} />
+        <Card className={cn(
+            "relative p-6 md:p-8 h-full border-white/5 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border",
+            isHidden 
+                ? "bg-[#0a0a0a] opacity-40 grayscale" 
+                : "bg-[#111] hover:bg-zinc-900 hover:border-white/10"
+        )}>
+            {isHidden && (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70 border border-red-500/20 px-3 py-1 rounded-full bg-red-500/5">Offline</span>
+                </div>
+            )}
+            {isNew && !isHidden && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
             <div className={cn("w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700", 
                 color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
             )}>

@@ -89,9 +89,9 @@ const SiteSettings = () => {
                                 </div>
 
                                 {/* Detailed Page Toggles */}
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Page Specific Maintenance</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         <MiniToggle 
                                             label="Events Page" 
                                             checked={maintenanceState.pages?.upcoming_events === true}
@@ -122,6 +122,38 @@ const SiteSettings = () => {
                                             checked={maintenanceState.pages?.contact === true}
                                             onChange={() => toggleMaintenanceFeature('pages', 'contact')}
                                         />
+                                    </div>
+                                </div>
+
+                                {/* Dashboard Card Visibility */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Dashboard Card Visibility</h3>
+                                    <p className="text-[10px] text-gray-600 pl-1">Hidden cards appear dimmed to admins and are inaccessible to others.</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <MiniToggle label="Invoices" checked={maintenanceState.cards?.invoices === true} onChange={() => toggleMaintenanceFeature('cards', 'invoices')} />
+                                        <MiniToggle label="Proposals" checked={maintenanceState.cards?.proposals === true} onChange={() => toggleMaintenanceFeature('cards', 'proposals')} />
+                                        <MiniToggle label="Ticketing" checked={maintenanceState.cards?.tickets === true} onChange={() => toggleMaintenanceFeature('cards', 'tickets')} />
+                                        <MiniToggle label="Upcoming Events" checked={maintenanceState.cards?.upcoming === true} onChange={() => toggleMaintenanceFeature('cards', 'upcoming')} />
+                                        <MiniToggle label="Portfolio" checked={maintenanceState.cards?.portfolio === true} onChange={() => toggleMaintenanceFeature('cards', 'portfolio')} />
+                                        <MiniToggle label="Gallery" checked={maintenanceState.cards?.gallery === true} onChange={() => toggleMaintenanceFeature('cards', 'gallery')} />
+                                        <MiniToggle label="Broadcast" checked={maintenanceState.cards?.announcements === true} onChange={() => toggleMaintenanceFeature('cards', 'announcements')} />
+                                        <MiniToggle label="Creators" checked={maintenanceState.cards?.creators === true} onChange={() => toggleMaintenanceFeature('cards', 'creators')} />
+                                        <MiniToggle label="Campaigns" checked={maintenanceState.cards?.campaigns === true} onChange={() => toggleMaintenanceFeature('cards', 'campaigns')} />
+                                        <MiniToggle label="Giveaways" checked={maintenanceState.cards?.giveaways === true} onChange={() => toggleMaintenanceFeature('cards', 'giveaways')} />
+                                        <MiniToggle label="Members" checked={maintenanceState.cards?.members === true} onChange={() => toggleMaintenanceFeature('cards', 'members')} />
+                                        <MiniToggle label="Inbox" checked={maintenanceState.cards?.inbox === true} onChange={() => toggleMaintenanceFeature('cards', 'inbox')} />
+                                    </div>
+                                </div>
+
+                                {/* Admin Page Sections */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Home Page Sections</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <MiniToggle label="Upcoming Events" checked={maintenanceState.sections?.home_upcoming === true} onChange={() => toggleMaintenanceFeature('sections', 'home_upcoming')} />
+                                        <MiniToggle label="Portfolio Grid" checked={maintenanceState.sections?.home_portfolio === true} onChange={() => toggleMaintenanceFeature('sections', 'home_portfolio')} />
+                                        <MiniToggle label="Why Choose Us" checked={maintenanceState.sections?.home_why === true} onChange={() => toggleMaintenanceFeature('sections', 'home_why')} />
+                                        <MiniToggle label="About Section" checked={maintenanceState.sections?.home_about === true} onChange={() => toggleMaintenanceFeature('sections', 'home_about')} />
+                                        <MiniToggle label="Past Clients" checked={maintenanceState.sections?.home_clients === true} onChange={() => toggleMaintenanceFeature('sections', 'home_clients')} />
                                     </div>
                                 </div>
 

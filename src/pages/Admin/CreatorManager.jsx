@@ -4,7 +4,7 @@ import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X } from 'lucide-react';
+import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
@@ -188,7 +188,7 @@ const CreatorManager = () => {
                                         </p>
                                         <div className="w-1 h-1 rounded-full bg-gray-700 self-center" />
                                         <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                            <Clock size={12} /> REGISTERED {new Date(creator.createdAt).toLocaleDateString()}
+                                            <Clock size={12} /> REGISTERED {new Date(selectedCreator.createdAt).toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>

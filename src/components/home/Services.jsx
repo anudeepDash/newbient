@@ -67,7 +67,7 @@ const Services = () => {
     }, [isAutoScrolling]);
 
     return (
-        <section id="capabilities" className="py-32 bg-[#020202] relative px-4 overflow-hidden">
+        <section id="capabilities" className="py-16 md:py-32 bg-[#020202] relative px-4 overflow-hidden">
              {/* Background Atmosphere */}
              <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
              <div className="absolute bottom-0 right-0 w-96 h-96 bg-neon-blue/5 blur-[120px] rounded-full pointer-events-none" />

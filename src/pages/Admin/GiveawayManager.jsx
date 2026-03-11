@@ -106,8 +106,9 @@ const GiveawayManager = () => {
             Phone: p.phone,
             Score: p.entryScore,
             Instagram: p.instagramUsername || p.instagram || 'N/A',
-            College: p.college,
+            College: p.college || 'N/A',
             City: p.city,
+            WhyShouldWin: p.answer || 'N/A',
             RegistrationDate: p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A',
             ReferredBy: p.referredBy || 'None'
         }));
@@ -418,7 +419,6 @@ const GiveawayManager = () => {
                                                 className="w-full h-12 bg-black/50 border border-white/5 rounded-xl px-4 text-[9px] font-black uppercase tracking-widest text-white appearance-none"
                                             >
                                                 <option value="Standard">Standard Registration</option>
-                                                <option value="Spin Wheel">Spin Wheel Interactive</option>
                                             </select>
                                         </div>
                                     </div>
@@ -435,30 +435,6 @@ const GiveawayManager = () => {
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-500">
-                                                <Sparkles size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black uppercase text-white">Spin the Wheel</p>
-                                                <p className="text-[10px] text-gray-500">Allow users to win extra points</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, showSpinWheel: !prev.showSpinWheel }))}
-                                            className={cn(
-                                                "w-12 h-6 rounded-full transition-all relative",
-                                                formData.showSpinWheel ? "bg-neon-green" : "bg-zinc-700"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "absolute top-1 w-4 h-4 rounded-full bg-white transition-all",
-                                                formData.showSpinWheel ? "right-1" : "left-1"
-                                            )} />
-                                        </button>
-                                    </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         <div className="space-y-3">
@@ -493,8 +469,11 @@ const GiveawayManager = () => {
                                         {/* Task Type Quick Select */}
                                         <div className="grid grid-cols-3 gap-3">
                                             {[
-                                                { type: 'instagram', icon: Instagram, color: 'hover:text-pink-500', label: 'Instagram' },
+                                                { type: 'instagram', icon: Instagram, color: 'hover:text-pink-500', label: 'Follow IG' },
+                                                { type: 'instagram_like_comment', icon: Instagram, color: 'hover:text-pink-400', label: 'Like + Comment' },
                                                 { type: 'website', icon: Globe, color: 'hover:text-blue-400', label: 'Website' },
+                                                { type: 'youtube', icon: Youtube, color: 'hover:text-red-500', label: 'YouTube' },
+                                                { type: 'telegram', icon: Send, color: 'hover:text-blue-400', label: 'Telegram' },
                                                 { type: 'custom', icon: Sparkles, color: 'hover:text-purple-500', label: 'Custom' },
                                             ].map(preset => (
                                                 <button
@@ -547,6 +526,7 @@ const GiveawayManager = () => {
                                                     <div className="md:col-span-1 flex justify-center">
                                                         <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-gray-500">
                                                             {task.type === 'instagram' && <Instagram size={18} />}
+                                                            {task.type === 'instagram_like_comment' && <Instagram size={18} className="text-pink-400" />}
                                                             {task.type === 'twitter' && <Twitter size={18} />}
                                                             {task.type === 'telegram' && <Send size={18} />}
                                                             {task.type === 'discord' && <MessageCircle size={18} />}

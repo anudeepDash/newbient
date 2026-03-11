@@ -72,10 +72,10 @@ const Hero = () => {
                         initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8, delay: 0.3 }}
-                        className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4 whitespace-nowrap"
                     >
-                        <div className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-ping"></div>
-                        <span className="text-[10px] font-heading font-black uppercase tracking-[0.3em] text-gray-400">College Activations • Marketing • Events</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-ping shrink-0"></div>
+                        <span className="text-[9px] font-heading font-black uppercase tracking-[0.2em] text-gray-400">College Activations • Marketing • Events</span>
                     </motion.div>
 
                     <motion.h1

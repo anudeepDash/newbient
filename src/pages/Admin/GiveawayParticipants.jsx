@@ -209,7 +209,7 @@ const GiveawayParticipants = () => {
 
                                         <div className="flex items-center gap-4">
                                             <div className="hidden md:block text-right mr-4">
-                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1 italic">Why attend?</p>
+                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1 italic">Why should win?</p>
                                                 <p className="text-[10px] text-gray-400 max-w-[200px] line-clamp-1 italic">"{entry.answer}"</p>
                                             </div>
                                             <button
@@ -223,11 +223,22 @@ const GiveawayParticipants = () => {
                                             >
                                                 {entry.isWinner ? 'REVOKE WINNER' : 'SELECT WINNER'}
                                             </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm(`Remove ${entry.name} from this giveaway?`)) {
+                                                        deleteGiveawayEntry(entry.id);
+                                                    }
+                                                }}
+                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                                                title="Delete Participant"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
                                         </div>
                                     </div>
                                     
                                     {/* Expanded Detail (hover) */}
-                                    <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-6 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 md:grid-cols-6 gap-6 opacity-60 group-hover:opacity-100 transition-opacity">
                                         <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Email</p>
                                             <p className="text-[10px] font-bold text-white lowercase">{entry.email}</p>
@@ -237,12 +248,20 @@ const GiveawayParticipants = () => {
                                             <p className="text-[10px] font-bold text-white">{entry.phone}</p>
                                         </div>
                                         <div>
+                                            <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">College</p>
+                                            <p className="text-[10px] font-bold text-white uppercase truncate">{entry.college || 'N/A'}</p>
+                                        </div>
+                                        <div>
                                             <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">City</p>
                                             <p className="text-[10px] font-bold text-white uppercase">{entry.city}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Answer</p>
-                                            <p className="text-[10px] font-bold text-white uppercase truncate">{entry.answer}</p>
+                                            <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Instagram</p>
+                                            <p className="text-[10px] font-bold text-neon-pink">{entry.instagramUsername || entry.instagram || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Why Should Win</p>
+                                            <p className="text-[10px] font-bold text-white uppercase truncate">{entry.answer || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </Card>

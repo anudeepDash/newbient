@@ -11,7 +11,7 @@ const PastClients = () => {
     const duplicatedClients = [...clients, ...clients, ...clients];
 
     return (
-        <section className="py-24 bg-[#020202] relative overflow-hidden border-t border-white/5">
+        <section className="py-12 md:py-24 bg-[#020202] relative overflow-hidden border-t border-white/5">
             <div className="max-w-7xl mx-auto px-4 mb-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>

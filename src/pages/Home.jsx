@@ -20,9 +20,12 @@ const Home = () => {
         <main className="bg-dark min-h-screen">
             <Hero />
 
-
-            <WhyChooseUs />
-            <About />
+            <MaintenanceGuard isSection featureId="home_why">
+                <WhyChooseUs />
+            </MaintenanceGuard>
+            <MaintenanceGuard isSection featureId="home_about">
+                <About />
+            </MaintenanceGuard>
             <Services />
             <MaintenanceGuard isSection featureId="home_upcoming">
                 <UpcomingEvents />
@@ -30,7 +33,11 @@ const Home = () => {
             <MaintenanceGuard isSection featureId="home_portfolio">
                 <Portfolio />
             </MaintenanceGuard>
-            {siteSettings?.showPastClients !== false && <PastClients />}
+            {siteSettings?.showPastClients !== false && (
+                <MaintenanceGuard isSection featureId="home_clients">
+                    <PastClients />
+                </MaintenanceGuard>
+            )}
             <CallToAction />
         </main>
     );
