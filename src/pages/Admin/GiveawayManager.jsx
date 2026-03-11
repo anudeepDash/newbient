@@ -308,26 +308,26 @@ const GiveawayManager = () => {
                                     <span className="flex items-center gap-2 text-[10px] font-black text-neon-green uppercase tracking-widest"><Gift size={12} /> {giveaway.ticketsAvailable} POINTS</span>
                                 </div>
                                 <div className="flex gap-2 mb-8">
-                                    <Button 
+                                    <button 
                                         onClick={() => handlePickWinner(giveaway.id, giveaway.name)} 
                                         disabled={giveaway.status === 'Closed'}
-                                        className="flex-1 h-10 px-4 bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-600 hover:text-white transition-all disabled:opacity-30"
+                                        className="flex-1 h-10 px-4 flex items-center justify-center bg-purple-600/10 border border-purple-500/20 text-purple-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-600 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                     >
                                         <Trophy size={14} className="mr-2" /> Winner
-                                    </Button>
-                                    <Button 
+                                    </button>
+                                    <button 
                                         onClick={() => handleExportCSV(giveaway.id, giveaway.name)} 
                                         className="h-10 w-12 bg-zinc-800 border border-white/10 flex items-center justify-center rounded-xl hover:bg-zinc-700 transition-all"
                                     >
                                         <Download size={18} className="text-white" strokeWidth={2} />
-                                    </Button>
+                                    </button>
                                     {giveaway.status !== 'Closed' && (
-                                        <Button 
+                                        <button 
                                             onClick={() => handleCloseGiveaway(giveaway.id)} 
                                             className="h-10 w-12 bg-red-900/30 border border-red-500/40 flex items-center justify-center rounded-xl hover:bg-red-600 transition-all"
                                         >
-                                            <X size={18} className="text-red-500" strokeWidth={2} />
-                                        </Button>
+                                            <X size={18} className="text-red-500 hover:text-white transition-colors" strokeWidth={2} />
+                                        </button>
                                     )}
                                 </div>
 
