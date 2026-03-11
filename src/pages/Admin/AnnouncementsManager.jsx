@@ -230,7 +230,7 @@ const AnnouncementsManager = () => {
                                                     <Clock size={12} className="text-gray-700" />
                                                     {item.date}
                                                 </div>
-                                                <p className="text-sm font-medium text-gray-400 line-clamp-1 group-hover:line-clamp-none transition-all duration-500 leading-relaxed border-l-2 border-white/5 pl-4">{item.content}</p>
+                                                <p className="text-sm font-medium text-gray-400 transition-all duration-500 leading-relaxed border-l-2 border-white/5 pl-4">{item.content}</p>
                                             </div>
 
                                             <div className="flex items-center gap-3 shrink-0 ml-4">

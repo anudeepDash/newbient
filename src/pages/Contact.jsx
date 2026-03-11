@@ -159,7 +159,7 @@ const Contact = () => {
                         className="relative"
                     >
                         {/* Glassmorphic Form Container */}
-                        <div className="p-12 md:p-16 bg-zinc-900/60 border border-white/10 rounded-[4rem] backdrop-blur-[100px] shadow-2xl relative overflow-hidden">
+                        <div className="p-6 sm:p-12 md:p-16 bg-zinc-900/60 border border-white/10 rounded-[2.5rem] md:rounded-[4rem] backdrop-blur-[100px] shadow-2xl relative overflow-hidden">
                             <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                     <div className="space-y-4">

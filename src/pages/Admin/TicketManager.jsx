@@ -232,8 +232,8 @@ NewBi Entertainment`;
                         </h1>
                     </div>
                     
-                    <div className="space-y-4 w-full md:w-auto">
-                        <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                    <div className="space-y-4 w-full md:w-auto overflow-hidden">
+                        <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2">
                             <button
                                 onClick={() => setIsManualModalOpen(true)}
                                 className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black mr-2 hover:scale-105"
