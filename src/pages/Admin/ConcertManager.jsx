@@ -112,14 +112,14 @@ const ConcertManager = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-purple/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
                             <ArrowLeft size={14} /> Back to Hub
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
                             PORTFOLIO <span className="text-neon-green">MANAGER.</span>
                         </h1>
                     </div>
@@ -147,7 +147,7 @@ const ConcertManager = () => {
                 <AnimatePresence>
                     {showCategoryManager && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-12 overflow-hidden">
-                            <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
+                            <Card className="p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem]">
                                 <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                                     <div className="w-8 h-px bg-neon-green" /> CATEGORY REGISTRY
                                 </h3>
@@ -312,7 +312,7 @@ const ConcertManager = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-8 flex-1 flex flex-col">
+                                    <div className="p-6 md:p-8 flex-1 flex flex-col">
                                         <div className="flex items-center gap-3 mb-4">
                                             <span className="px-3 py-1 bg-neon-green/10 text-neon-green text-[9px] font-black uppercase tracking-widest border border-neon-green/20 rounded-full">
                                                 {portfolioCategories.find(c => c.id === item.category)?.label || item.category || 'GENERAL'}

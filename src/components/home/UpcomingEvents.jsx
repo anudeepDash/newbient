@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus, Gift } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import BuyTicketModal from '../tickets/BuyTicketModal';
 
 const UpcomingEvents = () => {
-    const { upcomingEvents, siteSettings, maintenanceState } = useStore();
+    const { upcomingEvents, siteSettings, maintenanceState, giveaways } = useStore();
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -173,35 +174,46 @@ const UpcomingEvents = () => {
                         className="flex gap-8 overflow-x-auto pb-12 scrollbar-hide snap-x snap-mandatory scroll-smooth -mx-4 px-4"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
-                        {upcomingEvents.map((event) => (
-                            <div key={event.id} className="min-w-[280px] md:min-w-[400px] snap-start">
-                                {event.isTicketed ? (
+                        {upcomingEvents.map((event) => {
+                            // First, try to find a giveaway that is explicitly linked to this event
+                            let linkedGiveaway = giveaways?.find(g => g.id === event.giveawayId);
+                            
+                            // Fallback to name matching if no explicit link exists (for older entries)
+                            if (!linkedGiveaway) {
+                                linkedGiveaway = giveaways?.find(g => 
+                                    g.status === 'Open' && 
+                                    (g.name.toLowerCase().includes(event.title.toLowerCase()) || 
+                                     event.title.toLowerCase().includes(g.name.toLowerCase()))
+                                );
+                            }
+                            
+                            const handleCardClick = () => {
+                                if (event.isTicketed) {
+                                    if (maintenanceState.features?.tickets) {
+                                        alert("Ticketing is currently paused for maintenance. Please check back later.");
+                                    } else {
+                                        setSelectedEvent(event);
+                                    }
+                                } else if (event.link) {
+                                    window.open(event.link, '_blank', 'noreferrer');
+                                } else if (linkedGiveaway) {
+                                    window.location.href = `/giveaway/${linkedGiveaway.slug}`;
+                                } else {
+                                    alert("This event currently has no active ticketing or link specified.");
+                                }
+                            };
+
+                            return (
+                                <div key={event.id} className="min-w-[280px] md:min-w-[400px] snap-start">
                                     <div 
-                                        onClick={() => {
-                                            if (maintenanceState.features?.tickets) {
-                                                alert("Ticketing is currently paused for maintenance. Please check back later.");
-                                            } else {
-                                                setSelectedEvent(event);
-                                            }
-                                        }} 
+                                        onClick={handleCardClick} 
                                         className="block w-full h-full relative cursor-pointer group"
                                     >
-                                        <EventTicket event={event} handleShare={handleShare} />
+                                        <EventTicket event={event} handleShare={handleShare} linkedGiveaway={linkedGiveaway} />
                                     </div>
-                                ) : event.link ? (
-                                    <a href={event.link} target="_blank" rel="noreferrer" className="block w-full h-full relative cursor-pointer group">
-                                        <EventTicket event={event} handleShare={handleShare} />
-                                    </a>
-                                ) : (
-                                    <div 
-                                        className="block w-full h-full relative cursor-pointer group"
-                                        onClick={() => alert("This event currently has no active ticketing or external link specified.")}
-                                    >
-                                        <EventTicket event={event} handleShare={handleShare} />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -215,7 +227,9 @@ const UpcomingEvents = () => {
     );
 };
 
-const EventTicket = ({ event, handleShare }) => {
+const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
+    const isHybrid = event.isTicketed && linkedGiveaway;
+
     return (
         <div id={`event-card-${event.id}`} className="relative bg-[#111] border border-white/5 rounded-3xl md:rounded-[3rem] overflow-hidden flex flex-col h-[420px] md:h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
             {/* Visual Perforations */}
@@ -238,12 +252,25 @@ const EventTicket = ({ event, handleShare }) => {
                 {/* Gradient Overlay */}
                 <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111] to-transparent" />
                 
-                <div className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 z-10 flex items-center gap-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
-                        {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
-                    </span>
-                    {event.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
+                <div className="absolute top-6 left-6 flex items-center gap-2 z-10">
+                    <div className="px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
+                            {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
+                        </span>
+                    </div>
+                    {event.isGiveaway && (
+                        <div className="px-3 py-2 rounded-xl bg-purple-600/80 backdrop-blur-md border border-purple-400/30 flex items-center gap-2">
+                            <Gift size={14} className="text-white animate-pulse" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white">GIVEAWAY</span>
+                        </div>
+                    )}
                 </div>
+                
+                {event.isTicketed && (
+                    <div className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-neon-green text-black flex items-center justify-center shadow-[0_0_15px_rgba(46,255,144,0.3)] z-10">
+                        <Ticket size={20} />
+                    </div>
+                )}
             </div>
 
             {/* Bottom Content Section */}
@@ -265,9 +292,35 @@ const EventTicket = ({ event, handleShare }) => {
                 </div>
 
                 <div className="flex items-center justify-between pt-4">
-                    <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                        <span className="text-[10px] uppercase text-cyan-400">{event.buttonText || 'GET TICKETS NOW'}</span>
-                        <ArrowRight size={16} className="text-cyan-400" />
+                    <div className="flex flex-col gap-2">
+                        {event.isTicketed && event.buttonText && (
+                            <div className="text-neon-green font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
+                                <span className="text-[10px] uppercase">{event.buttonText}</span>
+                                <ArrowRight size={16} />
+                            </div>
+                        )}
+                        
+                        {linkedGiveaway && (
+                            <Link 
+                                to={`/giveaway/${linkedGiveaway.slug}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                className="text-purple-400 font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30 group/giveaway"
+                            >
+                                <Gift size={15} className="text-purple-400" />
+                                <span className="text-[10px] uppercase tracking-tighter border-b border-purple-500/0 group-hover/giveaway:border-purple-500/50 transition-all">
+                                    {event.isTicketed ? 'ENTER GIVEAWAY' : 'PARTICIPATE IN GIVEAWAY'}
+                                </span>
+                            </Link>
+                        )}
+
+                        {!event.isTicketed && !linkedGiveaway && event.link && event.buttonText && (
+                            <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
+                                <span className="text-[10px] uppercase">{event.buttonText}</span>
+                                <ArrowRight size={16} />
+                            </div>
+                        )}
                     </div>
                     
                     <button

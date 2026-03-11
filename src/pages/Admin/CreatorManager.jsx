@@ -53,14 +53,14 @@ const CreatorManager = () => {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
                             <ArrowLeft size={14} /> Back to Newbi Hub
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
                             CREATOR <span className="text-neon-pink">REGISTRY.</span>
                         </h1>
                     </div>
@@ -111,7 +111,7 @@ const CreatorManager = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 onClick={() => setSelectedCreator(creator)}
-                                className="min-w-[85vw] md:min-w-0 snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
+                                className="min-w-[85vw] md:min-w-0 snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
                             >
                                 {/* Status Light */}
                                 <div className={cn(
@@ -160,15 +160,15 @@ const CreatorManager = () => {
             {/* Detailed User Modal */}
             <AnimatePresence>
                 {selectedCreator && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 pb-12 sm:pb-6">
+                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-6 pt-20 pb-20 overflow-y-auto">
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/95 backdrop-blur-sm"
+                            className="fixed inset-0 bg-black/95 backdrop-blur-sm"
                             onClick={() => setSelectedCreator(null)}
                         />
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-10 max-w-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                            className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-6 md:p-10 max-w-3xl w-full max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar shadow-[0_40px_100px_rgba(0,0,0,0.8)] shrink-0"
                         >
                             <button onClick={() => setSelectedCreator(null)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-20">
                                 <X size={20} className="group-hover:scale-110 transition-transform" />

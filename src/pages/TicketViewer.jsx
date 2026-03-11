@@ -147,6 +147,7 @@ const TicketViewer = () => {
                                         <a 
                                             key={index} 
                                             href={url} 
+                                            download={`Ticket-${order.bookingRef}-${index + 1}.pdf`}
                                             target="_blank" 
                                             rel="noopener noreferrer"
                                             className="group flex items-center justify-between bg-white text-black p-4 rounded-2xl hover:scale-[1.02] transition-all duration-300 w-full"
@@ -156,7 +157,7 @@ const TicketViewer = () => {
                                                     <Ticket size={18} />
                                                 </div>
                                                 <div className="flex flex-col text-left">
-                                                    <span className="font-black uppercase text-sm">Pass Segment {index + 1}</span>
+                                                    <span className="font-black uppercase text-sm">Download your Ticket {index + 1}</span>
                                                     <span className="text-[10px] font-bold text-gray-500 uppercase">View / Save PDF</span>
                                                 </div>
                                             </div>
@@ -176,6 +177,15 @@ const TicketViewer = () => {
                             )}
                         </div>
 
+                        <div className="mt-12 pt-8 border-t border-white/5">
+                            <Link 
+                                to="/" 
+                                className="inline-flex items-center gap-2 text-neon-blue font-black uppercase text-[10px] tracking-[0.2em] hover:scale-105 transition-all group mx-auto w-full justify-center"
+                            >
+                                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
+                                Explore More Events on Newbi
+                            </Link>
+                        </div>
                     </div>
                 </motion.div>
             </div>

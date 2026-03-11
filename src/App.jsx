@@ -31,11 +31,15 @@ import CampaignManager from './pages/Admin/CampaignManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
 import TicketManager from './pages/Admin/TicketManager';
+import GiveawayManager from './pages/Admin/GiveawayManager';
+import GiveawayParticipants from './pages/Admin/GiveawayParticipants';
 import DevSettings from './pages/Admin/DevSettings';
-import MaintenanceGuard from './components/MaintenanceGuard';
+import GiveawayPage from './pages/GiveawayPage';
+import TicketViewer from './pages/TicketViewer';
 import ActionHandler from './pages/Auth/ActionHandler';
 import AuthOverlay from './components/auth/AuthOverlay';
-import TicketViewer from './pages/TicketViewer';
+import AdminGuard from './components/AdminGuard';
+import MaintenanceGuard from './components/MaintenanceGuard';
 
 function App() {
   const { subscribeToData, checkUserRole } = useStore();
@@ -75,32 +79,34 @@ function App() {
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
           <Route path="ticket/:bookingRef" element={<TicketViewer />} />
+          <Route path="giveaway/:slug" element={<GiveawayPage />} />
 
-          {/* Admin Routes */}
-          <Route path="admin" element={<Dashboard />} />
-          <Route path="admin/dev-settings" element={<DevSettings />} />
-          <Route path="admin/manage-admins" element={<AdminManager />} />
-          <Route path="admin/invoices" element={<MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard>} />
-          <Route path="admin/create-invoice" element={<MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard>} />
-          <Route path="admin/edit-invoice/:id" element={<MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard>} />
-          <Route path="admin/announcements" element={<MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard>} />
-          <Route path="admin/concerts" element={<MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard>} />
-          <Route path="admin/messages" element={<MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard>} />
-          <Route path="admin/site-settings" element={<MaintenanceGuard featureId="site_content"><SiteSettings /></MaintenanceGuard>} />
-          <Route path="admin/proposals" element={<ProposalManagement />} />
-          <Route path="admin/create-proposal" element={<ProposalGenerator />} />
-          <Route path="admin/edit-proposal/:id" element={<ProposalGenerator />} />
-          <Route path="admin/gallery-manager" element={<MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard>} />
-          <Route path="admin/forms" element={<MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard>} />
+          {/* Admin Routes wrapped in AdminGuard */}
+          <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
+          <Route path="admin/dev-settings" element={<AdminGuard><DevSettings /></AdminGuard>} />
+          <Route path="admin/manage-admins" element={<AdminGuard><AdminManager /></AdminGuard>} />
+          <Route path="admin/invoices" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/create-invoice" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/edit-invoice/:id" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/concerts" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/site-settings" element={<AdminGuard><MaintenanceGuard featureId="site_content"><SiteSettings /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/proposals" element={<AdminGuard><ProposalManagement /></AdminGuard>} />
+          <Route path="admin/create-proposal" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
+          <Route path="admin/edit-proposal/:id" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
+          <Route path="admin/gallery-manager" element={<AdminGuard><MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard></AdminGuard>} />
 
-          // ...
-          <Route path="admin/forms/create" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
-          <Route path="admin/forms/edit/:id" element={<MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard>} />
-          <Route path="admin/tickets" element={<MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard>} />
-          <Route path="admin/volunteer-gigs" element={<MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard>} />
-          <Route path="admin/upcoming-events" element={<MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard>} />
-          <Route path="admin/creators" element={<MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard>} />
-          <Route path="admin/campaigns" element={<MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard>} />
+          <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/tickets" element={<AdminGuard><MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/campaigns" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/giveaways" element={<AdminGuard><GiveawayManager /></AdminGuard>} />
+          <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><GiveawayParticipants /></AdminGuard>} />
 
           {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
           <Route path="auth/action" element={<ActionHandler />} />

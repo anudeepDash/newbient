@@ -98,7 +98,7 @@ const MessageManager = () => {
                 </div>
 
                 {/* Messages Feed */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     <AnimatePresence mode='popLayout'>
                         {filteredMessages.length > 0 ? (
                             filteredMessages.map((msg) => (
@@ -109,78 +109,72 @@ const MessageManager = () => {
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     layout
                                 >
-                                    <Card className={cn(
-                                        "p-8 transition-all duration-500 border-white/5 group hover:border-white/10 rounded-[2.5rem] bg-zinc-900/40 backdrop-blur-3xl",
-                                        msg.status === 'new' && "border-neon-pink/20 bg-gradient-to-r from-neon-pink/[0.03] to-transparent shadow-[0_10px_40px_rgba(255,46,144,0.05)]"
+                                    <div className={cn(
+                                        "p-6 md:p-8 transition-all duration-500 border rounded-[2rem] backdrop-blur-3xl group",
+                                        msg.status === 'new'
+                                            ? "bg-zinc-900/60 border-neon-pink/20 shadow-[0_0_40px_rgba(255,46,144,0.05)]"
+                                            : "bg-zinc-900/30 border-white/5 hover:border-white/10"
                                     )}>
-                                        <div className="flex flex-col lg:flex-row gap-10">
-                                            {/* SENDER INTEL */}
-                                            <div className="lg:w-1/4 shrink-0">
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className={cn(
-                                                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-500",
-                                                        msg.status === 'new' ? "bg-neon-pink text-black scale-110" : "bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-white"
-                                                    )}>
-                                                        {(msg.name || 'A').charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-black text-lg uppercase tracking-tight text-white group-hover:text-neon-pink transition-colors">{msg.name || 'ANONYMOUS'}</h3>
-                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                                                            <Clock size={10} className="text-gray-600" />
-                                                            {formatDate(msg.createdAt)}
-                                                        </div>
-                                                    </div>
+                                        {/* Top row: Avatar + name + email + status + actions */}
+                                        <div className="flex items-start justify-between gap-6 mb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 transition-all duration-300",
+                                                    msg.status === 'new' ? "bg-neon-pink text-black" : "bg-white/5 text-gray-400 group-hover:bg-white/10"
+                                                )}>
+                                                    {(msg.name || 'A').charAt(0).toUpperCase()}
                                                 </div>
-                                                <div className="space-y-3 pt-6 border-t border-white/5">
-                                                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                        <Mail size={12} className="text-neon-pink/50" />
-                                                        <span className="truncate max-w-[150px]">{msg.email}</span>
+                                                <div>
+                                                    <h3 className="font-black text-sm uppercase tracking-tight text-white leading-none mb-1">{msg.name || 'ANONYMOUS'}</h3>
+                                                    <div className="flex items-center flex-wrap gap-3">
+                                                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{msg.email}</span>
+                                                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest flex items-center gap-1">
+                                                            <Clock size={9} />{formatDate(msg.createdAt)}
+                                                        </span>
+                                                        {msg.status === 'new' && (
+                                                            <span className="px-2 py-0.5 rounded-full bg-neon-pink/10 text-neon-pink text-[8px] font-black uppercase tracking-widest border border-neon-pink/20">
+                                                                New
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    {msg.status === 'new' && (
-                                                        <div className="inline-flex px-3 py-1 rounded-full bg-neon-pink/10 text-neon-pink text-[8px] font-black uppercase tracking-widest border border-neon-pink/20">
-                                                            NEW COMMUNICATION
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* CONTENT VAULT */}
-                                            <div className="flex-grow pt-4 lg:pt-0">
-                                                <div className="relative p-6 lg:p-10 bg-black/40 rounded-[2rem] border border-white/5 group-hover:border-white/10 transition-all leading-relaxed min-h-[160px]">
-                                                    <div className="absolute -top-3 -left-3 p-2 bg-zinc-900 rounded-lg border border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500">DECRYPTED DATA</div>
-                                                    <p className="text-sm font-medium text-gray-300 whitespace-pre-wrap selection:bg-neon-pink selection:text-black">
-                                                        {msg.message}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* OPERATIONAL ACTIONS */}
-                                            <div className="lg:w-48 flex flex-row lg:flex-col gap-3 shrink-0 lg:border-l lg:border-white/5 lg:pl-10 justify-center">
-                                                <Button
+                                            {/* Action buttons — compact row */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <button
                                                     onClick={() => markMessageRead(msg.id, msg.status === 'new' ? 'read' : 'new')}
                                                     className={cn(
-                                                        "flex-1 h-14 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all gap-3 shadow-xl",
-                                                        msg.status === 'new' 
-                                                            ? "bg-neon-pink text-black hover:scale-105 active:scale-95" 
+                                                        "h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all",
+                                                        msg.status === 'new'
+                                                            ? "bg-neon-pink text-black hover:scale-105"
                                                             : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white border border-white/5"
                                                     )}
                                                 >
                                                     {msg.status === 'new' ? (
-                                                        <><CheckCircle size={16} /> Mark Processed</>
+                                                        <><CheckCircle size={13} /> Mark Read</>
                                                     ) : (
-                                                        <><AlertCircle size={16} /> Recall to Queue</>
+                                                        <><AlertCircle size={13} /> Unreads</>
                                                     )}
-                                                </Button>
-
+                                                </button>
                                                 <button
                                                     onClick={() => handleDelete(msg.id)}
-                                                    className="w-14 h-14 shrink-0 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-black transition-all group/del"
+                                                    className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
                                                 >
-                                                    <Trash2 size={20} className="group-hover/del:scale-110 transition-transform" />
+                                                    <Trash2 size={14} />
                                                 </button>
                                             </div>
                                         </div>
-                                    </Card>
+
+                                        {/* Message body */}
+                                        <div className="pl-0 md:pl-16">
+                                            <div className="p-5 md:p-6 bg-black/30 rounded-2xl border border-white/5 group-hover:border-white/8 transition-all">
+                                                <p className="text-sm font-medium text-gray-300 whitespace-pre-wrap leading-relaxed selection:bg-neon-pink selection:text-black">
+                                                    {msg.message}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </motion.div>
                             ))
                         ) : (

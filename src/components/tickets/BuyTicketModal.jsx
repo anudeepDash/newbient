@@ -115,12 +115,12 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+            <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md overflow-y-auto pt-20 md:pt-4 pb-20">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative my-auto"
+                    className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh] md:max-h-[90vh] shrink-0"
                 >
                     {/* Progress Bar */}
                     <div className="h-1 bg-white/5 w-full flex">
@@ -145,7 +145,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                         </button>
                     </div>
 
-                    <div className="p-6 pt-4 min-h-[400px] flex flex-col">
+                    <div className="p-4 md:p-6 pt-2 overflow-y-auto custom-scrollbar flex-1 flex flex-col min-h-[400px]">
 
                         {/* Step 0: Venue Layout */}
                         {step === 0 && hasLayout && (
