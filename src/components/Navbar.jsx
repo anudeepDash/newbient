@@ -15,7 +15,7 @@ const Navbar = () => {
     const allLinks = [
         { name: 'Home', path: '/', icon: Home },
         { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
-        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
+        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', matchPaths: ['/creator-dashboard', '/creator-join'], featureId: 'influencer', icon: Sparkles },
         { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
         { name: 'Gallery', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
         { name: 'Contact', path: '/contact', featureId: 'contact', icon: LayoutGrid },
@@ -24,7 +24,7 @@ const Navbar = () => {
     const mobilePrimaryLinks = [
         { name: 'Home', path: '/', icon: Home },
         { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
-        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', featureId: 'influencer', icon: Sparkles },
+        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', matchPaths: ['/creator-dashboard', '/creator-join'], featureId: 'influencer', icon: Sparkles },
         { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
         { name: 'More', action: () => setIsOpen(true), icon: Menu },
     ];
@@ -65,7 +65,7 @@ const Navbar = () => {
                             <div className="flex items-center space-x-1">
                                 {links.map((link) => {
                                     const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
-                                    const isActive = location.pathname === link.path;
+                                    const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                                     
                                     return (
                                         <Link
@@ -156,7 +156,7 @@ const Navbar = () => {
                 <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-around">
                         {mobilePrimaryLinks.map((link) => {
-                            const isActive = location.pathname === link.path;
+                            const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                             const Icon = link.icon;
 
                             if (link.action) {
@@ -216,7 +216,7 @@ const Navbar = () => {
                         <div className="w-full space-y-2 mb-auto shrink-0 pb-12">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 text-center">Navigation</p>
                             {links.map((link, idx) => {
-                                const isActive = location.pathname === link.path;
+                                const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                                 const Icon = link.icon;
                                 return (
                                     <motion.div
