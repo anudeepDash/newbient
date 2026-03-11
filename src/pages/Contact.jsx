@@ -38,7 +38,7 @@ const Contact = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-x-hidden">
             {/* Background Atmosphere */}
             <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-neon-blue/5 blur-[150px] rounded-full pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-neon-green/5 blur-[150px] rounded-full pointer-events-none" />
@@ -83,7 +83,7 @@ const Contact = () => {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.1 * i }}
-                                className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] backdrop-blur-3xl text-center"
+                                className="p-4 sm:p-8 bg-white/5 border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] backdrop-blur-3xl text-center"
                             >
                                 <p className="text-[10px] font-black uppercase tracking-widest text-neon-blue mb-2">{stat.label}</p>
                                 <p className="text-3xl font-black font-heading text-white tracking-tight">{stat.val}</p>
@@ -237,7 +237,7 @@ const ContactMethod = ({ icon: Icon, label, val, revealVal, href, accent }) => (
             {revealVal && (
                 <p className={cn(
                     "text-[11px] font-medium leading-snug mt-2 transition-all duration-500 overflow-hidden",
-                    "max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100",
+                    "max-h-20 opacity-100 md:max-h-0 md:opacity-0 md:group-hover:max-h-20 md:group-hover:opacity-100",
                     accent === 'neon-green' ? 'text-neon-green' : (accent === 'neon-blue' ? 'text-neon-blue' : (accent === 'neon-pink' ? 'text-neon-pink' : 'text-gray-300'))
                 )}>
                     {revealVal}
