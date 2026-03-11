@@ -206,7 +206,7 @@ const AdminManager = () => {
                         </h1>
                     </div>
 
-                    <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                    <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2 w-full md:w-auto">
                         {[
                             { id: 'members', label: 'Newbi Personnel', count: members.length, icon: Users },
                             { id: 'admins', label: 'Newbi Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
