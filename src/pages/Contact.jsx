@@ -38,10 +38,10 @@ const Contact = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-x-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-x-hidden w-full max-w-[100vw]">
             {/* Background Atmosphere */}
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-neon-blue/5 blur-[150px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-neon-green/5 blur-[150px] rounded-full pointer-events-none" />
+            <div className="absolute top-0 right-[-10%] w-[120%] aspect-square md:w-[800px] md:h-[800px] bg-neon-blue/5 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-0 left-[-10%] w-[120%] aspect-square md:w-[600px] md:h-[600px] bg-neon-green/5 blur-[100px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header Section */}
@@ -58,7 +58,7 @@ const Contact = () => {
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-5xl md:text-8xl font-black font-heading tracking-tighter leading-none mb-8"
+                            className="text-[12vw] sm:text-5xl md:text-8xl font-black font-heading tracking-tighter leading-none mb-8 break-words overflow-wrap-anywhere whitespace-normal hyphens-auto"
                         >
                             LET'S <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-green">SCALE.</span>
                         </motion.h1>

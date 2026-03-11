@@ -9,7 +9,7 @@ import { useStore } from '../lib/store';
 
 const Navbar = () => {
     const { maintenanceState, user, siteSettings, creators, announcements } = useStore();
-    const pinnedAnnouncement = announcements?.find(a => a.isPinned);
+    const pinnedAnnouncement = announcements?.find(a => a.isPinned) || announcements?.[0];
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
