@@ -9,7 +9,7 @@ import { useStore } from '../lib/store';
 
 const Navbar = () => {
     const { maintenanceState, user, siteSettings, creators, announcements } = useStore();
-    const pinnedAnnouncement = announcements?.find(a => a.isPinned) || announcements?.[0];
+    const pinnedAnnouncement = announcements?.find(a => a.isPinned);
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
@@ -50,8 +50,7 @@ const Navbar = () => {
 
             {/* Global Pinned Announcement Banner */}
             {(pinnedAnnouncement && !(maintenanceState.global && user?.role === 'developer')) && (
-                <div className="fixed top-0 left-0 right-0 z-[55] bg-neon-pink text-black text-[10px] md:text-xs font-black uppercase tracking-widest py-2 px-4 text-center break-words flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 shadow-[0_0_20px_rgba(255,0,255,0.3)]">
-                    <span className="animate-pulse bg-black text-neon-pink px-2 py-0.5 rounded-full text-[8px] whitespace-nowrap hidden sm:inline-block">🚨 PRIORITY SIGNAL</span>
+                <div className="md:hidden fixed top-0 left-0 right-0 z-[55] bg-neon-pink text-black text-[10px] font-black uppercase tracking-widest py-2 px-4 text-center break-words flex flex-col items-center justify-center gap-1 shadow-[0_0_20px_rgba(255,0,255,0.3)]">
                     <span className="leading-tight">
                         <span className="font-extrabold mr-2">{pinnedAnnouncement.title}:</span>{pinnedAnnouncement.content}
                     </span>
@@ -61,7 +60,11 @@ const Navbar = () => {
             {/* Top Navbar */}
             <nav className={cn(
                 "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
-                (maintenanceState.global && user?.role === 'developer') || pinnedAnnouncement ? "top-14 md:top-14" : "top-4 md:top-6"
+                (maintenanceState.global && user?.role === 'developer') 
+                    ? "top-14 md:top-14" 
+                    : pinnedAnnouncement 
+                        ? "top-14 md:top-6" 
+                        : "top-4 md:top-6"
             )}>
                 {/* Main Menu Pill */}
                 <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">

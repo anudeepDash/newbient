@@ -46,11 +46,8 @@ const NotificationBell = () => {
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            "z-[100] flex flex-col overflow-hidden",
-                            // Mobile: fill the safe zone between top nav and bottom nav
-                            "fixed inset-x-3 top-20 bottom-24 rounded-[2rem]",
-                            // Desktop: normal dropdown
-                            "md:absolute md:inset-auto md:bottom-auto md:top-full md:mt-4 md:right-0 md:w-[400px] md:rounded-[2.5rem]",
+                            "z-[100] flex flex-col overflow-hidden max-h-[70vh]",
+                            "absolute right-[-10px] md:right-0 top-full mt-4 w-[min(calc(100vw-2rem),400px)] rounded-[2.5rem]",
                             // Solid background — no backdrop-blur so inner cards don't bleed through
                             "bg-[#0d0d0d] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.9)]"
                         )}
