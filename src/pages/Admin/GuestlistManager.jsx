@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, ExternalLink, ListChecks } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-
 import LivePreview from '../../components/admin/LivePreview';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GuestlistManager = () => {
     const { guestlists, addGuestlist, updateGuestlist, deleteGuestlist } = useStore();
@@ -20,8 +20,8 @@ const GuestlistManager = () => {
         time: '',
         location: '',
         link: '',
-        whatsappLink: '', // New field
-        status: 'Open', // Open | Closed
+        whatsappLink: '', 
+        status: 'Open', 
         description: ''
     });
 
@@ -66,18 +66,17 @@ const GuestlistManager = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className={`mx-auto ${isAdding ? 'max-w-7xl' : 'max-w-6xl'}`}>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Guestlist Management</h2>
-                        <p className="text-gray-400 text-sm">Manage entries for upcoming event guestlists.</p>
-                    </div>
+        <AdminCommunityHubLayout 
+            title="Guestlist Management" 
+            description="Manage entries for exclusive community events and guestlists."
+        >
+            <div className="space-y-6">
+                <div className="flex justify-end mb-6">
                     {!isAdding && (
-                        <Button variant="primary" onClick={() => {
+                        <Button onClick={() => {
                             resetForm();
                             setIsAdding(true);
-                        }} className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-neon-blue/20">
+                        }} className="h-12 px-8 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all">
                             <Plus className="mr-2 h-4 w-4" />
                             Add New Guestlist
                         </Button>
@@ -85,128 +84,149 @@ const GuestlistManager = () => {
                 </div>
 
                 {isAdding ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start h-[calc(100vh-150px)] min-h-[700px]">
-                        {/* Editor Column */}
-                        <Card className="p-6 h-full flex flex-col border-neon-blue/30 overflow-y-auto">
-                            <h2 className="text-xl font-bold text-white mb-4 flex-shrink-0">{editingId ? 'Edit Guestlist' : 'Add New Guestlist'}</h2>
-                            <form onSubmit={handleSave} className="space-y-4 flex-grow flex flex-col">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start min-h-[700px]">
+                        <Card className="p-8 border-neon-blue/30 bg-zinc-900/40 backdrop-blur-3xl rounded-[2rem]">
+                            <h2 className="text-xl font-black font-heading text-white mb-6 underline underline-offset-8 decoration-neon-blue/30 italic">
+                                {editingId ? 'Edit Manifest' : 'Initialize Entry'}
+                            </h2>
+                            <form onSubmit={handleSave} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Event Title</label>
-                                        <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required />
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Authority</label>
+                                        <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required placeholder="E.g. VIP Backstage" />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Status</label>
                                         <select
-                                            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue"
+                                            className="w-full h-12 bg-black/50 border border-white/5 rounded-xl px-4 text-white focus:outline-none focus:border-neon-blue transition-all"
                                             value={formData.status}
                                             onChange={e => setFormData({ ...formData, status: e.target.value })}
                                         >
-                                            <option value="Open">Open</option>
-                                            <option value="Closed">Closed</option>
+                                            <option value="Open">Active</option>
+                                            <option value="Closed">Restricted</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Date</label>
                                         <Input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Time (Optional)</label>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Time</label>
                                         <Input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
-                                        <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required />
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Location</label>
+                                        <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required placeholder="Venue Name" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Access Link (Google Form, etc.)</label>
-                                        <Input value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} placeholder="https://..." required />
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Access URL</label>
+                                        <Input value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} placeholder="Registration Link" required />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">WhatsApp Group Link (Optional)</label>
-                                        <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." />
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">WhatsApp Hub</label>
+                                        <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="Group Link (Optional)" />
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Description (Optional)</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Objective Summary</label>
                                     <textarea
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-neon-blue h-24 resize-none"
+                                        className="w-full bg-black/50 border border-white/5 rounded-xl p-4 text-white focus:outline-none focus:border-neon-blue min-h-[100px] resize-none text-sm"
                                         value={formData.description}
                                         onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                        placeholder="Brief details..."
+                                        placeholder="Briefly describe the exclusive access..."
                                     />
                                 </div>
 
-                                <div className="flex justify-end gap-3 pt-4 mt-auto border-t border-white/10 flex-shrink-0">
-                                    <Button type="button" variant="outline" onClick={resetForm} className="h-12 px-6">Cancel</Button>
-                                    <Button type="submit" variant="primary" disabled={saving} className="h-12 px-8 shadow-lg shadow-neon-blue/20">
-                                        {saving ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                                        {editingId ? 'Update' : 'Save'}
+                                <div className="flex gap-4 pt-6 mt-auto border-t border-white/5">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="flex-1 py-4 border-white/10 hover:border-white/20 h-auto">Cancel</Button>
+                                    <Button type="submit" disabled={saving} className="flex-[2] py-4 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all h-auto shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                                        {saving ? <Loader className="animate-spin mr-2 h-5 w-5" /> : <Save className="mr-2 h-5 w-5" />}
+                                        {editingId ? 'Update Manifest' : 'Authorize Entry'}
                                     </Button>
                                 </div>
                             </form>
                         </Card>
 
-                        {/* Preview Column */}
                         <LivePreview type="guestlist" data={formData} />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {guestlists && guestlists.length > 0 ? (
                             guestlists.map((item) => (
-                                <Card key={item.id} className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-white/20 transition-colors">
-                                    <div className="flex-grow">
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h3 className="text-xl font-bold text-white">{item.title}</h3>
-                                            <span className={`px-2 py-0.5 text-xs rounded-full ${item.status === 'Open' ? 'bg-neon-green/20 text-neon-green' : 'bg-red-500/20 text-red-500'}`}>
+                                <Card key={item.id} className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] hover:border-neon-blue/30 hover:bg-zinc-900/60 transition-all duration-500 group relative overflow-hidden">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="p-3 rounded-2xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 group-hover:scale-110 transition-transform duration-500">
+                                            <ListChecks size={24} />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-white transition-colors" title="Edit"><Edit size={16} /></button>
+                                            <button onClick={() => deleteGuestlist(item.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors" title="Delete"><Trash2 size={16} /></button>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h3 className="text-xl font-black font-heading text-white tracking-tight group-hover:text-neon-blue transition-colors truncate">{item.title}</h3>
+                                            <span className={cn(
+                                                "px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full border",
+                                                item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                                            )}>
                                                 {item.status}
                                             </span>
                                         </div>
-                                        <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
-                                            <span className="flex items-center gap-1"><Calendar size={14} /> {item.date}</span>
-                                            <span className="flex items-center gap-1"><MapPin size={14} /> {item.location}</span>
-                                            {item.link && (
-                                                <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-neon-blue hover:underline">
-                                                    <ExternalLink size={14} /> Link
-                                                </a>
-                                            )}
-                                            {item.whatsappLink && (
-                                                <a href={item.whatsappLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-400 hover:underline">
-                                                    <ExternalLink size={14} /> WhatsApp
-                                                </a>
-                                            )}
+                                        <p className="text-gray-500 text-xs font-medium line-clamp-2 leading-relaxed italic">"{item.description}"</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pb-6 border-b border-white/5 mb-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Date</p>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-white/70">
+                                                <Calendar size={12} className="text-neon-blue" />
+                                                <span>{item.date}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Location</p>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-white/70">
+                                                <MapPin size={12} className="text-neon-pink" />
+                                                <span className="truncate">{item.location}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 shrink-0">
-                                        <Button variant="outline" onClick={() => handleEdit(item)} className="p-2 h-auto">
-                                            <Edit size={16} />
-                                        </Button>
-                                        <Button variant="outline" onClick={() => deleteGuestlist(item.id)} className="p-2 h-auto text-red-400 hover:text-red-500 hover:border-red-500">
-                                            <Trash2 size={16} />
-                                        </Button>
+
+                                    <div className="flex gap-3">
+                                        {item.link && (
+                                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-center hover:bg-white/10 transition-colors flex items-center justify-center gap-2 group/btn">
+                                                View Form <ExternalLink size={12} className="group-hover/btn:scale-110 transition-transform" />
+                                            </a>
+                                        )}
+                                        {item.whatsappLink && (
+                                            <a href={item.whatsappLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-green-400 hover:bg-green-500/20 transition-colors">
+                                                WhatsApp
+                                            </a>
+                                        )}
                                     </div>
                                 </Card>
                             ))
                         ) : (
-                            <div className="text-center py-16 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                <p>No active guestlists found.</p>
-                                <Button variant="link" onClick={() => setIsAdding(true)} className="text-neon-green">
-                                    Create the first guestlist entry
-                                </Button>
+                            <div className="col-span-full text-center py-24 text-gray-500 bg-white/[0.02] rounded-[2.5rem] border border-dashed border-white/10">
+                                <p className="font-bold uppercase tracking-widest text-xs">No entries in the manifest</p>
+                                <button onClick={() => setIsAdding(true)} className="text-neon-blue hover:underline underline-offset-4 mt-4 inline-block font-black">Open New Guestlist</button>
                             </div>
                         )}
                     </div>
                 )}
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 
 export default GuestlistManager;
+
