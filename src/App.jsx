@@ -23,6 +23,7 @@ import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
+import GuestlistManager from './pages/Admin/GuestlistManager';
 import CommunityJoin from './pages/CommunityJoin';
 import CreatorJoin from './pages/CreatorJoin';
 import CreatorDashboard from './pages/CreatorDashboard';
@@ -99,6 +100,7 @@ function App() {
           <Route path="admin/edit-proposal/:id" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
           <Route path="admin/gallery-manager" element={<AdminGuard><MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/guestlists" element={<AdminGuard><GuestlistManager /></AdminGuard>} />
 
           <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />

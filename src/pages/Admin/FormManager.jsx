@@ -1,22 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Edit, Trash2, Share2, Bell, ArrowLeft, Eye, Users, ClipboardList, ListMusic } from 'lucide-react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, Share2, Bell, Eye, ClipboardList } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import VolunteerGigManager from './VolunteerGigManager';
-import GuestlistManager from './GuestlistManager';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const FormManager = () => {
     const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
-    const location = useLocation();
-
-    // Check for query param 'tab'
-    const searchParams = new URLSearchParams(location.search);
-    const initialTab = searchParams.get('tab') || 'forms'; // Default to forms
-
-    const [activeTab, setActiveTab] = useState(initialTab); // 'forms' | 'gigs' | 'guestlists'
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this form?')) {
@@ -45,102 +37,65 @@ const FormManager = () => {
     };
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
-                            <ArrowLeft className="h-6 w-6" />
-                        </Link>
-                        <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter">Community Hub</h1>
-                    </div>
+        <AdminCommunityHubLayout 
+            title="Form Management" 
+            description="Create and manage interactive pulses, surveys, and feedback loops."
+        >
+            <div className="space-y-6">
+                <div className="flex justify-end mb-6">
+                    <Link to="/admin/forms/create">
+                        <Button className="h-12 px-8 bg-neon-pink text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Google Form
+                        </Button>
+                    </Link>
                 </div>
 
-                {/* Tab Navigation */}
-                <div className="flex items-center gap-4 md:gap-8 mb-8 border-b border-white/10 pb-4 overflow-x-auto scrollbar-hide">
-                    <button
-                        onClick={() => setActiveTab('forms')}
-                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'forms' ? 'text-neon-green border-neon-green' : 'text-gray-400 border-transparent hover:text-white'}`}
-                    >
-                        <ClipboardList size={20} />
-                        Forms & Surveys
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('gigs')}
-                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'gigs' ? 'text-neon-blue border-neon-blue' : 'text-gray-400 border-transparent hover:text-white'}`}
-                    >
-                        <Users size={20} />
-                        Volunteer Gigs
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('guestlists')}
-                        className={`text-lg font-bold pb-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'guestlists' ? 'text-neon-green border-neon-green' : 'text-gray-400 border-transparent hover:text-white'}`}
-                    >
-                        <ListMusic size={20} />
-                        Guestlists
-                    </button>
-                </div>
-
-                {activeTab === 'forms' && (
-                    <>
-                        <div className="flex justify-end mb-6">
-                            <Link to="/admin/forms/create">
-                                <Button variant="primary" className="px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Google Form
-                                </Button>
-                            </Link>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {forms.map((form) => (
-                                <Card key={form.id} className="p-6 hover:bg-white/5 transition-colors">
-                                    <h3 className="text-xl font-bold text-white mb-2">{form.title}</h3>
-                                    <p className="text-gray-400 text-sm mb-4 line-clamp-2">{form.description}</p>
-
-                                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
-                                        <Link to={`/admin/forms/edit/${form.id}`}>
-                                            <Button size="sm" variant="outline">
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                        </Link>
-                                        <Button size="sm" variant="outline" onClick={() => handlePushNotification(form)} title="Push to Notifications">
-                                            <Bell className="h-4 w-4 text-yellow-400" />
-                                        </Button>
-                                        <Button size="sm" variant="outline" onClick={() => handleShareWhatsApp(form)} title="Share on WhatsApp">
-                                            <Share2 className="h-4 w-4 text-green-400" />
-                                        </Button>
-                                        <Button size="sm" variant="outline" className="text-red-400 hover:text-red-300" onClick={() => handleDelete(form.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                        <Link to={`/forms/${form.id}`} target="_blank">
-                                            <Button size="sm" variant="secondary" title="View Public Form">
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </Card>
-                            ))}
-
-                            {forms.length === 0 && (
-                                <div className="col-span-full text-center py-12 text-gray-500">
-                                    No forms created yet. Click "Add Google Form" to get started.
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {forms.map((form) => (
+                        <Card key={form.id} className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] hover:border-neon-pink/30 hover:bg-zinc-900/60 transition-all duration-500 group">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="p-3 rounded-2xl bg-neon-pink/10 text-neon-pink border border-neon-pink/20 group-hover:scale-110 transition-transform duration-500">
+                                    <ClipboardList size={24} />
                                 </div>
-                            )}
+                                <div className="flex gap-2">
+                                    <Link to={`/admin/forms/edit/${form.id}`}>
+                                        <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit size={16} /></button>
+                                    </Link>
+                                    <button onClick={() => handleDelete(form.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors"><Trash2 size={16} /></button>
+                                </div>
+                            </div>
+
+                            <h3 className="text-xl font-black font-heading text-white mb-3 tracking-tight group-hover:text-neon-pink transition-colors truncate">{form.title}</h3>
+                            <p className="text-gray-500 text-xs font-medium line-clamp-2 mb-8 leading-relaxed italic">"{form.description}"</p>
+
+                            <div className="flex flex-wrap gap-2 pt-6 border-t border-white/5">
+                                <Button size="sm" variant="outline" onClick={() => handlePushNotification(form)} className="flex-1 py-4 border-white/10 hover:border-yellow-400/30 hover:text-yellow-400">
+                                    <Bell className="h-4 w-4 mr-2" /> Push
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleShareWhatsApp(form)} className="flex-1 py-4 border-white/10 hover:border-green-400/30 hover:text-green-400">
+                                    <Share2 className="h-4 w-4 mr-2" /> WhatsApp
+                                </Button>
+                                <Link to={`/forms/${form.id}`} target="_blank" className="flex-1">
+                                    <Button size="sm" variant="secondary" className="w-full py-4">
+                                        <Eye className="h-4 w-4 mr-2" /> View
+                                    </Button>
+                                </Link>
+                            </div>
+                        </Card>
+                    ))}
+
+                    {forms.length === 0 && (
+                        <div className="col-span-full text-center py-20 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                            <p className="font-bold uppercase tracking-widest text-xs">No active forms detected</p>
+                            <Link to="/admin/forms/create" className="text-neon-pink hover:underline underline-offset-4 mt-4 inline-block font-black">Initialize First Pulse</Link>
                         </div>
-                    </>
-                )}
-
-                {activeTab === 'gigs' && (
-                    <VolunteerGigManager />
-                )}
-
-                {activeTab === 'guestlists' && (
-                    <GuestlistManager />
-                )}
+                    )}
+                </div>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 
 export default FormManager;
+
