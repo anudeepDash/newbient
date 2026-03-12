@@ -30,6 +30,51 @@ const CommunityJoin = () => {
         }
     }, [authInitialized, user, setAuthModal]);
 
+    useEffect(() => {
+        if (user && hasJoined) {
+            const params = new URLSearchParams(location.search);
+            const gigId = params.get('gig');
+            const glId = params.get('gl');
+            const formId = params.get('form');
+
+            const type = gigId ? 'gig' : (glId ? 'gl' : (formId ? 'form' : null));
+            const id = gigId || glId || formId;
+
+            if (type && id) {
+                const targetId = `${type}-${id}`;
+                
+                // Function to attempt scrolling
+                const attemptScroll = () => {
+                    const element = document.getElementById(targetId);
+                    if (element) {
+                        // Small delay to ensure layout has settled
+                        setTimeout(() => {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Try immediately
+                if (attemptScroll()) return;
+
+                // If not found, check periodically (handles async data loading)
+                const interval = setInterval(() => {
+                    if (attemptScroll()) clearInterval(interval);
+                }, 200);
+
+                // Stop checking after 5s
+                const timeout = setTimeout(() => clearInterval(interval), 5000);
+
+                return () => {
+                    clearInterval(interval);
+                    clearTimeout(timeout);
+                };
+            }
+        }
+    }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms]);
+
     const handleShare = (type, id) => {
         const url = `${window.location.origin}/community-join?${type}=${id}`;
         navigator.clipboard.writeText(url);
