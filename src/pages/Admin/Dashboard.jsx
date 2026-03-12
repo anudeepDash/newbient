@@ -243,10 +243,11 @@ const Dashboard = () => {
                     </DashboardSection>
 
                     <DashboardSection title="Social & Community" gradient="from-neon-blue via-neon-green to-white">
+                        <ControlCard title="Community Hub" desc="Manage volunteer gigs and community access." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.volunteer_gigs} />
                         <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
                         <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
                         <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
-                        <ControlCard title="Members" desc="Community access and admin roles." icon={Users} color="neon-green" link="/admin/manage-admins" isHidden={cards.members} />
+                        <ControlCard title="Members" desc="Community access and admin roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
                         <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
                     </DashboardSection>
                 </div>
