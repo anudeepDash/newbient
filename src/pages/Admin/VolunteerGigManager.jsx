@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone, ArrowLeft } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -115,27 +116,40 @@ const VolunteerGigManager = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className={`mx-auto ${isAdding ? 'max-w-7xl' : 'max-w-6xl'}`}>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Volunteer Opportunities</h2>
-                        <p className="text-gray-400 text-sm">Manage open roles for the community.</p>
+        <div className="min-h-screen bg-[#020202] text-white pb-20">
+            {/* Immersive Atmos */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-pink/5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                    <div className="space-y-4">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
+                            <ArrowLeft size={14} /> Back to Newbi Hub
+                        </Link>
+                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                            VOLUNTEER <span className="text-neon-blue">OPPORTUNITIES.</span>
+                        </h1>
+                        <p className="text-gray-400 text-sm font-medium">Manage open roles for the community.</p>
                     </div>
+
                     {!isAdding && (
-                        <Button variant="primary" onClick={() => {
-                            setFormData({ title: '', date: '', location: '', roles: '', status: 'Open', applyType: 'link', applyLink: '' });
-                            setIsAdding(true);
-                            setEditingId(null);
-                        }} className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-neon-blue/20">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add New Gig
-                        </Button>
+                        <div className="flex w-full md:w-auto">
+                            <Button onClick={() => {
+                                setFormData({ title: '', dates: [], time: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '', whatsappLink: '' });
+                                setIsAdding(true);
+                                setEditingId(null);
+                            }} className="h-14 px-8 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)] hover:scale-105 active:scale-95 transition-all w-full md:w-auto">
+                                <Plus className="mr-2" size={18} /> Add New Gig
+                            </Button>
+                        </div>
                     )}
                 </div>
 
                 {isAdding ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start h-[calc(100vh-150px)] min-h-[700px]">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start min-h-[700px] mb-20">
                         {/* Editor Column */}
                         <Card className="p-6 h-full flex flex-col border-neon-blue/30 overflow-y-auto">
                             <h2 className="text-xl font-bold text-white mb-4 flex-shrink-0">{editingId ? 'Edit Gig' : 'Add New Gig'}</h2>
@@ -253,7 +267,7 @@ const VolunteerGigManager = () => {
                     <div className="grid grid-cols-1 gap-4">
                         {volunteerGigs && volunteerGigs.length > 0 ? (
                             volunteerGigs.map((gig) => (
-                                <Card key={gig.id} className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-white/20 transition-colors">
+                                <Card key={gig.id} className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,255,255,0.05)]">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
                                             <h3 className="text-xl font-bold text-white">{gig.title}</h3>
