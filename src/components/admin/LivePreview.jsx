@@ -110,13 +110,14 @@ const LivePreview = ({ type, data }) => {
 
                     {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST) */}
                     {(type === 'gig' || type === 'form' || type === 'guestlist') && (
-                        <div className="w-full perspect-1000">
+                        <div className="w-full perspective-1000">
                             <CommunityCard 
+                                type={type === 'guestlist' ? 'gl' : type}
                                 item={{
                                     ...data,
-                                    id: 'preview',
-                                    type: type === 'gig' ? 'gig' : (type === 'form' ? 'form' : 'guestlist')
+                                    id: 'preview'
                                 }}
+                                handleShare={() => {}}
                             />
                             <div className="mt-8 text-center bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-xl">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic leading-relaxed">
