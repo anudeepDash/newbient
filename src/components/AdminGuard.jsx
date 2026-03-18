@@ -53,16 +53,44 @@ const AdminGuard = ({ children }) => {
                         </p>
                     </div>
 
-                    <div className="pt-8">
+                    <div className="pt-8 space-y-4">
+                        {(!user || user.role === 'unauthorized') ? (
+                            <button 
+                                onClick={async () => {
+                                    try {
+                                        const btn = document.activeElement;
+                                        btn.disabled = true;
+                                        btn.innerText = 'SENDING REQUEST...';
+                                        await useStore.getState().requestAdminAccess();
+                                    } catch (err) {
+                                        alert(err.message || "Failed to send request");
+                                        const btn = document.activeElement;
+                                        btn.disabled = false;
+                                        btn.innerText = 'REQUEST COMMAND ACCESS';
+                                    }
+                                }}
+                                className="px-8 h-14 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(57,255,20,0.2)]"
+                            >
+                                REQUEST COMMAND ACCESS
+                            </button>
+                        ) : user.role === 'pending' ? (
+                            <div className="p-6 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl text-center">
+                                <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.2em]">AUTHORIZATION PENDING</p>
+                                <p className="text-gray-500 text-[10px] font-bold uppercase mt-2">AWAITING ADMIN APPROVAL</p>
+                            </div>
+                        ) : null}
+
                         <button 
                             onClick={() => window.location.href = '/'}
-                            className="px-8 h-14 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full"
+                            className="px-8 h-14 bg-white/5 border border-white/5 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all w-full"
                         >
                             Return to Safe Zone
                         </button>
                     </div>
                     
-                    <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.4em]">Unauthorized Access Attempt Logged</p>
+                    <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.4em]">
+                        {user?.role === 'pending' ? 'Request Persistence Active' : 'Unauthorized Access Attempt Logged'}
+                    </p>
                 </motion.div>
             </div>
         );

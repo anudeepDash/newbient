@@ -71,17 +71,17 @@ const AnnouncementsManager = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-8">
-                    <div className="mb-8 md:mb-12">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8">
+                    <div className="space-y-4 max-w-full">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            SIGNAL <span className="text-neon-pink">CONTROL.</span>
+                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
+                            SIGNAL <span className="text-neon-pink px-4">CONTROL.</span>
                         </h1>
                     </div>
                     {!isAdding && (
-                        <Button onClick={() => setIsAdding(true)} className="h-14 px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(255,46,144,0.2)] hover:scale-105 active:scale-95 transition-all">
+                        <Button onClick={() => setIsAdding(true)} className="h-14 px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_4px_30px_rgba(255,46,144,0.3)] hover:scale-105 active:scale-95 transition-all">
                             <Plus className="mr-2" size={18} /> New Broadcast
                         </Button>
                     )}

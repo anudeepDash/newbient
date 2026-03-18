@@ -1016,6 +1016,31 @@ export const useStore = create((set, get) => ({
         }
     },
 
+    requestAdminAccess: async () => {
+        const { user } = get();
+        if (!user) throw new Error("Authentication required");
+
+        // Check if a request already exists
+        const adminQ = query(collection(db, 'admins'), where('email', '==', user.email));
+        const adminSnapshot = await getDocs(adminQ);
+
+        if (!adminSnapshot.empty) {
+            throw new Error("A request for this account already exists or is being processed.");
+        }
+
+        await addDoc(collection(db, 'admins'), {
+            email: user.email,
+            uid: user.uid,
+            role: 'pending',
+            displayName: user.displayName,
+            createdAt: new Date().toISOString(),
+            requestedBy: user.email
+        });
+
+        // Update local state role to show 'pending' immediately
+        set({ user: { ...user, role: 'pending' } });
+    },
+
     logout: async () => {
         const { getAuth } = await import('firebase/auth');
         const auth = getAuth();

@@ -60,36 +60,34 @@ const ProposalManagement = () => {
                     </Link>
                 </div>
 
-                {/* Filters & Search */}
-                <Card className="p-6 bg-zinc-900/40 backdrop-blur-3xl border-white/5 mb-8 rounded-[2rem]">
-                    <div className="flex flex-col md:flex-row gap-6">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                            <Input 
-                                placeholder="SEARCH BY CLIENT OR ID..." 
-                                className="pl-12 bg-black/50 border-white/5 h-12 rounded-xl text-xs font-bold tracking-widest uppercase"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {['All', 'Draft', 'Sent', 'Accepted'].map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setStatusFilter(status)}
-                                    className={cn(
-                                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                                        statusFilter === status 
-                                            ? "bg-neon-blue border-neon-blue text-black shadow-[0_0_20px_rgba(0,255,255,0.3)]" 
-                                            : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10"
-                                    )}
-                                >
-                                    {status}
-                                </button>
-                            ))}
-                        </div>
+                {/* Combined Search & Filters Bar - Matching Invoice Style */}
+                <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
+                    <div className="relative flex-1 w-full group">
+                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <input 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="SEARCH BY CLIENT OR PROPOSAL ID..."
+                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                        />
                     </div>
-                </Card>
+                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto mr-1">
+                        {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
+                            <button
+                                key={s}
+                                onClick={() => setStatusFilter(s)}
+                                className={cn(
+                                    "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
+                                    statusFilter === s 
+                                        ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
+                                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 {/* Proposals Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
