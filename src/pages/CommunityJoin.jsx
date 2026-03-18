@@ -90,15 +90,6 @@ const CommunityJoin = () => {
 
     return (
         <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 scroll-smooth">
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .perspective-1000 { perspective: 1000px; }
-                .preserve-3d { transform-style: preserve-3d; }
-                .backface-hidden { backface-visibility: hidden; }
-                .rotate-y-180 { transform: rotateY(180deg); }
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 20px; }
-            `}} />
 
             <div className="max-w-7xl mx-auto space-y-32">
                 {/* Immersive Header */}
