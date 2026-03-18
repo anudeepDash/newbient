@@ -82,13 +82,13 @@ const GiveawayParticipants = () => {
                 <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin/giveaways" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
-                            <ArrowLeft size={14} /> Back to Registry
+                        <Link to="/admin/giveaways" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic pr-4">
                             {giveaway.name} <span className="text-purple-500">PORTAL.</span>
                         </h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest pl-1">

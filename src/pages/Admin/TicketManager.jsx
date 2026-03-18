@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye } from 'lucide-react';
+import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -220,69 +220,83 @@ NewBi Entertainment`;
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Modern Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8">
                     <div className="space-y-2">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4 group">
-                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">TICKETING</span> PORTAL.
                         </h1>
                     </div>
                     
-                    <div className="space-y-4 w-full md:w-auto overflow-hidden">
-                        <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2">
-                            <button
-                                onClick={() => setIsManualModalOpen(true)}
-                                className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black mr-2 hover:scale-105"
-                            >
-                                <Plus size={14} /> Issue Manual Ticket
-                            </button>
-                            {[
-                                { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
-                                { id: 'approved', label: 'Verified', count: approvedOrders.length, icon: ShieldCheck },
-                                { id: 'vault', label: 'Ticket Vault', icon: Upload },
-                                { id: 'settings', label: 'Payment Config', icon: QrCode }
-                            ].map(tab => (
+                    <div className="space-y-4 w-full xl:w-auto">
+                        <div className="flex flex-col xl:flex-row gap-4">
+                            <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2">
                                 <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                        activeTab === tab.id 
-                                            ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
-                                            : "text-gray-500 hover:text-white"
-                                    )}
+                                    onClick={() => setIsManualModalOpen(true)}
+                                    className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black hover:scale-105 active:scale-95 shadow-[0_10px_20px_rgba(0,255,255,0.2)]"
                                 >
-                                    <tab.icon size={14} />
-                                    {tab.label}
-                                    {tab.count !== undefined && (
-                                        <span className={cn(
-                                            "px-1.5 py-0.5 rounded-md text-[8px]",
-                                            activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
-                                        )}>{tab.count}</span>
-                                    )}
+                                    <Plus size={14} /> Issue Manual Ticket
                                 </button>
-                            ))}
-                        </div>
-                        
-                        <div className="flex items-center bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                            <div className="px-6 py-4 bg-white/5 border-r border-white/10 flex items-center gap-3">
-                                <Filter className="text-neon-pink" size={18} />
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Global Event Filter</span>
-                            </div>
-                            <select
-                                className="flex-1 bg-transparent text-sm font-black uppercase tracking-widest outline-none px-6 py-4 text-white appearance-none cursor-pointer hover:bg-white/5 transition-colors"
-                                value={eventFilter}
-                                onChange={(e) => setEventFilter(e.target.value)}
-                            >
-                                <option value="all" className="bg-zinc-900 text-white font-black">ALL ACTIVE EVENTS AND FESTIVALS</option>
-                                {upcomingEvents.map(event => (
-                                    <option key={event.id} value={event.id} className="bg-zinc-900 text-white font-black">{event.title}</option>
+                                {[
+                                    { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
+                                    { id: 'approved', label: 'Verified', count: approvedOrders.length, icon: ShieldCheck },
+                                    { id: 'vault', label: 'Ticket Vault', icon: Upload },
+                                    { id: 'settings', label: 'Payment Config', icon: QrCode }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
+                                            activeTab === tab.id 
+                                                ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)] scale-105" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <tab.icon size={14} />
+                                        <span className="hidden sm:inline">{tab.label}</span>
+                                        {tab.count !== undefined && (
+                                            <span className={cn(
+                                                "px-1.5 py-0.5 rounded-md text-[8px]",
+                                                activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
+                                            )}>{tab.count}</span>
+                                        )}
+                                    </button>
                                 ))}
-                            </select>
+                            </div>
+
+                            <div className="flex-1 flex flex-col md:flex-row gap-4">
+                                <div className="relative flex-1 group">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                    <input 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="SEARCH REF CODE, EMAIL OR NAME"
+                                        className="w-full bg-zinc-900/50 border border-white/5 h-16 pl-16 pr-8 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-600 focus:shadow-[0_0_30px_rgba(0,255,255,0.05)]"
+                                    />
+                                </div>
+                                
+                                <div className="relative group w-full md:w-80">
+                                    <Filter className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={18} />
+                                    <select
+                                        className="w-full bg-zinc-900/50 border border-white/5 h-16 pl-16 pr-10 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/40 outline-none appearance-none cursor-pointer transition-all text-white"
+                                        value={eventFilter}
+                                        onChange={(e) => setEventFilter(e.target.value)}
+                                    >
+                                        <option value="all" className="bg-zinc-900">ALL EVENTS</option>
+                                        {upcomingEvents.map(event => (
+                                            <option key={event.id} value={event.id} className="bg-zinc-900">{event.title.toUpperCase()}</option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                        <ChevronDown size={14} />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

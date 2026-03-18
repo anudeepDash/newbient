@@ -49,7 +49,7 @@ const AdminGuard = ({ children }) => {
                     <div className="space-y-4">
                         <h1 className="text-4xl font-black font-heading text-white uppercase italic tracking-tighter">ACCESS DENIED.</h1>
                         <p className="text-gray-500 text-sm font-bold uppercase tracking-widest leading-relaxed">
-                            Your credentials do not have the required authority to access the <span className="text-neon-green">Newbi Command Center</span>.
+                            Your credentials do not have the required authority to access the <span className="text-neon-green">Newbi Command Centre</span>.
                         </p>
                     </div>
 

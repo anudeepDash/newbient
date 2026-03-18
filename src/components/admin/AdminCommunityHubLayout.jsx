@@ -14,7 +14,7 @@ const AdminCommunityHubLayout = ({ children, title, description }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-16 md:pt-24 pb-20 relative overflow-hidden">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[120px] animate-pulse" />
@@ -26,11 +26,11 @@ const AdminCommunityHubLayout = ({ children, title, description }) => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group">
-                            <LayoutDashboard size={14} className="group-hover:-translate-x-1 transition-transform" />
-                            Back to Command Center
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" />
+                            BACK TO COMMAND CENTRE
                         </Link>
                         <div>
-                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic italic">
+                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic pr-4">
                                 COMMUNITY <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">HUB.</span>
                             </h1>
                             <p className="text-gray-500 text-xs font-black uppercase tracking-[0.2em] mt-2">Management & Engagement Systems</p>

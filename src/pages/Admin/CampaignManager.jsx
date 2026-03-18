@@ -5,7 +5,7 @@ import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, ArrowLeft, X, Filter, Globe, Zap, Clock, ChevronRight } from 'lucide-react';
+import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, LayoutGrid, X, Filter, Globe, Zap, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
@@ -172,14 +172,14 @@ const CampaignManager = () => {
                 <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
-                            <ArrowLeft size={14} /> Back to Newbi Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             CAMPAIGN <span className="text-neon-blue">REGISTRY.</span>
                         </h1>
                     </div>

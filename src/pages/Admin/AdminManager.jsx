@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Trash2, Shield, Clock, CheckCircle, Sparkles, Users, Search, Mail, ShieldAlert, UserCheck, Activity } from 'lucide-react';
+import { LayoutGrid, UserPlus, Trash2, Shield, Clock, CheckCircle, Sparkles, Users, Search, Mail, ShieldAlert, UserCheck, Activity } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
@@ -194,14 +194,14 @@ const AdminManager = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-16 md:pt-24">
                 {/* Modern Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8">
                     <div className="space-y-2">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4 group">
-                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Newbi Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             ACCESS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">REGISTRY.</span>
                         </h1>
                     </div>

@@ -65,18 +65,23 @@ const DevSettings = () => {
     ];
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-[#020202] text-white pb-20">
+            {/* Background Atmosphere */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
+            </div>
+
+            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="flex items-center gap-4">
-                        <Link to="/admin" className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full shrink-0">
-                            <ArrowLeft className="h-6 w-6" />
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
                         <div>
-                            <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
-                                <Shield className="text-white fill-white" size={32} />
-                                Dev Settings
+                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                                DEV <span className="text-neon-pink">SETTINGS.</span>
                             </h1>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <p className="text-gray-400 text-xs italic">Maintenance & flags</p>
