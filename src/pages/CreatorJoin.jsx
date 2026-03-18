@@ -207,7 +207,7 @@ const CreatorJoin = () => {
                             {/* Social Presence */}
                             <div className="pt-4 border-t border-white/5">
                                 <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                                    <div className="w-6 h-px bg-neon-pink" /> Social Presence
+                                    <div className="w-6 h-px bg-neon-pink" /> Social Presence <span className="text-gray-500 tracking-widest">(OPTIONAL)</span>
                                 </h3>
                                 <div className="space-y-6">
                                     {/* Instagram */}
