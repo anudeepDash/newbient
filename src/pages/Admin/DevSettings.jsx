@@ -72,7 +72,7 @@ const DevSettings = () => {
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-32 md:pt-32">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="flex items-center gap-4">

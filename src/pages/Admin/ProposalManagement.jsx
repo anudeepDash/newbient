@@ -41,7 +41,7 @@ const ProposalManagement = () => {
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-green/5 rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32 md:pt-32">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-2">

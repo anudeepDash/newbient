@@ -194,7 +194,7 @@ const AdminManager = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32 md:pt-32">
                 {/* Modern Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-10 gap-8">
                     <div className="space-y-4 max-w-full">

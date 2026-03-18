@@ -206,7 +206,7 @@ const ProposalGenerator = () => {
                 <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1800px] mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-[1800px] mx-auto px-6 pt-32 md:pt-32">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-2">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
