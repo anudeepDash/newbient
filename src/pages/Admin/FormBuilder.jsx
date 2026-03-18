@@ -84,7 +84,7 @@ const FormBuilder = () => {
                 <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 md:pt-32">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div className="space-y-4">
                         <Link to="/admin/forms" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">

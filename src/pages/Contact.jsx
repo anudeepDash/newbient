@@ -38,7 +38,7 @@ const Contact = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-x-hidden w-full max-w-[100vw]">
+        <div className="relative min-h-screen bg-[#020202] text-white pt-32 pb-32 md:pb-20 px-4 overflow-hidden w-full max-w-[100vw]">
             {/* Background Atmosphere */}
             <div className="absolute top-0 right-[-10%] w-[120%] aspect-square md:w-[800px] md:h-[800px] bg-neon-blue/5 blur-[100px] rounded-full pointer-events-none" />
             <div className="absolute bottom-0 left-[-10%] w-[120%] aspect-square md:w-[600px] md:h-[600px] bg-neon-green/5 blur-[100px] rounded-full pointer-events-none" />

@@ -47,7 +47,7 @@ const NotificationBell = () => {
                         transition={{ duration: 0.2 }}
                         className={cn(
                             "z-[100] flex flex-col overflow-hidden max-h-[70vh]",
-                            "fixed md:absolute left-4 right-4 md:left-auto md:right-[-10px] top-[100px] md:top-full mt-4 md:w-[400px] rounded-[2.5rem]",
+                            "fixed md:absolute left-4 right-4 md:left-auto md:right-[-10px] top-[80px] md:top-full mt-0 md:mt-4 md:w-[400px] rounded-[2.5rem]",
                             // Solid background — no backdrop-blur so inner cards don't bleed through
                             "bg-[#0d0d0d] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.9)]"
                         )}

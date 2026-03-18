@@ -977,6 +977,28 @@ export const useStore = create((set, get) => ({
         }
     },
 
+    markWhatsappJoined: async () => {
+        const { user } = get();
+        if (!user) {
+            console.warn("[markWhatsappJoined] No user found in store.");
+            throw new Error("You must be signed in to confirm.");
+        }
+
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                hasJoinedWhatsapp: true,
+                whatsappJoinedAt: new Date().toISOString()
+            }, { merge: true });
+
+            // Optimistic update
+            set({ user: { ...user, hasJoinedWhatsapp: true } });
+        } catch (error) {
+            console.error("[markWhatsappJoined] Firestore error:", error);
+            throw new Error(`Failed to save: ${error.message || 'Unknown error'}`);
+        }
+    },
+
     updateAdminProfile: async (targetUid, targetEmail, newData) => {
         const { user } = get();
         if (!user) return;

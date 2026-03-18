@@ -172,7 +172,7 @@ const CampaignManager = () => {
                 <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 md:pt-32">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">

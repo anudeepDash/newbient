@@ -20,10 +20,12 @@ import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
 
 const CommunityJoin = () => {
-    const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, giveaways, user, authInitialized, markFormAsSubmitted, setAuthModal, logout } = useStore();
+    const { forms, siteDetails, siteSettings, volunteerGigs, guestlists, upcomingEvents, giveaways, user, authInitialized, markFormAsSubmitted, markWhatsappJoined, setAuthModal, logout } = useStore();
     const activeGiveaway = giveaways.find(g => g.status === 'Open' && (!g.endDate || new Date(g.endDate) >= new Date()));
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
+    const [clickedWhatsApp, setClickedWhatsApp] = useState(false);
+    const [verifyingWhatsapp, setVerifyingWhatsapp] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
     const [expandedSections, setExpandedSections] = useState({
         guestlists: true,
@@ -120,6 +122,17 @@ const CommunityJoin = () => {
         try { await markFormAsSubmitted(); } 
         catch (error) { alert(error.message || 'Verification failed.'); } 
         finally { setConfirming(false); }
+    };
+
+    const handleWhatsappJoined = async () => {
+        setVerifyingWhatsapp(true);
+        try {
+            await markWhatsappJoined();
+        } catch (error) {
+            alert(error.message || 'Verification failed.');
+        } finally {
+            setVerifyingWhatsapp(false);
+        }
     };
 
     return (
@@ -220,26 +233,49 @@ const CommunityJoin = () => {
                 ) : (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-20 pb-20">
                          {/* Status UI */}
-                         <section className="max-w-5xl mx-auto">
-                             <div className="bg-zinc-900/40 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-green/5 blur-[100px] pointer-events-none" />
-                                <div className="w-24 h-24 bg-neon-green rounded-[2rem] flex items-center justify-center text-black shadow-[0_0_50px_rgba(57,255,20,0.3)] shrink-0">
-                                    <CheckCircle2 size={40} />
-                                </div>
-                                <div className="flex-1 text-center md:text-left relative z-10">
-                                    <h3 className="text-3xl font-black font-heading text-white mb-4">YOU'RE IN.</h3>
-                                    <p className="text-gray-500 text-lg font-medium leading-relaxed">Identity confirmed. The community is live below. Join the primary communication channel now.</p>
-                                </div>
-                                <a 
-                                    href={siteDetails.whatsappCommunity || "#"} 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="w-full md:w-auto px-10 h-20 bg-white text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-sm hover:scale-105 transition-all"
-                                >
-                                    WhatsApp Access
-                                </a>
-                             </div>
-                        </section>
+                         {!user?.hasJoinedWhatsapp && (
+                             <section className="max-w-5xl mx-auto">
+                                 <div className="bg-zinc-900/40 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-green/5 blur-[100px] pointer-events-none" />
+                                    <div className="w-24 h-24 bg-neon-green rounded-[2rem] flex items-center justify-center text-black shadow-[0_0_50px_rgba(57,255,20,0.3)] shrink-0">
+                                        <CheckCircle2 size={40} />
+                                    </div>
+                                    <div className="flex-1 text-center md:text-left relative z-10">
+                                        <h3 className="text-3xl font-black font-heading text-white mb-4">YOU'RE IN.</h3>
+                                        <p className="text-gray-500 text-lg font-medium leading-relaxed">Identity confirmed. The community is live below. Join the primary communication channel now.</p>
+                                    </div>
+                                    {!clickedWhatsApp ? (
+                                        <a 
+                                            href={siteDetails.whatsappCommunity || "#"} 
+                                            target="_blank" 
+                                            rel="noreferrer"
+                                            onClick={() => setClickedWhatsApp(true)}
+                                            className="w-full md:w-auto px-10 h-20 bg-white text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-sm hover:scale-105 transition-all relative z-10"
+                                        >
+                                            WhatsApp Access
+                                        </a>
+                                    ) : (
+                                        <div className="flex flex-col gap-3 w-full md:w-auto mt-4 md:mt-0 relative z-10">
+                                            <button 
+                                                onClick={handleWhatsappJoined}
+                                                disabled={verifyingWhatsapp}
+                                                className="w-full md:w-auto px-10 h-20 bg-neon-blue text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-sm hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(0,255,255,0.3)] disabled:opacity-50"
+                                            >
+                                                {verifyingWhatsapp ? <Loader2 className="animate-spin" size={24} /> : "JOINED THE COMMUNITY"}
+                                            </button>
+                                            <a 
+                                                href={siteDetails.whatsappCommunity || "#"} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="text-center text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors underline underline-offset-4"
+                                            >
+                                                Join Now
+                                            </a>
+                                        </div>
+                                    )}
+                                 </div>
+                            </section>
+                        )}
 
                         {/* Active Giveaway Banner */}
                         <AnimatePresence>

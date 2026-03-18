@@ -67,8 +67,9 @@ const Navbar = () => {
                         : "top-4 md:top-6"
             )}>
                 {/* Main Menu Pill */}
-                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-                    <div className="flex items-center h-14">
+                <div className="relative rounded-full px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                    <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
+                    <div className="flex items-center h-14 relative z-10">
                         {/* Logo */}
                         <Link to="/" className="flex-shrink-0 hover:opacity-80 transition-opacity mr-0 md:mr-6 px-2">
                             <img src={logo} alt="Newbi Entertainments" className="h-6 w-auto" />
@@ -126,8 +127,9 @@ const Navbar = () => {
                 </div>
 
                 {/* Right Action/User Pill (Desktop Only) */}
-                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
-                    <div className="flex items-center h-14 gap-4">
+                <div className="relative rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
+                    <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
+                    <div className="flex items-center h-14 gap-4 relative z-10">
                         <NotificationBell />
                         <div className="h-4 w-px bg-white/10" />
                         {user ? (
