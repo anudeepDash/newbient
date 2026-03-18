@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-    Calendar, Users, ClipboardList, Share2, ArrowRight, ExternalLink, Sparkles 
+    Calendar, Users, ClipboardList, Share2, ArrowRight, ExternalLink, Sparkles, MapPin 
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -72,8 +72,8 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                 <h3 className="text-2xl font-black font-heading leading-tight mb-3 text-white group-hover:translate-x-1 transition-transform">
                                     {item.title}
                                 </h3>
-                                <p className="text-gray-500 text-sm italic font-medium line-clamp-2 mb-6">
-                                    "{item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}"
+                                <p className="text-gray-500 text-sm font-medium line-clamp-2 mb-6">
+                                    {item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}
                                 </p>
                                 
                                 <div className="mt-auto flex flex-col gap-4 pt-4 border-t border-white/5">
@@ -82,6 +82,12 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                             <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
                                                 <Calendar size={12} className={isGig ? "text-neon-green" : "text-neon-blue"} />
                                                 <span>{item.date || (item.dates && item.dates[0] ? item.dates[0] : 'Upcoming')}</span>
+                                            </div>
+                                        )}
+                                        {isGig && item.location && (
+                                            <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                                <MapPin size={12} className="text-neon-green" />
+                                                <span>{item.location}</span>
                                             </div>
                                         )}
                                         {isForm && (
@@ -93,17 +99,17 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     </div>
                                     
                                     <div className="flex flex-wrap gap-3 z-30">
-                                        {isGig && item.applyType === 'whatsapp' && (
+                                        {isGig && item.status !== 'Closed' && item.applyType === 'whatsapp' && (
                                             <a href={`https://wa.me/${item.applyLink?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the ${item.title} volunteer gig!`)}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-500/20 transition-colors flex items-center gap-2">
                                                 WhatsApp DM <ExternalLink size={12} />
                                             </a>
                                         )}
-                                        {isGig && item.whatsappLink && (
+                                        {isGig && item.status !== 'Closed' && item.whatsappLink && (
                                             <a href={item.whatsappLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="px-4 py-2 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors flex items-center gap-2">
                                                 Join Group <Users size={12} />
                                             </a>
                                         )}
-                                        {isGig && item.applyType === 'link' && item.applyLink && (
+                                        {isGig && item.status !== 'Closed' && item.applyType === 'link' && item.applyLink && (
                                             <a href={item.applyLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="px-4 py-2 bg-neon-green/10 border border-neon-green/20 text-neon-green rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neon-green/20 transition-colors flex items-center gap-2">
                                                 Apply Now <ExternalLink size={12} />
                                             </a>
@@ -154,8 +160,8 @@ const CommunityCard = ({ item, type, handleShare }) => {
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        <p className="text-gray-400 text-base leading-relaxed font-medium italic">
-                            "{item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}"
+                        <p className="text-gray-400 text-base leading-relaxed font-medium">
+                            {item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}
                         </p>
                     </div>
                 </div>

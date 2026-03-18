@@ -7,7 +7,12 @@ import {
     Gift, 
     ArrowRight, 
     CheckCircle2, 
-    Loader2 
+    Loader2,
+    ChevronDown,
+    ChevronUp,
+    ClipboardList,
+    Target,
+    Zap
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
@@ -20,6 +25,26 @@ const CommunityJoin = () => {
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
+    const [expandedSections, setExpandedSections] = useState({
+        guestlists: true,
+        'volunteer-gigs': true,
+        'community-pulse': true
+    });
+
+    // Initialize expanded state based on items
+    useEffect(() => {
+        if (user && hasJoined) {
+            setExpandedSections({
+                guestlists: guestlists?.length > 0,
+                'volunteer-gigs': volunteerGigs?.length > 0,
+                'community-pulse': forms?.length > 0
+            });
+        }
+    }, [user, hasJoined, guestlists?.length, volunteerGigs?.length, forms?.length]);
+
+    const toggleSection = (id) => {
+        setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     useEffect(() => {
         if (authInitialized && !user) {
@@ -184,7 +209,7 @@ const CommunityJoin = () => {
                         </div>
                     </section>
                 ) : (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-40 pb-20">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pb-20">
                          {/* Status UI */}
                          <section className="max-w-5xl mx-auto">
                              <div className="bg-zinc-900/40 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
@@ -243,32 +268,74 @@ const CommunityJoin = () => {
 
                         {/* Grid Sections */}
                         {[
-                            { id: 'guestlists', title: 'GUESTLISTS', accent: 'neon-blue', items: guestlists, type: 'gl', label: 'EXCLUSIVE ACCESS' },
-                            { id: 'volunteer-gigs', title: 'VOLUNTEER GIGS', accent: 'neon-green', items: volunteerGigs, type: 'gig', label: 'FIELD OPS' },
-                            { id: 'community-pulse', title: 'COMMUNITY PULSE', accent: 'neon-pink', items: forms, type: 'form', label: 'THE VOTE' }
-                        ].map((section) => (
+                            { id: 'volunteer-gigs', title: 'VOLUNTEER GIGS', icon: Users, accent: 'neon-green', items: volunteerGigs, type: 'gig', label: 'FIELD OPS', show: siteSettings.showVolunteerGigs !== false, subtitleText: 'gigs available for the tribe' },
+                            { id: 'guestlists', title: 'GUESTLISTS', icon: ClipboardList, accent: 'neon-blue', items: guestlists, type: 'gl', label: 'EXCLUSIVE ACCESS', show: true, subtitleText: 'guestlists open for registration' },
+                            { id: 'community-pulse', title: 'COMMUNITY PULSE', icon: Target, accent: 'neon-pink', items: forms, type: 'form', label: 'THE VOTE', show: true, subtitleText: 'active polls & community forms' }
+                        ].filter(s => s.show).map((section) => (
                             <section key={section.id} id={section.id} className="scroll-mt-32">
-                                <div className="flex items-center gap-6 mb-16">
-                                    <div className={cn("h-16 w-2 rounded-full", section.accent === 'neon-blue' ? "bg-neon-blue" : (section.accent === 'neon-green' ? "bg-neon-green" : "bg-neon-pink"))} />
-                                    <div>
-                                        <p className={cn("text-[10px] font-black uppercase tracking-[0.5em] mb-2", section.accent === 'neon-blue' ? "text-neon-blue" : (section.accent === 'neon-green' ? "text-neon-green" : "text-neon-pink"))}>{section.label}</p>
-                                        <h2 className="text-5xl md:text-6xl font-black font-heading tracking-tighter text-white uppercase">{section.title}</h2>
+                                <div 
+                                    className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] cursor-pointer group/header hover:bg-zinc-900/60 hover:border-white/10 transition-all flex items-center justify-between"
+                                    onClick={() => toggleSection(section.id)}
+                                >
+                                    <div className="flex items-center gap-6">
+                                        <div className={cn(
+                                            "w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-500",
+                                            section.accent === 'neon-blue' ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue group-hover/header:shadow-[0_0_20px_rgba(0,255,255,0.2)]" : 
+                                            (section.accent === 'neon-green' ? "bg-neon-green/10 border-neon-green/20 text-neon-green group-hover/header:shadow-[0_0_20px_rgba(57,255,20,0.2)]" : 
+                                            "bg-neon-pink/10 border-neon-pink/20 text-neon-pink group-hover/header:shadow-[0_0_20px_rgba(255,0,255,0.2)]")
+                                        )}>
+                                            <section.icon size={24} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <h2 className="text-xl md:text-3xl font-black font-heading tracking-tight text-white uppercase leading-none mb-2">
+                                                {section.title}
+                                            </h2>
+                                            <p className="text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-widest">
+                                                {section.items?.length || 0} {section.subtitleText}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right hidden md:block">
+                                            <p className="text-xs font-black text-white/20 group-hover/header:text-white uppercase tracking-tight transition-colors">
+                                                {expandedSections[section.id] ? 'COLLAPSE' : 'EXPAND'}
+                                            </p>
+                                        </div>
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 group-hover/header:text-white group-hover/header:border-white/20 transition-all",
+                                            expandedSections[section.id] ? "rotate-180 bg-white/10 text-white" : ""
+                                        )}>
+                                            <ChevronDown size={20} />
+                                        </div>
                                     </div>
                                 </div>
 
-                                {section.items?.length > 0 ? (
-                                    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
-                                        {section.items.map((item) => (
-                                            <div key={item.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
-                                                <CommunityCard item={item} type={section.type} handleShare={handleShare} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/5 text-center flex flex-col items-center gap-6">
-                                        <p className="text-gray-600 font-black font-heading uppercase tracking-widest text-xs">No active {section.title.toLowerCase()} status.</p>
-                                    </div>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {expandedSections[section.id] && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            className="overflow-hidden mt-8"
+                                        >
+                                            {section.items?.length > 0 ? (
+                                                <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
+                                                    {section.items.map((item) => (
+                                                        <div key={item.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                                                            <CommunityCard item={item} type={section.type} handleShare={handleShare} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/5 text-center flex flex-col items-center gap-6">
+                                                    <p className="text-gray-600 font-black font-heading uppercase tracking-widest text-xs">No active {section.title.toLowerCase()} status.</p>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </section>
                         ))}
                     </motion.div>
