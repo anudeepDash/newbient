@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown } from 'lucide-react';
+import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown, DollarSign } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -212,160 +212,201 @@ NewBi Entertainment`;
         alert("Email draft copied to clipboard!");
     };
 
+    // Redesigned Stats for the "Control Desk"
+    const stats = [
+        { label: 'Total Revenue', value: `₹${ticketOrders.filter(o => o.status === 'approved').reduce((acc, o) => acc + o.totalAmount, 0).toLocaleString()}`, icon: DollarSign, color: 'text-neon-green', bg: 'bg-neon-green/10' },
+        { label: 'Pending Verification', value: pendingOrders.length, icon: Clock, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+        { label: 'Verified Orders', value: approvedOrders.length, icon: ShieldCheck, color: 'text-neon-blue', bg: 'bg-neon-blue/10' },
+        { label: 'Vault Inventory', value: ticketVault.length, icon: Upload, color: 'text-neon-pink', bg: 'bg-neon-pink/10' },
+    ];
+
     return (
-        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-20">
-            {/* Immersive Background */}
+        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-32">
+            {/* Immersive Cinematic Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-green/5 rounded-full blur-[180px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse delay-1000" />
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
-                {/* Modern Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8">
-                    <div className="space-y-2">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+                {/* Standardized Premium Header */}
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-10">
+                    <div className="space-y-4 max-w-full">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-neon-green transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">TICKETING</span> PORTAL.
+                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">TICKETING</span> PORTAL.
                         </h1>
+                        <p className="text-gray-500 text-[10px] md:text-xs font-bold uppercase tracking-[0.4em] pl-1 flex items-center gap-3">
+                            Strategic Access Control <span className="w-1 h-1 rounded-full bg-neon-green" /> Verifier Node v4.0
+                        </p>
                     </div>
-                    
-                    <div className="space-y-4 w-full xl:w-auto">
-                        <div className="flex flex-col xl:flex-row gap-4">
-                            <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2">
-                                <button
-                                    onClick={() => setIsManualModalOpen(true)}
-                                    className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-neon-blue text-black hover:scale-105 active:scale-95 shadow-[0_10px_20px_rgba(0,255,255,0.2)]"
-                                >
-                                    <Plus size={14} /> Issue Manual Ticket
-                                </button>
-                                {[
-                                    { id: 'pending', label: 'Verification', count: pendingOrders.length, icon: Clock },
-                                    { id: 'approved', label: 'Verified', count: approvedOrders.length, icon: ShieldCheck },
-                                    { id: 'vault', label: 'Ticket Vault', icon: Upload },
-                                    { id: 'settings', label: 'Payment Config', icon: QrCode }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
-                                            activeTab === tab.id 
-                                                ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)] scale-105" 
-                                                : "text-gray-500 hover:text-white hover:bg-white/5"
-                                        )}
-                                    >
-                                        <tab.icon size={14} />
-                                        <span className="hidden sm:inline">{tab.label}</span>
-                                        {tab.count !== undefined && (
-                                            <span className={cn(
-                                                "px-1.5 py-0.5 rounded-md text-[8px]",
-                                                activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
-                                            )}>{tab.count}</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
 
-                            <div className="flex-1 flex flex-col md:flex-row gap-4">
-                                <div className="relative flex-1 group">
-                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
-                                    <input 
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="SEARCH REF CODE, EMAIL OR NAME"
-                                        className="w-full bg-zinc-900/50 border border-white/5 h-16 pl-16 pr-8 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-600 focus:shadow-[0_0_30px_rgba(0,255,255,0.05)]"
-                                    />
-                                </div>
-                                
-                                <div className="relative group w-full md:w-80">
-                                    <Filter className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-pink transition-colors" size={18} />
-                                    <select
-                                        className="w-full bg-zinc-900/50 border border-white/5 h-16 pl-16 pr-10 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/40 outline-none appearance-none cursor-pointer transition-all text-white"
-                                        value={eventFilter}
-                                        onChange={(e) => setEventFilter(e.target.value)}
-                                    >
-                                        <option value="all" className="bg-zinc-900">ALL EVENTS</option>
-                                        {upcomingEvents.map(event => (
-                                            <option key={event.id} value={event.id} className="bg-zinc-900">{event.title.toUpperCase()}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                        <ChevronDown size={14} />
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full xl:w-auto">
+                        <Button
+                            onClick={() => setIsManualModalOpen(true)}
+                            className="h-20 px-10 rounded-[2rem] bg-neon-blue text-black font-black uppercase italic tracking-widest text-[11px] hover:scale-105 active:scale-95 transition-all shadow-[0_8px_30px_rgba(0,255,255,0.25)] flex items-center gap-4 group"
+                        >
+                            <Plus size={20} className="group-hover:rotate-90 transition-transform" /> 
+                            <span>Issue Manual Ticket</span>
+                        </Button>
+                        <div className="bg-white/5 border border-white/10 p-2 rounded-[2rem] backdrop-blur-3xl flex items-center gap-2">
+                            {['pending', 'approved', 'vault', 'settings'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={cn(
+                                        "px-6 py-4 rounded-[1.5rem] text-[9px] font-black uppercase tracking-widest transition-all",
+                                        activeTab === tab 
+                                            ? "bg-white text-black shadow-xl scale-105" 
+                                            : "text-gray-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    {tab === 'pending' && `Verification (${pendingOrders.length})`}
+                                    {tab === 'approved' && `Verified (${approvedOrders.length})`}
+                                    {tab === 'vault' && 'Ticket Vault'}
+                                    {tab === 'settings' && 'Payment Config'}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
+
+                {/* Control Desk Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                    {stats.map((stat, idx) => (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            key={stat.label}
+                            className="bg-zinc-900/40 border border-white/5 p-8 rounded-[2.5rem] backdrop-blur-2xl group hover:border-white/20 transition-all hover:bg-zinc-900/60"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className={cn("p-3 rounded-2xl shrink-0", stat.bg)}>
+                                    <stat.icon size={20} className={stat.color} />
+                                </div>
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">{stat.label}</span>
+                            </div>
+                            <div className="text-3xl font-black italic tracking-tighter text-white uppercase">{stat.value}</div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Filter & Search Dashboard */}
+                {(activeTab === 'pending' || activeTab === 'approved') && (
+                    <div className="flex flex-col lg:flex-row gap-6 mb-12 items-stretch">
+                        <div className="relative flex-1 group">
+                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-neon-green transition-colors" size={20} />
+                            <input 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="IDENTIFY BY REF CODE, EMAIL OR NAME..."
+                                className="w-full bg-zinc-900/30 border border-white/10 h-20 pl-20 pr-8 rounded-[2rem] text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40 outline-none transition-all placeholder:text-gray-700 bg-black/20"
+                            />
+                        </div>
+                        <div className="relative w-full lg:w-96 group">
+                            <Filter className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-neon-pink transition-colors" size={20} />
+                            <select
+                                className="w-full bg-zinc-900/30 border border-white/10 h-20 pl-20 pr-10 rounded-[2rem] text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/40 outline-none appearance-none cursor-pointer transition-all text-white bg-black/20"
+                                value={eventFilter}
+                                onChange={(e) => setEventFilter(e.target.value)}
+                            >
+                                <option value="all" className="bg-[#020202]">GLOBAL SECTOR - ALL EVENTS</option>
+                                {upcomingEvents.map(event => (
+                                    <option key={event.id} value={event.id} className="bg-[#020202]">{event.title.toUpperCase()}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-gray-600" size={16} />
+                        </div>
+                    </div>
+                )}
 
                 <AnimatePresence mode="wait">
                     {activeTab === 'settings' ? (
                         <motion.div
                             key="settings"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="max-w-4xl mx-auto"
                         >
-                            <Card className="max-w-3xl mx-auto p-12 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem]">
-                                <h2 className="text-xl font-black italic uppercase tracking-tighter mb-8 flex items-center gap-3">
-                                    <QrCode className="text-neon-blue" /> TRANSACTION SETTINGS
-                                </h2>
-                                <form onSubmit={handleSaveSettings} className="space-y-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">UPI Identifier</label>
-                                        <Input
-                                            value={settingsForm.upiId || ''}
-                                            onChange={(e) => setSettingsForm({ ...settingsForm, upiId: e.target.value })}
-                                            placeholder="merchant@bank"
-                                            className="h-14 bg-black/50 border-white/5 rounded-2xl font-mono"
-                                        />
+                            <Card className="p-12 md:p-16 bg-zinc-900/20 backdrop-blur-3xl border border-white/10 rounded-[4rem]">
+                                <div className="flex items-center gap-6 mb-12">
+                                    <div className="w-16 h-16 rounded-[1.5rem] bg-neon-blue/10 flex items-center justify-center border border-neon-blue/20">
+                                        <QrCode className="text-neon-blue" size={32} />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Instructions</label>
+                                    <div>
+                                        <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">GATEWAY PROTOCOL</h2>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Financial Interface Configuration</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleSaveSettings} className="space-y-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-4">
+                                            <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest pl-1">UPI Merchant Identifier</label>
+                                            <Input
+                                                value={settingsForm.upiId || ''}
+                                                onChange={(e) => setSettingsForm({ ...settingsForm, upiId: e.target.value })}
+                                                placeholder="merchant@bank"
+                                                className="h-16 bg-black/40 border-white/10 rounded-[1.5rem] font-mono text-center text-neon-blue text-sm focus:ring-4 ring-neon-blue/5"
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest pl-1">QR Generation Buffer</label>
+                                            <div className="h-16 flex items-center justify-center bg-black/20 rounded-[1.5rem] border border-white/5 text-[10px] font-black text-neon-green tracking-widest italic">
+                                                <ShieldCheck size={16} className="mr-2" /> DYNAMIC GENERATION ENABLED
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Instructions</label>
                                         <textarea
-                                            className="w-full bg-black/50 border border-white/5 rounded-2xl p-6 text-sm font-medium h-40 focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
-                                            placeholder="Enter structured payment requirements..."
+                                            className="w-full bg-black/40 border border-white/10 rounded-[2rem] p-8 text-sm font-medium h-48 focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-800"
+                                            placeholder="Specify step-by-step payment verification requirements..."
                                             value={settingsForm.instructions || ''}
                                             onChange={(e) => setSettingsForm({ ...settingsForm, instructions: e.target.value })}
                                         />
                                     </div>
 
-                                    {/* Visionary QR Preview */}
-                                    <div className="bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
-                                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6">Execution Preview (₹1.00 Verification)</h3>
-                                        <div className="flex flex-col md:flex-row items-center gap-12">
-                                            <div className="p-6 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.05)]">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center bg-black/20 p-10 rounded-[3rem] border border-white/5">
+                                        <div className="relative group">
+                                            <div className="absolute -inset-4 bg-neon-blue/5 rounded-full blur-3xl group-hover:bg-neon-blue/10 transition-all opacity-0 group-hover:opacity-100" />
+                                            <div className="relative p-10 bg-white rounded-[3rem] shadow-2xl flex items-center justify-center">
                                                 {settingsForm.upiId ? (
                                                     <img
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${settingsForm.upiId}&pn=NewBi Entertainment&am=1&cu=INR`)}`}
-                                                        alt="Verified QR"
-                                                        className="w-40 h-40"
+                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${settingsForm.upiId}&pn=NewBi Entertainment&cu=INR`)}`}
+                                                        alt="Merchant QR"
+                                                        className="w-48 h-48"
                                                     />
                                                 ) : (
-                                                    <div className="w-40 h-40 flex items-center justify-center text-gray-200">
-                                                        <QrCode size={40} className="animate-pulse" />
+                                                    <div className="w-48 h-48 flex items-center justify-center text-gray-200">
+                                                        <QrCode size={64} className="animate-pulse" />
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">Status</p>
-                                                    <p className="text-sm font-bold text-neon-green flex items-center gap-2">
-                                                        <ShieldCheck size={16} /> SECURE PROTOCOL ACTIVE
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">Target Endpoint</p>
-                                                    <p className="font-mono text-sm text-gray-400">{settingsForm.upiId || 'PENDING_CONFIG'}</p>
-                                                </div>
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Endpoint Reliability</div>
+                                                <div className="text-lg font-black italic text-neon-green flex items-center gap-2">99.9% UPTIME ENSURED</div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Active Resolution</div>
+                                                <div className="font-mono text-sm text-gray-400 break-all">{settingsForm.upiId || 'NO_IDENTIFIER'}</div>
+                                            </div>
+                                            <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[9px] font-bold text-orange-500 uppercase tracking-widest text-center leading-relaxed">
+                                                * QR updates automatically based on UPI ID above.
                                             </div>
                                         </div>
                                     </div>
-                                    <Button type="submit" className="w-full bg-white text-black font-black uppercase text-xs h-16 rounded-2xl hover:scale-[1.02] transition-all">
-                                        Commit Configuration
+
+                                    <Button type="submit" className="w-full bg-white text-black font-black uppercase tracking-[0.2em] text-[11px] h-20 rounded-[2rem] hover:scale-[1.02] transition-all shadow-2xl group">
+                                        Commit Interface Configuration <ArrowRight size={16} className="ml-3 group-hover:translate-x-2 transition-transform" />
                                     </Button>
                                 </form>
                             </Card>
@@ -373,9 +414,9 @@ NewBi Entertainment`;
                     ) : activeTab === 'vault' ? (
                         <motion.div
                             key="vault"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
                         >
                             <TicketVaultTab 
                                 ticketVault={ticketVault}
@@ -390,112 +431,142 @@ NewBi Entertainment`;
                             key="orders"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            className="space-y-8"
                         >
-                            {/* Stream of Orders */}
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="flex items-center justify-between px-4">
+                                <h3 className="text-xs font-black italic uppercase tracking-[0.3em] text-gray-500">
+                                    {activeTab === 'pending' ? 'Verification Stream' : 'Archive Registry'} - {filteredOrders.length} Records
+                                </h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-8">
                                 {filteredOrders.length > 0 ? (
-                                    filteredOrders.map((order) => (
+                                    filteredOrders.map((order, idx) => (
                                         <motion.div
                                             layout
-                                            initial={{ opacity: 0, scale: 0.98 }}
-                                            animate={{ opacity: 1, scale: 1 }}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: Math.min(idx * 0.05, 0.4) }}
                                             key={order.id}
                                         >
-                                            <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] group hover:border-white/10 transition-all">
-                                                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-12">
-                                                    {/* Visual Identity */}
-                                                    <div className="flex-1 space-y-6">
-                                                        <div className="flex items-start justify-between">
-                                                            <div className="space-y-1">
-                                                                <h3 className="text-2xl font-black italic tracking-tighter text-white uppercase">{order.customerName}</h3>
-                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{order.customerEmail}</p>
+                                            <Card className="relative overflow-hidden p-1 bg-zinc-900/30 border border-white/5 rounded-[3rem] group hover:border-white/20 transition-all hover:bg-zinc-900/50">
+                                                <div className="p-8 md:p-10 flex flex-col xl:flex-row xl:items-center justify-between gap-12">
+                                                    <div className="flex-1 space-y-10">
+                                                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                                                            <div className="space-y-2">
+                                                                <h3 className="text-3xl md:text-4xl font-black italic tracking-tighter text-white uppercase leading-none">{order.customerName}</h3>
+                                                                <div className="flex flex-wrap items-center gap-3">
+                                                                    <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-gray-400 tracking-widest uppercase">{order.customerEmail}</div>
+                                                                    <div className="px-3 py-1 rounded-full bg-neon-blue/5 border border-neon-blue/10 text-[9px] font-black text-neon-blue font-mono">#{order.bookingRef}</div>
+                                                                </div>
                                                             </div>
                                                             <div className="flex flex-wrap gap-2">
                                                                 {order.items?.map((item, idx) => (
-                                                                    <span key={idx} className="px-3 py-1.5 rounded-full text-[10px] font-black bg-white/5 border border-white/10 text-neon-pink uppercase">
-                                                                        {item.count}X {item.name}
-                                                                    </span>
+                                                                    <div key={idx} className="relative group/tag">
+                                                                        <div className="absolute -inset-1 bg-neon-pink/20 rounded-full blur opacity-0 group-hover/tag:opacity-100 transition-opacity" />
+                                                                        <span className="relative px-5 py-2 rounded-full text-[10px] font-black bg-zinc-900 border border-neon-pink/30 text-neon-pink uppercase">
+                                                                            {item.count}X {item.name}
+                                                                        </span>
+                                                                    </div>
                                                                 ))}
-                                                                {order.bookingRef && (
-                                                                    <span className="px-3 py-1.5 rounded-full text-[10px] font-black bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-mono">
-                                                                        ID: {order.bookingRef}
-                                                                    </span>
-                                                                )}
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                                                            <div className="space-y-1">
-                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Project/Event</span>
-                                                                <p className="text-xs font-bold text-gray-300 uppercase underline decoration-neon-green/30 decoration-2 underline-offset-4">{order.eventTitle}</p>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+                                                            <div className="space-y-3">
+                                                                <div className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Project Destination</div>
+                                                                <p className="text-sm font-bold text-gray-200 uppercase flex items-center gap-2">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                                                                    {order.eventTitle}
+                                                                </p>
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Financial Value</span>
-                                                                <p className="text-sm font-black text-white italic">₹{order.totalAmount.toLocaleString()}</p>
+                                                            <div className="space-y-3">
+                                                                <div className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Authorized Entry</div>
+                                                                <p className="text-2xl font-black text-white italic leading-none">₹{order.totalAmount.toLocaleString()}</p>
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Transaction Ref</span>
-                                                                <p className="font-mono text-[10px] text-gray-400 select-all group-hover:text-neon-blue transition-colors">{order.paymentRef}</p>
+                                                            <div className="space-y-3">
+                                                                <div className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Security Token</div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <p className="font-mono text-[11px] text-gray-400 select-all group-hover:text-neon-blue transition-colors truncate max-w-[150px]">{order.paymentRef}</p>
+                                                                    <button onClick={() => { navigator.clipboard.writeText(order.paymentRef); alert("Ref Copied!"); }} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-600 hover:text-white transition-all">
+                                                                        <Copy size={12} />
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Logged On</span>
-                                                                <p className="text-xs font-bold text-gray-500 uppercase">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                                            <div className="space-y-3">
+                                                                <div className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Logged Sequence</div>
+                                                                <p className="text-sm font-bold text-gray-500 uppercase">{new Date(order.createdAt).toLocaleDateString()}</p>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Strategic Actions */}
-                                                    <div className="flex flex-row xl:flex-col gap-3 min-w-[200px]">
+                                                    <div className="flex flex-col gap-4 min-w-[240px] pt-8 xl:pt-0 border-t xl:border-t-0 xl:border-l border-white/5 xl:pl-10">
                                                         {activeTab === 'pending' ? (
-                                                            <>
-                                                                <Button onClick={() => handleApprove(order.id)} className="flex-1 bg-neon-green text-black font-black uppercase text-[10px] h-14 rounded-2xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.1)]">
-                                                                    <CheckCircle size={16} className="mr-2" /> Verify
+                                                            <div className="grid grid-cols-1 gap-4">
+                                                                <Button 
+                                                                    onClick={() => handleApprove(order.id)} 
+                                                                    className="h-16 bg-neon-green text-black font-black uppercase italic text-[11px] rounded-[1.25rem] hover:scale-105 transition-all shadow-[0_15px_30px_rgba(57,255,20,0.15)] group"
+                                                                >
+                                                                    <CheckCircle size={18} className="mr-3 group-hover:scale-110 transition-transform" /> Confirm Verification
                                                                 </Button>
-                                                                <Button onClick={() => handleReject(order.id)} variant="outline" className="flex-1 border-white/5 bg-white/5 text-gray-400 font-bold uppercase text-[10px] h-14 rounded-2xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all">
-                                                                    <XCircle size={16} className="mr-2" /> Decline
+                                                                <Button 
+                                                                    onClick={() => handleReject(order.id)} 
+                                                                    variant="outline" 
+                                                                    className="h-16 border-white/10 bg-white/5 text-gray-500 font-black uppercase text-[11px] rounded-[1.25rem] hover:bg-red-500/20 hover:text-red-500 hover:border-red-500/40 transition-all"
+                                                                >
+                                                                    <XCircle size={18} className="mr-3" /> Terminate Order
                                                                 </Button>
-                                                            </>
+                                                            </div>
                                                         ) : (
-                                                            <>
+                                                            <div className="flex flex-col gap-3">
                                                                 {order.fulfillmentStatus === 'fulfilled' || order.ticketUrl ? (
-                                                                    <div className="flex flex-col gap-2 w-full">
-                                                                        <Button onClick={() => setViewingTicketId(order.id)} className="w-full bg-white/10 border border-white/10 text-white font-black uppercase text-[10px] h-12 rounded-xl hover:bg-white hover:text-black transition-all">
-                                                                            <Mail size={14} className="mr-2" /> Get Email Draft
+                                                                    <div className="space-y-3">
+                                                                        <Button onClick={() => setViewingTicketId(order.id)} className="w-full bg-white text-black font-black uppercase text-[10px] h-14 rounded-[1.25rem] hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
+                                                                            <Mail size={16} /> Get Email Script
                                                                         </Button>
-                                                                        <Button disabled className="w-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase text-[10px] h-12 rounded-xl opacity-50 cursor-not-allowed transition-all">
-                                                                            Dispatch Digital (Soon)
-                                                                        </Button>
+                                                                        {order.ticketUrl && (
+                                                                            <Link to={order.ticketUrl} target="_blank" className="block">
+                                                                                <Button variant="outline" className="w-full border-white/10 bg-zinc-900 text-gray-400 font-black uppercase text-[10px] h-12 rounded-xl hover:text-white hover:border-white/20">
+                                                                                    <Eye size={14} className="mr-2" /> View Asset
+                                                                                </Button>
+                                                                            </Link>
+                                                                        )}
                                                                     </div>
                                                                 ) : order.fulfillmentStatus === 'on_hold' ? (
-                                                                    <div className="flex flex-col gap-2 w-full items-center justify-center p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
-                                                                        <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest"><Clock size={12} className="inline mr-1" /> On Hold</span>
-                                                                        <span className="text-gray-400 text-[8px] uppercase font-bold">Waiting for tickets in vault</span>
+                                                                    <div className="p-6 rounded-[1.5rem] bg-orange-500/5 border border-orange-500/20 text-center space-y-3">
+                                                                        <div className="text-orange-500 text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                                                                            <Clock size={16} className="animate-pulse" /> QUEUED IN VAULT
+                                                                        </div>
+                                                                        <p className="text-gray-500 text-[9px] uppercase font-bold leading-relaxed">Waiting for ticket inventory matching "{order.items?.[0]?.name}"</p>
                                                                     </div>
                                                                 ) : (
                                                                     <div className="relative group/upload">
-                                                                        <Button className="w-full bg-white/5 border border-white/10 text-gray-400 font-black uppercase text-[10px] h-14 rounded-2xl hover:bg-white hover:text-black transition-all">
-                                                                            <Upload size={16} className="mr-2" /> Attach Manifest
+                                                                        <div className="absolute inset-0 bg-neon-blue/10 blur-xl opacity-0 group-hover/upload:opacity-100 transition-opacity" />
+                                                                        <Button className="relative w-full bg-black/40 border border-white/10 text-gray-400 font-black uppercase text-[10px] h-16 rounded-[1.25rem] group-hover/upload:text-white transition-all flex items-center justify-center gap-3">
+                                                                            {isUploading ? <Clock size={20} className="animate-spin" /> : <Upload size={20} />} 
+                                                                            {isUploading ? 'INGESTING...' : 'ATTACH MANIFEST'}
                                                                         </Button>
                                                                         <input
                                                                             type="file"
                                                                             onChange={(e) => handleTicketUpload(order.id, e.target.files[0])}
-                                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                            className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                                                            disabled={isUploading}
                                                                         />
                                                                     </div>
                                                                 )}
-                                                                <div className="flex items-center justify-between px-2 mt-2">
+                                                                
+                                                                <div className="flex items-center justify-between px-2 pt-2 border-t border-white/5">
                                                                     <div className={cn(
-                                                                        "text-[8px] font-black uppercase tracking-widest",
-                                                                        order.ticketSent ? "text-neon-green" : "text-yellow-500"
+                                                                        "text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg",
+                                                                        order.ticketSent ? "bg-neon-green/10 text-neon-green" : "bg-yellow-500/10 text-yellow-500"
                                                                     )}>
-                                                                        {order.ticketSent ? 'TRANSFERRED' : 'IN_QUEUE'}
+                                                                        {order.ticketSent ? 'TRANSFERRED' : 'IN_PIPELINE'}
                                                                     </div>
-                                                                    <button onClick={() => handleDelete(order.id)} className="p-2 text-gray-700 hover:text-red-500 transition-colors">
+                                                                    <button onClick={() => handleDelete(order.id)} className="p-2 text-gray-700 hover:text-red-500 transition-all hover:scale-110">
                                                                         <Trash2 size={14} />
                                                                     </button>
                                                                 </div>
-                                                            </>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -503,11 +574,12 @@ NewBi Entertainment`;
                                         </motion.div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-32 space-y-4">
-                                        <div className="inline-flex p-8 rounded-full bg-white/5 border border-white/5 mb-4">
-                                            <Search size={40} className="text-gray-800" />
+                                    <div className="text-center py-40 bg-zinc-900/10 border border-dashed border-white/5 rounded-[4rem]">
+                                        <div className="inline-flex p-10 rounded-full bg-white/5 border border-white/5 mb-6 text-gray-800">
+                                            <Sparkles size={48} className="opacity-20" />
                                         </div>
-                                        <p className="text-sm font-black text-gray-500 uppercase tracking-widest italic">Inventory clear for current query.</p>
+                                        <h4 className="text-lg font-black italic text-gray-600 uppercase tracking-tighter">Sector Clear</h4>
+                                        <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.3em] max-w-[200px] mx-auto leading-relaxed mt-2">No active records match the current operational filter.</p>
                                     </div>
                                 )}
                             </div>

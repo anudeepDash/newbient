@@ -48,7 +48,11 @@ const GiveawayParticipants = () => {
     const handleSelectWinner = async (entryId, prize = 'GA Ticket') => {
         try {
             const entry = campaignEntries.find(e => e.id === entryId);
-            await updateGiveawayEntry(entryId, { isWinner: !entry.isWinner, prize: entry.isWinner ? null : prize });
+            await updateGiveawayEntry(entryId, { 
+                isWinner: !entry.isWinner, 
+                prize: entry.isWinner ? null : prize,
+                winnerSelectedAt: entry.isWinner ? null : new Date().toISOString()
+            });
         } catch (error) {
             alert("Error selecting winner");
         }
@@ -154,25 +158,31 @@ const GiveawayParticipants = () => {
 
                     {/* Main Content: Participant List */}
                     <div className="lg:col-span-2 space-y-8">
-                        <div className="flex flex-col sm:flex-row gap-6 items-center justify-between mb-8">
-                            <div className="relative flex-1 w-full">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="SEARCH BY NAME OR EMAIL"
+                        {/* Combined Search & Filters Bar - Matching Invoice Style */}
+                        <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-16 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-4">
+                            <div className="relative flex-1 w-full group">
+                                <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-500 transition-colors" size={20} />
+                                <input 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-12 pl-12 pr-6 bg-zinc-900/50 border border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-purple-500/30 outline-none transition-all"
+                                    placeholder="SEARCH BY NAME OR EMAIL..."
+                                    className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                                 />
+                                <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                    <div className="w-px h-6 bg-white/10" />
+                                    <Filter size={16} className="text-gray-600 hover:text-white cursor-pointer transition-colors" />
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                {['all', 'winners', 'referrals'].map(f => (
+                            <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full xl:w-auto mr-1">
+                                {['all', 'winners', 'referrals'].map((f) => (
                                     <button
                                         key={f}
                                         onClick={() => setFilter(f)}
                                         className={cn(
-                                            "px-6 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                                            filter === f ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-500 border-white/5 hover:border-white/20'
+                                            "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
+                                            filter === f 
+                                                ? "bg-purple-500 text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5"
                                         )}
                                     >
                                         {f}

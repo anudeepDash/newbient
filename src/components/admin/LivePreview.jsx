@@ -22,12 +22,14 @@ const formatDate = (dateStr) => {
     return `${day}-${m}-${y}`;
 };
 
-const LivePreview = ({ type, data }) => {
+const LivePreview = ({ type, data, categories = [] }) => {
     return (
         <div className="h-full flex flex-col">
             <div className="flex items-center justify-between text-gray-400 text-sm uppercase tracking-wider font-bold mb-4">
                 <span>Live Preview</span>
-                <span className="text-xs bg-white/10 px-2 py-1 rounded text-neon-blue">{type} View</span>
+                <span className="text-xs bg-white/10 px-2 py-1 rounded text-neon-blue">
+                    {type === 'portfolio' ? (categories?.find(c => c.id === data.category)?.label || 'General') : type} View
+                </span>
             </div>
 
             <div className="flex-grow bg-[#050505] rounded-[3rem] border-[12px] border-[#1a1a1a] overflow-hidden relative shadow-2xl flex flex-col items-center justify-start p-6 min-h-[600px]">
@@ -122,7 +124,7 @@ const LivePreview = ({ type, data }) => {
                             <div className="p-6 md:p-8 flex-1 flex flex-col">
                                 <div className="flex items-center gap-3 mb-4">
                                     <span className="px-3 py-1 bg-neon-green/10 text-neon-green text-[9px] font-black uppercase tracking-widest border border-neon-green/20 rounded-full">
-                                        {data.category || 'GENERAL'}
+                                        {categories?.find(c => c.id === data.category)?.label || data.category || 'GENERAL'}
                                     </span>
                                 </div>
                                 <h3 className="text-xl font-black font-heading text-white uppercase italic tracking-tight mb-2">{data.title || 'RECORD TITLE'}</h3>

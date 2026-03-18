@@ -4,7 +4,7 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Gift, Plus, Search, Edit, Trash2, Users, Calendar, X, ChevronRight, Globe, Info, Clock, ArrowLeft, Download, Trophy, BarChart3, Instagram, Send, Youtube, MessageCircle, Music, Ghost, Link as LinkIcon, Camera, Twitter, XCircle, Sparkles } from 'lucide-react';
+import { Gift, LayoutGrid, Plus, Search, Edit, Trash2, Users, Calendar, X, ChevronRight, Globe, Info, Clock, ArrowLeft, Download, Trophy, BarChart3, Instagram, Send, Youtube, MessageCircle, Music, Ghost, Link as LinkIcon, Camera, Twitter, XCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { downloadCSV } from '../../components/admin/CSVHandler';
@@ -12,6 +12,7 @@ import { downloadCSV } from '../../components/admin/CSVHandler';
 const GiveawayManager = () => {
     const { giveaways = [], giveawayEntries = [], addGiveaway, updateGiveaway, deleteGiveaway, user } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all');
     const [isCreating, setIsCreating] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
@@ -41,9 +42,12 @@ const GiveawayManager = () => {
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
     const [uploading, setUploading] = useState(false);
 
-    const filteredGiveaways = (giveaways || []).filter(g =>
-        (g.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredGiveaways = (giveaways || []).filter(g => {
+        const matchesSearch = (g.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        if (filter === 'active') return matchesSearch && (g.status === 'Open' || g.status === 'active');
+        if (filter === 'past') return matchesSearch && (g.status !== 'Open' && g.status !== 'active');
+        return matchesSearch;
+    });
 
     const handlePickWinner = async (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
@@ -208,7 +212,7 @@ const GiveawayManager = () => {
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
@@ -218,29 +222,50 @@ const GiveawayManager = () => {
                         </h1>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-80">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                            <input
-                                type="text"
-                                placeholder="SEARCH GIVEAWAYS"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-14 pl-14 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-purple-500/30 outline-none transition-all placeholder:text-gray-600"
-                            />
-                        </div>
-                        <Button onClick={() => { 
-                            setIsCreating(true); 
-                            setEditingId(null); 
-                            setFormData({ 
+                    <Button 
+                        onClick={() => {
+                            setEditingId(null);
+                            setFormData({
                                 name: '', slug: '', description: '', ticketsAvailable: 0, endDate: '', endTime: '',
                                 winnerAnnouncementDate: '', posterUrl: '', giveawayType: 'Standard', tasks: [], status: 'Open',
                                 alsoPostToUpcomingEvents: false, alsoPostToAnnouncements: false, isTicketed: false,
-                                ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW'
-                            }); 
-                        }} className="h-14 px-8 bg-purple-600 text-white font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(168,85,247,0.2)] hover:scale-105 active:scale-95 transition-all">
-                            <Plus className="mr-2" size={18} /> New Giveaway
-                        </Button>
+                                ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW',
+                                eventCardImage: null, showSpinWheel: true
+                            });
+                            setIsCreating(true);
+                        }} 
+                        className="h-14 px-8 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> New Giveaway
+                    </Button>
+                </div>
+
+                {/* Combined Search & Filters Bar - Matching Invoice Style */}
+                <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
+                    <div className="relative flex-1 w-full group">
+                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-500 transition-colors" size={20} />
+                        <input 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="SEARCH BY CAMPAIGN NAME OR SLUG..."
+                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                        />
+                    </div>
+                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto mr-1">
+                        {['ALL', 'ACTIVE', 'PAST'].map((s) => (
+                            <button
+                                key={s}
+                                onClick={() => setFilter(s.toLowerCase())}
+                                className={cn(
+                                    "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
+                                    filter === s.toLowerCase() 
+                                        ? "bg-purple-500 text-white shadow-[0_10px_25px_rgba(168,85,247,0.3)] scale-[1.02]" 
+                                        : "text-gray-500 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                {s}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
@@ -273,7 +298,11 @@ const GiveawayManager = () => {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Most Recent Winner</p>
-                                <h4 className="text-sm font-black uppercase tracking-widest line-clamp-1">{giveawayEntries.find(e => e.winnerReward)?.name || 'NO WINNERS YET'}</h4>
+                                <h4 className="text-sm font-black uppercase tracking-widest line-clamp-1">{
+                                    [...giveawayEntries]
+                                        .filter(e => e.isWinner)
+                                        .sort((a, b) => new Date(b.winnerSelectedAt || b.createdAt || 0) - new Date(a.winnerSelectedAt || a.createdAt || 0))[0]?.name || 'NO WINNERS YET'
+                                }</h4>
                             </div>
                         </div>
                     </Card>

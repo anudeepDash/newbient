@@ -141,16 +141,18 @@ const Dashboard = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
                 {/* Modern Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-16 gap-6 md:gap-8">
-                    <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="p-2 md:p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
-                                <LayoutDashboard className="text-neon-green" size={24} />
+                <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-16 gap-6 md:gap-8">
+                    <div className="space-y-4 max-w-full">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="p-3 md:p-4 rounded-[1.5rem] bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
+                                <LayoutDashboard className="text-neon-green" size={28} />
                             </div>
-                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none pr-4">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTRE.</span></h1>
+                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">COMMAND</span> CENTRE.
+                            </h1>
                         </div>
                         <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest pl-1 flex flex-wrap items-center gap-2">
-                            Newbi Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
+                            Command Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
                             {maintenanceState.global && (
                                 <>
                                     <span className="hidden md:inline mx-1 md:mx-2">•</span>
@@ -162,7 +164,7 @@ const Dashboard = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1 md:p-1.5 rounded-full backdrop-blur-2xl self-start md:self-auto max-w-full overflow-x-auto scrollbar-hide">
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1 md:p-1.5 rounded-full backdrop-blur-2xl self-start xl:self-auto max-w-full">
                         <Link to="/admin/site-settings" className="p-2.5 hover:bg-white/10 rounded-full transition-all group">
                             <Settings size={18} className="text-gray-400 group-hover:text-neon-blue transition-colors" />
                         </Link>
