@@ -159,7 +159,7 @@ const Proposal = () => {
     const toBePaid = totalAmount - advancePaid;
 
     return (
-        <div className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-black scroll-smooth">
+        <div className="min-h-screen pt-16 md:pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-black scroll-smooth">
             <iframe
                 ref={printFrameRef}
                 className="fixed -top-[1000px] left-0 pointer-events-none w-0 h-0"
@@ -168,8 +168,8 @@ const Proposal = () => {
 
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8 print:hidden flex justify-between items-center">
-                    <Link to="/admin/proposals" className="relative z-[60] inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest">
-                        <ArrowLeft size={14} /> Back to Hub
+                    <Link to="/admin/proposals" className="relative z-[60] inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest group">
+                        <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                     </Link>
                     {!proposal && !loading && (
                         <span className="text-yellow-500 text-sm font-bold">Demo Mode / No Data</span>

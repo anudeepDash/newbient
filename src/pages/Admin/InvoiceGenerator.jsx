@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowLeft, Download, RefreshCw, X, FileText, FileSpreadsheet, Sparkles, Users } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileText, FileSpreadsheet, Sparkles, Users } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -322,10 +322,10 @@ const InvoiceGenerator = () => {
             <div className="relative z-10 max-w-[1800px] mx-auto px-6 pt-32">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
                     <div className="space-y-2">
-                        <Link to="/admin/invoices" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-4">
-                            <ArrowLeft size={14} /> Back to Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2">
                             INVOICE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">ENGINE.</span>
                         </h1>
                     </div>

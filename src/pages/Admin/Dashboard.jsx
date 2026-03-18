@@ -147,7 +147,7 @@ const Dashboard = () => {
                             <div className="p-2 md:p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
                                 <LayoutDashboard className="text-neon-green" size={24} />
                             </div>
-                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTER.</span></h1>
+                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none pr-4">NEWBI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND CENTRE.</span></h1>
                         </div>
                         <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest pl-1 flex flex-wrap items-center gap-2">
                             Newbi Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
@@ -261,7 +261,7 @@ const Dashboard = () => {
 const DashboardSection = ({ title, gradient, children }) => (
     <section>
         <div className="flex items-center gap-4 mb-6 md:mb-8">
-            <h2 className={cn("text-2xl font-black font-heading tracking-tight uppercase italic bg-clip-text text-transparent bg-gradient-to-r", gradient)}>{title}</h2>
+            <h2 className={cn("text-2xl font-black font-heading tracking-tight uppercase italic bg-clip-text text-transparent bg-gradient-to-r pr-4", gradient)}>{title}</h2>
             <div className="flex-1 h-px bg-white/5" />
         </div>
         <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
@@ -352,7 +352,7 @@ const BootstrapAlert = ({ onClaim }) => (
             </div>
             <div>
                 <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">System Initialization Required</h2>
-                <p className="text-gray-400 text-sm mt-1">No admins detected. Claim <strong>SUPER ADMIN</strong> ownership to initialize the command center.</p>
+                <p className="text-gray-400 text-sm mt-1">No admins detected. Claim <strong>SUPER ADMIN</strong> ownership to initialize the command centre.</p>
             </div>
         </div>
         <Button onClick={onClaim} className="bg-white text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all">

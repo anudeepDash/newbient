@@ -78,14 +78,20 @@ const FormBuilder = () => {
     };
 
     return (
-        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-6xl mx-auto"> {/* Increased width for side-by-side preview */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                    <Link to="/admin/forms" className="text-gray-400 hover:text-white flex items-center transition-colors p-2 hover:bg-white/10 rounded-full w-fit">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        <span className="font-bold uppercase text-[10px] tracking-widest">Back to Manager</span>
-                    </Link>
-                    <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">{id ? 'Edit Form Integration' : 'Add Google Form'}</h1>
+        <div className="min-h-screen bg-[#020202] text-white pb-20">
+            {/* Background Atmosphere */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <div className="space-y-4">
+                        <Link to="/admin/forms" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                        </Link>
+                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">{id ? 'Edit Form' : 'Add New'} <span className="text-neon-blue">INTEGRATION.</span></h1>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">

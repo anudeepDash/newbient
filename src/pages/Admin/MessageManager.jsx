@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Trash2, CheckCircle, ArrowLeft, Clock, User, AlertCircle, Sparkles, Filter, Search, X } from 'lucide-react';
+import { Mail, Trash2, CheckCircle, LayoutGrid, Clock, User, AlertCircle, Sparkles, Filter, Search, X } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -50,14 +50,14 @@ const MessageManager = () => {
                 <div className="absolute bottom-[5%] right-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
-                            <ArrowLeft size={14} /> Back to Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             INTEL <span className="text-neon-pink">STREAM.</span>
                         </h1>
                     </div>

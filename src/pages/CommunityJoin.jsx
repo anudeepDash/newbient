@@ -116,7 +116,7 @@ const CommunityJoin = () => {
     return (
         <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 scroll-smooth">
 
-            <div className="max-w-7xl mx-auto space-y-32">
+            <div className="max-w-7xl mx-auto space-y-20">
                 {/* Immersive Header */}
                 <div className="text-center relative py-10 overflow-hidden">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-pink/8 blur-[100px] pointer-events-none rounded-full" />
@@ -136,7 +136,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-4xl md:text-8xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6 tracking-tight leading-none"
+                        className="text-4xl md:text-8xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6 tracking-tight leading-none pr-4"
                     >
                         {user ? (
                             <>Hello, {user.displayName?.split(' ')[0]}</>
@@ -176,7 +176,7 @@ const CommunityJoin = () => {
                         </motion.div>
                     </section>
                 ) : (!hasJoined && siteSettings.enableTribeForm !== false) ? (
-                    <section className="space-y-32">
+                    <section className="space-y-20">
                         <div className="max-w-5xl mx-auto">
                             <div className="flex items-center gap-6 mb-16">
                                 <div className="w-16 h-16 rounded-2xl bg-neon-blue text-black flex items-center justify-center font-black text-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)]">01</div>
@@ -209,7 +209,7 @@ const CommunityJoin = () => {
                         </div>
                     </section>
                 ) : (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pb-20">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-20 pb-20">
                          {/* Status UI */}
                          <section className="max-w-5xl mx-auto">
                              <div className="bg-zinc-900/40 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">

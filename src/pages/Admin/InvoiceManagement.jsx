@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, ArrowLeft, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles } from 'lucide-react';
+import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -128,14 +128,14 @@ const InvoiceManagement = () => {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
-                            <ArrowLeft size={14} /> Back to Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             INVOICE <span className="text-neon-blue">MANAGER.</span>
                         </h1>
                     </div>
@@ -157,29 +157,50 @@ const InvoiceManagement = () => {
                 </div>
 
                 {/* Filters & Search */}
-                <div className="flex flex-col md:flex-row gap-6 mb-10 items-center">
-                    <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 w-full md:w-auto">
+                <div className="flex flex-col xl:flex-row gap-6 mb-12 items-stretch xl:items-center">
+                    <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 w-full xl:w-auto backdrop-blur-md">
                         {['All', 'Pending', 'Paid'].map((s) => (
                             <button
                                 key={s}
                                 onClick={() => setFilter(s)}
                                 className={cn(
-                                    "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    filter === s ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                    "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
+                                    filter === s 
+                                        ? "bg-neon-blue text-black shadow-[0_10px_20px_rgba(0,255,255,0.2)] scale-[1.02]" 
+                                        : "text-gray-500 hover:text-white hover:bg-white/5"
                                 )}
                             >
                                 {s}
                             </button>
                         ))}
                     </div>
-                    <div className="relative flex-1 w-full">
-                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                        <Input 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="SEARCH BY CLIENT OR INVOICE #"
-                            className="bg-zinc-900/50 border-white/5 h-14 pl-14 rounded-2xl text-xs font-bold uppercase tracking-widest focus:border-neon-blue/30"
-                        />
+
+                    <div className="flex-1 flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1 group">
+                            <div className="absolute inset-0 bg-neon-blue/5 blur-2xl group-focus-within:bg-neon-blue/10 transition-all rounded-full" />
+                            <div className="relative flex items-center">
+                                <Search className="absolute left-6 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} />
+                                <input 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="SEARCH BY CLIENT OR INVOICE #"
+                                    className="w-full bg-zinc-900/50 border border-white/5 h-16 pl-16 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-600 focus:shadow-[0_0_30px_rgba(0,255,255,0.05)]"
+                                />
+                                <div className="absolute right-6 flex items-center gap-3">
+                                    <div className="w-px h-6 bg-white/10" />
+                                    <Filter size={16} className="text-gray-600 hover:text-white cursor-pointer transition-colors" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <Button onClick={() => setShowQuickUpload(true)} variant="outline" className="h-16 px-8 rounded-2xl bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
+                                <Upload className="mr-3 text-neon-blue" size={16} /> Quick Upload
+                            </Button>
+                            <Button variant="outline" className="h-16 px-8 rounded-2xl bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
+                                <Download className="mr-3" size={16} /> Export
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

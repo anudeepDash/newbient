@@ -110,17 +110,9 @@ const Maintenance = () => {
                         transition={{ delay: 0.3 }}
                         className="w-full pt-4"
                     >
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate(isAdmin ? '/admin' : '/')}
-                            className="w-full py-6 group relative overflow-hidden bg-transparent border-white/20 hover:border-white text-white transition-all duration-500"
-                        >
-                            <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                            <span className="relative z-10 flex items-center justify-center gap-2 group-hover:text-black transition-colors">
-                                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                                {isAdmin ? 'RETURN TO DASHBOARD' : 'RETURN TO HOME'}
-                            </span>
-                        </Button>
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center justify-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group w-full">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                        </Link>
                     </motion.div>
                 </div>
             </Card>

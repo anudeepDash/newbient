@@ -4,15 +4,19 @@ import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock } from 'lucide-react';
+import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock, LayoutGrid, FileSpreadsheet, Download, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const CreatorManager = () => {
     const { creators, updateCreator, deleteCreator } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('All');
     const [selectedCreator, setSelectedCreator] = useState(null);
+    const [viewMode, setViewMode] = useState('table'); // Default to table as requested
+    const [exportLoading, setExportLoading] = useState(false);
 
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
 
@@ -44,6 +48,60 @@ const CreatorManager = () => {
             }
         }
     };
+    
+    const exportToCSV = () => {
+        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'YouTube', 'YouTube Subs', 'Niches', 'Status'];
+        const csvRows = [
+            headers.join(','),
+            ...filteredCreators.map(c => [
+                `"${c.name}"`,
+                `"${c.email}"`,
+                `"${c.phone}"`,
+                `"${c.city}"`,
+                `"${c.instagram || ''}"`,
+                `"${c.instagramFollowers || 0}"`,
+                `"${c.youtube || ''}"`,
+                `"${c.youtubeSubscribers || 0}"`,
+                `"${c.niches.join(', ')}"`,
+                `"${c.profileStatus || 'pending'}"`
+            ].join(','))
+        ];
+        
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Newbi_Creators_${filterCity}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        doc.text(`Newbi Creators Registry - ${filterCity}`, 14, 15);
+        
+        const tableData = filteredCreators.map(c => [
+            c.name,
+            c.city,
+            c.instagram || '-',
+            c.instagramFollowers || '0',
+            c.niches.slice(0, 2).join(', '),
+            c.profileStatus || 'pending'
+        ]);
+
+        doc.autoTable({
+            head: [['Name', 'City', 'Instagram', 'Followers', 'Niches', 'Status']],
+            body: tableData,
+            startY: 20,
+            theme: 'grid',
+            headStyles: { fillColor: [46, 255, 144] }, // neon-green
+            styles: { fontSize: 8 }
+        });
+
+        doc.save(`Newbi_Creators_${filterCity}.pdf`);
+    };
 
     return (
         <div className="min-h-screen bg-[#020202] text-white pb-20">
@@ -53,43 +111,59 @@ const CreatorManager = () => {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-16 md:pt-24">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4">
-                            <ArrowLeft size={14} /> Back to Newbi Hub
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic">
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             CREATOR <span className="text-neon-pink">REGISTRY.</span>
                         </h1>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-80">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+                        {/* View Toggle */}
+                        <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 mr-2">
+                            <button onClick={() => setViewMode('grid')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Grid</button>
+                            <button onClick={() => setViewMode('table')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'table' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Table</button>
+                        </div>
+
+                        <div className="relative flex-1 md:w-64">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                             <input
                                 type="text"
-                                placeholder="SEARCH NEWBI CREATORS OR NICHES"
+                                placeholder="SEARCH..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-14 pl-14 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-600"
+                                className="w-full h-14 pl-12 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-600"
                             />
                         </div>
+
                         <div className="relative">
-                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                             <select
                                 value={filterCity}
                                 onChange={(e) => setFilterCity(e.target.value)}
-                                className="h-14 pl-14 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer"
+                                className="h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer min-w-[140px]"
                             >
                                 {cities.map(city => <option key={city} value={city} className="bg-zinc-900">{city.toUpperCase()}</option>)}
                             </select>
                         </div>
+
+                        <div className="flex gap-2">
+                             <Button onClick={exportToCSV} variant="outline" className="h-14 px-5 border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-2xl">
+                                <FileSpreadsheet className="mr-2 text-neon-green" size={14} /> XLSX / CSV
+                            </Button>
+                            <Button onClick={exportToPDF} variant="outline" className="h-14 px-5 border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-2xl">
+                                <FileText className="mr-2 text-neon-pink" size={14} /> PDF
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Content Grid */}
+                {/* Content Area */}
                 {creators.length === 0 ? (
                     <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
                         <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
@@ -101,59 +175,128 @@ const CreatorManager = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
-                        <AnimatePresence mode="popLayout">
-                        {filteredCreators.map(creator => (
+                    <AnimatePresence mode="wait">
+                        {viewMode === 'grid' ? (
                             <motion.div
-                                key={creator.uid}
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                onClick={() => setSelectedCreator(creator)}
-                                className="min-w-[85vw] md:min-w-0 snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
                             >
-                                {/* Status Light */}
-                                <div className={cn(
-                                    "absolute top-0 left-0 w-2 h-full opacity-50 group-hover:opacity-100 transition-opacity",
-                                    creator.profileStatus === 'approved' ? 'bg-neon-green' : 
-                                    creator.profileStatus === 'blocked' ? 'bg-red-600' : 'bg-yellow-500'
-                                )}></div>
+                                {filteredCreators.map(creator => (
+                                    <motion.div
+                                        key={creator.uid}
+                                        onClick={() => setSelectedCreator(creator)}
+                                        className="snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
+                                    >
+                                        {/* Status Light */}
+                                        <div className={cn(
+                                            "absolute top-0 left-0 w-1.5 h-full opacity-50 group-hover:opacity-100 transition-opacity",
+                                            creator.profileStatus === 'approved' ? 'bg-neon-green' : 
+                                            creator.profileStatus === 'blocked' ? 'bg-red-600' : 'bg-yellow-500'
+                                        )}></div>
 
-                                <div className="flex items-center gap-5 mb-8">
-                                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-xl font-black font-heading group-hover:bg-neon-pink/10 group-hover:text-neon-pink transition-all">
-                                        {creator.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black text-lg uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</h3>
-                                        <p className="text-[8px] font-black text-gray-500 flex items-center gap-1.5 mt-1 uppercase tracking-widest"><MapPin size={10} className="text-neon-pink" /> {creator.city}</p>
-                                    </div>
-                                </div>
+                                        <div className="flex items-center gap-5 mb-8">
+                                            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-xl font-black font-heading group-hover:bg-neon-pink/10 group-hover:text-neon-pink transition-all">
+                                                {creator.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-lg uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</h3>
+                                                <p className="text-[8px] font-black text-gray-500 flex items-center gap-1.5 mt-1 uppercase tracking-widest"><MapPin size={10} className="text-neon-pink" /> {creator.city}</p>
+                                            </div>
+                                        </div>
 
-                                <div className="flex flex-wrap gap-2 mb-8 h-12 overflow-hidden">
-                                    {creator.niches.slice(0, 3).map((n, i) => (
-                                        <span key={i} className="text-[8px] px-2.5 py-1 bg-white/5 border border-white/5 rounded-full text-gray-400 font-black uppercase tracking-widest">{n}</span>
-                                    ))}
-                                    {creator.niches.length > 3 && <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest py-1">+{creator.niches.length - 3}</span>}
-                                </div>
+                                        <div className="flex flex-wrap gap-2 mb-8 items-center min-h-[3rem]">
+                                            {creator.niches.slice(0, 3).map((n, i) => (
+                                                <span key={i} className="text-[8px] px-2.5 py-1 bg-white/5 border border-white/5 rounded-full text-gray-400 font-black uppercase tracking-widest whitespace-nowrap">{n}</span>
+                                            ))}
+                                        </div>
 
-                                <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
-                                    <span className={cn(
-                                        "text-[9px] font-black uppercase tracking-widest",
-                                        creator.profileStatus === 'approved' ? 'text-neon-green' : 
-                                        creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
-                                    )}>
-                                        {creator.profileStatus || 'PENDING APPROVAL'}
-                                    </span>
-                                    <div className="flex gap-3">
-                                        {creator.instagram && <Instagram size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
-                                        {creator.youtube && <Youtube size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
-                                    </div>
+                                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
+                                            <span className={cn(
+                                                "text-[9px] font-black uppercase tracking-widest",
+                                                creator.profileStatus === 'approved' ? 'text-neon-green' : 
+                                                creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
+                                            )}>
+                                                {creator.profileStatus || 'PENDING'}
+                                            </span>
+                                            <div className="flex gap-3">
+                                                {creator.instagram && <Instagram size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
+                                                {creator.youtube && <Youtube size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] overflow-hidden"
+                            >
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                                <th className="p-8">CREATOR</th>
+                                                <th className="p-8">CITY</th>
+                                                <th className="p-8">SOCIALS</th>
+                                                <th className="p-8">SPECIALIZATION</th>
+                                                <th className="p-8">STATUS</th>
+                                                <th className="p-8 text-right">ACTION</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {filteredCreators.map(creator => (
+                                                <tr key={creator.uid} className="group hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setSelectedCreator(creator)}>
+                                                    <td className="p-8">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center font-black text-sm group-hover:text-neon-pink transition-colors">
+                                                                {creator.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="text-sm font-black uppercase tracking-tight text-white">{creator.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{creator.city}</span>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <div className="flex gap-3 text-gray-500">
+                                                            {creator.instagram && <Instagram size={14} />}
+                                                            {creator.youtube && <Youtube size={14} />}
+                                                            {creator.instagramFollowers && <span className="text-[10px] font-black text-neon-pink">{(Number(creator.instagramFollowers)/1000).toFixed(1)}K</span>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <div className="flex gap-2">
+                                                            {creator.niches.slice(0, 2).map((n, i) => (
+                                                                <span key={i} className="text-[8px] px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-gray-500 uppercase font-black">{n}</span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <span className={cn(
+                                                            "text-[9px] font-black uppercase tracking-widest",
+                                                            creator.profileStatus === 'approved' ? 'text-neon-green' : 
+                                                            creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
+                                                        )}>
+                                                            {creator.profileStatus || 'PENDING'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-8 text-right">
+                                                        <Button variant="outline" className="h-10 px-4 rounded-xl text-[8px] font-black border-white/10 hover:bg-white/5 uppercase tracking-widest">
+                                                            Review
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </motion.div>
-                        ))}
-                        </AnimatePresence>
-                    </div>
+                        )}
+                    </AnimatePresence>
                 )}
             </div>
 
