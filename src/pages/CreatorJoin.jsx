@@ -207,7 +207,7 @@ const CreatorJoin = () => {
                             {/* Social Presence */}
                             <div className="pt-4 border-t border-white/5">
                                 <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                                    <div className="w-6 h-px bg-neon-pink" /> Social Presence <span className="text-gray-500 tracking-widest">(OPTIONAL)</span>
+                                    <div className="w-6 h-px bg-neon-pink" /> Social Presence
                                 </h3>
                                 <div className="space-y-6">
                                     {/* Instagram */}
@@ -217,13 +217,13 @@ const CreatorJoin = () => {
                                                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                     <Instagram size={12} className="text-pink-500" /> Instagram Handle
                                                 </label>
-                                                <Input name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourusername" className="h-12 bg-black/50 border-white/5 rounded-xl" />
+                                                <Input required name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourusername" className="h-12 bg-black/50 border-white/5 rounded-xl" />
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                     <Users size={12} className="text-neon-blue" /> Follower Count
                                                 </label>
-                                                <Input type="number" name="instagramFollowers" value={formData.instagramFollowers} onChange={(e) => handleSocialChange(e, 'ig')} placeholder="e.g. 15000" className="h-12 bg-black/50 border-white/5 rounded-xl" />
+                                                <Input required type="number" name="instagramFollowers" value={formData.instagramFollowers} onChange={(e) => handleSocialChange(e, 'ig')} placeholder="e.g. 15000" className="h-12 bg-black/50 border-white/5 rounded-xl" />
                                             </div>
                                         </div>
                                     </div>
@@ -233,13 +233,13 @@ const CreatorJoin = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Youtube size={12} className="text-red-500" /> YouTube Channel
+                                                    <Youtube size={12} className="text-red-500" /> YouTube Channel <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
                                                 </label>
                                                 <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" className="h-12 bg-black/50 border-white/5 rounded-xl" />
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Users size={12} className="text-neon-blue" /> Subscriber Count
+                                                    <Users size={12} className="text-neon-blue" /> Subscriber Count <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
                                                 </label>
                                                 <Input type="number" name="youtubeSubscribers" value={formData.youtubeSubscribers} onChange={(e) => handleSocialChange(e, 'yt')} placeholder="e.g. 5000" className="h-12 bg-black/50 border-white/5 rounded-xl" />
                                             </div>
