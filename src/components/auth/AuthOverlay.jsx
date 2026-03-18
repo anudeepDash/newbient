@@ -25,6 +25,33 @@ const AuthOverlay = () => {
 
     const onClose = () => setAuthModal(false);
 
+    const getFriendlyErrorMessage = (error) => {
+        const code = error?.code || error?.message || '';
+        
+        if (code.includes('auth/invalid-credential')) {
+            return 'Invalid email or password. Please check your credentials and try again.';
+        }
+        if (code.includes('auth/user-not-found')) {
+            return 'No account found with this email.';
+        }
+        if (code.includes('auth/wrong-password')) {
+            return 'Incorrect password. Please try again.';
+        }
+        if (code.includes('auth/email-already-in-use')) {
+            return 'An account already exists with this email.';
+        }
+        if (code.includes('auth/weak-password')) {
+            return 'Password should be at least 6 characters.';
+        }
+        if (code.includes('auth/network-request-failed')) {
+            return 'Network error. Please check your connection.';
+        }
+        if (code.includes('auth/popup-closed-by-user')) {
+            return 'Sign-in cancelled.';
+        }
+        return 'Authentication failed. Please try again.';
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -43,7 +70,8 @@ const AuthOverlay = () => {
                 setResetSent(true);
             }
         } catch (err) {
-            setError(err.message || 'Authentication failed');
+            console.error("Auth Error:", err);
+            setError(getFriendlyErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -56,7 +84,8 @@ const AuthOverlay = () => {
             await loginWithGoogle();
             onClose();
         } catch (err) {
-            setError(err.message || 'Google Login failed');
+            console.error("Google Auth Error:", err);
+            setError(getFriendlyErrorMessage(err));
         } finally {
             setLoading(false);
         }
