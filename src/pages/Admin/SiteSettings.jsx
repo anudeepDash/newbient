@@ -224,6 +224,11 @@ const SiteSettings = () => {
                                         onChange={(val) => updateGeneralSettings({ enableTribeForm: val })}
                                     />
                                     <FeatureToggle 
+                                        label="Volunteer Gigs"
+                                        checked={siteSettings.showVolunteerGigs !== false}
+                                        onChange={(val) => updateGeneralSettings({ showVolunteerGigs: val })}
+                                    />
+                                    <FeatureToggle 
                                         label="Client Marquee"
                                         checked={siteSettings.showPastClients !== false}
                                         onChange={(val) => updateGeneralSettings({ showPastClients: val })}
