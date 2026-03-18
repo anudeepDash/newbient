@@ -127,7 +127,7 @@ const Navbar = () => {
                 </div>
 
                 {/* Right Action/User Pill (Desktop Only) */}
-                <div className="relative rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
+                <div className="rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
                     <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
                     <div className="flex items-center h-14 gap-4 relative z-10">
                         <NotificationBell />
