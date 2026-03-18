@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, ListChecks, LayoutDashboard } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, LayoutDashboard, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
