@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Download, Printer, ArrowLeft, Mail, MessageCircle, Share2, FileSpreadsheet } from 'lucide-react';
+import { Download, Printer, ArrowLeft, Mail, MessageCircle, Share2, FileSpreadsheet, LayoutGrid } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
