@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles, Ticket } from 'lucide-react';
+import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles, Ticket, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import CommunityCard from '../community/CommunityCard';
 
@@ -104,6 +104,34 @@ const LivePreview = ({ type, data }) => {
                                     </div>
                                     <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white"><Share2 size={14} /></button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PORTFOLIO PREVIEW */}
+                    {type === 'portfolio' && (
+                        <div className="w-full bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-white/10 transition-all duration-500 flex flex-col h-full shadow-2xl">
+                            <div className="aspect-[4/3] relative overflow-hidden bg-black/50">
+                                {data.image ? (
+                                    <img src={data.image} alt={data.title} className="w-full h-full object-cover opacity-60 transition-all duration-700" />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-700 uppercase font-black tracking-widest text-[10px]">AESTHETIC TBA</div>
+                                )}
+                            </div>
+
+                            <div className="p-6 md:p-8 flex-1 flex flex-col">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="px-3 py-1 bg-neon-green/10 text-neon-green text-[9px] font-black uppercase tracking-widest border border-neon-green/20 rounded-full">
+                                        {data.category || 'GENERAL'}
+                                    </span>
+                                </div>
+                                <h3 className="text-xl font-black font-heading text-white uppercase italic tracking-tight mb-2">{data.title || 'RECORD TITLE'}</h3>
+                                {data.date && (
+                                    <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest mt-auto">
+                                        <Clock size={12} className="text-gray-700" />
+                                        {data.date}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

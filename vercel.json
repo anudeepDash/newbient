@@ -1,6 +1,16 @@
 {
     "rewrites": [
         {
+            "source": "/",
+            "has": [
+                {
+                    "type": "query",
+                    "key": "event"
+                }
+            ],
+            "destination": "/api/og"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

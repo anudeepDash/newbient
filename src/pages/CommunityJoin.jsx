@@ -30,6 +30,15 @@ const CommunityJoin = () => {
         'volunteer-gigs': true,
         'community-pulse': true
     });
+    const [scrollActiveIndex, setScrollActiveIndex] = useState({});
+
+    const handleScroll = (sectionId, e) => {
+        const container = e.target;
+        const scrollLeft = container.scrollLeft;
+        const width = container.offsetWidth;
+        const index = Math.round(scrollLeft / (width * 0.85)); // 85vw is the card width
+        setScrollActiveIndex(prev => ({ ...prev, [sectionId]: index }));
+    };
 
     // Initialize expanded state based on items
     useEffect(() => {
@@ -321,12 +330,34 @@ const CommunityJoin = () => {
                                             className="overflow-hidden mt-8"
                                         >
                                             {section.items?.length > 0 ? (
-                                                <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
-                                                    {section.items.map((item) => (
-                                                        <div key={item.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
-                                                            <CommunityCard item={item} type={section.type} handleShare={handleShare} />
+                                                <div className="relative group/scroll">
+                                                    <div 
+                                                        className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0"
+                                                        onScroll={(e) => handleScroll(section.id, e)}
+                                                    >
+                                                        {section.items.map((item) => (
+                                                            <div key={item.id} className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                                                                <CommunityCard item={item} type={section.type} handleShare={handleShare} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Scroll Progress Indicators (Mobile Only) */}
+                                                    {section.items.length > 1 && (
+                                                        <div className="flex md:hidden justify-center gap-2 mt-4">
+                                                            {section.items.map((_, idx) => (
+                                                                <div 
+                                                                    key={idx}
+                                                                    className={cn(
+                                                                        "h-1 transition-all duration-300 rounded-full",
+                                                                        (scrollActiveIndex[section.id] || 0) === idx 
+                                                                            ? "w-8 bg-neon-blue shadow-[0_0_10px_rgba(0,255,255,0.5)]" 
+                                                                            : "w-2 bg-white/10"
+                                                                    )}
+                                                                />
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="py-32 bg-white/[0.02] rounded-[3.5rem] border border-dashed border-white/5 text-center flex flex-col items-center gap-6">

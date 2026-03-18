@@ -227,7 +227,7 @@ NewBi Entertainment`;
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
                         </Link>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">TICKETING</span> PORTAL.
                         </h1>
                     </div>
@@ -392,19 +392,6 @@ NewBi Entertainment`;
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                         >
-                            {/* Search & Intelligence */}
-                            <div className="flex flex-col lg:flex-row justify-between gap-6 mb-12">
-                                <div className="relative flex-1 group">
-                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
-                                    <input
-                                        placeholder="Search by client identifier, reference, or booking hash..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full h-16 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] pl-16 pr-8 text-sm font-medium focus:border-neon-blue/50 outline-none transition-all placeholder:text-gray-700"
-                                    />
-                                </div>
-                            </div>
-
                             {/* Stream of Orders */}
                             <div className="grid grid-cols-1 gap-6">
                                 {filteredOrders.length > 0 ? (
