@@ -279,16 +279,16 @@ const Invoice = () => {
                                     {/* Header */}
                                     <div className="flex justify-between items-start mb-10">
                                         <div className="flex items-center gap-4">
-                                            <img src="/logo_full.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                            <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
                                         </div>
                                         <div className="text-right">
-                                            <h2 className="text-5xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
+                                            <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mt-1">INVOICE ID</p>
                                         </div>
                                     </div>
 
                                     {/* Info Boxes */}
-                                    <div className="grid grid-cols-2 gap-8 mb-10">
+                                    <div className="grid grid-cols-2 gap-8 mb-8">
                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                             <div className="bg-[#39FF14]/40 px-6 py-2">
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
@@ -318,7 +318,7 @@ const Invoice = () => {
                                     </div>
 
                                     {/* Table */}
-                                    <div className="mb-10 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20">
+                                    <div className="mb-8 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20">
                                         <table className="w-full">
                                             <thead>
                                                 <tr className="bg-[#39FF14]/40 text-black">
@@ -367,10 +367,12 @@ const Invoice = () => {
                                                 <span>TOTAL AMOUNT</span>
                                                 <span className="text-black text-xs font-bold">₹{totalAmount.toLocaleString()}</span>
                                             </div>
-                                            <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                <span>ADVANCE PAID</span>
-                                                <span className="text-black text-xs font-bold">₹{advancePaid.toLocaleString()}</span>
-                                            </div>
+                                            {displayInvoice.showAdvance !== false && (
+                                                <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    <span>ADVANCE PAID</span>
+                                                    <span className="text-black text-xs font-bold">₹{advancePaid.toLocaleString()}</span>
+                                                </div>
+                                            )}
                                             <div className="w-full flex justify-between py-4 bg-[#39FF14]/40 px-6 mt-4 rounded-xl shadow-sm border border-black/10">
                                                 <span className="text-[11px] font-black uppercase text-black tracking-widest flex items-center">BALANCE DUE</span>
                                                 <span className="text-2xl font-black text-black">₹{toBePaid.toLocaleString()}</span>
@@ -404,11 +406,11 @@ const Invoice = () => {
                                         </div>
                                         <div className="text-right flex flex-col items-end">
                                             {invoice?.showUPI && invoice?.upiId && (
-                                                <div className="mb-6 bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm">
+                                                <div className="mb-4 bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm">
                                                     <img 
                                                         src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${invoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
                                                         alt="Payment QR" 
-                                                        className="w-[80px] h-[80px] grayscale contrast-125"
+                                                        className="w-[70px] h-[70px] grayscale contrast-125"
                                                     />
                                                     <p className="text-[6px] font-black text-center mt-1 text-gray-400 tracking-widest">SCAN TO PAY</p>
                                                 </div>

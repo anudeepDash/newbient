@@ -229,10 +229,10 @@ const Proposal = () => {
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-10 relative z-10">
                                     <div className="flex items-center gap-4">
-                                        <img src="/logo_full.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
                                     </div>
                                     <div className="text-right">
-                                        <h2 className="text-5xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayProposal.proposalNumber}</h2>
+                                        <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayProposal.proposalNumber}</h2>
                                         <div className="flex justify-end gap-4 mt-1">
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">STRATEGIC PROPOSAL</p>
                                             <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest leading-none">| {new Date(displayProposal.date || displayProposal.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
@@ -241,7 +241,7 @@ const Proposal = () => {
                                 </div>
 
                                 {/* Info Blocks */}
-                                <div className="grid grid-cols-2 gap-8 mb-10 relative z-10">
+                                <div className="grid grid-cols-2 gap-8 mb-8 relative z-10">
                                     <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                         <div className="bg-[#39FF14]/40 px-6 py-2">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-black">PREPARED BY</h4>
@@ -271,7 +271,7 @@ const Proposal = () => {
 
                                 {/* Strategy Section */}
                                 {displayProposal.overview && (
-                                    <div className="mb-10 relative z-10">
+                                    <div className="mb-8 relative z-10">
                                         <div className="bg-white/30 rounded-2xl border border-gray-200 overflow-hidden">
                                             <div className="bg-[#39FF14]/40 px-6 py-2">
                                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-black">EXECUTIVE OVERVIEW</h3>
@@ -286,7 +286,7 @@ const Proposal = () => {
                                 )}
 
                                 {/* Table */}
-                                <div className="mb-10 relative z-10">
+                                <div className="mb-8 relative z-10">
                                     <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20">
                                         <table className="w-full text-left">
                                             <thead>
@@ -334,10 +334,12 @@ const Proposal = () => {
                                                 <span className="text-[10px] font-black uppercase">TOTAL INVESTMENT</span>
                                                 <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                             </div>
-                                            <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                <span>Advance Paid</span>
-                                                <span className="text-black text-sm">₹{advancePaid.toLocaleString()}</span>
-                                            </div>
+                                            {displayProposal.showAdvance !== false && (
+                                                <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                    <span>Advance Paid</span>
+                                                    <span className="text-black text-sm">₹{advancePaid.toLocaleString()}</span>
+                                                </div>
+                                            )}
                                             <div className="w-full flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/10 rounded-xl shadow-sm mt-4">
                                                 <span className="text-[10px] font-black uppercase">BALANCE DUE</span>
                                                 <span className="text-xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>

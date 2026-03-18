@@ -81,6 +81,7 @@ const ProposalGenerator = () => {
         qrType: 'auto',
         customQrImage: '',
         showFooter: true,
+        showAdvance: true,
         notes: '',
         paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis`
     });
@@ -104,6 +105,7 @@ const ProposalGenerator = () => {
                     qrType: proposal.qrType || 'auto',
                     customQrImage: proposal.customQrImage || '',
                     showFooter: proposal.showFooter !== undefined ? proposal.showFooter : true,
+                    showAdvance: proposal.showAdvance !== undefined ? proposal.showAdvance : true,
                     advancePaid: Number(proposal.advancePaid) || 0
                 });
                 setItems(proposal.items || []);
@@ -389,6 +391,10 @@ const ProposalGenerator = () => {
                                             <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Footer Pill</span>
                                         </div>
+                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
+                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Advance Row</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -476,16 +482,16 @@ const ProposalGenerator = () => {
                                     {/* Branded Header */}
                                     <div className="flex justify-between items-start mb-10 relative z-10">
                                         <div className="flex items-center gap-4">
-                                            <img src="/logo_full.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                            <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
                                         </div>
                                         <div className="text-right">
-                                            <h2 className="text-5xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.proposalNumber}</h2>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">PROPOSAL ID</p>
+                                            <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.proposalNumber}</h2>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">PROPOSAL ID</p>
                                         </div>
                                     </div>
 
                                     {/* Info Blocks */}
-                                    <div className="grid grid-cols-2 gap-8 mb-10 relative z-10">
+                                    <div className="grid grid-cols-2 gap-8 mb-8 relative z-10">
                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                             <div className="bg-[#39FF14]/40 px-6 py-2">
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">PREPARED BY</h4>
@@ -513,7 +519,7 @@ const ProposalGenerator = () => {
                                     </div>
 
                                     {/* Strategy Section */}
-                                    <div className="mb-10 relative z-10">
+                                    <div className="mb-8 relative z-10">
                                         <div className="bg-white/30 rounded-2xl border border-gray-200 overflow-hidden">
                                             <div className="bg-[#39FF14]/40 px-6 py-2">
                                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-black">EXECUTIVE OVERVIEW</h3>
@@ -527,7 +533,7 @@ const ProposalGenerator = () => {
                                     </div>
 
                                     {/* Table */}
-                                    <div className="mb-10 relative z-10">
+                                    <div className="mb-8 relative z-10">
                                         <table className="w-full text-left">
                                             <thead>
                                                 <tr className="bg-[#39FF14]/40 text-black">
@@ -570,7 +576,7 @@ const ProposalGenerator = () => {
                                                             <img 
                                                                 src={formData.qrType === 'auto' ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${formData.upiId}%26pn=NEWBI%26am=${totalAmount}%26cu=INR` : formData.customQrImage} 
                                                                 alt="Payment QR" 
-                                                                className="w-24 h-24 object-contain"
+                                                                className="w-20 h-20 object-contain"
                                                             />
                                                         </div>
                                                     </div>
@@ -592,10 +598,12 @@ const ProposalGenerator = () => {
                                                     <span className="text-[10px] font-black uppercase">TOTAL INVESTMENT</span>
                                                     <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center py-2 border-b border-dashed border-gray-400 text-[10px] font-black text-gray-500 uppercase">
-                                                    <span>Advance Paid</span>
-                                                    <span className="text-black text-sm">₹{(Number(formData.advancePaid) || 0).toLocaleString()}</span>
-                                                </div>
+                                                {formData.showAdvance !== false && (
+                                                    <div className="flex justify-between items-center py-2 border-b border-dashed border-gray-400 text-[10px] font-black text-gray-500 uppercase">
+                                                        <span>Advance Paid</span>
+                                                        <span className="text-black text-sm">₹{(Number(formData.advancePaid) || 0).toLocaleString()}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/10 rounded-xl shadow-sm">
                                                     <span className="text-[10px] font-black uppercase">BALANCE DUE</span>
                                                     <span className="text-xl font-black italic tracking-tighter">₹{(totalAmount - (Number(formData.advancePaid) || 0)).toLocaleString()}</span>

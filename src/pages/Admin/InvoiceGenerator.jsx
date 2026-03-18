@@ -10,7 +10,7 @@ import { storage } from '../../lib/firebase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
-import logo from '../../assets/logo.png';
+
 const InvoiceGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -77,7 +77,8 @@ const InvoiceGenerator = () => {
         customQrImage: '',
         showGst: false,
         gstPercentage: 18,
-        showFooter: true
+        showFooter: true,
+        showAdvance: true
     });
 
     const [items, setItems] = useState([
@@ -116,7 +117,8 @@ const InvoiceGenerator = () => {
                     customQrImage: invoice.customQrImage || '',
                     showGst: invoice.showGst || false,
                     gstPercentage: invoice.gstPercentage || 18,
-                    showFooter: invoice.showFooter !== undefined ? invoice.showFooter : true
+                    showFooter: invoice.showFooter !== undefined ? invoice.showFooter : true,
+                    showAdvance: invoice.showAdvance !== undefined ? invoice.showAdvance : true
                 });
                 setItems(invoice.items || []);
                 setCustomColumns(invoice.customColumns || []);
@@ -257,7 +259,8 @@ const InvoiceGenerator = () => {
                 showUPI: formData.showUPI,
                 upiId: formData.upiId,
                 showGst: formData.showGst,
-                gstPercentage: formData.gstPercentage
+                gstPercentage: formData.gstPercentage,
+                showAdvance: formData.showAdvance
             };
 
             if (id) {
@@ -303,6 +306,7 @@ const InvoiceGenerator = () => {
                 showPaymentDetails: true,
                 showUPI: false,
                 showGst: false,
+                showAdvance: true,
             }));
             setItems([{ id: Date.now(), description: '', customValues: {}, qty: 1, price: 0 }]);
         }
@@ -504,7 +508,13 @@ const InvoiceGenerator = () => {
                                 </div>
 
                                 <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Financial Options</h4>
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Financial Options</h4>
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked })} className="w-3 h-3 accent-neon-green" />
+                                            <span className="text-[8px] font-bold text-gray-500 uppercase">Show Advance Row</span>
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest pl-1">Advance Paid</label>
@@ -621,16 +631,16 @@ const InvoiceGenerator = () => {
                                     {/* Header */}
                                     <div className="flex justify-between items-start mb-10">
                                         <div className="flex items-center gap-4">
-                                            <img src="/logo_full.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                            <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
                                         </div>
                                         <div className="text-right">
-                                            <h2 className="text-5xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">INVOICE ID</p>
+                                            <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">INVOICE ID</p>
                                         </div>
                                     </div>
 
                                     {/* Info Boxes */}
-                                    <div className="grid grid-cols-2 gap-8 mb-10">
+                                    <div className="grid grid-cols-2 gap-8 mb-8">
                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                             <div className="bg-[#39FF14]/40 px-6 py-2">
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
@@ -660,7 +670,7 @@ const InvoiceGenerator = () => {
                                     </div>
 
                                     {/* Table */}
-                                    <div className="mb-10">
+                                    <div className="mb-8">
                                         <table className="w-full">
                                             <thead>
                                                 <tr className="bg-[#39FF14]/40 text-black">
@@ -705,10 +715,12 @@ const InvoiceGenerator = () => {
                                                     <span>TOTAL AMOUNT</span>
                                                     <span className="text-black text-xs font-bold">₹{totalAmount.toLocaleString()}</span>
                                                 </div>
-                                                <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                    <span>ADVANCE PAID</span>
-                                                    <span className="text-black text-xs font-bold">₹{formData.advancePaid.toLocaleString()}</span>
-                                                </div>
+                                                {formData.showAdvance !== false && (
+                                                    <div className="w-full flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                        <span>ADVANCE PAID</span>
+                                                        <span className="text-black text-xs font-bold">₹{formData.advancePaid.toLocaleString()}</span>
+                                                    </div>
+                                                )}
                                                 <div className="w-full flex justify-between py-4 bg-[#39FF14]/40 px-6 mt-4 rounded-xl shadow-sm border border-black/10">
                                                     <span className="text-[11px] font-black uppercase text-black tracking-widest flex items-center">BALANCE DUE</span>
                                                     <span className="text-2xl font-black text-black">₹{toBePaid.toLocaleString()}</span>
@@ -735,12 +747,12 @@ const InvoiceGenerator = () => {
                                         </div>
                                         <div className="text-right flex flex-col items-end">
                                             {formData.showUPI && (
-                                                <div className="mb-6 bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm">
+                                                <div className="mb-4 bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm">
                                                     {formData.qrType === 'auto' ? (
                                                         <img 
                                                             src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
                                                             alt="Payment QR" 
-                                                            className="w-[80px] h-[80px] grayscale contrast-125"
+                                                            className="w-[70px] h-[70px] grayscale contrast-125"
                                                         />
                                                     ) : formData.customQrImage ? (
                                                         <img 
