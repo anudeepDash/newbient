@@ -3,9 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
-import logo from '../assets/logo.png';
 import NotificationBell from './NotificationBell';
 import { useStore } from '../lib/store';
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
     const { maintenanceState, user, siteSettings, creators, announcements } = useStore();
