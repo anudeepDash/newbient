@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, Zap, Target, Star } from 'lucide-react';
 import logo from '../../assets/logo.png';
-
 const Hero = () => {
     return (
         <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-20 bg-[#020202]">
