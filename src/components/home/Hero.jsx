@@ -126,7 +126,7 @@ const Hero = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5, duration: 1 }}
-                className="absolute bottom-4 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4 hidden lg:flex"
+                className="absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4"
             >
                 <div className="flex flex-col items-center gap-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">EXPLORE SPACE</span>

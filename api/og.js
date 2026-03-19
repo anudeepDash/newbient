@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import fs from 'fs';
 import path from 'path';
 
@@ -16,25 +16,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export default async function handler(req, res) {
-    const { event: eventId } = req.query;
-    const baseUrl = 'https://newbi.live';
+    const { event: eventId, giveaway: giveawaySlug, formId, gig: gigId, gl: glId, form: queryFormId } = req.query;
+    const baseUrl = 'https://newbi.live'; // Assuming default domain
 
-    let eventData = null;
-
-    if (eventId) {
-        try {
-            const eventRef = doc(db, 'upcoming_events', eventId);
-            const eventSnap = await getDoc(eventRef);
-            if (eventSnap.exists()) {
-                eventData = { ...eventSnap.data(), id: eventSnap.id };
-            }
-        } catch (error) {
-            console.error("Error fetching event:", error);
-        }
-    }
-
-    // Default Meta Tags
-    const defaultMeta = {
+    let meta = {
         title: "Newbi Entertainment & Marketing",
         description: "Experience the pulse of entertainment with Newbi. Premier events, marketing, and the ultimate community tribe.",
         image: `${baseUrl}/logo.png`,
@@ -42,13 +27,58 @@ export default async function handler(req, res) {
         type: 'website'
     };
 
-    const meta = eventData ? {
-        title: `${eventData.title}${eventData.city ? ` | ${eventData.city}` : ''}`,
-        description: `Featuring ${Array.isArray(eventData.artists) ? eventData.artists.join(', ') : 'Exclusive Artists'} on ${eventData.date ? new Date(eventData.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Upcoming Date'}. ${eventData.description || 'Join us for an unforgettable experience.'}`.substring(0, 155),
-        image: eventData.image?.startsWith('http') ? eventData.image : `${baseUrl}${eventData.image || '/logo.png'}`,
-        url: `${baseUrl}/?event=${eventId}`,
-        type: 'website'
-    } : defaultMeta;
+    try {
+        if (eventId) {
+            const snap = await getDoc(doc(db, 'upcoming_events', eventId));
+            if (snap.exists()) {
+                const data = snap.data();
+                meta.title = `${data.title}${data.city ? ` | ${data.city}` : ''}`;
+                meta.description = `Featuring ${Array.isArray(data.artists) ? data.artists.join(', ') : 'Exclusive Artists'}. ${data.description || ''}`.substring(0, 155);
+                meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/logo.png'}`;
+                meta.url = `${baseUrl}/?event=${eventId}`;
+            }
+        } else if (giveawaySlug) {
+            const q = query(collection(db, 'giveaways'), where('slug', '==', giveawaySlug));
+            const snaps = await getDocs(q);
+            if (!snaps.empty) {
+                const data = snaps.docs[0].data();
+                meta.title = `${data.name} | Newbi Giveaway`;
+                meta.description = data.description?.substring(0, 155) || `Join the ultimate giveaway to win ${data.name}!`;
+                meta.image = data.posterUrl?.startsWith('http') ? data.posterUrl : `${baseUrl}${data.posterUrl || '/logo.png'}`;
+                meta.url = `${baseUrl}/giveaway/${giveawaySlug}`;
+            }
+        } else if (formId || queryFormId) {
+            const id = formId || queryFormId;
+            const snap = await getDoc(doc(db, 'forms', id));
+            if (snap.exists()) {
+                const data = snap.data();
+                meta.title = `${data.title} | Newbi Forms`;
+                meta.description = data.description?.substring(0, 155) || `Participate in ${data.title} on Newbi Hub.`;
+                meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/logo.png'}`;
+                meta.url = formId ? `${baseUrl}/forms/${id}` : `${baseUrl}/community-join?form=${id}`;
+            }
+        } else if (gigId) {
+            const snap = await getDoc(doc(db, 'volunteer_gigs', gigId));
+            if (snap.exists()) {
+                const data = snap.data();
+                meta.title = `${data.title} | Volunteer Gig`;
+                meta.description = data.description?.substring(0, 155) || `Join the Newbi Tribe as a volunteer for ${data.title}.`;
+                meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/logo.png'}`;
+                meta.url = `${baseUrl}/community-join?gig=${gigId}`;
+            }
+        } else if (glId) {
+            const snap = await getDoc(doc(db, 'guestlists', glId));
+            if (snap.exists()) {
+                const data = snap.data();
+                meta.title = `${data.title} | VIP Guestlist`;
+                meta.description = data.description?.substring(0, 155) || `Get on the exclusive guestlist for ${data.title}.`;
+                meta.image = data.image?.startsWith('http') ? data.image : `${baseUrl}${data.image || '/logo.png'}`;
+                meta.url = `${baseUrl}/community-join?gl=${glId}`;
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching dynamic OG data:", error);
+    }
 
     // Load the index.html from the filesystem
     // Note: In Vercel, this is usually at the root or relative to the function
@@ -77,12 +107,15 @@ export default async function handler(req, res) {
         <meta name="twitter:image" content="${meta.image}" />
     `;
 
-    // Replace the default title or head tags
-    // Simple replacement: insert before </head> or replace existing ones if they exist
-    // For simplicity, we'll strip existing og tags and add our own
-    html = html.replace(/<title>.*?<\/title>/, '');
-    html = html.replace('</head>', `${metaTags}</head>`);
+    // Strip original title and open graph tags to avoid duplicates
+    html = html.replace(/<title>.*?<\/title>/gi, '');
+    html = html.replace(/<meta property="og:.*?".*?>/gi, '');
+    html = html.replace(/<meta name="twitter:.*?".*?>/gi, '');
+    html = html.replace(/<meta name="description".*?>/gi, '');
+    
+    html = html.replace('</head>', `${metaTags}\n</head>`);
 
     res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300'); // Cache for performance
     res.status(200).send(html);
 }
