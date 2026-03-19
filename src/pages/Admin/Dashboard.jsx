@@ -266,9 +266,9 @@ const DashboardSection = ({ title, gradient, children }) => (
             <h2 className={cn("text-2xl font-black font-heading tracking-tight uppercase italic bg-clip-text text-transparent bg-gradient-to-r pr-4", gradient)}>{title}</h2>
             <div className="flex-1 h-px bg-white/5" />
         </div>
-        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible pb-8 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-6 px-6 md:mx-0 md:px-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 pb-8 md:pb-0">
             {React.Children.map(children, (child) => (
-                <div className="min-w-[85vw] md:min-w-0 snap-center h-full">
+                <div className="h-full w-full">
                     {child}
                 </div>
             ))}
@@ -280,27 +280,27 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
     <Link to={isHidden ? '#' : (link || '#')} className={cn("group relative block h-full", isHidden && "pointer-events-none")}>
         <div className={cn("absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity blur-md bg-white", isHidden && "group-hover:opacity-0")} />
         <Card className={cn(
-            "relative p-6 md:p-8 h-full border-white/5 transition-all rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border",
+            "relative p-4 md:p-8 h-full border-white/5 transition-all rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center text-center group cursor-pointer overflow-hidden border",
             isHidden 
                 ? "bg-[#0a0a0a] opacity-40 grayscale" 
                 : "bg-[#111] hover:bg-zinc-900 hover:border-white/10"
         )}>
             {isHidden && (
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70 border border-red-500/20 px-3 py-1 rounded-full bg-red-500/5">Offline</span>
+                    <span className="text-[7px] md:text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70 border border-red-500/20 px-2 py-0.5 rounded-full bg-red-500/5">Offline</span>
                 </div>
             )}
-            {isNew && !isHidden && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
-            <div className={cn("w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-700", 
+            {isNew && !isHidden && <span className="absolute top-3 right-3 md:top-4 md:right-4 text-[7px] md:text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
+            <div className={cn("w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 group-hover:-translate-y-1 md:group-hover:-translate-y-2 transition-all duration-700", 
                 color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
             )}>
-                <Icon size={32} />
+                <Icon className="w-6 h-6 md:w-8 md:h-8" />
             </div>
-            <h3 className="text-xl font-black font-heading text-white mb-2 tracking-tight uppercase group-hover:text-neon-green transition-colors">{title}</h3>
-            <p className="text-gray-500 text-xs font-medium leading-relaxed px-2">{desc}</p>
+            <h3 className="text-sm md:text-xl font-black font-heading text-white mb-2 md:mb-2 tracking-tight uppercase group-hover:text-neon-green transition-colors">{title}</h3>
+            <p className="text-gray-500 text-[9px] md:text-xs font-medium leading-[1.4] md:leading-relaxed px-1 md:px-2">{desc}</p>
             
             {count !== undefined && (
-                <div className="mt-6 px-4 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <div className="mt-4 md:mt-6 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     {count} Recorded
                 </div>
             )}
