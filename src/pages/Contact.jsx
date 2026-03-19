@@ -108,7 +108,7 @@ const Contact = () => {
                                     label="Quick Chat" 
                                     val="WHATSAPP LIVE" 
                                     revealVal={siteDetails.phone}
-                                    href={`https://wa.me/${siteDetails.phone?.replace(/[^0-9]/g, '')}`} 
+                                    href={`https://wa.me/${(siteDetails.phone || '').replace(/[^0-9]/g, '')}`} 
                                     accent="neon-green"
                                 />
                                 <ContactMethod 
@@ -130,7 +130,7 @@ const Contact = () => {
                                     label="Base" 
                                     val="Mainland India" 
                                     revealVal={siteDetails.address}
-                                    href="#" 
+                                    href={`https://maps.google.com/?q=${encodeURIComponent(siteDetails.address || 'India')}`} 
                                     accent="white"
                                 />
                             </div>
