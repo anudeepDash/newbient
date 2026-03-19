@@ -278,12 +278,23 @@ const Navbar = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
-                                        className="p-3 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0"
-                                    >
-                                        <LogOut size={20} />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {['developer', 'super_admin'].includes(user.role) && (
+                                            <Link 
+                                                to="/admin/site-settings" 
+                                                onClick={() => setIsOpen(false)}
+                                                className="p-3 rounded-2xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all shrink-0"
+                                            >
+                                                <Settings size={20} />
+                                            </Link>
+                                        )}
+                                        <button
+                                            onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
+                                            className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0"
+                                        >
+                                            <LogOut size={20} />
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <button
