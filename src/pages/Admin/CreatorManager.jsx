@@ -58,7 +58,7 @@ const CreatorManager = () => {
                 `"${c.email}"`,
                 `"${c.phone}"`,
                 `"${c.city}"`,
-                `"${c.instagram || ''}"`,
+                `"${c.instagram ? (c.instagram.includes('http') ? c.instagram : `https://instagram.com/${c.instagram.replace('@', '')}`) : ''}"`,
                 `"${c.instagramFollowers || 0}"`,
                 `"${c.youtube || ''}"`,
                 `"${c.youtubeSubscribers || 0}"`,
