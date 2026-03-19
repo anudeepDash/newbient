@@ -120,13 +120,7 @@ const NotificationBell = () => {
                             )}
                         </div>
 
-                        {recentAnnouncements.length > 0 && (
-                            <div className="p-4 border-t border-white/5 bg-gradient-to-b from-transparent to-white/[0.02] shrink-0">
-                                <Link to="/" className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-white border border-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl" onClick={() => setIsOpen(false)}>
-                                    Access Full Archive
-                                </Link>
-                            </div>
-                        )}
+
                     </motion.div>
                 )}
             </AnimatePresence>
