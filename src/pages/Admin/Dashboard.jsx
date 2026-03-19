@@ -147,8 +147,8 @@ const Dashboard = () => {
                             <div className="p-3 md:p-4 rounded-[1.5rem] bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
                                 <LayoutDashboard className="text-neon-green" size={28} />
                             </div>
-                            <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">COMMAND</span> CENTRE.
+                            <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight flex-1">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white pr-2">COMMAND</span>CENTRE.
                             </h1>
                         </div>
                         <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest pl-1 flex flex-wrap items-center gap-2">
