@@ -1,6 +1,29 @@
 {
     "rewrites": [
         {
+            "source": "/giveaway/:slug",
+            "destination": "/api/og?giveaway=:slug"
+        },
+        {
+            "source": "/forms/:id",
+            "destination": "/api/og?formId=:id"
+        },
+        {
+            "source": "/community-join",
+            "has": [{ "type": "query", "key": "gig" }],
+            "destination": "/api/og"
+        },
+        {
+            "source": "/community-join",
+            "has": [{ "type": "query", "key": "gl" }],
+            "destination": "/api/og"
+        },
+        {
+            "source": "/community-join",
+            "has": [{ "type": "query", "key": "form" }],
+            "destination": "/api/og"
+        },
+        {
             "source": "/",
             "has": [
                 {

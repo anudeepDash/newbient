@@ -877,6 +877,7 @@ export const useStore = create((set, get) => ({
 
         let role = 'unauthorized';
         let hasJoinedTribe = false;
+        let hasJoinedWhatsapp = false;
         let displayName = firebaseUser.displayName || '';
 
         try {
@@ -910,6 +911,7 @@ export const useStore = create((set, get) => ({
                 }
 
                 hasJoinedTribe = userData.hasJoinedTribe || false;
+                hasJoinedWhatsapp = userData.hasJoinedWhatsapp || false;
                 displayName = userData.displayName || displayName;
 
                 // Update Last Active Timestamp (Fire and forget)
@@ -935,7 +937,8 @@ export const useStore = create((set, get) => ({
                 uid: firebaseUser.uid,
                 role: role,
                 displayName: displayName,
-                hasJoinedTribe: hasJoinedTribe
+                hasJoinedTribe: hasJoinedTribe,
+                hasJoinedWhatsapp: hasJoinedWhatsapp
             },
             authInitialized: true
         });
