@@ -8,7 +8,7 @@ const About = () => {
     const stats = [
         { label: "Events Managed", value: "250+", sub: "Successful shows and activations across India" },
         { label: "Cities Covered", value: "17+", sub: "Nationwide presence in major youth hubs" },
-        { label: "GenZ Reach", value: "2M+", sub: "Monthly impressions through our massive network" },
+        { label: "GenZ Reach", value: "1M+", sub: "Monthly impressions through our massive network" },
     ];
 
     useEffect(() => {

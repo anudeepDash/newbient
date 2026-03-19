@@ -55,7 +55,7 @@ const NotificationBell = () => {
                         <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-white/[0.03] to-transparent shrink-0">
                             <h3 className="font-black text-[11px] md:text-sm uppercase tracking-[0.2em] text-white flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" />
-                                Broadcast Signals
+                                Announcements
                             </h3>
                             <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
                                 <X size={14} />
@@ -69,8 +69,8 @@ const NotificationBell = () => {
                                         <Bell size={24} />
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-[10px] font-black tracking-[0.3em] uppercase text-gray-600">Static detected.</p>
-                                        <p className="text-[8px] font-bold uppercase text-gray-700">No active signals in the stream</p>
+                                        <p className="text-[10px] font-black tracking-[0.3em] uppercase text-gray-600">No announcements.</p>
+                                        <p className="text-[8px] font-bold uppercase text-gray-700">You're all caught up!</p>
                                     </div>
                                 </div>
                             ) : (

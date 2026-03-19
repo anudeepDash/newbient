@@ -69,7 +69,7 @@ const Portfolio = () => {
                     </div>
 
                     {/* Tabs with selection bar */}
-                    <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl md:flex-wrap w-full md:w-auto">
+                    <div className="inline-flex overflow-x-auto whitespace-nowrap snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl w-full md:w-auto max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
@@ -109,7 +109,7 @@ const Portfolio = () => {
                         >
                             <div
                                 ref={carouselRef}
-                                className="flex gap-10 overflow-x-auto pb-20 scrollbar-hide snap-x snap-mandatory scroll-smooth -mx-4 px-4"
+                                className="flex flex-col md:flex-row gap-6 md:gap-10 md:overflow-x-auto pb-10 md:pb-20 md:scrollbar-hide md:snap-x md:snap-mandatory scroll-smooth"
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {filteredItems.map((item) => (
@@ -153,7 +153,7 @@ const Portfolio = () => {
 
 const PortfolioCard = ({ item, categories }) => {
     return (
-        <div className="min-w-[300px] md:min-w-[380px] aspect-[4/5] relative rounded-[3.5rem] overflow-hidden group border border-white/5 bg-zinc-900 snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
+        <div className="w-full md:w-auto md:min-w-[380px] aspect-[4/5] relative rounded-[3rem] md:rounded-[3.5rem] overflow-hidden group border border-white/5 bg-zinc-900 md:snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
             {/* Visual Perforation (Premium Ticket Style) */}
             <div className="absolute top-[70%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
             <div className="absolute top-[70%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />

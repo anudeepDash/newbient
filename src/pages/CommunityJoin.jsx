@@ -187,7 +187,7 @@ const CommunityJoin = () => {
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <Users className="w-24 h-24 text-neon-blue mx-auto mb-12 relative z-10" />
-                            <h3 className="text-4xl font-black font-heading mb-6 relative z-10">LOCK IN.</h3>
+                            <h3 className="text-4xl font-black font-heading mb-6 relative z-10">GET STARTED.</h3>
                             <p className="text-gray-500 mb-12 relative z-10 text-lg font-medium">Join the ranks to access exclusive gigs, VIP guestlists, and more.</p>
                             <Button
                                 onClick={() => setAuthModal(true)}
@@ -202,7 +202,7 @@ const CommunityJoin = () => {
                         <div className="max-w-5xl mx-auto">
                             <div className="flex items-center gap-6 mb-16">
                                 <div className="w-16 h-16 rounded-2xl bg-neon-blue text-black flex items-center justify-center font-black text-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)]">01</div>
-                                <h2 className="text-4xl font-black font-heading uppercase tracking-tighter text-white">THE RITUAL.</h2>
+                                <h2 className="text-4xl font-black font-heading uppercase tracking-tighter text-white">REGISTRATION.</h2>
                             </div>
 
                             <div className="relative group">
@@ -225,7 +225,7 @@ const CommunityJoin = () => {
                                     disabled={confirming}
                                     className="h-20 px-16 rounded-2xl font-black font-heading tracking-widest bg-neon-green text-black"
                                 >
-                                    {confirming ? <Loader2 className="animate-spin" /> : 'INITIATE ACCESS'}
+                                    {confirming ? <Loader2 className="animate-spin" /> : 'SUBMIT APPLICATION'}
                                 </Button>
                             </div>
                         </div>
