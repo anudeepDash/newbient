@@ -60,7 +60,7 @@ const Contact = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="text-[12vw] sm:text-5xl md:text-8xl font-black font-heading tracking-tighter leading-none mb-8 break-words overflow-wrap-anywhere whitespace-normal hyphens-auto"
                         >
-                            LET'S <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-green">SCALE.</span>
+                            GET IN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-green">TOUCH.</span>
                         </motion.h1>
                         <motion.p
                             initial={{ opacity: 0 }}
@@ -68,7 +68,7 @@ const Contact = () => {
                             transition={{ delay: 0.2 }}
                             className="text-gray-400 text-lg md:text-2xl font-medium max-w-xl leading-relaxed"
                         >
-                            Ready to take your brand or event to the next level? Our team is live and ready for deployment.
+                            Ready to elevate your brand or event? Our team is ready to help.
                         </motion.p>
                     </div>
 
@@ -100,7 +100,7 @@ const Contact = () => {
                         className="space-y-12"
                     >
                         <div className="space-y-6">
-                            <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"WE DON'T DO ORDINARY."</h3>
+                            <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"REACH OUT TODAY."</h3>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <ContactMethod 
@@ -113,7 +113,7 @@ const Contact = () => {
                                 />
                                 <ContactMethod 
                                     icon={Mail} 
-                                    label="Email Deck" 
+                                    label="Send Email" 
                                     val={siteDetails.email} 
                                     href={`mailto:${siteDetails.email}`} 
                                     accent="neon-blue"
@@ -202,7 +202,7 @@ const Contact = () => {
                                     disabled={sending}
                                     className="w-full h-24 bg-white text-black rounded-[2.2rem] flex items-center justify-center gap-4 font-black font-heading tracking-[0.3em] uppercase text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50"
                                 >
-                                    {sending ? 'COMMUNICATING...' : (
+                                    {sending ? 'SENDING...' : (
                                         <>
                                             SEND MESSAGE
                                             <Zap size={20} className="fill-black" />

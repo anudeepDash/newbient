@@ -148,11 +148,11 @@ const Dashboard = () => {
                                 <LayoutDashboard className="text-neon-green" size={28} />
                             </div>
                             <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight flex-1">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white pr-2">COMMAND</span>CENTRE.
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white pr-2">ADMIN</span>DASHBOARD.
                             </h1>
                         </div>
                         <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest pl-1 flex flex-wrap items-center gap-2">
-                            Command Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
+                            Admin Management System <span className="mx-1 md:mx-2">•</span> <span className="text-neon-blue">{user.role?.replace('_', ' ')}</span>
                             {maintenanceState.global && (
                                 <>
                                     <span className="hidden md:inline mx-1 md:mx-2">•</span>
@@ -164,27 +164,25 @@ const Dashboard = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1 md:p-1.5 rounded-full backdrop-blur-2xl self-start xl:self-auto max-w-full">
-                        <Link to="/admin/site-settings" className="p-2.5 hover:bg-white/10 rounded-full transition-all group">
-                            <Settings size={18} className="text-gray-400 group-hover:text-neon-blue transition-colors" />
+                    <div className="flex items-center gap-2 bg-[#0a0a0a]/80 border border-white/10 p-1.5 rounded-full backdrop-blur-3xl shadow-[0_4px_24px_rgba(0,0,0,0.5)] self-start xl:self-auto max-w-full">
+                        <Link to="/admin/site-settings" className="p-2.5 hover:bg-white/10 rounded-full transition-all group overflow-hidden relative">
+                            <Settings size={18} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
                         </Link>
-                        <Link to="/admin/messages" className="p-2.5 hover:bg-white/10 rounded-full transition-all relative group">
-                            <Bell size={18} className="text-gray-400 group-hover:text-white transition-colors" />
-                            {unreadCount > 0 && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-neon-pink rounded-full shadow-[0_0_10px_rgba(255,0,255,0.5)]" />}
+                        <Link to="/admin/messages" className="p-2.5 hover:bg-white/10 rounded-full transition-all relative group overflow-hidden">
+                            <Bell size={18} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
+                            {unreadCount > 0 && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-neon-pink rounded-full shadow-[0_0_10px_rgba(255,0,255,0.5)] z-20" />}
                         </Link>
-                        <div className="h-6 w-px bg-white/10 mx-1" />
+                        <div className="h-6 w-px bg-white/10 mx-2" />
                         <div className="flex items-center gap-3 pl-1 pr-3 py-1">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-green to-neon-blue p-0.5">
-                                <div className="w-full h-full rounded-full bg-black flex items-center justify-center font-black text-xs">
-                                    {user.email?.[0].toUpperCase()}
-                                </div>
+                            <div className="w-10 h-10 rounded-full bg-transparent border border-white/20 flex items-center justify-center relative shadow-[0_0_15px_rgba(255,255,255,0.05)] text-neon-green">
+                                <span className="font-black text-sm uppercase relative z-10">{user.email?.[0]}</span>
                             </div>
-                            <div className="hidden sm:block">
-                                <p className="text-sm font-black text-white leading-none">{user.displayName || 'Admin'}</p>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter mt-1">{user.email}</p>
+                            <div className="hidden sm:block text-left">
+                                <p className="text-sm font-black text-white leading-tight capitalize">{user.displayName || 'Admin Authority'}</p>
+                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] mt-0.5">{user.email}</p>
                             </div>
-                            <button onClick={logout} className="ml-2 p-2 hover:bg-neon-pink/10 hover:text-neon-pink rounded-xl transition-all">
-                                <LogOut size={18} />
+                            <button onClick={logout} className="ml-3 p-2.5 hover:bg-red-500/20 text-gray-500 hover:text-red-500 rounded-full transition-all flex items-center justify-center">
+                                <LogOut size={16} />
                             </button>
                         </div>
                     </div>
@@ -197,7 +195,6 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
                     {stats.map((stat, i) => (
                         <motion.div
-                            key={i}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
@@ -319,22 +316,22 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
                     <Shield size={32} className="text-neon-pink" />
                 </div>
                 <h1 className="text-3xl font-black font-heading text-white uppercase tracking-tighter italic">
-                    {isResetting ? 'RESTORE ACCESS' : (isRegistering ? 'REQUEST AUTH' : 'SECURE LOGIN')}
+                    {isResetting ? 'RESET PASSWORD' : (isRegistering ? 'REGISTER ADMIN' : 'ADMIN LOGIN')}
                 </h1>
                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2">{isResetting ? 'Password Recovery' : 'Newbi Internal Systems'}</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Email Authority</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Email Address</label>
                     <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-12 bg-black/50 border-white/5 focus:border-neon-pink/50 rounded-xl" required />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Security Key</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Password</label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-12 bg-black/50 border-white/5 focus:border-neon-pink/50 rounded-xl" required />
                 </div>
                 <Button type="submit" className="w-full h-14 bg-neon-pink text-black font-black font-heading uppercase tracking-widest text-sm rounded-xl hover:bg-neon-pink/80 transition-all shadow-[0_10px_30px_rgba(255,0,255,0.2)]">
-                    {isRegistering ? 'INITIALIZE REQUEST' : 'AUTHENTICATE'}
+                    {isRegistering ? 'REGISTER' : 'LOGIN'}
                 </Button>
             </form>
 

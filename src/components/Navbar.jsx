@@ -130,27 +130,33 @@ const Navbar = () => {
                 <div className="rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
                     <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
                     <div className="flex items-center h-14 gap-4 relative z-10">
+                        {user && ['developer', 'super_admin'].includes(user.role) && (
+                            <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                                <Settings size={14} />
+                            </Link>
+                        )}
                         <NotificationBell />
-                        <div className="h-4 w-px bg-white/10" />
+                        {user && <div className="h-4 w-px bg-white/10" />}
                         {user ? (
-                            <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                    <div className="text-[10px] font-black text-white leading-none capitalize flex items-center gap-1 justify-end tracking-tight">
-                                        {user.displayName?.split(' ')[0] || 'Tribe'}
-                                        {user.hasJoinedTribe && <Users size={10} className="text-neon-blue" />}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 pr-2">
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                        <span className="text-white font-black text-[11px] uppercase">
+                                            {user.displayName ? user.displayName.charAt(0) : 'U'}
+                                        </span>
                                     </div>
-                                    <div className="text-[8px] text-gray-500 uppercase tracking-widest mt-1 font-bold">
-                                        {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : 'MEMBER')}
+                                    <div className="text-left flex flex-col justify-center">
+                                        <span className="text-[11px] font-bold text-white leading-none capitalize tracking-tight">
+                                            {user.displayName?.split(' ')[0] || 'Member'}
+                                        </span>
+                                        <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
+                                            {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
+                                        </span>
                                     </div>
                                 </div>
-                                {['developer', 'super_admin'].includes(user.role) && (
-                                    <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-500 hover:text-white transition-all">
-                                        <Settings size={14} />
-                                    </Link>
-                                )}
                                 <button
                                     onClick={() => useStore.getState().logout()}
-                                    className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all"
+                                    className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all font-bold"
                                 >
                                     <LogOut size={14} />
                                 </button>
@@ -158,7 +164,7 @@ const Navbar = () => {
                         ) : (
                             <button
                                 onClick={() => useStore.getState().setAuthModal(true)}
-                                className="px-4 py-2 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                className="px-5 py-2 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
                             >
                                 Login
                             </button>
@@ -274,7 +280,7 @@ const Navbar = () => {
                                         <div className="flex flex-col flex-1 min-w-0">
                                             <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
                                             <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
-                                                {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : 'MEMBER')}
+                                                {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
                                             </span>
                                         </div>
                                     </div>
