@@ -169,10 +169,28 @@ const UpcomingEvents = () => {
                 </div>
 
                 {/* Carousel Container */}
-                <div className="relative group cursor-grab active:cursor-grabbing">
+                <div className="relative group/nav cursor-grab active:cursor-grabbing">
+                    {/* Navigation Arrows */}
+                    {upcomingEvents.length > 2 && (
+                        <div className="hidden lg:block">
+                            <button 
+                                onClick={() => scroll('left')}
+                                className="absolute -left-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button 
+                                onClick={() => scroll('right')}
+                                className="absolute -right-12 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30 backdrop-blur-md opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                    )}
+
                     <div 
                         ref={carouselRef}
-                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x horizontal-scrollbar scroll-smooth px-6 md:px-0"
+                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x horizontal-scrollbar scroll-smooth px-8 md:px-0"
                         style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                     >
                         {upcomingEvents.map((event) => {
@@ -205,7 +223,7 @@ const UpcomingEvents = () => {
                             };
 
                             return (
-                                <div key={event.id} className="min-w-[280px] md:min-w-[400px] snap-start">
+                                <div key={event.id} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
                                     <div 
                                         onClick={handleCardClick} 
                                         className="block w-full h-full relative cursor-pointer group"
@@ -232,108 +250,117 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
     const isHybrid = event.isTicketed && linkedGiveaway;
 
     return (
-        <div id={`event-card-${event.id}`} className="relative bg-[#111] border border-white/5 rounded-3xl md:rounded-[3rem] overflow-hidden flex flex-col h-[420px] md:h-[520px] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
+        <div id={`event-card-${event.id}`} className="relative bg-black border border-white/5 rounded-3xl md:rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
             {/* Visual Perforations */}
             <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
             <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
             <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
 
-            {/* Top Image Section */}
-            <div className="h-[65%] relative overflow-hidden bg-zinc-800">
+            {/* Full Image Background Overlay */}
+            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
                 {event.image ? (
                     <div
-                        className="absolute inset-0 bg-cover bg-[center_top] transition-transform duration-1000 group-hover:scale-110"
-                        style={{ backgroundImage: `url(${event.image})` }}
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
+                        style={{ 
+                            backgroundImage: `url(${event.image})`,
+                            transform: `scale(${event.imageTransform?.scale || 1}) translate(${(event.imageTransform?.x || 0)}%, ${(event.imageTransform?.y || 0)}%)`,
+                            transformOrigin: 'center'
+                        }}
                     />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest text-xs">
-                        TBA
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-bold uppercase tracking-widest text-xs">
+                        AESTHETIC TBA
                     </div>
                 )}
-                {/* Gradient Overlay */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111] to-transparent" />
-                
-                <div className="absolute top-6 left-6 flex items-center gap-2 z-10">
-                    <div className="px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-3">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
-                            {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
-                        </span>
-                    </div>
-                    {event.isGiveaway && (
-                        <div className="px-3 py-2 rounded-xl bg-purple-600/80 backdrop-blur-md border border-purple-400/30 flex items-center gap-2">
-                            <Gift size={14} className="text-white animate-pulse" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white">GIVEAWAY</span>
-                        </div>
-                    )}
+                {/* Premium Gradient Overlay - Compact deep black at bottom for text legibility */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black from-[0%] via-black/90 via-[30%] to-transparent to-[55%] z-10" />
+            </div>
+
+            {/* Floating Info Labels (Top-Left: Date Only) */}
+            <div className="absolute top-6 left-6 z-30">
+                <div className="px-5 py-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-xl">
+                    <span className="text-[11px] font-black uppercase tracking-[0.1em] text-neon-blue">
+                        {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
+                    </span>
                 </div>
-                
+            </div>
+
+            {/* Floating Status Icons (Top-Right) */}
+            <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 items-end">
                 {event.isTicketed && (
-                    <div className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-neon-green text-black flex items-center justify-center shadow-[0_0_15px_rgba(46,255,144,0.3)] z-10">
-                        <Ticket size={20} />
+                    <div className="w-11 h-11 rounded-2xl bg-neon-green text-black flex items-center justify-center shadow-[0_0_20px_rgba(46,255,144,0.4)] border border-neon-green/20">
+                        <Ticket size={22} />
+                    </div>
+                )}
+                {event.isGiveaway && (
+                    <div className="w-11 h-11 rounded-2xl bg-purple-600 backdrop-blur-md border border-purple-400/30 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                        <Gift size={20} className="text-white animate-pulse" />
                     </div>
                 )}
             </div>
 
-            {/* Bottom Content Section */}
-            <div className="h-[35%] p-6 md:p-8 flex flex-col justify-between relative bg-[#111] z-10">
-                <div>
-                    <h3 className="event-title text-xl md:text-2xl font-black text-white leading-tight tracking-tight mb-2 line-clamp-2 italic">
-                        {event.title}
-                    </h3>
-                    <div className="flex items-center gap-4 text-gray-500">
-                        <div className="flex items-center gap-1">
-                            <MapPin size={12} className="text-neon-blue" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{event.location || 'Mainland India'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <Calendar size={12} className="text-neon-blue" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{event.date ? 'Confirmed' : 'Pending'}</span>
+            {/* Content Overlay */}
+            <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end z-20">
+                <div className="space-y-4">
+                    <div>
+                        <h3 className="event-title text-xl md:text-2xl font-black text-white leading-tight tracking-tight mb-2 line-clamp-2 italic uppercase">
+                            {event.title}
+                        </h3>
+                        <div className="flex items-center gap-4 text-gray-400">
+                            <div className="flex items-center gap-1">
+                                <MapPin size={12} className="text-neon-blue" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">{event.location || 'Mainland India'}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Calendar size={12} className="text-neon-blue" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">{event.date ? 'Confirmed' : 'Pending'}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-4">
-                    <div className="flex flex-col gap-2">
-                        {(event.isTicketed || event.buttonText?.toUpperCase().includes('TICKET')) && (
-                            <div className="text-neon-green font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                <span className="text-[10px] uppercase">{event.buttonText || "GET TICKETS"}</span>
-                                <ArrowRight size={16} />
-                            </div>
-                        )}
+                    <div className="flex items-center justify-between pt-2">
+                        <div className="flex flex-col gap-2">
+                            {(event.isTicketed || event.buttonText?.toUpperCase().includes('TICKET')) && (
+                                <div className="text-neon-green font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
+                                    <span className="text-[10px] uppercase">{event.buttonText || "GET TICKETS"}</span>
+                                    <ArrowRight size={16} />
+                                </div>
+                            )}
+                            
+                            {linkedGiveaway && (
+                                <Link 
+                                    to={`/giveaway/${linkedGiveaway.slug}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                    }}
+                                    className="text-purple-400 font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30 group/giveaway"
+                                >
+                                    <Gift size={15} className="text-purple-400" />
+                                    <span className="text-[10px] uppercase tracking-tighter border-b border-purple-500/0 group-hover/giveaway:border-purple-500/50 transition-all">
+                                        {event.isTicketed ? 'ENTER GIVEAWAY' : 'PARTICIPATE IN GIVEAWAY'}
+                                    </span>
+                                </Link>
+                            )}
+
+                            {!event.isTicketed && !linkedGiveaway && (event.link || event.buttonText) && (
+                                <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
+                                    <span className="text-[10px] uppercase">{event.buttonText || "LEARN MORE"}</span>
+                                    <ArrowRight size={16} />
+                                </div>
+                            )}
+                        </div>
                         
-                        {linkedGiveaway && (
-                            <Link 
-                                to={`/giveaway/${linkedGiveaway.slug}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                }}
-                                className="text-purple-400 font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30 group/giveaway"
-                            >
-                                <Gift size={15} className="text-purple-400" />
-                                <span className="text-[10px] uppercase tracking-tighter border-b border-purple-500/0 group-hover/giveaway:border-purple-500/50 transition-all">
-                                    {event.isTicketed ? 'ENTER GIVEAWAY' : 'PARTICIPATE IN GIVEAWAY'}
-                                </span>
-                            </Link>
-                        )}
-
-                        {!event.isTicketed && !linkedGiveaway && (event.link || event.buttonText) && (
-                            <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                <span className="text-[10px] uppercase">{event.buttonText || "LEARN MORE"}</span>
-                                <ArrowRight size={16} />
-                            </div>
-                        )}
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleShare(e, event);
+                            }}
+                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30"
+                        >
+                            <Share2 size={14} />
+                        </button>
                     </div>
-                    
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleShare(e, event);
-                        }}
-                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30"
-                    >
-                        <Share2 size={14} />
-                    </button>
                 </div>
             </div>
         </div>
