@@ -153,7 +153,7 @@ const Portfolio = () => {
 
 const PortfolioCard = ({ item, categories }) => {
     return (
-        <div className="w-full md:w-auto md:min-w-[380px] aspect-[4/5] relative rounded-[3rem] md:rounded-[3.5rem] overflow-hidden group border border-white/5 bg-zinc-900 md:snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
+        <div className="min-w-[280px] md:min-w-[400px] h-[420px] md:h-[520px] relative rounded-3xl md:rounded-[3rem] overflow-hidden group border border-white/5 bg-zinc-900 md:snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
             {/* Visual Perforation (Premium Ticket Style) */}
             <div className="absolute top-[70%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
             <div className="absolute top-[70%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
