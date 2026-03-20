@@ -77,7 +77,7 @@ const Portfolio = () => {
                                     setActiveTab(cat.id);
                                     setIsAutoPlaying(false);
                                 }}
-                                className={`snap-center px-5 py-3 md:px-6 md:py-3 rounded-[1rem] md:rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden flex-shrink-0 ${activeTab === cat.id
+                                className={`snap-center px-8 py-3 md:px-10 md:py-3 rounded-[1rem] md:rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden flex-shrink-0 ${activeTab === cat.id
                                     ? 'text-black bg-white'
                                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                                     }`}
@@ -109,8 +109,8 @@ const Portfolio = () => {
                         >
                             <div
                                 ref={carouselRef}
-                                className="flex flex-row overflow-x-auto gap-6 md:gap-10 pb-10 md:pb-20 no-scrollbar md:scrollbar-hide snap-x snap-mandatory scroll-smooth px-4 md:px-0"
-                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                className="flex flex-row overflow-x-auto gap-6 md:gap-10 pb-10 md:pb-20 portfolio-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
+                                style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                             >
                                 {filteredItems.map((item) => (
                                     <PortfolioCard key={item.id} item={item} categories={categories} />
@@ -129,7 +129,7 @@ const Portfolio = () => {
                     </AnimatePresence>
 
                     {/* Nav Buttons */}
-                    {filteredItems.length > 2 && (
+                    {activeTab === 'concerts' && filteredItems.length > 2 && (
                         <div className="absolute top-1/2 -translate-y-1/2 w-full left-0 flex justify-between pointer-events-none z-30 px-6">
                             <button
                                 onClick={() => scroll('left')}
