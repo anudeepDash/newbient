@@ -100,7 +100,7 @@ const Contact = () => {
                         className="space-y-12"
                     >
                         <div className="space-y-6">
-                            <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"REACH OUT TODAY."</h3>
+                            <h3 className="text-2xl font-black font-heading tracking-tight text-white mb-8 italic">"CONTACT US TODAY."</h3>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <ContactMethod 
@@ -190,7 +190,7 @@ const Contact = () => {
                                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Tell us about your mission</label>
                                     <textarea
                                         className="w-full h-48 bg-white/5 border border-white/10 rounded-[2rem] p-8 font-medium text-white focus:outline-none focus:border-neon-blue transition-all resize-none"
-                                        placeholder="We need a campus tour that breaks the internet..."
+                                        placeholder="Tell us about your project requirements..."
                                         value={formData.message}
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                         required

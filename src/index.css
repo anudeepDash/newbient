@@ -84,3 +84,49 @@
     box-shadow: none !important;
   }
 }
+
+/* Blog Article Content Styling */
+.article-content h2 {
+  @apply text-3xl font-black uppercase font-heading text-white mt-12 mb-6;
+}
+
+.article-content h3 {
+  @apply text-xl font-black uppercase font-heading text-neon-blue mt-8 mb-4;
+}
+
+.article-content p {
+  @apply mb-6 leading-[1.8] text-gray-300;
+}
+
+.article-content b, .article-content strong {
+  @apply font-black text-white;
+}
+
+.article-content i, .article-content em {
+  @apply italic text-gray-400;
+}
+
+.article-content ul {
+  @apply list-disc list-inside mb-8 space-y-3;
+}
+
+.article-content li {
+  @apply text-gray-300;
+}
+
+.article-content img {
+  @apply rounded-[2rem] border border-white/5 my-12 w-full shadow-2xl;
+}
+
+.article-content a {
+  @apply text-neon-blue hover:underline font-bold transition-all;
+}
+
+/* Custom Scrollbar for Textarea */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

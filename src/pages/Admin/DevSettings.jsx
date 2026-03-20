@@ -72,12 +72,12 @@ const DevSettings = () => {
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="flex items-center gap-4">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <div>
                             <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">

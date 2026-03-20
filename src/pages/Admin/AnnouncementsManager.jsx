@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye } from 'lucide-react';
+import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -10,8 +10,9 @@ import LivePreview from '../../components/admin/LivePreview';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AnnouncementsManager = () => {
-    const { announcements, addAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, cleanupExpiredAnnouncements } = useStore();
+    const { announcements, addAnnouncement, updateAnnouncement, togglePinAnnouncement, deleteAnnouncement, reorderAnnouncements, cleanupExpiredAnnouncements } = useStore();
     const [isAdding, setIsAdding] = useState(false);
+    const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
         cleanupExpiredAnnouncements();
@@ -26,25 +27,44 @@ const AnnouncementsManager = () => {
         isPinned: false
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            addAnnouncement({
-                id: Date.now(),
-                ...newAnnouncement
-            });
-            setIsAdding(false);
-            setNewAnnouncement({
-                title: '',
-                date: new Date().toISOString().split('T')[0],
-                content: '',
-                image: '',
-                link: '',
-                isPinned: false
-            });
+            if (editingId) {
+                await updateAnnouncement(editingId, newAnnouncement);
+            } else {
+                await addAnnouncement(newAnnouncement);
+            }
+            resetForm();
         } catch (error) {
             alert("Broadcast failure.");
         }
+    };
+
+    const resetForm = () => {
+        setIsAdding(false);
+        setEditingId(null);
+        setNewAnnouncement({
+            title: '',
+            date: new Date().toISOString().split('T')[0],
+            content: '',
+            image: '',
+            link: '',
+            isPinned: false
+        });
+    };
+
+    const handleEdit = (item) => {
+        setNewAnnouncement({
+            title: item.title,
+            date: item.date,
+            content: item.content,
+            image: item.image || '',
+            link: item.link || '',
+            isPinned: item.isPinned || false
+        });
+        setEditingId(item.id);
+        setIsAdding(true);
     };
 
     const handleMoveUp = (index) => {
@@ -69,12 +89,12 @@ const AnnouncementsManager = () => {
                 <div className="absolute bottom-[10%] left-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8">
                     <div className="space-y-4 max-w-full">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
                             SIGNAL <span className="text-neon-pink px-4">CONTROL.</span>
@@ -100,9 +120,9 @@ const AnnouncementsManager = () => {
                                 <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
                                     <div className="flex justify-between items-center mb-10">
                                         <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
-                                            <Sparkles className="text-neon-pink" size={24} /> CREATE SIGNAL
+                                            <Sparkles className="text-neon-pink" size={24} /> {editingId ? 'EDIT SIGNAL' : 'CREATE SIGNAL'}
                                         </h2>
-                                        <button onClick={() => setIsAdding(false)} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Discard</button>
+                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Discard</button>
                                     </div>
 
                                     <form onSubmit={handleSubmit} className="space-y-8">
@@ -169,7 +189,7 @@ const AnnouncementsManager = () => {
                                         <div className="flex gap-4 pt-6 border-t border-white/10">
                                             <Button type="button" variant="outline" onClick={() => setIsAdding(false)} className="h-16 px-8 flex-1 rounded-2xl border-white/10 text-gray-400 font-black uppercase tracking-widest text-[11px]">Abort</Button>
                                             <Button type="submit" className="h-16 px-10 flex-[2] bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[11px] hover:scale-105 active:scale-95 transition-all">
-                                                TRANSMIT SIGNAL
+                                                {editingId ? 'UPDATE SIGNAL' : 'TRANSMIT SIGNAL'}
                                             </Button>
                                         </div>
                                     </form>
@@ -225,6 +245,8 @@ const AnnouncementsManager = () => {
                                                 <div className="flex items-center gap-4 mb-3">
                                                     <h3 className="text-2xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-pink transition-colors">{item.title}</h3>
                                                     {item.isPinned && <Pin size={16} className="text-neon-pink fill-current drop-shadow-[0_0_8px_rgba(255,46,144,0.5)]" />}
+                                                    {item.linkedEventId && <span className="text-[8px] px-2 py-0.5 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full font-black tracking-widest uppercase">Event Linked</span>}
+                                                    {item.linkedGiveawayId && <span className="text-[8px] px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-400/20 rounded-full font-black tracking-widest uppercase">Giveaway Linked</span>}
                                                 </div>
                                                 <div className="flex items-center gap-4 text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
                                                     <Clock size={12} className="text-gray-700" />
@@ -234,6 +256,13 @@ const AnnouncementsManager = () => {
                                             </div>
 
                                             <div className="flex items-center gap-3 shrink-0 ml-4">
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="w-12 h-12 rounded-2xl bg-white/5 text-gray-500 hover:text-white border border-white/5 flex items-center justify-center transition-all"
+                                                    title="Edit"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
                                                 <button
                                                     onClick={() => togglePinAnnouncement(item.id)}
                                                     className={cn(
@@ -246,7 +275,7 @@ const AnnouncementsManager = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => deleteAnnouncement(item.id)}
-                                                    className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                                    className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)]"
                                                     title="Erase"
                                                 >
                                                     <Trash2 size={18} />

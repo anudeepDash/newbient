@@ -162,7 +162,7 @@ const PortfolioCard = ({ item, categories }) => {
             {/* High-fidelity Background Image */}
             {item.image ? (
                 <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    className="absolute inset-0 bg-cover bg-[center_top] md:bg-center transition-transform duration-1000 group-hover:scale-110"
                     style={{ backgroundImage: `url(${item.image})` }}
                 >
                     {/* Organic Vignette Gradient Overlay */}
@@ -189,7 +189,7 @@ const PortfolioCard = ({ item, categories }) => {
                                 {categories.find(c => c.id === item.category)?.label}
                             </span>
                         </div>
-                        <h3 className="text-3xl md:text-4xl font-black text-white leading-[0.95] tracking-tighter group-hover:translate-x-3 transition-transform duration-700 whitespace-nowrap overflow-hidden text-ellipsis">
+                        <h3 className="text-2xl md:text-4xl font-black text-white leading-[0.95] tracking-tighter group-hover:translate-x-3 transition-transform duration-700 whitespace-nowrap overflow-hidden text-ellipsis">
                             {item.title}
                         </h3>
                     </motion.div>

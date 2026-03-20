@@ -15,18 +15,18 @@ const Navbar = () => {
 
     const allLinks = [
         { name: 'Home', path: '/', icon: Home },
-        { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
-        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', matchPaths: ['/creator-dashboard', '/creator-join'], featureId: 'influencer', icon: Sparkles },
-        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
+        { name: 'Community', path: '/community', featureId: 'community', icon: Users },
+        { name: 'Creator', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'Concert Zone', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'Gallery', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
         { name: 'Contact', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
 
     const mobilePrimaryLinks = [
         { name: 'Home', path: '/', icon: Home },
-        { name: 'Community', path: '/community-join', featureId: 'community', icon: Users },
-        { name: 'Creator Hub', path: user ? '/creator-dashboard' : '/creator-join', matchPaths: ['/creator-dashboard', '/creator-join'], featureId: 'influencer', icon: Sparkles },
-        { name: 'Concert Zone', path: '/concerts', featureId: 'concerts', icon: Music },
+        { name: 'Community', path: '/community', featureId: 'community', icon: Users },
+        { name: 'Creator', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'Concert Zone', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'More', action: () => setIsOpen(true), icon: Menu },
     ];
 
@@ -270,30 +270,21 @@ const Navbar = () => {
                             })}
                         </div>
 
-                        <div className="w-full pt-8 mt-4 border-t border-white/10 flex flex-col items-center gap-6 shrink-0">
+                        <div className="w-full pt-8 mt-4 border-t border-white/10 flex flex-col items-stretch gap-6 shrink-0">
                             {user ? (
-                                <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
-                                    <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
-                                        <div className="w-12 h-12 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
-                                            <UserIcon size={20} />
+                                <div className="space-y-4">
+                                    <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
+                                        <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
+                                            <div className="w-12 h-12 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
+                                                <UserIcon size={20} />
+                                            </div>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
+                                                    {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col flex-1 min-w-0">
-                                            <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
-                                                {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {['developer', 'super_admin'].includes(user.role) && (
-                                            <Link 
-                                                to="/admin/site-settings" 
-                                                onClick={() => setIsOpen(false)}
-                                                className="p-3 rounded-2xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all shrink-0"
-                                            >
-                                                <Settings size={20} />
-                                            </Link>
-                                        )}
                                         <button
                                             onClick={() => { useStore.getState().logout(); setIsOpen(false); }}
                                             className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0"
@@ -301,13 +292,24 @@ const Navbar = () => {
                                             <LogOut size={20} />
                                         </button>
                                     </div>
+
+                                    {['developer', 'super_admin'].includes(user.role) && (
+                                        <Link 
+                                            to="/admin" 
+                                            onClick={() => setIsOpen(false)}
+                                            className="w-full h-16 bg-neon-green text-black flex items-center justify-center gap-3 rounded-2xl font-black font-heading uppercase tracking-widest shadow-[0_10px_30px_rgba(57,255,20,0.2)] active:scale-95 transition-all"
+                                        >
+                                            <LayoutGrid size={18} />
+                                            ADMIN DASHBOARD
+                                        </Link>
+                                    )}
                                 </div>
                             ) : (
                                 <button
                                     onClick={() => { useStore.getState().setAuthModal(true); setIsOpen(false); }}
                                     className="w-full h-16 rounded-2xl bg-neon-blue text-black font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(56,182,255,0.3)]"
                                 >
-                                    Join the Tribe
+                                    Get Started
                                 </button>
                             )}
                         </div>

@@ -229,12 +229,12 @@ NewBi Entertainment`;
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
             </div>
 
-            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 {/* Standardized Premium Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-10">
                     <div className="space-y-4 max-w-full">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-neon-green transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">TICKETING</span> PORTAL.
