@@ -63,7 +63,7 @@ const Portfolio = () => {
                     </div>
 
                     {/* Tabs with selection bar */}
-                    <div className="inline-flex overflow-x-auto whitespace-nowrap snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl w-full md:w-auto max-w-full portfolio-scrollbar">
+                    <div className="inline-flex overflow-x-auto whitespace-nowrap snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl w-full md:w-auto max-w-full horizontal-scrollbar">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
@@ -103,7 +103,7 @@ const Portfolio = () => {
                         >
                             <div
                                 ref={carouselRef}
-                                className="flex flex-row overflow-x-auto gap-6 md:gap-10 pb-10 md:pb-20 portfolio-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
+                                className="flex flex-row overflow-x-auto gap-6 md:gap-10 pb-10 md:pb-20 horizontal-scrollbar snap-x snap-mandatory scroll-smooth px-6 md:px-0"
                                 style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                             >
                                 {filteredItems.map((item) => (
