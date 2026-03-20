@@ -172,8 +172,8 @@ const UpcomingEvents = () => {
                 <div className="relative group cursor-grab active:cursor-grabbing">
                     <div 
                         ref={carouselRef}
-                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x no-scrollbar scroll-smooth px-4 md:px-0"
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x horizontal-scrollbar scroll-smooth px-6 md:px-0"
+                        style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                     >
                         {upcomingEvents.map((event) => {
                             // First, try to find a giveaway that is explicitly linked to this event
