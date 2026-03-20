@@ -130,64 +130,65 @@ const Portfolio = () => {
 
 const PortfolioCard = ({ item, categories }) => {
     return (
-        <div className="min-w-[280px] md:min-w-[400px] h-[420px] md:h-[520px] relative rounded-3xl md:rounded-[3rem] overflow-hidden group border border-white/5 bg-zinc-900 md:snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0">
+        <div className="min-w-[280px] md:min-w-[400px] h-[420px] md:h-[520px] relative rounded-3xl md:rounded-[3rem] overflow-hidden group border border-white/5 bg-[#111] md:snap-start transition-all duration-700 hover:border-white/20 shadow-2xl flex-shrink-0 flex flex-col">
             {/* Visual Perforation (Premium Ticket Style) */}
-            <div className="absolute top-[70%] -left-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
-            <div className="absolute top-[70%] -right-4 w-8 h-8 bg-[#020202] rounded-full border border-white/5 z-20 group-hover:scale-110 transition-transform" />
-            <div className="absolute top-[71.5%] left-6 right-6 h-px border-t border-dashed border-white/10 z-10" />
+            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
+            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
+            <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
 
-            {/* High-fidelity Background Image */}
-            {item.image ? (
-                <div
-                    className="absolute inset-0 bg-cover bg-[center_top] md:bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: `url(${item.image})` }}
-                >
-                    {/* Organic Vignette Gradient Overlay */}
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(2,2,2,0.4)_50%,_rgba(2,2,2,0.95)_95%)]" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent opacity-80" />
-                </div>
-            ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 text-gray-500 font-black uppercase tracking-[0.5em] text-[10px]">
-                    NO VISUAL ASSET
-                </div>
-            )}
+            {/* Top Image Section (65%) */}
+            <div className="h-[65%] relative overflow-hidden bg-zinc-800">
+                {item.image ? (
+                    <div
+                        className="absolute inset-0 bg-cover bg-[center_top] transition-transform duration-1000 group-hover:scale-110"
+                        style={{ backgroundImage: `url(${item.image})` }}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest text-[10px]">
+                        NO VISUAL ASSET
+                    </div>
+                )}
+                {/* Gradient Inner Shadow */}
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111] to-transparent" />
+            </div>
 
-            {/* Content Layer */}
-            <div className="absolute inset-0 p-12 flex flex-col justify-end z-10">
-                <div className="overflow-hidden">
-                    <motion.div 
-                        initial={{ y: 20, opacity: 0 }}
-                        whileInView={{ y: 0, opacity: 1 }}
-                        className="flex flex-col"
-                    >
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="w-8 h-px bg-neon-green" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-green">
-                                {categories.find(c => c.id === item.category)?.label}
-                            </span>
-                        </div>
-                        <h3 className="text-2xl md:text-4xl font-black text-white leading-[0.95] tracking-tighter group-hover:translate-x-3 transition-transform duration-700 whitespace-nowrap overflow-hidden text-ellipsis">
-                            {item.title}
-                        </h3>
-                    </motion.div>
+            {/* Bottom Content Section (35%) */}
+            <div className="h-[35%] p-6 md:p-8 flex flex-col justify-between relative bg-[#111] z-10">
+                <div>
+                   <div className="flex items-center gap-2 mb-2">
+                        <span className="w-5 h-px bg-neon-green" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-neon-green">
+                            {categories.find(c => c.id === item.category)?.label || 'General'}
+                        </span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-white leading-tight tracking-tight line-clamp-2 italic uppercase">
+                        {item.title}
+                    </h3>
+                </div>
+
+                <div className="flex items-center justify-between mt-auto">
+                    {item.highlightUrl ? (
+                         <a
+                            href={item.highlightUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-white font-black tracking-widest flex items-center gap-2 hover:text-neon-green transition-all group/link"
+                        >
+                            <span className="text-[10px] uppercase">VIEW REEL</span>
+                            <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                        </a>
+                    ) : (
+                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">ARCHIVED RECORD</span>
+                    )}
+
+                    <div className="text-[9px] font-black text-gray-700 uppercase tracking-[0.2em]">
+                        {item.date?.split('-')[0] || 'PAST'}
+                    </div>
                 </div>
             </div>
 
             {/* Premium Interaction Layer */}
             <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
-            
-            <div className="absolute top-4 right-4 md:top-12 md:right-12 opacity-0 group-hover:opacity-100 md:-translate-y-4 md:group-hover:translate-y-0 transition-all duration-700 z-30">
-                {item.highlightUrl && (
-                    <a
-                        href={item.highlightUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-3xl bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)]"
-                    >
-                        <ArrowRight className="w-5 h-5 md:w-7 md:h-7" />
-                    </a>
-                )}
-            </div>
         </div>
     );
 };
