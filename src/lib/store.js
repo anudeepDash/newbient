@@ -18,6 +18,8 @@ export const useStore = create((set, get) => ({
     ticketVault: [], // Bulk ticket storage
     giveaways: [], // Giveaway Campaigns
     giveawayEntries: [], // Giveaway Entries
+    posts: [], // Blog Posts
+    subscribers: [], // Newsletter Subscribers
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
@@ -100,6 +102,8 @@ export const useStore = create((set, get) => ({
         const unsubTicketVault = sub('ticket_vault', 'ticketVault');
         const unsubGiveaways = sub('giveaways', 'giveaways');
         const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
+        const unsubPosts = sub('posts', 'posts');
+        const unsubSubscribers = sub('subscribers', 'subscribers');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -160,6 +164,7 @@ export const useStore = create((set, get) => ({
 
         return () => {
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
+            unsubPosts(); unsubSubscribers();
         };
     },
 
@@ -192,6 +197,18 @@ export const useStore = create((set, get) => ({
         await updateDoc(doc(db, 'upcoming_events', id), {
             ...updates,
             category: updates.category || '' // Ensure category is updated
+        });
+
+        // Sync mirrored Announcement
+        const announcementQ = query(collection(db, 'announcements'), where('linkedEventId', '==', id));
+        const announcementSnap = await getDocs(announcementQ);
+        announcementSnap.forEach(async (d) => {
+            await updateDoc(doc(db, 'announcements', d.id), {
+                title: updates.title,
+                content: updates.description,
+                image: updates.image,
+                date: updates.date?.split('T')[0] || ''
+            });
         });
     },
     deleteUpcomingEvent: async (id) => {
@@ -373,6 +390,9 @@ export const useStore = create((set, get) => ({
     },
     deleteAnnouncement: async (id) => {
         await deleteDoc(doc(db, 'announcements', id));
+    },
+    updateAnnouncement: async (id, updates) => {
+        await updateDoc(doc(db, 'announcements', id), updates);
     },
 
     // Concerts
@@ -607,7 +627,8 @@ export const useStore = create((set, get) => ({
                 title: `NEW GIVEAWAY: ${updates.name}`,
                 content: updates.description,
                 image: updates.posterUrl,
-                link: `/giveaway/${updates.slug}`
+                link: `/giveaway/${updates.slug}`,
+                date: updates.endDate || ''
             });
         });
     },
@@ -1140,5 +1161,39 @@ export const useStore = create((set, get) => ({
         // Persist to Firebase
         await setDoc(doc(db, 'site_settings', 'contact_info'), details, { merge: true });
         // State update handled by subscription 'unsub10'
+    },
+
+    // --- BLOG & NEWSLETTER ACTIONS ---
+    addPost: async (post) => {
+        const postData = {
+            ...post,
+            createdAt: new Date().toISOString(),
+            viewCount: 0,
+            shareCount: 0,
+            featured: post.featured || false
+        };
+        return await addDoc(collection(db, 'posts'), postData);
+    },
+    updatePost: async (id, updates) => {
+        await updateDoc(doc(db, 'posts', id), {
+            ...updates,
+            updatedAt: new Date().toISOString()
+        });
+    },
+    deletePost: async (id) => {
+        await deleteDoc(doc(db, 'posts', id));
+    },
+    subscribeUser: async (email, name = '') => {
+        // Check if already subscribed
+        const q = query(collection(db, 'subscribers'), where('email', '==', email.toLowerCase()));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) return { success: true, message: 'Already subscribed!' };
+
+        await addDoc(collection(db, 'subscribers'), {
+            email: email.toLowerCase(),
+            name,
+            createdAt: new Date().toISOString()
+        });
+        return { success: true, message: 'Successfully subscribed!' };
     },
 }));

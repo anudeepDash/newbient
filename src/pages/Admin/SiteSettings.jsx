@@ -39,12 +39,12 @@ const SiteSettings = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 {/* Modern Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
                     <div className="space-y-4 max-w-full">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] pb-4 pr-12 pl-1 overflow-visible">
                             SYSTEM <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND.</span>

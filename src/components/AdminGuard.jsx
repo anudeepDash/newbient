@@ -49,7 +49,7 @@ const AdminGuard = ({ children }) => {
                     <div className="space-y-4">
                         <h1 className="text-4xl font-black font-heading text-white uppercase italic tracking-tighter">ACCESS DENIED.</h1>
                         <p className="text-gray-500 text-sm font-bold uppercase tracking-widest leading-relaxed">
-                            Your credentials do not have the required authority to access the <span className="text-neon-green">Newbi Command Centre</span>.
+                            Your credentials do not have the required authority to access the <span className="text-neon-green">Newbi Admin Dashboard</span>.
                         </p>
                     </div>
 
@@ -71,7 +71,7 @@ const AdminGuard = ({ children }) => {
                                 }}
                                 className="px-8 h-14 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(57,255,20,0.2)]"
                             >
-                                REQUEST COMMAND ACCESS
+                                REQUEST ADMIN ACCESS
                             </button>
                         ) : user.role === 'pending' ? (
                             <div className="p-6 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl text-center">
@@ -89,7 +89,7 @@ const AdminGuard = ({ children }) => {
                     </div>
                     
                     <p className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.4em]">
-                        {user?.role === 'pending' ? 'Request Persistence Active' : 'Unauthorized Access Attempt Logged'}
+                        {user?.role === 'pending' ? 'Request Persistence Active' : 'Access Attempt Logged'}
                     </p>
                 </motion.div>
             </div>

@@ -21,13 +21,13 @@ const AdminCommunityHubLayout = ({ children, title, description }) => {
                 <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" />
-                            BACK TO COMMAND CENTRE
+                            BACK TO ADMIN DASHBOARD
                         </Link>
                         <div>
                             <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic pr-4">

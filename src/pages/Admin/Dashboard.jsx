@@ -139,7 +139,7 @@ const Dashboard = () => {
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 {/* Modern Header */}
                 <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-16 gap-6 md:gap-8">
                     <div className="space-y-4 max-w-full">
@@ -238,9 +238,10 @@ const Dashboard = () => {
 
                     <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
                         <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
-                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concerts" isHidden={cards.portfolio} />
+                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concertzone" isHidden={cards.portfolio} />
                         <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" isHidden={cards.gallery} />
-                        <ControlCard title="Broadcast" desc="Post announcements and site news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
+                        <ControlCard title="Announcements" desc="Post updates and site news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
+                        <ControlCard title="Blog" desc="Manage Concert Zone articles." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
                     </DashboardSection>
 
                     <DashboardSection title="Social & Community" gradient="from-neon-blue via-neon-green to-white">
@@ -351,7 +352,7 @@ const BootstrapAlert = ({ onClaim }) => (
             </div>
             <div>
                 <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">System Initialization Required</h2>
-                <p className="text-gray-400 text-sm mt-1">No admins detected. Claim <strong>SUPER ADMIN</strong> ownership to initialize the command centre.</p>
+                <p className="text-gray-400 text-sm mt-1">No admins detected. Claim <strong>SUPER ADMIN</strong> ownership to initialize the admin dashboard.</p>
             </div>
         </div>
         <Button onClick={onClaim} className="bg-white text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all">

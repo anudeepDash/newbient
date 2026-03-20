@@ -112,7 +112,7 @@ const CommunityJoin = () => {
     }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms]);
 
     const handleShare = (type, id) => {
-        const url = `${window.location.origin}/community-join?${type}=${id}`;
+        const url = `${window.location.origin}/community?${type}=${id}`;
         navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
     };

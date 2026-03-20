@@ -4,7 +4,7 @@ import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock, LayoutGrid, FileSpreadsheet, Download, FileText } from 'lucide-react';
+import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock, LayoutGrid, FileSpreadsheet, Download, FileText, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import jsPDF from 'jspdf';
@@ -14,6 +14,7 @@ const CreatorManager = () => {
     const { creators, updateCreator, deleteCreator } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('All');
+    const [filterStatus, setFilterStatus] = useState('All');
     const [selectedCreator, setSelectedCreator] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // Default to table as requested
     const [exportLoading, setExportLoading] = useState(false);
@@ -24,7 +25,11 @@ const CreatorManager = () => {
         const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.niches.some(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesCity = filterCity === 'All' || c.city === filterCity;
-        return matchesSearch && matchesCity;
+        const matchesStatus = filterStatus === 'All' || 
+            (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
+            c.profileStatus === filterStatus;
+            
+        return matchesSearch && matchesCity && matchesStatus;
     });
 
     const handleUpdateStatus = async (uid, newStatus) => {
@@ -111,53 +116,87 @@ const CreatorManager = () => {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-8">
                     <div className="space-y-4">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             CREATOR <span className="text-neon-pink">REGISTRY.</span>
                         </h1>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-full backdrop-blur-md">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                    TOTAL: <span className="text-white">{creators.length}</span>
+                                </span>
+                            </div>
+                            {filterCity !== 'All' && (
+                                <div className="bg-neon-pink/10 border border-neon-pink/20 px-4 py-1.5 rounded-full backdrop-blur-md animate-in fade-in slide-in-from-left-4 duration-500">
+                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.2em]">
+                                        {filterCity}: <span className="text-white">{filteredCreators.length}</span>
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
-                        {/* View Toggle */}
-                        <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 mr-2">
-                            <button onClick={() => setViewMode('grid')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Grid</button>
-                            <button onClick={() => setViewMode('table')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'table' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Table</button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-4 w-full lg:w-auto items-center">
+                        {/* View Toggle & Search */}
+                        <div className="flex gap-4 w-full sm:w-auto">
+                            <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 shrink-0">
+                                <button onClick={() => setViewMode('grid')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Grid</button>
+                                <button onClick={() => setViewMode('table')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'table' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Table</button>
+                            </div>
+                            <div className="relative flex-1">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="SEARCH..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full h-14 pl-12 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-600"
+                                />
+                            </div>
                         </div>
 
-                        <div className="relative flex-1 md:w-64">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                            <input
-                                type="text"
-                                placeholder="SEARCH..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-14 pl-12 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-600"
-                            />
+                        <div className="flex gap-4 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:min-w-[140px]">
+                                <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                                <select
+                                    value={filterCity}
+                                    onChange={(e) => setFilterCity(e.target.value)}
+                                    className="w-full h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer"
+                                >
+                                    {cities.map(city => <option key={city} value={city} className="bg-zinc-900">{city.toUpperCase()}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                            </div>
+
+                            <div className="relative flex-1 sm:min-w-[140px]">
+                                <Zap className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    className="w-full h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="All" className="bg-zinc-900">STATUS</option>
+                                    <option value="approved" className="bg-zinc-900">APPROVED</option>
+                                    <option value="pending" className="bg-zinc-900">PENDING</option>
+                                    <option value="rejected" className="bg-zinc-900">REJECTED</option>
+                                    <option value="blocked" className="bg-zinc-900">BLOCKED</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                            </div>
                         </div>
 
-                        <div className="relative">
-                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                            <select
-                                value={filterCity}
-                                onChange={(e) => setFilterCity(e.target.value)}
-                                className="h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer min-w-[140px]"
-                            >
-                                {cities.map(city => <option key={city} value={city} className="bg-zinc-900">{city.toUpperCase()}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="flex gap-2">
-                             <Button onClick={exportToCSV} variant="outline" className="h-14 px-5 border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-2xl">
-                                <FileSpreadsheet className="mr-2 text-neon-green" size={14} /> XLSX / CSV
+                        <div className="flex gap-2 w-full sm:w-auto">
+                             <Button onClick={exportToCSV} variant="outline" className="flex-1 sm:flex-none h-14 px-4 border-white/10 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-2xl">
+                                <FileSpreadsheet className="mr-2 text-neon-green" size={12} /> CSV
                             </Button>
-                            <Button onClick={exportToPDF} variant="outline" className="h-14 px-5 border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-2xl">
-                                <FileText className="mr-2 text-neon-pink" size={14} /> PDF
+                            <Button onClick={exportToPDF} variant="outline" className="flex-1 sm:flex-none h-14 px-4 border-white/10 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-2xl">
+                                <FileText className="mr-2 text-neon-pink" size={12} /> PDF
                             </Button>
                         </div>
                     </div>
@@ -196,12 +235,12 @@ const CreatorManager = () => {
                                             creator.profileStatus === 'blocked' ? 'bg-red-600' : 'bg-yellow-500'
                                         )}></div>
 
-                                        <div className="flex items-center gap-5 mb-8">
-                                            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-xl font-black font-heading group-hover:bg-neon-pink/10 group-hover:text-neon-pink transition-all">
+                                        <div className="flex items-center gap-4 md:gap-5 mb-6 md:mb-8">
+                                            <div className="w-12 h-12 md:w-14 md:h-14 bg-white/5 rounded-2xl flex items-center justify-center text-lg md:xl font-black font-heading group-hover:bg-neon-pink/10 group-hover:text-neon-pink transition-all">
                                                 {creator.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-lg uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</h3>
+                                                <h3 className="font-black text-base md:text-lg uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</h3>
                                                 <p className="text-[8px] font-black text-gray-500 flex items-center gap-1.5 mt-1 uppercase tracking-widest"><MapPin size={10} className="text-neon-pink" /> {creator.city}</p>
                                             </div>
                                         </div>
@@ -317,20 +356,20 @@ const CreatorManager = () => {
                                 <X size={20} className="group-hover:scale-110 transition-transform" />
                             </button>
 
-                            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12 relative z-10">
-                                <div className="w-32 h-32 bg-gradient-to-br from-neon-pink to-neon-blue rounded-[2.5rem] p-1 shrink-0 rotate-3 group-hover:rotate-0 transition-all duration-500">
-                                    <div className="w-full h-full bg-black rounded-[2.2rem] flex items-center justify-center text-4xl font-black font-heading text-white">
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 mb-8 md:mb-12 relative z-10">
+                                <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-neon-pink to-neon-blue rounded-[2rem] md:rounded-[2.5rem] p-1 shrink-0 rotate-3 group-hover:rotate-0 transition-all duration-500">
+                                    <div className="w-full h-full bg-black rounded-[1.8rem] md:rounded-[2.2rem] flex items-center justify-center text-3xl md:text-4xl font-black font-heading text-white">
                                         {selectedCreator.name.charAt(0).toUpperCase()}
                                     </div>
                                 </div>
                                 <div className="text-center md:text-left pt-2">
-                                    <h2 className="text-5xl font-black font-heading mb-2 tracking-tighter uppercase italic">{selectedCreator.name}</h2>
+                                    <h2 className="text-3xl md:text-5xl font-black font-heading mb-2 tracking-tighter uppercase italic line-clamp-2 md:line-clamp-none">{selectedCreator.name}</h2>
                                     <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                                        <p className="text-neon-pink text-xs uppercase tracking-[0.3em] font-black flex items-center gap-2">
+                                        <p className="text-neon-pink text-[10px] md:text-xs uppercase tracking-[0.3em] font-black flex items-center gap-2">
                                             <MapPin size={12} /> {selectedCreator.city}
                                         </p>
-                                        <div className="w-1 h-1 rounded-full bg-gray-700 self-center" />
-                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <div className="hidden sm:block w-1 h-1 rounded-full bg-gray-700 self-center" />
+                                        <p className="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                                             <Clock size={12} /> REGISTERED {new Date(selectedCreator.createdAt).toLocaleDateString()}
                                         </p>
                                     </div>

@@ -231,10 +231,10 @@ const CreatorDashboard = () => {
             if (existingProfile) {
                 setProfile(existingProfile);
             } else {
-                navigate('/creator-join'); // Redirect to join if not found
+                navigate('/creator'); // Redirect to join if not found
             }
         } else if (authInitialized && !user) {
-            navigate('/creator-join');
+            navigate('/creator');
         }
     }, [user, authInitialized, creators, navigate]);
 

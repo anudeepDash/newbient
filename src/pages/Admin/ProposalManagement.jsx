@@ -41,20 +41,20 @@ const ProposalManagement = () => {
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-green/5 rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-2">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            PROPOSAL <span className="text-neon-blue">VAULT.</span>
+                        <h1 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                            PROPOSAL <span className="text-neon-green">VAULT.</span>
                         </h1>
                     </div>
                     
                     <Link to="/admin/create-proposal">
-                        <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all">
+                        <Button className="bg-neon-green text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.2)]">
                             <Plus className="mr-2 h-4 w-4" /> Generate New Quote
                         </Button>
                     </Link>
@@ -71,21 +71,23 @@ const ProposalManagement = () => {
                             className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                         />
                     </div>
-                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto mr-1">
-                        {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => setStatusFilter(s)}
-                                className={cn(
-                                    "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
-                                    statusFilter === s 
-                                        ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
-                                        : "text-gray-500 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                {s}
-                            </button>
-                        ))}
+                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                        <div className="flex min-w-max md:min-w-0">
+                            {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    className={cn(
+                                        "px-6 md:px-10 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[100px] md:min-w-[120px]",
+                                        statusFilter === s 
+                                            ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
+                                            : "text-gray-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -100,8 +102,8 @@ const ProposalManagement = () => {
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: i * 0.05 }}
                             >
-                                <Card className="group relative p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
-                                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                                <Card className="group relative p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
+                                    <div className="absolute top-0 right-0 p-6 md:p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
                                         <FileSpreadsheet size={100} />
                                     </div>
 
@@ -117,7 +119,7 @@ const ProposalManagement = () => {
                                             )} />
                                         </div>
 
-                                        <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
+                                        <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
                                             {proposal.clientName}
                                         </h3>
                                         <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-8">
@@ -133,7 +135,7 @@ const ProposalManagement = () => {
                                         </Link>
                                         <button 
                                             onClick={() => handleCopyLink(proposal.id)}
-                                            className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
+                                            className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
                                         >
                                             <Copy size={16} />
                                         </button>

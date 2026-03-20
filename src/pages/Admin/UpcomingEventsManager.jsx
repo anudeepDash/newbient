@@ -123,7 +123,15 @@ const UpcomingEventsManager = () => {
                 ticketPrice = Math.min(...ticketCategories.map(c => c.price));
             }
 
-            const eventData = { ...newEvent, image: imageUrl, venueLayout: venueLayoutUrl, ticketCategories, ticketPrice };
+            const eventData = { 
+                ...newEvent, 
+                image: imageUrl, 
+                venueLayout: venueLayoutUrl, 
+                ticketCategories, 
+                ticketPrice,
+                // Ensure button text has a fallback if ticketed
+                buttonText: newEvent.buttonText || (newEvent.isTicketed ? "GET TICKETS" : "LEARN MORE")
+            };
 
             if (editingId) {
                 await updateUpcomingEvent(editingId, eventData);
@@ -145,15 +153,15 @@ const UpcomingEventsManager = () => {
                 <div className="absolute bottom-[20%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
                     <div className="space-y-4 max-w-full text-left">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO COMMAND CENTRE
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
-                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
-                            UPCOMING <span className="text-neon-blue px-4">EVENTS.</span>
+                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.4] md:leading-[1.6] py-6 md:py-10 pr-4 md:pr-12 pl-1 overflow-visible">
+                            UPCOMING <span className="text-neon-green px-2 md:px-4">EVENTS.</span>
                         </h1>
                     </div>
                     
@@ -180,8 +188,8 @@ const UpcomingEventsManager = () => {
                     {isAdding ? (
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                             {/* Editor Column */}
-                            <div className="lg:col-span-7">
-                                <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem]">
+                            <div className="lg:col-span-8">
+                                <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
                                     <div className="flex justify-between items-center mb-10">
                                         <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
                                             <Sparkles className="text-neon-blue" size={24} /> {editingId ? 'EDIT' : 'NEW'} EVENT
@@ -190,109 +198,142 @@ const UpcomingEventsManager = () => {
                                     </div>
 
                                     <form onSubmit={handleSubmit} className="space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Title</label>
-                                                <Input
-                                                    placeholder="E.G. SUMMER MUSIC FESTIVAL..."
-                                                    value={newEvent.title}
-                                                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                                                    required
-                                                    className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-blue/30 px-6"
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Date & Time</label>
-                                                <Input
-                                                    type="datetime-local"
-                                                    value={newEvent.date}
-                                                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                                                    required
-                                                    className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6"
-                                                />
-                                            </div>
-                                        </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Description (Short)</label>
-                                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{newEvent.description.length}/120</span>
+                                        <div className="space-y-12">
+                                            {/* Section 1: Core Identities */}
+                                            <div className="space-y-8">
+                                                <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-3">
+                                                    <div className="w-8 h-px bg-neon-blue/20" /> CORE IDENTITIES
+                                                </h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Title</label>
+                                                        <Input
+                                                            placeholder="E.G. SUMMER MUSIC FESTIVAL..."
+                                                            value={newEvent.title}
+                                                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                                                            required
+                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-blue/30 px-6"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Date & Time</label>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            value={newEvent.date}
+                                                            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                                                            required
+                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <textarea
-                                                    className="w-full bg-black/50 border border-white/5 rounded-[2rem] p-6 text-[11px] font-black uppercase tracking-widest text-gray-300 focus:outline-none focus:border-neon-blue/30 transition-all h-32 resize-none shadow-inner"
-                                                    placeholder="BRIEF SUMMARY FOR HOVER DETAILS..."
-                                                value={newEvent.description}
-                                                maxLength={120}
-                                                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                                            />
-                                        </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Location</label>
-                                                <Input
-                                                    placeholder="E.G. MAINLAND INDIA, VENUE NAME..."
-                                                    value={newEvent.location}
-                                                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                                                    className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action Button Text</label>
-                                                <Input
-                                                    placeholder="E.G. LEARN MORE"
-                                                    value={newEvent.buttonText}
-                                                    onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })}
-                                                    className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Category</label>
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-neon-blue/30 appearance-none cursor-pointer"
-                                                        value={newEvent.category}
-                                                        onChange={e => setNewEvent({ ...newEvent, category: e.target.value })}
-                                                    >
-                                                        <option value="" className="bg-zinc-900">SELECT CATEGORY...</option>
-                                                        {portfolioCategories.map(cat => (
-                                                            <option key={cat.id} value={cat.id} className="bg-zinc-900">{cat.label.toUpperCase()}</option>
-                                                        ))}
-                                                    </select>
-                                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Location</label>
+                                                        <Input
+                                                            placeholder="E.G. MAINLAND INDIA, VENUE NAME..."
+                                                            value={newEvent.location}
+                                                            onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Category</label>
+                                                        <div className="relative">
+                                                            <select
+                                                                className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-neon-blue/30 appearance-none cursor-pointer"
+                                                                value={newEvent.category}
+                                                                onChange={e => setNewEvent({ ...newEvent, category: e.target.value })}
+                                                            >
+                                                                <option value="" className="bg-zinc-900">SELECT CATEGORY...</option>
+                                                                {portfolioCategories.map(cat => (
+                                                                    <option key={cat.id} value={cat.id} className="bg-zinc-900">{cat.label.toUpperCase()}</option>
+                                                                ))}
+                                                            </select>
+                                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Description (Short)</label>
+                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{newEvent.description.length}/120</span>
+                                                    </div>
+                                                    <textarea
+                                                        className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-[11px] font-black uppercase tracking-widest text-gray-300 focus:outline-none focus:border-neon-blue/30 transition-all h-32 resize-none shadow-inner"
+                                                        placeholder="BRIEF SUMMARY FOR HOVER DETAILS..."
+                                                        value={newEvent.description}
+                                                        maxLength={120}
+                                                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                                                    />
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                                                Action Button Link
-                                                <span className="text-gray-600 ml-2 normal-case font-medium tracking-normal text-[9px]">(shown only when button text is set)</span>
-                                            </label>
-                                            <Input
-                                                placeholder="HTTPS://..."
-                                                value={newEvent.link}
-                                                onChange={(e) => setNewEvent({ ...newEvent, link: e.target.value })}
-                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6"
-                                            />
-                                        </div>
+                                            {/* Section 2: Media & CTAs */}
+                                            <div className="space-y-8">
+                                                <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] flex items-center gap-3">
+                                                    <div className="w-8 h-px bg-neon-green/20" /> MEDIA & COMMANDS
+                                                </h3>
+                                                <div className="space-y-6">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Image</label>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                            <div className="md:col-span-2">
+                                                                <Input placeholder="PASTE ASSET URL" value={newEvent.image} onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
+                                                            </div>
+                                                            <div className="relative group">
+                                                                <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                                <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-blue/30 transition-all">
+                                                                    <Upload className="text-gray-500 group-hover:text-neon-blue" size={18} />
+                                                                    <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Image</label>
-                                            <div className="space-y-4">
-                                                <Input placeholder="PASTE NEWBI ASSET URL" value={newEvent.image} onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })} className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
-                                                <div className="relative group">
-                                                    <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className="h-20 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-blue/30 transition-all">
-                                                        <Upload className="text-gray-500 group-hover:text-neon-blue" size={20} />
-                                                        <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? selectedFile.name : 'UPLOAD NEWBI ASSET'}</span>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Venue Layout / Seat Map</label>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <Input placeholder="LAYOUT IMAGE URL" value={newEvent.venueLayout} onChange={(e) => setNewEvent({ ...newEvent, venueLayout: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
+                                                            <div className="relative group">
+                                                                <input type="file" onChange={(e) => setVenueLayoutFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                                <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-2 bg-black/20 group-hover:border-neon-blue/30 transition-all">
+                                                                    <Upload className="text-gray-500" size={14} />
+                                                                    <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{venueLayoutFile ? 'UPLOAD READY' : 'UPLOAD MAP'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action Button Text</label>
+                                                            <Input
+                                                                placeholder="E.G. GET TICKETS"
+                                                                value={newEvent.buttonText}
+                                                                onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })}
+                                                                className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Target Link (Optional)</label>
+                                                            <Input
+                                                                placeholder="HTTPS://..."
+                                                                value={newEvent.link}
+                                                                onChange={(e) => setNewEvent({ ...newEvent, link: e.target.value })}
+                                                                className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Ticketing High Tech */}
-                                        <div className="bg-black/30 p-8 rounded-[2.5rem] border border-white/5 space-y-8">
+                                            {/* Section 3: Ticketing High Tech */}
+                                            <div className="space-y-8">
+                                                <h3 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em] flex items-center gap-3">
+                                                    <div className="w-8 h-px bg-yellow-500/20" /> TICKETING & BROADCAST
+                                                </h3>
                                             <button 
                                                 type="button"
                                                 onClick={() => setNewEvent({ ...newEvent, isTicketed: !newEvent.isTicketed })}
@@ -357,6 +398,7 @@ const UpcomingEventsManager = () => {
                                                 )}
                                             </AnimatePresence>
                                         </div>
+                                        </div>
 
                                         {!editingId && (
                                             <div className="p-6 bg-neon-pink/5 rounded-[2rem] border border-neon-pink/10 flex items-center gap-6 group hover:bg-neon-pink/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, alsoPostToAnnouncements: !newEvent.alsoPostToAnnouncements })}>
@@ -384,7 +426,7 @@ const UpcomingEventsManager = () => {
                             </div>
 
                             {/* Preview Column */}
-                            <div className="lg:col-span-5 hidden lg:block sticky top-12">
+                            <div className="lg:col-span-4 hidden lg:block sticky top-12">
                                 <LivePreview type="event" data={{ ...newEvent, image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image }} />
                             </div>
                         </motion.div>
@@ -422,8 +464,12 @@ const UpcomingEventsManager = () => {
                                                     <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">{item.date?.split('T')[0] || 'TBD'}</span>
                                                     {item.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
                                                 </div>
-                                                <h3 className="text-3xl font-black font-heading text-white uppercase italic tracking-tighter mb-2 leading-none">{item.title}</h3>
-                                                <p className="text-[10px] font-medium text-gray-400 line-clamp-2 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">{item.description}</p>
+                                                <div>
+                                                    <h3 className="text-xl md:text-3xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-green transition-colors">{item.title}</h3>
+                                                    <div className="flex flex-wrap items-center gap-4 md:gap-6 mt-2 md:mt-4">
+                                                        <p className="text-[10px] font-medium text-gray-400 line-clamp-2 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">{item.description}</p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

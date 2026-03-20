@@ -138,7 +138,8 @@ const UpcomingEvents = () => {
 
     return (
         <section
-            className="py-16 md:py-32 bg-[#020202] text-white overflow-hidden relative border-t border-white/5"
+            id="upcoming-events"
+            className="relative py-16 md:py-24 pt-16 pb-32 md:pb-24 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
             onMouseEnter={() => setIsAutoScrolling(false)}
             onMouseLeave={() => setIsAutoScrolling(true)}
         >
@@ -168,10 +169,10 @@ const UpcomingEvents = () => {
                 </div>
 
                 {/* Carousel Container */}
-                <div className="relative group/carousel">
-                    <div
+                <div className="relative group cursor-grab active:cursor-grabbing">
+                    <div 
                         ref={carouselRef}
-                        className="flex gap-8 overflow-x-auto pb-12 scrollbar-hide snap-x snap-mandatory scroll-smooth -mx-4 px-4"
+                        className="flex overflow-x-auto gap-4 md:gap-8 pb-12 snap-x no-scrollbar scroll-smooth px-4 md:px-0"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {upcomingEvents.map((event) => {
@@ -241,7 +242,7 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
             <div className="h-[65%] relative overflow-hidden bg-zinc-800">
                 {event.image ? (
                     <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                        className="absolute inset-0 bg-cover bg-[center_top] transition-transform duration-1000 group-hover:scale-110"
                         style={{ backgroundImage: `url(${event.image})` }}
                     />
                 ) : (
@@ -274,7 +275,7 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
             </div>
 
             {/* Bottom Content Section */}
-            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#111] z-10">
+            <div className="h-[35%] p-6 md:p-8 flex flex-col justify-between relative bg-[#111] z-10">
                 <div>
                     <h3 className="event-title text-xl md:text-2xl font-black text-white leading-tight tracking-tight mb-2 line-clamp-2 italic">
                         {event.title}
@@ -293,9 +294,9 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
 
                 <div className="flex items-center justify-between pt-4">
                     <div className="flex flex-col gap-2">
-                        {event.isTicketed && event.buttonText && (
+                        {(event.isTicketed || event.buttonText?.toUpperCase().includes('TICKET')) && (
                             <div className="text-neon-green font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                <span className="text-[10px] uppercase">{event.buttonText}</span>
+                                <span className="text-[10px] uppercase">{event.buttonText || "GET TICKETS"}</span>
                                 <ArrowRight size={16} />
                             </div>
                         )}
@@ -315,9 +316,9 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                             </Link>
                         )}
 
-                        {!event.isTicketed && !linkedGiveaway && event.link && event.buttonText && (
+                        {!event.isTicketed && !linkedGiveaway && (event.link || event.buttonText) && (
                             <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                <span className="text-[10px] uppercase">{event.buttonText}</span>
+                                <span className="text-[10px] uppercase">{event.buttonText || "LEARN MORE"}</span>
                                 <ArrowRight size={16} />
                             </div>
                         )}
