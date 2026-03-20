@@ -109,7 +109,7 @@ const Portfolio = () => {
                         >
                             <div
                                 ref={carouselRef}
-                                className="flex flex-col md:flex-row gap-6 md:gap-10 md:overflow-x-auto pb-10 md:pb-20 md:scrollbar-hide md:snap-x md:snap-mandatory scroll-smooth"
+                                className="flex flex-row overflow-x-auto gap-6 md:gap-10 pb-10 md:pb-20 no-scrollbar md:scrollbar-hide snap-x snap-mandatory scroll-smooth px-4 md:px-0"
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {filteredItems.map((item) => (
