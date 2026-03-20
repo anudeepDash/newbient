@@ -36,13 +36,15 @@ const UpcomingEventsManager = () => {
         ticketPrice: '',
         ticketCategories: [],
         venueLayout: '',
-        alsoPostToAnnouncements: false
+        alsoPostToAnnouncements: false,
+        imageTransform: { scale: 1, x: 0, y: 0 }
     });
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
 
     const resetForm = () => {
         setNewEvent({
-            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false
+            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false,
+            imageTransform: { scale: 1, x: 0, y: 0 }
         });
         setIsAdding(false);
         setEditingId(null);
@@ -276,9 +278,9 @@ const UpcomingEventsManager = () => {
                                                     <div className="w-8 h-px bg-neon-green/20" /> MEDIA & COMMANDS
                                                 </h3>
                                                 <div className="space-y-6">
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-4">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Image</label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                             <div className="md:col-span-2">
                                                                 <Input placeholder="PASTE ASSET URL" value={newEvent.image} onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
                                                             </div>
@@ -287,6 +289,49 @@ const UpcomingEventsManager = () => {
                                                                 <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-blue/30 transition-all">
                                                                     <Upload className="text-gray-500 group-hover:text-neon-blue" size={18} />
                                                                     <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Visual Calibration */}
+                                                        <div className="bg-white/5 p-8 rounded-3xl border border-white/5 space-y-6">
+                                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-blue mb-4">Visual Calibration</h4>
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Scale</span>
+                                                                        <span className="text-[8px] font-black text-white">{(newEvent.imageTransform?.scale || 1).toFixed(2)}x</span>
+                                                                    </div>
+                                                                    <input 
+                                                                        type="range" min="0.5" max="2" step="0.01"
+                                                                        value={newEvent.imageTransform?.scale || 1}
+                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, scale: parseFloat(e.target.value) } })}
+                                                                        className="w-full accent-neon-blue bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">X-Position</span>
+                                                                        <span className="text-[8px] font-black text-white">{newEvent.imageTransform?.x || 0}%</span>
+                                                                    </div>
+                                                                    <input 
+                                                                        type="range" min="-100" max="100" step="1"
+                                                                        value={newEvent.imageTransform?.x || 0}
+                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, x: parseInt(e.target.value) } })}
+                                                                        className="w-full accent-neon-green bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Y-Position</span>
+                                                                        <span className="text-[8px] font-black text-white">{newEvent.imageTransform?.y || 0}%</span>
+                                                                    </div>
+                                                                    <input 
+                                                                        type="range" min="-100" max="100" step="1"
+                                                                        value={newEvent.imageTransform?.y || 0}
+                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, y: parseInt(e.target.value) } })}
+                                                                        className="w-full accent-neon-pink bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
+                                                                    />
                                                                 </div>
                                                             </div>
                                                         </div>

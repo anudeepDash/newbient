@@ -51,22 +51,30 @@ const Navbar = () => {
             {/* Global Pinned Announcement Banner */}
             {(pinnedAnnouncement && !(maintenanceState.global && user?.role === 'developer')) && (
                 <div className="fixed top-0 left-0 right-0 z-[55] bg-neon-pink text-black text-[10px] font-black uppercase tracking-widest py-2 px-4 text-center break-words flex flex-col items-center justify-center gap-1 shadow-[0_0_20px_rgba(255,0,255,0.3)]">
-                    {pinnedAnnouncement.link ? (
-                        <a 
-                            href={pinnedAnnouncement.link} 
-                            target={pinnedAnnouncement.link.startsWith('http') ? "_blank" : "_self"}
-                            rel={pinnedAnnouncement.link.startsWith('http') ? "noopener noreferrer" : ""}
-                            className="hover:underline flex flex-col items-center justify-center gap-1 w-full h-full"
-                        >
+                    {(() => {
+                        const destination = pinnedAnnouncement.link || (pinnedAnnouncement.linkedEventId ? `/?event=${pinnedAnnouncement.linkedEventId}` : null);
+                        const content = (
                             <span className="leading-tight">
-                                <span className="font-extrabold mr-2">{pinnedAnnouncement.title}:</span>{pinnedAnnouncement.content}
+                                <span className="font-extrabold mr-2 uppercase">{pinnedAnnouncement.title}:</span>{pinnedAnnouncement.content}
                             </span>
-                        </a>
-                    ) : (
-                        <span className="leading-tight">
-                            <span className="font-extrabold mr-2">{pinnedAnnouncement.title}:</span>{pinnedAnnouncement.content}
-                        </span>
-                    )}
+                        );
+
+                        if (!destination) return content;
+
+                        if (destination.startsWith('http')) {
+                            return (
+                                <a href={destination} target="_blank" rel="noopener noreferrer" className="hover:underline flex flex-col items-center justify-center gap-1 w-full h-full">
+                                    {content}
+                                </a>
+                            );
+                        }
+
+                        return (
+                            <Link to={destination} className="hover:underline flex flex-col items-center justify-center gap-1 w-full h-full">
+                                {content}
+                            </Link>
+                        );
+                    })()}
                 </div>
             )}
 

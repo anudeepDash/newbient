@@ -71,40 +71,70 @@ const LivePreview = ({ type, data, categories = [] }) => {
 
                     {/* EVENT PREVIEW */}
                     {type === 'event' && (
-                        <div className="relative bg-[#111] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col h-[520px] shadow-2xl w-full">
+                        <div className="relative bg-black border border-white/5 rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 group shadow-2xl w-full">
+                            {/* Visual Perforations */}
                             <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
                             <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
                             <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
 
-                            <div className="h-[65%] relative overflow-hidden bg-zinc-800">
+                            {/* Full Image Background Overlay */}
+                            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
                                 {data.image ? (
-                                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${data.image})` }} />
+                                    <div 
+                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300" 
+                                        style={{ 
+                                            backgroundImage: `url(${data.image})`,
+                                            transform: `scale(${data.imageTransform?.scale || 1}) translate(${(data.imageTransform?.x || 0)}%, ${(data.imageTransform?.y || 0)}%)`,
+                                            transformOrigin: 'center'
+                                        }} 
+                                    />
                                 ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest text-xs italic">AESTHETIC TBA</div>
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-bold uppercase tracking-widest text-xs italic">AESTHETIC TBA</div>
                                 )}
-                                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#111] to-transparent" />
-                                <div className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 z-10 flex items-center gap-3">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-neon-blue">
+                                {/* Premium Gradient Overlay - Solid black at bottom for legibility */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black from-[10%] via-black/95 via-[35%] to-transparent to-[80%] z-10" />
+                            </div>
+
+                            {/* Floating Info Labels (Top-Left: Date Only) */}
+                            <div className="absolute top-6 left-6 z-30">
+                                <div className="px-5 py-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-xl">
+                                    <span className="text-[11px] font-black uppercase tracking-[0.1em] text-neon-blue">
                                         {data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
                                     </span>
-                                    {data.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
                                 </div>
                             </div>
 
-                            <div className="h-[35%] p-8 flex flex-col justify-between relative bg-[#111] z-10">
-                                <div>
-                                    <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate italic uppercase">{data.title || 'EVENT TITLE'}</h3>
-                                    <div className="flex items-center gap-4 text-gray-500">
-                                        <div className="flex items-center gap-1"><MapPin size={12} className="text-neon-blue" /><span className="text-[10px] font-bold uppercase tracking-widest">{data.location || 'Announcing Soon'}</span></div>
-                                        <div className="flex items-center gap-1"><Calendar size={12} className="text-neon-blue" /><span className="text-[10px] font-bold uppercase tracking-widest">{data.date ? 'Locked' : 'TBD'}</span></div>
+                            {/* Floating Status Icons (Top-Right) */}
+                            <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 items-end">
+                                {data.isTicketed && (
+                                    <div className="w-11 h-11 rounded-2xl bg-neon-green text-black flex items-center justify-center shadow-[0_0_20px_rgba(46,255,144,0.4)] border border-neon-green/20">
+                                        <Ticket size={22} />
                                     </div>
-                                </div>
-                                <div className="flex items-center justify-between pt-4">
-                                    <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all">
-                                        <span className="text-[10px] uppercase text-cyan-400">{data.buttonText || 'GET TICKETS NOW'}</span>
-                                        <ArrowRight size={16} className="text-cyan-400" />
+                                )}
+                                {data.isGiveaway && (
+                                    <div className="w-11 h-11 rounded-2xl bg-purple-600 backdrop-blur-md border border-purple-400/30 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                                        <Gift size={20} className="text-white animate-pulse" />
                                     </div>
-                                    <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white"><Share2 size={14} /></button>
+                                )}
+                            </div>
+
+                            {/* Content Overlay */}
+                            <div className="absolute inset-0 p-8 flex flex-col justify-end z-20">
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white leading-tight tracking-tight mb-2 truncate italic uppercase">{data.title || 'EVENT TITLE'}</h3>
+                                        <div className="flex items-center gap-4 text-gray-400">
+                                            <div className="flex items-center gap-1"><MapPin size={12} className="text-neon-blue" /><span className="text-[10px] font-bold uppercase tracking-widest">{data.location || 'Announcing Soon'}</span></div>
+                                            <div className="flex items-center gap-1"><Calendar size={12} className="text-neon-blue" /><span className="text-[10px] font-bold uppercase tracking-widest">{data.date ? 'Locked' : 'TBD'}</span></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all">
+                                            <span className="text-[10px] uppercase text-cyan-400">{data.buttonText || 'GET TICKETS NOW'}</span>
+                                            <ArrowRight size={16} className="text-cyan-400" />
+                                        </div>
+                                        <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white z-30"><Share2 size={14} /></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -112,28 +142,63 @@ const LivePreview = ({ type, data, categories = [] }) => {
 
                     {/* PORTFOLIO PREVIEW */}
                     {type === 'portfolio' && (
-                        <div className="w-full bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-white/10 transition-all duration-500 flex flex-col h-full shadow-2xl">
-                            <div className="aspect-[4/3] relative overflow-hidden bg-black/50">
+                        <div className="w-full aspect-[4/5] bg-black border border-white/5 rounded-[3rem] overflow-hidden group hover:border-white/10 transition-all duration-500 relative shadow-2xl">
+                             {/* Visual Perforations */}
+                            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
+                            <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
+
+                            {/* Full Image Background Overlay */}
+                            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
                                 {data.image ? (
-                                    <img src={data.image} alt={data.title} className="w-full h-full object-cover opacity-60 transition-all duration-700" />
+                                    <div 
+                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300" 
+                                        style={{ 
+                                            backgroundImage: `url(${data.image})`,
+                                            transform: `scale(${data.imageTransform?.scale || 1}) translate(${(data.imageTransform?.x || 0)}%, ${(data.imageTransform?.y || 0)}%)`,
+                                            transformOrigin: 'center'
+                                        }}
+                                    />
                                 ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-700 uppercase font-black tracking-widest text-[10px]">AESTHETIC TBA</div>
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 uppercase font-black tracking-widest text-[10px]">AESTHETIC TBA</div>
                                 )}
+                                {/* Premium Gradient Overlay - Compact deep black at bottom */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black from-[0%] via-black/90 via-[30%] to-transparent to-[55%] z-10" />
                             </div>
 
-                            <div className="p-6 md:p-8 flex-1 flex flex-col">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <span className="px-3 py-1 bg-neon-green/10 text-neon-green text-[9px] font-black uppercase tracking-widest border border-neon-green/20 rounded-full">
-                                        {categories?.find(c => c.id === data.category)?.label || data.category || 'GENERAL'}
+                            {/* Floating Info Labels (Top-Left: Date Only) */}
+                            <div className="absolute top-6 left-6 z-30">
+                                <div className="px-5 py-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-xl">
+                                    <span className="text-[11px] font-black uppercase tracking-[0.1em] text-neon-blue">
+                                        {data.date ? new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
                                     </span>
                                 </div>
-                                <h3 className="text-xl font-black font-heading text-white uppercase italic tracking-tight mb-2">{data.title || 'RECORD TITLE'}</h3>
-                                {data.date && (
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest mt-auto">
-                                        <Clock size={12} className="text-gray-700" />
-                                        {data.date}
+                            </div>
+
+                            {/* Content Overlay */}
+                            <div className="absolute inset-0 p-8 flex flex-col justify-end z-20 text-left">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className="px-3 py-1 bg-neon-green/20 backdrop-blur-md text-neon-green text-[9px] font-black uppercase tracking-widest border border-neon-green/30 rounded-full">
+                                            {categories?.find(c => c.id === data.category)?.label || data.category || 'GENERAL'}
+                                        </span>
                                     </div>
-                                )}
+                                    <div>
+                                        <h3 className="text-2xl font-black font-heading text-white uppercase italic tracking-tight mb-2 truncate">{data.title || 'RECORD TITLE'}</h3>
+                                        {data.date && (
+                                            <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                <Clock size={12} className="text-neon-blue" />
+                                                {data.date}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all text-[10px] uppercase">
+                                            View Experience <ArrowRight size={14} />
+                                        </div>
+                                        <button className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white z-30"><Share2 size={14} /></button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
