@@ -1,18 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../lib/store';
-import { ArrowRight, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { ArrowRight, Zap } from 'lucide-react';
 
 const Portfolio = () => {
     const { portfolio, portfolioCategories } = useStore();
     const carouselRef = useRef(null);
 
-    const scroll = (direction) => {
-        if (carouselRef.current) {
-            const scrollAmount = direction === 'left' ? -400 : 400;
-            carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-    };
 
     const categories = portfolioCategories.length > 0 ? portfolioCategories : [];
     const [activeTab, setActiveTab] = useState(categories.length > 0 ? categories[0].id : '');
@@ -69,7 +63,7 @@ const Portfolio = () => {
                     </div>
 
                     {/* Tabs with selection bar */}
-                    <div className="inline-flex overflow-x-auto whitespace-nowrap snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl w-full md:w-auto max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="inline-flex overflow-x-auto whitespace-nowrap snap-x gap-2 md:gap-4 p-2 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-3xl w-full md:w-auto max-w-full portfolio-scrollbar">
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
@@ -128,23 +122,6 @@ const Portfolio = () => {
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Nav Buttons */}
-                    {activeTab === 'concerts' && filteredItems.length > 2 && (
-                        <div className="absolute top-1/2 -translate-y-1/2 w-full left-0 flex justify-between pointer-events-none z-30 px-6">
-                            <button
-                                onClick={() => scroll('left')}
-                                className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all pointer-events-auto opacity-0 group-hover/carousel:opacity-100 -translate-x-12 group-hover/carousel:translate-x-0"
-                            >
-                                <ChevronLeft size={24} />
-                            </button>
-                            <button
-                                onClick={() => scroll('right')}
-                                className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all pointer-events-auto opacity-0 group-hover/carousel:opacity-100 translate-x-12 group-hover/carousel:translate-x-0"
-                            >
-                                <ChevronRight size={24} />
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
         </section>

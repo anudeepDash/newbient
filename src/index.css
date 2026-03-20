@@ -131,22 +131,25 @@
   scrollbar-width: none;
 }
 
-/* Portfolio Custom Scrollbar */
+/* Portfolio Custom Scrollbar - "Cool" Neon Style */
 .portfolio-scrollbar::-webkit-scrollbar {
   height: 4px;
 }
 
 .portfolio-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
-  margin: 0 20px;
+  margin: 0 40px;
 }
 
 .portfolio-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(46, 255, 144, 0.3);
+  background: linear-gradient(90deg, #2eff90, #2ebfff);
   border-radius: 10px;
+  box-shadow: 0 0 10px rgba(46, 255, 144, 0.5);
 }
 
 .portfolio-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(46, 255, 144, 0.5);
-}
+  background: linear-gradient(90deg, #2eff90, #ffffff);
+  box-shadow: 0 0 15px rgba(46, 255, 144, 0.8);
+}
+
