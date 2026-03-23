@@ -68,34 +68,61 @@ const Invoice = () => {
             return;
         }
 
-        if (!invoiceRef.current) return;
+        if (!invoiceRef.current) {
+            alert("No invoice reference found!");
+            return;
+        }
 
         const originalScale = scale;
         setScale(1);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         try {
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
+            if (!pageElements.length) {
+                alert("No invoice pages found to download!");
+                return;
+            }
+
             for (let i = 0; i < pageElements.length; i++) {
                 const canvas = await html2canvas(pageElements[i], {
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    backgroundColor: '#F3F4F6'
+                    logging: true,
+                    backgroundColor: '#F3F4F6',
+                    width: 794,
+                    height: 1123,
+                    windowWidth: 794,
+                    windowHeight: 1123,
+                    onclone: (clonedDoc) => {
+                        const clonedPage = clonedDoc.querySelectorAll('.invoice-page-render')[i];
+                        if (clonedPage) {
+                            clonedPage.style.transform = 'none';
+                            clonedPage.style.boxShadow = 'none';
+                        }
+                    }
                 });
                 
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                if (!canvas) {
+                    throw new Error(`Failed to capture page ${i + 1}`);
+                }
+
+                const imgData = canvas.toDataURL('image/png', 1.0);
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
             
             pdf.save(`Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`);
         } catch (error) {
             console.error("PDF generation failed:", error);
-            alert("Failed to generate PDF. Please try again.");
+            alert("PDF Generation Error: " + error.message);
         } finally {
             setScale(originalScale);
         }
