@@ -8,7 +8,7 @@ const MediaGallery = () => {
     const { galleryImages: mediaItems } = useStore();
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-28 pb-32 px-4 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-32 px-4 relative overflow-hidden">
             {/* Background Glows */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[150px] animate-pulse" />
@@ -17,31 +17,33 @@ const MediaGallery = () => {
 
             <div className="relative z-10 max-w-6xl mx-auto">
 
-                {/* Header */}
-                <div className="text-center mb-14">
+                {/* Header Container */}
+                <div className="flex flex-col items-center text-center mb-20">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-8"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
                     >
-                        <Camera size={16} className="text-neon-pink" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Visual Stories</span>
+                        <ImageIcon size={16} className="text-neon-pink" />
+                        <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
+                            Visual Stories
+                        </span>
                     </motion.div>
-
+ 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-8xl font-black font-heading mb-6 tracking-tighter leading-none uppercase"
+                        transition={{ delay: 0.2 }}
+                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-white to-neon-blue mb-6 tracking-tight leading-none text-center"
                     >
-                        MEDIA <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">GALLERY.</span>
+                        MEDIA GALLERY
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-gray-400 max-w-xl mx-auto text-base md:text-xl font-medium leading-relaxed"
+                        transition={{ delay: 0.3 }}
+                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
                     >
                         Visual stories, moments, and backstage energy captured by the Newbi team.
                     </motion.p>
@@ -82,7 +84,7 @@ const MediaGallery = () => {
                                             <span className="text-neon-green text-[10px] font-black uppercase tracking-wider mb-1">
                                                 {item.category}
                                             </span>
-                                            <h3 className="text-white font-black text-sm truncate">{item.title}</h3>
+                                            <h3 className="text-white font-black text-sm truncate uppercase">{item.title}</h3>
                                             {item.type === 'video' && (
                                                 <div className="absolute inset-0 flex items-center justify-center">
                                                     <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -139,7 +141,7 @@ const MediaGallery = () => {
                                 className="w-full h-full object-contain"
                             />
                             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
-                                <h3 className="text-xl font-black text-white tracking-tight">{selectedImage.title}</h3>
+                                <h3 className="text-xl font-black text-white tracking-tight uppercase">{selectedImage.title}</h3>
                                 <p className="text-neon-green text-[10px] font-black uppercase tracking-widest mt-1">{selectedImage.category}</p>
                             </div>
                         </motion.div>

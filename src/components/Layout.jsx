@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import NotificationToast from './NotificationToast';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 
@@ -12,6 +13,7 @@ const Layout = () => {
     return (
         <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden">
             <Navbar />
+            <NotificationToast />
             <main className={cn("flex-grow transition-all duration-300 pb-24 md:pb-0", isBypassing ? "pt-0" : "pt-0")}>
                 <Outlet />
             </main>

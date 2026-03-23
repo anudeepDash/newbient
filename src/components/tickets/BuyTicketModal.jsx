@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, QrCode, CheckCircle, ArrowRight, Loader, Minus, Plus, ChevronDown, ChevronUp, Info, Map as MapIcon } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { notifyAdmins } from '../../lib/notificationTriggers';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -98,11 +99,20 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                 customerName: formData.name,
                 customerEmail: formData.email,
                 customerPhone: formData.phone,
+                userId: useStore.getState().user?.uid || null,
                 items: items,
                 totalAmount,
                 paymentRef,
                 status: 'pending' // pending approval
             });
+
+            // Notify Admins about the new order
+            await notifyAdmins(
+                'NEW TICKETING OPERATION',
+                `INBOUND TRANSACTION FROM ${formData.name.toUpperCase()} FOR "${event.title.toUpperCase()}". VERIFICATION REQUIRED.`,
+                '/admin/tickets',
+                'ticket'
+            );
             setStep(4);
         } catch (error) {
             console.error("Order failed:", error);

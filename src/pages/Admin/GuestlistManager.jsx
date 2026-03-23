@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, ExternalLink, ListChecks } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, ExternalLink, ListChecks, Sparkles } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 const GuestlistManager = () => {
     const { guestlists, addGuestlist, updateGuestlist, deleteGuestlist } = useStore();
@@ -55,6 +57,13 @@ const GuestlistManager = () => {
                 await updateGuestlist(editingId, formData);
             } else {
                 await addGuestlist(formData);
+                // Notify All Users about new guestlist
+                await notifyAllUsers(
+                    'NEW GUESTLIST OPEN!',
+                    `${formData.title.toUpperCase()} ACCESS IS NOW LIVE. SECURE YOUR SPOT.`,
+                    '/community',
+                    'guestlist'
+                );
             }
             resetForm();
         } catch (error) {
@@ -166,6 +175,23 @@ const GuestlistManager = () => {
                                             <ListChecks size={24} />
                                         </div>
                                         <div className="flex gap-2">
+                                            <button 
+                                                onClick={async () => {
+                                                    if (window.confirm(`Transmit direct push signal for "${item.title}"?`)) {
+                                                        await notifyAllUsers(
+                                                            `New Guestlist: ${item.title}`,
+                                                            `Exclusive access for ${item.title} at ${item.location} is now live!`,
+                                                            `/community`,
+                                                            ''
+                                                        );
+                                                        alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                    }
+                                                }}
+                                                className="p-2 text-neon-blue hover:scale-110 transition-transform" 
+                                                title="Direct Push Signal"
+                                            >
+                                                <Sparkles size={16} />
+                                            </button>
                                             <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-white transition-colors" title="Edit"><Edit size={16} /></button>
                                             <button onClick={() => deleteGuestlist(item.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors" title="Delete"><Trash2 size={16} /></button>
                                         </div>

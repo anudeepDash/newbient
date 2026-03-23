@@ -42,6 +42,13 @@ const AdminGuard = ({ children }) => {
                     animate={{ opacity: 1, y: 0 }}
                     className="max-w-md w-full text-center space-y-8"
                 >
+                    <div className="flex justify-center mb-8">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-md">
+                            <ShieldAlert size={14} className="text-red-500" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500">Restricted Access</span>
+                        </div>
+                    </div>
+
                     <div className="w-24 h-24 bg-red-500/10 rounded-[2rem] border border-red-500/20 flex items-center justify-center mx-auto mb-8">
                         <ShieldAlert className="text-red-500" size={48} />
                     </div>

@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getMessaging } from "firebase/messaging";
 
 // Validated Config from User
 const firebaseConfig = {
@@ -22,5 +23,6 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 
 const googleProvider = new GoogleAuthProvider();
+const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
 
-export { db, storage, auth, googleProvider };
+export { db, storage, auth, googleProvider, messaging };

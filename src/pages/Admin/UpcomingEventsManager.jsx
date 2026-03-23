@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle } from 'lucide-react';
+import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -496,6 +497,40 @@ const UpcomingEventsManager = () => {
                                                     <button onClick={() => moveItem(index, 'down')} disabled={index === upcomingEvents.length - 1} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all disabled:opacity-0"><ChevronDown size={18} /></button>
                                                 </div>
                                                 <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const params = new URLSearchParams({
+                                                                subject: `UPDATE: ${item.title}`,
+                                                                header: item.title,
+                                                                body: item.description,
+                                                                heroImage: item.image,
+                                                                ctaText: 'SEE DETAILS',
+                                                                ctaUrl: `${window.location.origin}/concert-zone`
+                                                            });
+                                                            window.location.href = `/admin/mailing?${params.toString()}`;
+                                                        }}
+                                                        className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green transition-all"
+                                                        title="Broadcast via Email"
+                                                    >
+                                                        <Mail size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm(`Transmit direct push signal for "${item.title}"?`)) {
+                                                                await notifyAllUsers(
+                                                                    item.title,
+                                                                    item.description,
+                                                                    `/concert-zone`,
+                                                                    item.image
+                                                                );
+                                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                            }
+                                                        }}
+                                                        className="w-10 h-10 rounded-xl bg-neon-blue/20 backdrop-blur-md flex items-center justify-center text-neon-blue border border-neon-blue/30 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
+                                                        title="Direct Push Signal"
+                                                    >
+                                                        <Sparkles size={18} />
+                                                    </button>
                                                     {item.isTicketed && (
                                                         <button onClick={() => { setLinkEvent(item); setCustomPrice(''); setGeneratedLink(''); setLinkModalOpen(true); }} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all" title="Generate Custom Priced Link"><Link2 size={18} /></button>
                                                     )}

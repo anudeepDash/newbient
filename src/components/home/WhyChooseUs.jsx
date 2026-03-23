@@ -8,24 +8,24 @@ const WhyChooseUs = () => {
 
     const reasons = [
         {
-            title: "Campus Marketing",
-            subtitle: "Dominating Collegiate Spaces",
+            title: "CAMPUS MARKETING",
+            subtitle: "DOMINATING COLLEGIATE SPACES",
             desc: "Our USP lies in our deep root network across 100+ colleges in India. We turn campus grounds into brand activation hubs that resonate with GenZ.",
             icon: Megaphone,
             gradient: "from-neon-green to-emerald-500",
             shadow: "shadow-neon-green/20"
         },
         {
-            title: "Promotions",
-            subtitle: "High-Octane Hype",
+            title: "PROMOTIONS",
+            subtitle: "HIGH-OCTANE HYPE",
             desc: "From influencer network takeovers to secret local drops, our promotional engine is built to generate maximum noise and conversion in record time.",
             icon: Zap,
             gradient: "from-neon-pink to-purple-500",
             shadow: "shadow-neon-pink/20"
         },
         {
-            title: "Events",
-            subtitle: "Unmatched Energy",
+            title: "EVENTS",
+            subtitle: "UNMATCHED ENERGY",
             desc: "State-of-the-art production meets community spirit. We deliver high-fidelity, professional-grade events that transform into lasting memories.",
             icon: Calendar,
             gradient: "from-neon-blue to-cyan-500",
@@ -118,7 +118,7 @@ const Card = ({ reason, index }) => {
                 </div>
 
                 <div className="flex-1">
-                    <h3 className="text-2xl font-black font-heading text-white mb-2 tracking-tight">{reason.title}</h3>
+                    <h3 className="text-2xl font-black font-heading text-white mb-2 tracking-tight uppercase">{reason.title}</h3>
                     <h4 className={`text-sm font-black uppercase tracking-widest bg-clip-text text-transparent bg-gradient-to-r ${reason.gradient} mb-6`}>{reason.subtitle}</h4>
                     <p className="text-gray-400 font-medium leading-relaxed mb-8">
                         {reason.desc}
@@ -129,7 +129,7 @@ const Card = ({ reason, index }) => {
                     onClick={() => document.getElementById('capabilities')?.scrollIntoView({ behavior: 'smooth' })}
                     className="pt-8 border-t border-white/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors w-full"
                 >
-                    <span>Learn More</span>
+                    <span>LEARN MORE</span>
                     <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </button>
             </div>

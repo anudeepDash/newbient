@@ -31,21 +31,23 @@ const CommunityCard = ({ item, type, handleShare }) => {
                 transition={{ duration: 0.8, type: "spring", stiffness: 100, damping: 20 }}
                 className="relative w-full h-full preserve-3d cursor-default"
             >
-                {/* Front Side - Premium Ticket */}
+                {/* Front Side - Glassmorphism Card */}
                 <div className={cn(
-                    "backface-hidden relative bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col group transition-all duration-500 h-full",
-                    isForm ? "hover:border-neon-pink/40" : (isGig ? "hover:border-neon-green/40" : "hover:border-neon-blue/40")
+                    "backface-hidden relative bg-zinc-900/40 backdrop-blur-[20px] border border-white/10 rounded-[2rem] overflow-hidden flex flex-col group transition-all duration-500 h-full shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.05)]",
+                    isForm ? "hover:border-neon-pink/40 hover:shadow-neon-pink/10" : (isGig ? "hover:border-neon-green/40 hover:shadow-neon-green/10" : "hover:border-neon-blue/40 hover:shadow-neon-blue/10")
                 )}>
-                    {/* Visual Perforations */}
-                    <div className="absolute top-1/2 -left-3 w-6 h-6 bg-black rounded-full border border-white/5 z-20" />
-                    <div className="absolute top-1/2 -right-3 w-6 h-6 bg-black rounded-full border border-white/5 z-20" />
+                    {/* Ambient Glows */}
+                    <div className={cn(
+                        "absolute -top-20 -right-20 w-40 h-40 blur-[80px] pointer-events-none opacity-20 transition-opacity duration-700 group-hover:opacity-40",
+                        isForm ? "bg-neon-pink" : (isGig ? "bg-neon-green" : "bg-neon-blue")
+                    )} />
                     
                     <div className="flex h-full min-h-[260px]">
                         <div className="flex-1 p-8 flex flex-col relative overflow-hidden">
                             <div className="flex items-center justify-between mb-6">
                                 <div className={cn(
                                     "p-3 rounded-2xl bg-white/5 border border-white/10 shadow-lg group-hover:scale-110 transition-all duration-500",
-                                    isForm ? "text-neon-pink" : (isGig ? "text-neon-green" : "text-neon-blue")
+                                    isForm ? "text-neon-pink border-neon-pink/20" : (isGig ? "text-neon-green border-neon-green/20" : "text-neon-blue border-neon-blue/20")
                                 )}>
                                     <Icon size={24} />
                                 </div>
@@ -59,7 +61,7 @@ const CommunityCard = ({ item, type, handleShare }) => {
                                     </button>
                                     {!isForm && (
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border backdrop-blur-md",
                                             item.status === 'Open' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                                         )}>
                                             {item.status || 'Active'}
@@ -69,10 +71,10 @@ const CommunityCard = ({ item, type, handleShare }) => {
                             </div>
 
                             <div className="flex-1 flex flex-col">
-                                <h3 className="text-2xl font-black font-heading leading-tight mb-3 text-white group-hover:translate-x-1 transition-transform">
+                                <h3 className="text-2xl font-black font-heading leading-tight mb-3 text-white group-hover:translate-x-1 transition-transform uppercase">
                                     {item.title}
                                 </h3>
-                                <p className="text-gray-500 text-sm font-medium line-clamp-2 mb-6">
+                                <p className="text-gray-500 text-sm font-medium line-clamp-2 mb-6 whitespace-pre-wrap">
                                     {item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}
                                 </p>
                                 
@@ -133,12 +135,15 @@ const CommunityCard = ({ item, type, handleShare }) => {
                         <button
                             onClick={() => setIsFlipped(true)}
                             className={cn(
-                                "w-16 md:w-20 flex flex-col justify-center items-center gap-6 border-l border-dashed border-white/10 transition-colors hover:bg-white/5 cursor-pointer z-20 focus:outline-none",
+                                "w-16 md:w-20 flex flex-col justify-center items-center gap-6 border-l border-white/5 transition-colors hover:bg-white/5 cursor-pointer z-20 focus:outline-none backdrop-blur-xl",
                                 isForm ? "bg-neon-pink/5" : (isGig ? "bg-neon-green/5" : "bg-neon-blue/5")
                             )}
                         >
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] whitespace-nowrap rotate-90 text-gray-400 group-hover:text-white transition-colors mb-4">Details</span>
-                            <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:border-white/50 group-hover:scale-110 transition-all shadow-xl">
+                            <div className={cn(
+                                "w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:border-white/50 group-hover:scale-110 transition-all shadow-xl",
+                                isForm ? "group-hover:bg-neon-pink/20" : (isGig ? "group-hover:bg-neon-green/20" : "group-hover:bg-neon-blue/20")
+                            )}>
                                 <ArrowRight size={14} />
                             </div>
                         </button>
@@ -147,22 +152,45 @@ const CommunityCard = ({ item, type, handleShare }) => {
 
                 {/* Back Side - Info Docket */}
                 <div className={cn(
-                    "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 flex flex-col overflow-hidden shadow-2xl",
-                    isForm ? "border-neon-pink/30" : (isGig ? "border-neon-green/30" : "border-neon-blue/30")
+                    "absolute inset-0 backface-hidden rotate-y-180 bg-zinc-950/60 border border-white/10 rounded-[2rem] p-8 md:p-10 flex flex-col overflow-hidden shadow-2xl backdrop-blur-3xl",
+                    isForm ? "border-neon-pink/30 shadow-neon-pink/5" : (isGig ? "border-neon-green/30 shadow-neon-green/5" : "border-neon-blue/30 shadow-neon-blue/5")
                 )}>
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-2xl font-black font-heading text-white">The Breakdown</h3>
+                    {/* Background Decorative Icon */}
+                    <div className={cn(
+                        "absolute -right-12 -bottom-12 opacity-[0.05] rotate-12 pointer-events-none transition-transform duration-1000 group-hover:scale-110",
+                        isForm ? "text-neon-pink" : (isGig ? "text-neon-green" : "text-neon-blue")
+                    )}>
+                        <Icon size={240} />
+                    </div>
+
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                        <div className="flex flex-col">
+                            <span className={cn(
+                                "text-[10px] font-black uppercase tracking-[0.3em] mb-1",
+                                isForm ? "text-neon-pink" : (isGig ? "text-neon-green" : "text-neon-blue")
+                            )}>Information</span>
+                            <h3 className="text-xl font-black font-heading text-white tracking-tight uppercase">Details & Ops</h3>
+                        </div>
                         <button
                             onClick={() => setIsFlipped(false)}
-                            className="p-3 bg-white/5 rounded-full text-gray-400 hover:text-white transition-all"
+                            className="p-3 bg-white/5 rounded-full text-gray-400 hover:text-white transition-all border border-white/10 hover:bg-white/10"
                         >
-                            <ArrowRight className="rotate-180" size={20} />
+                            <ArrowRight className="rotate-180" size={18} />
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        <p className="text-gray-400 text-base leading-relaxed font-medium">
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 pr-2">
+                        <p className="text-gray-400 text-sm md:text-base leading-relaxed font-medium whitespace-pre-wrap">
                             {item.description || (Array.isArray(item.roles) ? item.roles.join(', ') : item.roles)}
                         </p>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-white/5 relative z-10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isForm ? "bg-neon-pink" : (isGig ? "bg-neon-green" : "bg-neon-blue"))} />
+                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest leading-none">Verified Channel</span>
+                        </div>
+                        <Sparkles size={14} className="text-white/10" />
                     </div>
                 </div>
             </motion.div>

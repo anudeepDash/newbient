@@ -14,20 +14,20 @@ const Navbar = () => {
     const location = useLocation();
 
     const allLinks = [
-        { name: 'Home', path: '/', icon: Home },
-        { name: 'Community', path: '/community', featureId: 'community', icon: Users },
-        { name: 'Creator', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'Concert Zone', path: '/concertzone', featureId: 'concerts', icon: Music },
-        { name: 'Gallery', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
-        { name: 'Contact', path: '/contact', featureId: 'contact', icon: LayoutGrid },
+        { name: 'HOME', path: '/', icon: Home },
+        { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
+        { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
+        { name: 'GALLERY', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
+        { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
 
     const mobilePrimaryLinks = [
-        { name: 'Home', path: '/', icon: Home },
-        { name: 'Community', path: '/community', featureId: 'community', icon: Users },
-        { name: 'Creator', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'Concert Zone', path: '/concertzone', featureId: 'concerts', icon: Music },
-        { name: 'More', action: () => setIsOpen(true), icon: Menu },
+        { name: 'HOME', path: '/', icon: Home },
+        { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
+        { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
+        { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 
     const hideMaintenance = siteSettings.hideMaintenancePages && user?.role !== 'developer';

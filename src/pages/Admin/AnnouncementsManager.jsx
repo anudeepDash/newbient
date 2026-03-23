@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit } from 'lucide-react';
+import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -34,9 +35,17 @@ const AnnouncementsManager = () => {
                 await updateAnnouncement(editingId, newAnnouncement);
             } else {
                 await addAnnouncement(newAnnouncement);
+                // Trigger notification for new announcement
+                await notifyAllUsers(
+                    `New Announcement: ${newAnnouncement.title}`,
+                    newAnnouncement.content,
+                    newAnnouncement.link,
+                    newAnnouncement.image
+                );
             }
             resetForm();
         } catch (error) {
+            console.error("Broadcast failed:", error);
             alert("Broadcast failure.");
         }
     };
@@ -256,6 +265,40 @@ const AnnouncementsManager = () => {
                                             </div>
 
                                             <div className="flex items-center gap-3 shrink-0 ml-4">
+                                                <button
+                                                    onClick={() => {
+                                                        const params = new URLSearchParams({
+                                                            subject: `ANNOUNCEMENT: ${item.title}`,
+                                                            header: item.title,
+                                                            body: item.content,
+                                                            heroImage: item.image || '',
+                                                            ctaText: 'READ MORE',
+                                                            ctaUrl: item.link || `${window.location.origin}/announcements`
+                                                        });
+                                                        window.location.href = `/admin/mailing?${params.toString()}`;
+                                                    }}
+                                                    className="w-12 h-12 rounded-2xl bg-neon-green/10 text-neon-green border border-neon-green/20 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all"
+                                                    title="Broadcast via Email"
+                                                >
+                                                    <Mail size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm(`Transmit direct push signal for "${item.title}"?`)) {
+                                                            await notifyAllUsers(
+                                                                item.title,
+                                                                item.content,
+                                                                item.link || `/announcements`,
+                                                                item.image
+                                                            );
+                                                            alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                        }
+                                                    }}
+                                                    className="w-12 h-12 rounded-2xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
+                                                    title="Direct Push Signal"
+                                                >
+                                                    <Sparkles size={18} />
+                                                </button>
                                                 <button
                                                     onClick={() => handleEdit(item)}
                                                     className="w-12 h-12 rounded-2xl bg-white/5 text-gray-500 hover:text-white border border-white/5 flex items-center justify-center transition-all"

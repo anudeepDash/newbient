@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown, DollarSign } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { notifySpecificUser, notifyAdmins } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -58,12 +59,32 @@ const TicketManager = () => {
     const handleApprove = async (id) => {
         if (window.confirm("Confirm payment verification? This will authorize ticket issuance.")) {
             await approveTicketOrder(id);
+            const order = ticketOrders.find(o => o.id === id);
+            if (order && order.userId) {
+                await notifySpecificUser(
+                    order.userId,
+                    'TICKET VERIFIED!',
+                    `YOUR ACCESS FOR "${order.eventTitle.toUpperCase()}" HAS BEEN GRANTED. DOWNLOAD YOUR ASSET NOW.`,
+                    '/profile',
+                    'ticket'
+                );
+            }
         }
     };
 
     const handleReject = async (id) => {
         if (window.confirm("Decline this transaction?")) {
             await rejectTicketOrder(id);
+            const order = ticketOrders.find(o => o.id === id);
+            if (order && order.userId) {
+                await notifySpecificUser(
+                    order.userId,
+                    'VERIFICATION FAILED',
+                    `YOUR TRANSACTION FOR "${order.eventTitle.toUpperCase()}" WAS DECLINED. CONTACT SUPPORT IF THIS IS AN ERROR.`,
+                    '/contact',
+                    'ticket'
+                );
+            }
         }
     };
 

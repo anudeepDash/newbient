@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; // Import store
+import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import MediaGallery from './pages/MediaGallery';
@@ -36,6 +37,7 @@ import TicketManager from './pages/Admin/TicketManager';
 import GiveawayManager from './pages/Admin/GiveawayManager';
 import GiveawayParticipants from './pages/Admin/GiveawayParticipants';
 import DevSettings from './pages/Admin/DevSettings';
+import MailingManager from './pages/Admin/MailingManager';
 import GiveawayPage from './pages/GiveawayPage';
 import TicketViewer from './pages/TicketViewer';
 import ActionHandler from './pages/Auth/ActionHandler';
@@ -49,27 +51,36 @@ import BlogManager from './pages/Admin/BlogManager'; // New Admin Blog
 import BlogPostEditor from './pages/Admin/BlogPostEditor'; // New Editor
 
 function App() {
-  const { subscribeToData, checkUserRole, loading, authInitialized } = useStore();
+  const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
 
   useEffect(() => {
+    const unsubscribeData = subscribeToData();
+    const unsubscribeNotifications = subscribeToNotifications();
+    initForegroundMessaging();
+    
     let unsubAuth;
     const initAuth = async () => {
       const { auth } = await import('./lib/firebase');
       const { onAuthStateChanged } = await import('firebase/auth');
 
       unsubAuth = onAuthStateChanged(auth, (user) => {
-        checkUserRole(user);
+        const { checkUserRole } = useStore.getState();
+        checkUserRole(user).then(() => {
+            if (user) {
+                requestNotificationPermission();
+            }
+        });
       });
     };
 
-    const unsubscribe = subscribeToData();
     initAuth();
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribeData) unsubscribeData();
+      if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubAuth) unsubAuth();
     };
-  }, [subscribeToData, checkUserRole]);
+  }, [subscribeToData, subscribeToNotifications]);
 
     return (
     <Router>
@@ -105,6 +116,7 @@ function App() {
           <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/mailing" element={<AdminGuard><MailingManager /></AdminGuard>} />
           <Route path="admin/site-settings" element={<AdminGuard><MaintenanceGuard featureId="site_content"><SiteSettings /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/proposals" element={<AdminGuard><ProposalManagement /></AdminGuard>} />
           <Route path="admin/create-proposal" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />

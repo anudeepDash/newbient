@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 
@@ -143,9 +144,28 @@ const BlogPostEditor = () => {
             };
 
             if (id) {
+                const oldPost = posts.find(p => p.id === id);
                 await updatePost(id, finalData);
+                // Trigger notification if status changed to Published
+                if (finalData.status === 'Published' && oldPost?.status !== 'Published') {
+                    await notifyAllUsers(
+                        `New Article: ${finalData.title}`,
+                        finalData.shortDescription || 'Check out our latest blog post!',
+                        `/blog/${finalData.slug}`,
+                        finalData.coverImage
+                    );
+                }
             } else {
                 await addPost(finalData);
+                // Trigger notification for new blog post if published
+                if (finalData.status === 'Published') {
+                    await notifyAllUsers(
+                        `New Article: ${finalData.title}`,
+                        finalData.shortDescription || 'Check out our latest blog post!',
+                        `/blog/${finalData.slug}`,
+                        finalData.coverImage
+                    );
+                }
             }
             navigate('/admin/blog');
         } catch (err) {

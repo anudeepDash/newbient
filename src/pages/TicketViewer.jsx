@@ -80,14 +80,19 @@ const TicketViewer = () => {
         : (order.ticketUrl ? [order.ticketUrl] : []);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-24 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 relative overflow-hidden">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/10 rounded-full blur-[120px] animate-pulse" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
-            <div className="relative z-10 max-w-2xl mx-auto px-4">
+            <div className="relative z-10 max-w-2xl mx-auto px-4 flex flex-col items-center">
+                <div className="flex justify-center mb-8">
+                    <span className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-neon-green">
+                        Verified Official Entry Pass
+                    </span>
+                </div>
                 <Link to="/" className="inline-flex flex-col items-center justify-center text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest mb-8 mx-auto w-full group">
                     <div className="bg-white/5 p-4 rounded-full border border-white/10 mb-2 group-hover:scale-110 transition-transform">
                         <QrCode size={24} className="text-neon-blue" />
@@ -104,9 +109,6 @@ const TicketViewer = () => {
                     
                     <div className="p-8 md:p-12">
                         <div className="text-center mb-10">
-                            <span className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-neon-green mb-6">
-                                Verified Official Entry Pass
-                            </span>
                             <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter mb-2">
                                 {event?.title || order.eventTitle}
                             </h1>
@@ -121,11 +123,11 @@ const TicketViewer = () => {
                             </h3>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                                    <span className="text-sm font-bold text-gray-400">Issued To</span>
+                                    <span className="text-sm font-bold text-gray-400 uppercase">ISSUED TO</span>
                                     <span className="text-sm font-black text-white uppercase">{order.customerName}</span>
                                 </div>
                                 <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                                    <span className="text-sm font-bold text-gray-400">Valid Items</span>
+                                    <span className="text-sm font-bold text-gray-400 uppercase">VALID ITEMS</span>
                                     <div className="text-right flex flex-col">
                                         {order.items?.map((item, i) => (
                                             <span key={i} className="text-sm font-black text-white uppercase">{item.count}X {item.name}</span>
@@ -133,7 +135,7 @@ const TicketViewer = () => {
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm font-bold text-gray-400">Associated Contact</span>
+                                    <span className="text-sm font-bold text-gray-400 uppercase">ASSOCIATED CONTACT</span>
                                     <span className="text-xs font-mono text-gray-300">{order.customerEmail}</span>
                                 </div>
                             </div>
@@ -157,7 +159,7 @@ const TicketViewer = () => {
                                                     <Ticket size={18} />
                                                 </div>
                                                 <div className="flex flex-col text-left">
-                                                    <span className="font-black uppercase text-sm">Download your Ticket {index + 1}</span>
+                                                    <span className="font-black uppercase text-sm">DOWNLOAD YOUR TICKET {index + 1}</span>
                                                     <span className="text-[10px] font-bold text-gray-500 uppercase">View / Save PDF</span>
                                                 </div>
                                             </div>

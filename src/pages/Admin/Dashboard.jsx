@@ -238,7 +238,7 @@ const Dashboard = () => {
 
                     <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
                         <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
-                        <ControlCard title="Portfolio" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concertzone" isHidden={cards.portfolio} />
+                        <ControlCard title="PORTFOLIO" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concertzone" isHidden={cards.portfolio} />
                         <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" isHidden={cards.gallery} />
                         <ControlCard title="Announcements" desc="Post updates and site news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
                         <ControlCard title="Blog" desc="Manage Concert Zone articles." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
@@ -249,6 +249,7 @@ const Dashboard = () => {
                         <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
                         <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
                         <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
+                        <ControlCard title="Mailing" desc="Broadcast emails to all subscribers." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
                         <ControlCard title="Members" desc="Community access and admin roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
                         <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
                     </DashboardSection>

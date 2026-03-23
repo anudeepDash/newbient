@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone, ArrowLeft, Sparkles } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 const VolunteerGigManager = () => {
     const { volunteerGigs, addVolunteerGig, updateVolunteerGig, deleteVolunteerGig, reorderVolunteerGigs, addAnnouncement } = useStore();
@@ -55,10 +57,6 @@ const VolunteerGigManager = () => {
         console.log("Starting handleSave...");
         setSaving(true);
         try {
-            // Parse roles - No longer needed for description
-            // const rolesArray = formData.roles.split(',').map(r => r.trim()).filter(r => r);
-            // console.log("Parsed roles:", rolesArray);
-
             const gigData = {
                 title: formData.title,
                 dates: formData.dates,
@@ -76,6 +74,13 @@ const VolunteerGigManager = () => {
                 await updateVolunteerGig(editingId, gigData);
             } else {
                 await addVolunteerGig(gigData);
+                // Notify All Users about new gig
+                await notifyAllUsers(
+                    'NEW VOLUNTEER GIG!',
+                    `WE NEED YOUR INTEL. ${gigData.title.toUpperCase()} IS NOW LIVE. APPLY NOW.`,
+                    '/community',
+                    'gig'
+                );
             }
             resetForm();
         } catch (error) {
@@ -277,6 +282,24 @@ const VolunteerGigManager = () => {
                                                 <ArrowDown size={14} />
                                             </button>
                                         </div>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={async () => {
+                                                if (window.confirm(`Transmit direct push signal for "${gig.title}"?`)) {
+                                                    await notifyAllUsers(
+                                                        `Volunteers Needed: ${gig.title}`,
+                                                        `Join the Newbi squad for ${gig.title} at ${gig.location}. Apply now!`,
+                                                        `/community`,
+                                                        ''
+                                                    );
+                                                    alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                }
+                                            }}
+                                            className="p-2 h-auto text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-black transition-all" 
+                                            title="Direct Push Signal"
+                                        >
+                                            <Sparkles size={16} />
+                                        </Button>
                                         <Button variant="outline" onClick={() => handlePushAnnouncement(gig)} className="p-2 h-auto text-neon-blue hover:text-neon-blue hover:border-neon-blue" title="Push to Announcements">
                                             <Megaphone size={16} />
                                         </Button>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc } from 'firebase/firestore';
+import { sendBookingConfirmation } from './email';
 
 export const useStore = create((set, get) => ({
     announcements: [],
@@ -20,6 +21,11 @@ export const useStore = create((set, get) => ({
     giveawayEntries: [], // Giveaway Entries
     posts: [], // Blog Posts
     subscribers: [], // Newsletter Subscribers
+    allUsers: [], // All Registered Users (Admin only context)
+    admins: [], // All Administrators
+    notifications: [], // Notifications System
+    unreadNotificationsCount: 0,
+    fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
@@ -104,6 +110,8 @@ export const useStore = create((set, get) => ({
         const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
         const unsubPosts = sub('posts', 'posts');
         const unsubSubscribers = sub('subscribers', 'subscribers');
+        const unsubAllUsers = sub('users', 'allUsers');
+        const unsubAdmins = sub('admins', 'admins');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -164,8 +172,27 @@ export const useStore = create((set, get) => ({
 
         return () => {
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
-            unsubPosts(); unsubSubscribers();
+            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins();
         };
+    },
+
+    // Notifications Subscription
+    subscribeToNotifications: () => {
+        const user = get().user;
+        const q = query(
+            collection(db, 'notifications'), 
+            orderBy('createdAt', 'desc')
+        );
+
+        return onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            
+            // Filter: Target UID, or global (userId: null)
+            const filtered = data.filter(n => !n.userId || n.userId === user?.uid);
+            const unreadCount = filtered.filter(n => !n.isRead).length;
+            
+            set({ notifications: filtered, unreadNotificationsCount: unreadCount });
+        }, (error) => console.error("Error fetching notifications:", error));
     },
 
     // --- Actions (Write to DB) ---
@@ -814,6 +841,24 @@ export const useStore = create((set, get) => ({
             });
         }
 
+        // --- AUTOMATED EMAIL DISPATCH ---
+        try {
+            const orderData = {
+                to_name: order.customerName,
+                to_email: order.customerEmail,
+                event_name: order.eventTitle,
+                booking_ref: bookingRef,
+                total_amount: order.totalAmount,
+                payment_ref: order.paymentRef,
+                ticket_url: assignedTickets,
+                tickets_html: order.items?.map(item => `${item.count}x ${item.name}`).join(', ') || 'Standard Entry'
+            };
+            await sendBookingConfirmation(orderData);
+            console.log(`[Automation] Verification email triggered for ${order.customerEmail}`);
+        } catch (emailError) {
+            console.error("[Automation] Failed to send verification email:", emailError);
+        }
+
         return bookingRef;
     },
     rejectTicketOrder: async (id) => {
@@ -1195,5 +1240,34 @@ export const useStore = create((set, get) => ({
             createdAt: new Date().toISOString()
         });
         return { success: true, message: 'Successfully subscribed!' };
+    },
+
+    // --- NOTIFICATION ACTIONS ---
+    addNotification: async (notification) => {
+        const nData = {
+            ...notification,
+            isRead: false,
+            createdAt: new Date().toISOString()
+        };
+        return await addDoc(collection(db, 'notifications'), nData);
+    },
+    markNotificationRead: async (id) => {
+        await updateDoc(doc(db, 'notifications', id), { isRead: true });
+    },
+    deleteNotification: async (id) => {
+        await deleteDoc(doc(db, 'notifications', id));
+    },
+    clearAllNotifications: async () => {
+        const { notifications } = get();
+        const unread = notifications.filter(n => !n.isRead);
+        const updates = unread.map(n => updateDoc(doc(db, 'notifications', n.id), { isRead: true }));
+        await Promise.all(updates);
+    },
+    saveFcmToken: async (token) => {
+        const { user } = get();
+        if (user) {
+            await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
+        }
+        set({ fcmToken: token });
     },
 }));
