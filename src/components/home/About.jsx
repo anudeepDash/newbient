@@ -6,9 +6,9 @@ const About = () => {
     const [isAutoScrolling, setIsAutoScrolling] = useState(true);
 
     const stats = [
-        { label: "Events Managed", value: "250+", sub: "Successful shows and activations across India" },
-        { label: "Cities Covered", value: "17+", sub: "Nationwide presence in major youth hubs" },
-        { label: "GenZ Reach", value: "1M+", sub: "Monthly impressions through our massive network" },
+        { label: "EVENTS MANAGED", value: "250+", sub: "Successful shows and activations across India" },
+        { label: "CITIES COVERED", value: "17+", sub: "Nationwide presence in major youth hubs" },
+        { label: "GENZ REACH", value: "1M+", sub: "Monthly impressions through our massive network" },
     ];
 
     useEffect(() => {
@@ -41,7 +41,7 @@ const About = () => {
                         viewport={{ once: true }}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md mb-8"
                     >
-                        <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Our Track Record</span>
+                        <span className="text-xs font-black uppercase tracking-[0.3em] text-white">OUR TRACK RECORD</span>
                     </motion.div>
                     <motion.h2
                         initial={{ opacity: 0, y: 30 }}

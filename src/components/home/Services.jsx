@@ -10,7 +10,7 @@ const Services = () => {
 
     const services = [
         {
-            title: "College Activations",
+            title: "COLLEGE ACTIVATIONS",
             shortDesc: "DOMINATE THE CAMPUS.",
             fullDesc: "Specialized end-to-end execution across 100+ colleges. We handle student networks, ground ops, and immersive brand experiences.",
             icon: Users,
@@ -18,7 +18,7 @@ const Services = () => {
             className: "md:col-span-2 md:row-span-1"
         },
         {
-            title: "Marketing",
+            title: "MARKETING",
             shortDesc: "CULTURAL RELEVANCE.",
             fullDesc: "Strategic influencer campaigns and trend-driven digital takeovers designed for the Indian youth heartland.",
             icon: Megaphone,
@@ -26,7 +26,7 @@ const Services = () => {
             className: "md:col-span-1 md:row-span-1"
         },
         {
-            title: "Artist Management",
+            title: "ARTIST MANAGEMENT",
             shortDesc: "TOP-TIER TALENT.",
             fullDesc: "Comprehensive artist hospitality and technical riders for college fests, concerts, and corporate takeovers.",
             icon: Music,
@@ -34,7 +34,7 @@ const Services = () => {
             className: "md:col-span-1 md:row-span-1"
         },
         {
-            title: "Event Operations",
+            title: "EVENT OPERATIONS",
             shortDesc: "FLAWLESS EXECUTION.",
             fullDesc: "From sound and lighting systems to venue security and large-scale crowd management.",
             icon: Shield,
@@ -42,7 +42,7 @@ const Services = () => {
             className: "md:col-span-1 md:row-span-1"
         },
         {
-            title: "Full-Scale PR",
+            title: "FULL-SCALE PR",
             shortDesc: "GLOBAL VISIBILITY.",
             fullDesc: "Holistic public relations strategy combined with ground-level community building to amplify brand presence.",
             icon: Globe,
@@ -179,7 +179,7 @@ const ServiceCard = ({ service, index }) => {
                 </div>
 
                 <div className="space-y-4 mt-6">
-                    <h3 className="text-xl md:text-3xl font-black font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500 italic">
+                    <h3 className="text-xl md:text-3xl font-black font-heading text-white tracking-tight leading-none md:group-hover:translate-x-2 transition-transform duration-500 italic uppercase">
                         {service.title}
                     </h3>
 

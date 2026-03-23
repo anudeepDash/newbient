@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -325,6 +326,23 @@ const GiveawayManager = () => {
                                     STATUS: {giveaway.status}
                                 </div>
                                 <div className="flex gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (window.confirm(`Transmit direct push signal for "${giveaway.name}"?`)) {
+                                                await notifyAllUsers(
+                                                    `New Giveaway: ${giveaway.name}`,
+                                                    giveaway.description,
+                                                    `/giveaways/${giveaway.slug}`,
+                                                    giveaway.posterUrl
+                                                );
+                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                            }
+                                        }}
+                                        className="p-2.5 bg-neon-blue/10 rounded-xl text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
+                                        title="Direct Push Signal"
+                                    >
+                                        <Sparkles size={16} />
+                                    </button>
                                     <button onClick={() => handleEdit(giveaway)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-purple-500 transition-colors"><Edit size={16} /></button>
                                     <button onClick={() => handleDelete(giveaway.id)} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                 </div>

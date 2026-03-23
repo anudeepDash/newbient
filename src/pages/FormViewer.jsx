@@ -16,7 +16,7 @@ const FormViewer = ({ formIdOverride }) => {
         return (
             <div className="min-h-screen flex items-center justify-center text-white">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-4">Form Not Found</h2>
+                    <h2 className="text-2xl font-bold mb-4 uppercase">FORM NOT FOUND</h2>
                     <p className="text-gray-400">The form you are looking for does not exist or has been removed.</p>
                 </div>
             </div>
@@ -27,7 +27,7 @@ const FormViewer = ({ formIdOverride }) => {
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
                 <Card className="p-4 md:p-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">{form.title}</h1>
+                    <h1 className="text-3xl font-black font-heading text-white mb-2 uppercase tracking-tight">{form.title}</h1>
                     <p className="text-gray-400 mb-8">{form.description}</p>
 
                     <div className="w-full relative bg-white/5 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
@@ -44,7 +44,7 @@ const FormViewer = ({ formIdOverride }) => {
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-black bg-neon-blue hover:bg-cyan-400 transition-colors"
                                 >
-                                    Open Form
+                                    OPEN FORM
                                 </a>
                             </div>
                         ) : (

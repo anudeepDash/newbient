@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -260,6 +261,24 @@ const CreatorManager = () => {
                                                 {creator.profileStatus || 'PENDING'}
                                             </span>
                                             <div className="flex gap-3">
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm(`Broadcast push notification for "${creator.name}"?`)) {
+                                                            await notifyAllUsers(
+                                                                `Featured Creator: ${creator.name}`,
+                                                                `Check out ${creator.name}'s profile and media kit on Newbi!`,
+                                                                `/community`,
+                                                                ''
+                                                            );
+                                                            alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                        }
+                                                    }}
+                                                    className="w-8 h-8 rounded-lg bg-neon-blue/10 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"
+                                                    title="Announce Creator"
+                                                >
+                                                    <Sparkles size={14} />
+                                                </button>
                                                 {creator.instagram && <Instagram size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
                                                 {creator.youtube && <Youtube size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
                                             </div>
@@ -323,7 +342,25 @@ const CreatorManager = () => {
                                                             {creator.profileStatus || 'PENDING'}
                                                         </span>
                                                     </td>
-                                                    <td className="p-8 text-right">
+                                                    <td className="p-8 text-right flex justify-end gap-3 items-center">
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm(`Broadcast push notification for "${creator.name}"?`)) {
+                                                                    await notifyAllUsers(
+                                                                        `Featured Creator: ${creator.name}`,
+                                                                        `Check out ${creator.name}'s profile and media kit on Newbi!`,
+                                                                        `/community`,
+                                                                        ''
+                                                                    );
+                                                                    alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                                }
+                                                            }}
+                                                            className="w-10 h-10 rounded-xl bg-neon-blue/10 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"
+                                                            title="Announce Creator"
+                                                        >
+                                                            <Sparkles size={16} />
+                                                        </button>
                                                         <Button variant="outline" className="h-10 px-4 rounded-xl text-[8px] font-black border-white/10 hover:bg-white/5 uppercase tracking-widest">
                                                             Review
                                                         </Button>

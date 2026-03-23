@@ -107,7 +107,7 @@ const Hero = () => {
                         href="/contact"
                         className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
                     >
-                        Contact Us
+                        CONTACT US
                         <ArrowRight className="ml-3 w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
                     </a>
 
@@ -115,7 +115,7 @@ const Hero = () => {
                         href="/community"
                         className="group relative w-full sm:w-auto h-14 md:h-20 px-8 md:px-12 flex items-center justify-center bg-zinc-900 border border-white/10 text-white font-black font-heading uppercase tracking-[0.2em] text-[10px] md:text-sm rounded-2xl transition-all duration-300 hover:border-neon-blue/50 hover:shadow-[0_0_40px_rgba(0,255,255,0.1)] overflow-hidden"
                     >
-                        <span className="relative z-10">Join Our Community</span>
+                        <span className="relative z-10">JOIN OUR COMMUNITY</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/0 via-neon-blue/5 to-neon-blue/0 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
                 </motion.div>

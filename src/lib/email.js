@@ -1,9 +1,9 @@
 import emailjs from '@emailjs/browser';
 
-// REPLACE THESE WITH YOUR ACTUAL EMAILJS KEYS
-const SERVICE_ID = 'YOUR_SERVICE_ID';
-const TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
-const PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
+// CONFIGURATION: These should be set in your .env file
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'YOUR_SERVICE_ID';
+const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'YOUR_PUBLIC_KEY';
+const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'YOUR_TEMPLATE_ID';
 
 /**
  * Sends a ticket email to the user.
@@ -82,28 +82,29 @@ const urlToBase64 = async (url) => {
  */
 export const sendBookingConfirmation = async (bookingData) => {
     try {
-        const params = { ...bookingData };
-
-        // Handle Attachment if ticket_url is distinct
-        if (bookingData.ticket_url) {
-            const base64Content = await urlToBase64(bookingData.ticket_url);
-            if (base64Content) {
-                // 'content' is often used for attachments in EmailJS if configured, 
-                // or you might need to map a specific template variable to 'content' in the dashboard.
-                // Standard approach for some providers:
-                params.content = {
-                    name: `Ticket-${bookingData.booking_ref}.pdf`,
-                    data: base64Content
-                };
-            }
-        }
+        const { to_name, to_email, event_name, booking_ref, tickets_html, total_amount, payment_ref, ticket_url } = bookingData;
+        
+        const params = {
+            to_name,
+            to_email,
+            event_name,
+            booking_ref, // The "Unique Code"
+            tickets_html, // For "Email Invoice" style listing
+            total_amount,
+            payment_ref,
+            ticket_link: Array.isArray(ticket_url) ? ticket_url[0] : ticket_url, // Link to the digital asset
+            view_ticket_url: `https://newbi.live/ticket/${booking_ref}`, // Direct portal link
+            message: `Your payment for ${event_name} has been verified successfully. Your unique access code is below.`
+        };
 
         // Use your Event Booking Template ID
+        // Note: For "Email Invoice" look, the EmailJS template should use these variables 
+        // to render a nice HTML table.
         const response = await emailjs.send(SERVICE_ID, TEMPLATE_ID, params, PUBLIC_KEY);
-        console.log('Booking email sent successfully!', response.status, response.text);
+        console.log('Automated booking email sent successfully!', response.status, response.text);
         return { success: true };
     } catch (error) {
-        console.error('Failed to send booking email:', error);
+        console.error('Failed to send automated booking email:', error);
         return { success: false, error };
     }
 };

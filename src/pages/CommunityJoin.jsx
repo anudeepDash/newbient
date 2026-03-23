@@ -136,11 +136,11 @@ const CommunityJoin = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 scroll-smooth">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 relative overflow-hidden">
 
-            <div className="max-w-7xl mx-auto space-y-20">
+            <div className="max-w-7xl mx-auto">
                 {/* Immersive Header */}
-                <div className="text-center relative py-10 overflow-hidden">
+                <div className="text-center relative overflow-hidden mb-20">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-pink/8 blur-[100px] pointer-events-none rounded-full" />
 
                     <motion.div
@@ -158,12 +158,12 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-4xl md:text-8xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6 tracking-tight leading-none pr-4"
+                        className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue mb-6 tracking-tight leading-none uppercase text-center"
                     >
                         {user ? (
-                            <>Hello, {user.displayName?.split(' ')[0]}</>
+                            <>HELLO, {user.displayName?.split(' ')[0]}</>
                         ) : (
-                            <>The Tribe.</>
+                            <>THE TRIBE.</>
                         )}
                     </motion.h1>
 
@@ -171,9 +171,9 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-medium leading-relaxed"
+                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-bold leading-relaxed uppercase tracking-widest"
                     >
-                        {user ? "Explosive opportunities await in the hub." : "Join India's most disruptive youth community."}
+                        {user ? "Exclusive opportunities await." : "Join India's most disruptive youth community."}
                     </motion.p>
                 </div>
 
@@ -183,9 +183,10 @@ const CommunityJoin = () => {
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="p-12 md:p-20 bg-zinc-900/60 border border-white/5 rounded-[3rem] backdrop-blur-3xl text-center max-w-2xl shadow-2xl relative overflow-hidden group"
+                            className="p-12 md:p-20 bg-zinc-900/40 border border-white/10 rounded-[2rem] backdrop-blur-[20px] text-center max-w-2xl shadow-2xl relative overflow-hidden group"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute -top-24 -right-24 w-48 h-48 bg-neon-blue blur-[100px] opacity-10 group-hover:opacity-20 transition-opacity" />
                             <Users className="w-24 h-24 text-neon-blue mx-auto mb-12 relative z-10" />
                             <h3 className="text-4xl font-black font-heading mb-6 relative z-10">GET STARTED.</h3>
                             <p className="text-gray-500 mb-12 relative z-10 text-lg font-medium">Join the ranks to access exclusive gigs, VIP guestlists, and more.</p>
@@ -217,7 +218,8 @@ const CommunityJoin = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-20 p-12 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-2xl text-center">
+                            <div className="mt-20 p-12 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-[20px] text-center relative overflow-hidden">
+                                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-neon-green blur-[80px] opacity-10" />
                                 <h3 className="text-2xl font-black font-heading text-white mb-4">SUBMITTED THE FORM?</h3>
                                 <p className="text-gray-500 mb-10 max-w-sm mx-auto font-medium">Click below to finalize your entry and unlock the hub.</p>
                                 <Button
@@ -235,7 +237,7 @@ const CommunityJoin = () => {
                          {/* Status UI */}
                          {!user?.hasJoinedWhatsapp && (
                              <section className="max-w-5xl mx-auto">
-                                 <div className="bg-zinc-900/40 border border-white/5 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
+                                 <div className="bg-zinc-900/40 border border-white/10 rounded-[2rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group backdrop-blur-[20px] shadow-2xl">
                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-neon-green/5 blur-[100px] pointer-events-none" />
                                     <div className="w-24 h-24 bg-neon-green rounded-[2rem] flex items-center justify-center text-black shadow-[0_0_50px_rgba(57,255,20,0.3)] shrink-0">
                                         <CheckCircle2 size={40} />
@@ -284,7 +286,7 @@ const CommunityJoin = () => {
                                     <motion.div 
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="group relative block overflow-hidden rounded-[3rem] border border-purple-500/30 bg-purple-600/10 p-1 md:p-2 backdrop-blur-3xl"
+                                        className="group relative block overflow-hidden rounded-[2rem] border border-purple-500/30 bg-purple-600/10 p-1 md:p-2 backdrop-blur-[20px] shadow-2xl shadow-purple-500/5"
                                     >
                                         <Link to={`/giveaway/${activeGiveaway.slug}`} className="flex flex-col md:flex-row items-center gap-10 p-8 md:p-12">
                                             <div className="w-24 h-24 rounded-[2rem] bg-purple-600 flex items-center justify-center text-white shadow-2xl shadow-purple-500/40 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
@@ -319,7 +321,7 @@ const CommunityJoin = () => {
                         ].filter(s => s.show).map((section) => (
                             <section key={section.id} id={section.id} className="scroll-mt-32">
                                 <div 
-                                    className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] cursor-pointer group/header hover:bg-zinc-900/60 hover:border-white/10 transition-all flex items-center justify-between"
+                                    className="p-6 bg-zinc-900/30 border border-white/10 rounded-[1.5rem] cursor-pointer group/header hover:bg-zinc-900/50 hover:border-white/20 transition-all flex items-center justify-between backdrop-blur-xl shadow-lg"
                                     onClick={() => toggleSection(section.id)}
                                 >
                                     <div className="flex items-center gap-6">

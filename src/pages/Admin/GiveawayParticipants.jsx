@@ -3,10 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Gift, Search, Download, CheckCircle2, Trophy, Users, ArrowLeft, Filter, Trash2, Star, Shuffle } from 'lucide-react';
+import { Gift, Search, Download, CheckCircle2, Trophy, Users, ArrowLeft, Filter, Trash2, Star, Shuffle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
+import { notifySpecificUser } from '../../lib/notificationTriggers';
 
 const GiveawayParticipants = () => {
     const { giveawayId } = useParams();
@@ -48,11 +49,23 @@ const GiveawayParticipants = () => {
     const handleSelectWinner = async (entryId, prize = 'GA Ticket') => {
         try {
             const entry = campaignEntries.find(e => e.id === entryId);
+            const isNowWinner = !entry.isWinner;
+
             await updateGiveawayEntry(entryId, { 
-                isWinner: !entry.isWinner, 
-                prize: entry.isWinner ? null : prize,
-                winnerSelectedAt: entry.isWinner ? null : new Date().toISOString()
+                isWinner: isNowWinner, 
+                prize: isNowWinner ? prize : null,
+                winnerSelectedAt: isNowWinner ? new Date().toISOString() : null
             });
+
+            if (isNowWinner && entry.userId) {
+                await notifySpecificUser(
+                    entry.userId,
+                    'YOU ARE A WINNER! 🏆',
+                    `CONGRATULATIONS! YOU HAVE WON ${prize.toUpperCase()} IN THE ${giveaway.name.toUpperCase()} GIVEAWAY.`,
+                    `/giveaway/${giveaway.slug}`,
+                    'giveaway'
+                );
+            }
         } catch (error) {
             alert("Error selecting winner");
         }
@@ -101,6 +114,22 @@ const GiveawayParticipants = () => {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <Button 
+                            onClick={() => {
+                                const params = new URLSearchParams({
+                                    subject: `UPDATE: ${giveaway.name} Giveaway`,
+                                    header: giveaway.name,
+                                    body: `Hello Tribe! We have exciting updates regarding the ${giveaway.name} giveaway.`,
+                                    heroImage: giveaway.image || '',
+                                    ctaText: 'CHECK WINNERS',
+                                    ctaUrl: `${window.location.origin}/giveaway/${giveaway.slug}`
+                                });
+                                window.location.href = `/admin/mailing?${params.toString()}`;
+                            }}
+                            className="h-14 px-8 bg-neon-green text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all shadow-lg"
+                        >
+                            <Mail className="mr-2" size={18} /> Broadcast to All
+                        </Button>
                         <Button onClick={handleRandomDraw} className="h-14 px-8 border border-purple-500/30 bg-purple-500/10 text-purple-500 font-black uppercase tracking-widest rounded-2xl hover:bg-purple-500 hover:text-white transition-all">
                             <Shuffle className="mr-2" size={18} /> Weighted Draw
                         </Button>
@@ -232,6 +261,24 @@ const GiveawayParticipants = () => {
                                                 )}
                                             >
                                                 {entry.isWinner ? 'REVOKE WINNER' : 'SELECT WINNER'}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    const params = new URLSearchParams({
+                                                        subject: entry.isWinner ? 'YOU WON! 🏆' : `UPDATE: ${giveaway.name}`,
+                                                        header: entry.isWinner ? 'CONGRATULATIONS!' : giveaway.name,
+                                                        body: entry.isWinner 
+                                                            ? `HI ${entry.name.toUpperCase()}! YOU HAVE BEEN SELECTED AS A WINNER IN OUR ${giveaway.name.toUpperCase()} GIVEAWAY!`
+                                                            : `HI ${entry.name.toUpperCase()}! THANKS FOR PARTICIPATING IN ${giveaway.name.toUpperCase()}. WE HAVE SOME UPDATES FOR YOU.`,
+                                                        ctaText: 'SEE DETAILS',
+                                                        ctaUrl: `${window.location.origin}/giveaway/${giveaway.slug}`
+                                                    });
+                                                    window.location.href = `/admin/mailing?${params.toString()}`;
+                                                }}
+                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all"
+                                                title="Send Targeted Email"
+                                            >
+                                                <Mail size={16} />
                                             </button>
                                             <button
                                                 onClick={() => {

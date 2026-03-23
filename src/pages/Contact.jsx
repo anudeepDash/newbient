@@ -6,8 +6,10 @@ import { Send, Instagram, Mail, Phone, Globe, MessageSquare, Zap, Sparkles, MapP
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { useStore } from '../lib/store';
+import { notifyAdmins } from '../lib/notificationTriggers';
+import { sendContactAutoReply } from '../lib/email';
 import { cn } from '../lib/utils';
+import { useStore } from '../lib/store';
 
 const Contact = () => {
     const { siteDetails } = useStore();
@@ -27,6 +29,18 @@ const Contact = () => {
                 createdAt: new Date().toISOString(),
                 status: 'new'
             });
+
+            // Notify Admins
+            await notifyAdmins(
+                'NEW INBOUND MESSAGE',
+                `RECEIVED A TRANSMISSION FROM ${formData.name.toUpperCase()}. MISSION INTEL ATTACHED.`,
+                '/admin/messages',
+                'message'
+            );
+
+            // Optional: Auto-reply (requires EmailJS setup)
+            // await sendContactAutoReply(formData.name, formData.email, formData.message);
+
             alert('Message sent! We will get back to you soon.');
             setFormData({ name: '', email: '', message: '' });
         } catch (error) {

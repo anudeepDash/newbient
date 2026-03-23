@@ -6,6 +6,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
+import { notifyAllUsers } from '../../lib/notificationTriggers';
+
 const FormManager = () => {
     const { forms, deleteForm, addAnnouncement } = useStore();
     const navigate = useNavigate();
@@ -16,17 +18,26 @@ const FormManager = () => {
         }
     };
 
-    const handlePushNotification = (form) => {
+    const handlePushNotification = async (form) => {
         const announcement = {
-            id: Date.now(),
             title: `New Form: ${form.title}`,
             date: new Date().toISOString().split('T')[0],
             content: form.description || "Check out this new form!",
             isPinned: false,
+            link: `/forms/${form.id}`,
             image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
         };
-        addAnnouncement(announcement);
-        alert('Form pushed to announcements!');
+        await addAnnouncement(announcement);
+        
+        // Trigger Push Notification
+        await notifyAllUsers(
+            `NEW COMMUNITY FORM: ${form.title.toUpperCase()}`,
+            form.description || "YOUR INTEL IS REQUIRED. PARTICIPATE IN THIS PULSE NOW.",
+            `/forms/${form.id}`,
+            announcement.image
+        );
+        
+        alert('Form pushed to announcements and notifications triggered!');
     };
 
     const handleShareWhatsApp = (form) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { notifySpecificUser, notifyAllUsers } from '../../lib/notificationTriggers';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -40,9 +41,31 @@ const CampaignManager = () => {
         e.preventDefault();
         try {
             if (editingId) {
+                const oldCampaign = campaigns.find(c => c.id === editingId);
                 await updateCampaign(editingId, formData);
+                
+                // If new tasks added, notify shortlisted creators
+                if (formData.tasks.length > (oldCampaign?.tasks?.length || 0)) {
+                    const shortlistedCreators = useStore.getState().creators.filter(c => (c.shortlistedCampaigns || []).includes(editingId));
+                    for (const creator of shortlistedCreators) {
+                        await notifySpecificUser(
+                            creator.uid,
+                            'MISSION UPDATE',
+                            `NEW OBJECTIVES ADDED TO "${formData.title.toUpperCase()}". STAND BY FOR INTEL.`,
+                            '/creator-dashboard',
+                            'campaign'
+                        );
+                    }
+                }
             } else {
                 await addCampaign(formData);
+                // Notify all users about new campaign
+                await notifyAllUsers(
+                    `NEW MISSION DEPLOYED: ${formData.title.toUpperCase()}`,
+                    `REWARD: ${formData.reward}. SECTOR: ${formData.targetCity}. REVIEW BRIEFING NOW.`,
+                    '/creator',
+                    ''
+                );
             }
             setIsCreating(false);
             setEditingId(null);
@@ -133,7 +156,18 @@ const CampaignManager = () => {
     const handleToggleShortlist = async (creatorUid) => {
         try {
             if (!expandedCampaignId) return;
+            const isShortlisting = !useStore.getState().creators.find(c => c.uid === creatorUid)?.shortlistedCampaigns?.includes(expandedCampaignId);
             await useStore.getState().toggleShortlistStatus(expandedCampaignId, creatorUid);
+            
+            if (isShortlisting) {
+                await notifySpecificUser(
+                    creatorUid,
+                    'MISSION CLEARANCE GRANTED',
+                    `YOU HAVE BEEN SHORTLISTED FOR "${expandedCampaign.title.toUpperCase()}". VIEW YOUR TASKS IN THE COMMAND CENTER.`,
+                    '/creator-dashboard',
+                    'campaign'
+                );
+            }
         } catch (error) {
             alert("Failed to toggle shortlist.");
         }

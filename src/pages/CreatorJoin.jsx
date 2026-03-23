@@ -160,18 +160,18 @@ const CreatorJoin = () => {
                     <motion.div
                         id="creator-form"
                         initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                        className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 md:p-14 shadow-2xl relative overflow-hidden"
+                        className="bg-zinc-900/40 backdrop-blur-[20px] border border-white/10 rounded-[2rem] p-8 md:p-14 shadow-2xl relative overflow-hidden"
                     >
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/5 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-60 h-60 bg-neon-pink/5 blur-[100px] -ml-30 -mb-30 pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-60 h-60 bg-neon-pink/10 blur-[100px] -ml-30 -mb-30 pointer-events-none" />
 
                         <div className="flex items-center gap-5 mb-12 border-b border-white/5 pb-10 relative z-10">
                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-pink/20 to-neon-blue/20 border border-white/10 flex items-center justify-center">
                                 <Users className="w-8 h-8 text-neon-pink" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black font-heading tracking-tighter uppercase">Creator Profile Setup</h2>
-                                <p className="text-gray-500 text-sm font-medium mt-1">Tell us about yourself and your audience.</p>
+                                <h2 className="text-4xl font-black font-heading text-white mb-4 uppercase">CREATOR PROFILE.</h2>
+                                <p className="text-gray-500 font-medium">Join our network of storytellers and disruptors.</p>
                             </div>
                         </div>
 

@@ -15,10 +15,12 @@ import {
     Star,
     ExternalLink,
     Mail,
-    Send
+    Send,
+    Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
@@ -48,15 +50,16 @@ const BlogManager = () => {
         await updatePost(post.id, { featured: !post.featured });
     };
 
-    const handleSendNewsletter = async (post) => {
-        if (!post.sendAsNewsletter && !window.confirm('This post is not marked for newsletter. Send anyway?')) {
-            return;
-        }
-        
-        if (window.confirm(`Send "${post.title}" to ${subscribers.length} subscribers?`)) {
-            // Logic to trigger email send would go here
-            alert('Newsletter distribution initiated! (Mock logic)');
-        }
+    const handleSendNewsletter = (post) => {
+        const params = new URLSearchParams({
+            subject: `NEWSLETTER: ${post.title}`,
+            header: post.title,
+            body: post.shortDescription || post.content.substring(0, 200) + '...',
+            heroImage: post.coverImage || '',
+            ctaText: 'READ FULL STORY',
+            ctaUrl: `${window.location.origin}/concert-zone-new/${post.slug}`
+        });
+        window.location.href = `/admin/mailing?${params.toString()}`;
     };
 
 
@@ -220,6 +223,23 @@ const BlogManager = () => {
                                                         title="Toggle Featured"
                                                     >
                                                         <Star size={18} fill={post.featured ? 'currentColor' : 'none'} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (window.confirm(`Transmit direct push signal for "${post.title}"?`)) {
+                                                                await notifyAllUsers(
+                                                                    `New Post: ${post.title}`,
+                                                                    post.shortDescription || (post.content ? post.content.substring(0, 100) + '...' : ''),
+                                                                    `/concert-zone-new/${post.slug}`,
+                                                                    post.coverImage
+                                                                );
+                                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                            }
+                                                        }}
+                                                        className="p-3 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
+                                                        title="Direct Push Signal"
+                                                    >
+                                                        <Sparkles size={18} />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleSendNewsletter(post)}

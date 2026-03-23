@@ -11,6 +11,7 @@ import {
     Newspaper,
     Users,
     BookOpen,
+    Music,
     Zap
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -90,18 +91,26 @@ const ConcertZoneBlog = () => {
             <div className="max-w-[1500px] mx-auto px-6 relative z-10">
                 
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-8">
-                    <div className="relative">
-                        <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: '100px' }}
-                            className="h-1 bg-neon-blue mb-4"
-                        />
-                        <h1 className="text-6xl md:text-8xl font-black font-heading uppercase tracking-tighter italic leading-[0.8]">
-                            CONCERT <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
-                        </h1>
-                    </div>
+                <div className="flex flex-col items-center text-center mb-16 relative py-10">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
+                    >
+                        <Music size={16} className="text-neon-blue" />
+                        <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
+                            Concert Zone
+                        </span>
+                    </motion.div>
+
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-6xl md:text-8xl font-black font-heading uppercase tracking-tighter italic leading-[0.8] text-center"
+                    >
+                        CONCERT <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
+                    </motion.h1>
                 </div>
 
                 {/* GIGX Split Hero */}

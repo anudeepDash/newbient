@@ -187,12 +187,6 @@ const GiveawayPage = () => {
                 <div className="absolute bottom-0 left-0 w-full p-6 md:p-16 z-10">
                     <div className="max-w-7xl mx-auto">
                         <div className="space-y-4 md:space-y-6">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
-                                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-400">
-                                    {isEnded ? 'Giveaway Closed' : 'Live Opportunity'}
-                                </span>
-                            </div>
                             <h1 className="text-4xl md:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white max-w-5xl">
                                 {giveaway.name}
                             </h1>
@@ -245,7 +239,17 @@ const GiveawayPage = () => {
             )}
 
             {/* ─── MAIN CONTENT ─── */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 pb-40 space-y-32 mt-16 md:mt-20">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 pb-40 space-y-32">
+                <div className="relative z-10 max-w-7xl mx-auto px-4 pt-32 flex flex-col items-center">
+                    <div className="flex justify-center mb-8">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
+                            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-400">
+                                {isEnded ? 'Giveaway Closed' : 'Live Opportunity'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
                 {/* ─── EVENT BRIEF ─── */}
                 <section>
@@ -429,7 +433,7 @@ const GiveawayPage = () => {
                                             <div className="absolute top-1/2 -left-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
                                             <div className="absolute top-1/2 -right-3 w-6 h-6 bg-[#020202] rounded-full z-20 border border-white/5" />
 
-                                            <div className="flex h-full min-h-[220px]">
+                                            <div className="w-full flex flex-col md:flex-row items-center justify-between gap-12">
                                                 {/* Main content */}
                                                 <div className="flex-1 p-8 flex flex-col">
                                                     <div className="flex items-center justify-between mb-6">
@@ -446,7 +450,7 @@ const GiveawayPage = () => {
                                                             <span className="text-[9px] font-black uppercase text-gray-300">+{task.entryScore} PTS</span>
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-lg font-black font-heading text-white leading-tight mb-2 group-hover:translate-x-1 transition-transform">
+                                                    <h3 className="text-lg font-black font-heading text-white tracking-tight leading-tight mb-2 group-hover:translate-x-1 transition-transform uppercase">
                                                         {task.label}
                                                     </h3>
                                                     {task.type === 'instagram' && !done && (
