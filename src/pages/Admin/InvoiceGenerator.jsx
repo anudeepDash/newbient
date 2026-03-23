@@ -207,10 +207,6 @@ const InvoiceGenerator = () => {
     };
 
     const generatePDF = async () => {
-        if (!invoiceRef.current) {
-            alert("No invoice reference found!");
-            return null;
-        }
         setGenerating(true);
 
         const originalScale = previewScale;

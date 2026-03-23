@@ -68,11 +68,6 @@ const Invoice = () => {
             return;
         }
 
-        if (!invoiceRef.current) {
-            alert("No invoice reference found!");
-            return;
-        }
-
         const originalScale = scale;
         setScale(1);
         await new Promise(resolve => setTimeout(resolve, 1500));
