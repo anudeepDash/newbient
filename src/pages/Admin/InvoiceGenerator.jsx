@@ -212,7 +212,7 @@ const InvoiceGenerator = () => {
 
         const originalScale = previewScale;
         setPreviewScale(1);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait for scale reset to apply
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait longer for scale reset to apply fully
 
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -220,11 +220,15 @@ const InvoiceGenerator = () => {
             
             for (let i = 0; i < pageElements.length; i++) {
                 const canvas = await html2canvas(pageElements[i], {
-                    scale: 2,
+                    scale: 3, // Increased scale for better quality
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
-                    backgroundColor: '#F3F4F6'
+                    backgroundColor: '#E5E7EB', // Match the page background
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: document.documentElement.offsetWidth,
+                    windowHeight: document.documentElement.offsetHeight
                 });
                 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -424,8 +428,12 @@ const InvoiceGenerator = () => {
                                     <Input value={formData.invoiceNumber} onChange={e => setFormData({ ...formData, invoiceNumber: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Issuance Date</label>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Invoice Date</label>
                                     <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Due Date</label>
+                                    <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
                                 </div>
                             </div>
                         </Card>
@@ -705,6 +713,7 @@ const InvoiceGenerator = () => {
                                                             <p className="text-xl font-bold uppercase mb-3 leading-none">{formData.clientName || 'CLIENT NAME'}</p>
                                                             <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
                                                                 <p>Date: {new Date(formData.invoiceDate).toLocaleDateString('en-GB')}</p>
+                                                                {formData.dueDate && <p>Due Date: {new Date(formData.dueDate).toLocaleDateString('en-GB')}</p>}
                                                                 {formData.clientAddress && <p className="whitespace-pre-line">{formData.clientAddress}</p>}
                                                                 {formData.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block">GST: {formData.clientGst}</p>}
                                                             </div>
@@ -744,9 +753,9 @@ const InvoiceGenerator = () => {
 
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {isLastPage && (
-                                                    <div className="mt-12 flex justify-between items-stretch gap-12 min-h-[400px]">
-                                                        <div className="flex-1 flex flex-col justify-end">
-                                                            <div className="space-y-6">
+                                                    <div className="mt-4 space-y-6">
+                                                        <div className="flex justify-between items-start gap-12">
+                                                            <div className="flex-1">
                                                                 {formData.showNotes && (
                                                                     <div className="bg-white/20 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                                         <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
@@ -759,68 +768,70 @@ const InvoiceGenerator = () => {
                                                                         </div>
                                                                     </div>
                                                                 )}
-
-                                                                <div className="flex flex-row items-end gap-6 pt-4">
-                                                                    {formData.showPaymentDetails && (
-                                                                        <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
-                                                                            <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
-                                                                            <div className="whitespace-pre-line tracking-wide">
-                                                                                {formData.paymentDetails}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {formData.showUPI && (
-                                                                        <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4">
-                                                                            {formData.qrType === 'auto' ? (
-                                                                                <img 
-                                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
-                                                                                    alt="Payment QR" 
-                                                                                    className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
-                                                                                />
-                                                                            ) : formData.customQrImage ? (
-                                                                                <img 
-                                                                                    src={formData.customQrImage} 
-                                                                                    alt="Custom QR" 
-                                                                                    className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
-                                                                            )}
-                                                                            <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
                                                             </div>
-                                                        </div>
 
-                                                        <div className="w-[45%] flex flex-col justify-end items-end shrink-0 py-4">
-                                                            <div className="w-full space-y-3">
-                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                    <span>SUBTOTAL</span>
-                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
-                                                                </div>
-                                                                {formData.showGst && (
+                                                            <div className="w-[45%] shrink-0 py-4">
+                                                                <div className="w-full space-y-3">
                                                                     <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                        <span>GST ({formData.gstPercentage}%)</span>
-                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
+                                                                        <span>SUBTOTAL</span>
+                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
                                                                     </div>
-                                                                )}
-                                                                <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
-                                                                    <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
-                                                                    <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                </div>
-                                                                {formData.showAdvance !== false && (
-                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                        <span>ADVANCE PAID</span>
-                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                                    {formData.showGst && (
+                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                            <span>GST ({formData.gstPercentage}%)</span>
+                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
+                                                                        <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
+                                                                        <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                                                     </div>
-                                                                )}
-                                                                <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
-                                                                    <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                    <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
+                                                                    {formData.showAdvance !== false && (
+                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                                            <span>ADVANCE PAID</span>
+                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
+                                                                        <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
+                                                                        <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
+
+                                                        {(formData.showPaymentDetails || formData.showUPI) && (
+                                                            <div className="flex flex-row items-end justify-between gap-6 pt-4 border-t border-gray-300/50">
+                                                                {formData.showPaymentDetails && (
+                                                                    <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
+                                                                        <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                                        <div className="whitespace-pre-line tracking-wide">
+                                                                            {formData.paymentDetails}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {formData.showUPI && (
+                                                                    <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4 ml-auto">
+                                                                        {formData.qrType === 'auto' ? (
+                                                                            <img 
+                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
+                                                                                alt="Payment QR" 
+                                                                                className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
+                                                                            />
+                                                                        ) : formData.customQrImage ? (
+                                                                            <img 
+                                                                                src={formData.customQrImage} 
+                                                                                alt="Custom QR" 
+                                                                                className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
+                                                                        )}
+                                                                        <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -855,8 +866,8 @@ const InvoiceGenerator = () => {
                                             )}
 
                                             {formData.showFooter && (
-                                                <div className="bg-[#39FF14]/40 rounded-full py-3 px-10 flex justify-between items-center shadow-lg border border-white/20">
-                                                    <div className="flex items-center gap-2">
+                                                <div className="absolute bottom-[12mm] left-[12mm] right-[12mm] bg-[#39FF14]/50 rounded-full py-3 px-10 flex justify-between items-center shadow-lg border border-black/10 min-h-[45px]">
+                                                    <div className="flex items-center gap-2 text-black">
                                                         <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
                                                         <p className="text-[10px] font-black text-black tracking-widest">+91 93043 72773</p>
                                                     </div>
@@ -866,7 +877,7 @@ const InvoiceGenerator = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                                        <p className="text-[10px) font-black text-black tracking-widest uppercase">www.newbi.live</p>
+                                                        <a href="https://newbi.live" target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-black tracking-widest hover:underline">newbi.live</a>
                                                     </div>
                                                 </div>
                                             )}
