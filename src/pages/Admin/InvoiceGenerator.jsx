@@ -218,22 +218,28 @@ const InvoiceGenerator = () => {
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
+            if (!pageElements.length) {
+                console.error("No page elements found!");
+                return null;
+            }
+
             for (let i = 0; i < pageElements.length; i++) {
                 const canvas = await html2canvas(pageElements[i], {
-                    scale: 3, // Increased scale for better quality
+                    scale: 2, // Standard scale for good quality/memory balance
                     useCORS: true,
-                    allowTaint: true,
                     logging: false,
-                    backgroundColor: '#E5E7EB', // Match the page background
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: document.documentElement.offsetWidth,
-                    windowHeight: document.documentElement.offsetHeight
+                    backgroundColor: '#E5E7EB',
+                    removeContainer: true
                 });
                 
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                if (!canvas) {
+                    console.error("Canvas generation failed!");
+                    continue;
+                }
+
+                const imgData = canvas.toDataURL('image/png');
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
             
             return pdf;
@@ -673,9 +679,10 @@ const InvoiceGenerator = () => {
                                         <div>
                                             {/* Header - Only on Page 1 */}
                                             {isFirstPage ? (
-                                                <div className="flex justify-between items-start mb-10">
-                                                    <div className="flex items-center gap-4">
-                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                                <div className="flex justify-between items-start mb-12">
+                                                    <div>
+                                                        <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain brightness-0 invert" crossOrigin="anonymous" />
+                                                        <p className="text-[10px] font-black mt-4 max-w-[200px] leading-relaxed tracking-wider text-black/80 uppercase">NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                                     </div>
                                                     <div className="text-right">
                                                         <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
@@ -817,12 +824,14 @@ const InvoiceGenerator = () => {
                                                                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
                                                                                 alt="Payment QR" 
                                                                                 className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
+                                                                                crossOrigin="anonymous"
                                                                             />
                                                                         ) : formData.customQrImage ? (
                                                                             <img 
                                                                                 src={formData.customQrImage} 
                                                                                 alt="Custom QR" 
                                                                                 className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
+                                                                                crossOrigin="anonymous"
                                                                             />
                                                                         ) : (
                                                                             <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
@@ -847,7 +856,7 @@ const InvoiceGenerator = () => {
                                                     <div className="text-right flex flex-col items-end">
                                                         <div className="flex flex-col items-end">
                                                             {formData.showSignatory === 'image' && formData.signatoryImage ? (
-                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" />
+                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                             ) : formData.showSignatory === 'text' ? (
                                                                 <div className="h-16 flex items-end justify-center">
                                                                     <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{formData.senderName || 'Authorized Signatory'}</p>
