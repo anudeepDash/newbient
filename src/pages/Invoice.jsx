@@ -305,9 +305,10 @@ const Invoice = () => {
                                             <div>
                                                 {/* Header - Only on Page 1 */}
                                                 {isFirstPage ? (
-                                                    <div className="flex justify-between items-start mb-10">
-                                                        <div className="flex items-center gap-4">
-                                                            <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                                    <div className="flex justify-between items-start mb-12">
+                                                        <div>
+                                                            <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
+                                                            <p className="text-[10px] font-black mt-4 max-w-[200px] leading-relaxed tracking-wider text-black/80 uppercase">NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                                         </div>
                                                         <div className="text-right">
                                                             <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
