@@ -411,7 +411,7 @@ const InvoiceGenerator = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Business Name</label>
-                                    <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="e.g. Acme Corp" />
+                                    <Input value={formData.clientName} onChange={e => setFormData({ ...formData, clientName: e.target.value.toUpperCase() })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="Recipient Organization" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Billing Address</label>
@@ -682,7 +682,6 @@ const InvoiceGenerator = () => {
                                                 <div className="flex justify-between items-start mb-12">
                                                     <div>
                                                         <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
-                                                        <p className="text-[10px] font-black mt-4 max-w-[200px] leading-relaxed tracking-wider text-black/80 uppercase">NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                                     </div>
                                                     <div className="text-right">
                                                         <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.invoiceNumber}</h2>
