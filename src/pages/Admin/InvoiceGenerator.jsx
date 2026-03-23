@@ -681,7 +681,7 @@ const InvoiceGenerator = () => {
                                             {isFirstPage ? (
                                                 <div className="flex justify-between items-start mb-12">
                                                     <div>
-                                                        <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain brightness-0 invert" crossOrigin="anonymous" />
+                                                        <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                                         <p className="text-[10px] font-black mt-4 max-w-[200px] leading-relaxed tracking-wider text-black/80 uppercase">NEWBI ENTERTAINMENT & MARKETING LLP</p>
                                                     </div>
                                                     <div className="text-right">
