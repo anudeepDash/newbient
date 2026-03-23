@@ -207,37 +207,54 @@ const InvoiceGenerator = () => {
     };
 
     const generatePDF = async () => {
-        if (!invoiceRef.current) return null;
+        if (!invoiceRef.current) {
+            alert("No invoice reference found!");
+            return null;
+        }
         setGenerating(true);
 
         const originalScale = previewScale;
         setPreviewScale(1);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait longer for scale reset to apply fully
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay for layout stability
 
         try {
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
             if (!pageElements.length) {
-                console.error("No page elements found!");
+                alert("No invoice pages found to download!");
                 return null;
             }
 
             for (let i = 0; i < pageElements.length; i++) {
                 const canvas = await html2canvas(pageElements[i], {
-                    scale: 2, // Standard scale for good quality/memory balance
+                    scale: 2,
                     useCORS: true,
-                    logging: false,
+                    logging: true, // Enable logging to debug if it fails
                     backgroundColor: '#E5E7EB',
-                    removeContainer: true
+                    width: 794,
+                    height: 1123,
+                    windowWidth: 794,
+                    windowHeight: 1123,
+                    onclone: (clonedDoc) => {
+                        const clonedPage = clonedDoc.querySelectorAll('.invoice-page-render')[i];
+                        if (clonedPage) {
+                            clonedPage.style.transform = 'none';
+                            clonedPage.style.boxShadow = 'none';
+                        }
+                    }
                 });
                 
                 if (!canvas) {
-                    console.error("Canvas generation failed!");
-                    continue;
+                    throw new Error(`Failed to capture page ${i + 1}`);
                 }
 
-                const imgData = canvas.toDataURL('image/png');
+                const imgData = canvas.toDataURL('image/png', 1.0);
                 if (i > 0) pdf.addPage();
                 pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
@@ -245,6 +262,7 @@ const InvoiceGenerator = () => {
             return pdf;
         } catch (error) {
             console.error("PDF Gen Error:", error);
+            alert("PDF Generation Error: " + error.message);
             return null;
         } finally {
             setPreviewScale(originalScale);
