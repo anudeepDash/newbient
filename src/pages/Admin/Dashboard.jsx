@@ -284,11 +284,6 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
                 ? "bg-[#0a0a0a] opacity-40 grayscale" 
                 : "bg-[#111] hover:bg-zinc-900 hover:border-white/10"
         )}>
-            {isHidden && (
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <span className="text-[7px] md:text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70 border border-red-500/20 px-2 py-0.5 rounded-full bg-red-500/5">Offline</span>
-                </div>
-            )}
             {isNew && !isHidden && <span className="absolute top-3 right-3 md:top-4 md:right-4 text-[7px] md:text-[8px] font-black uppercase tracking-widest bg-neon-blue text-black px-2 py-1 rounded-full animate-pulse">New System</span>}
             <div className={cn("w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 group-hover:-translate-y-1 md:group-hover:-translate-y-2 transition-all duration-700", 
                 color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
@@ -306,6 +301,13 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
             
             <div className="absolute top-full left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:top-[98%] transition-all duration-500" />
         </Card>
+        {isHidden && (
+            <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                <span className="px-4 py-2 rounded-2xl bg-black/60 border border-red-500/50 backdrop-blur-md text-red-500 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                    OFFLINE
+                </span>
+            </div>
+        )}
     </Link>
 );
 
