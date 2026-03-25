@@ -126,7 +126,7 @@ const NotificationBell = () => {
                                                 <div 
                                                     onClick={() => {
                                                         markNotificationRead(item.id);
-                                                        if (item.link) {
+                                                        if (item.link && item.link.trim() !== '') {
                                                             if (item.link.startsWith('http')) {
                                                                 window.open(item.link, '_blank');
                                                             } else {

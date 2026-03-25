@@ -14,7 +14,7 @@ const Workflow = () => {
     ];
 
     return (
-        <section className="py-20 bg-black relative px-4 text-white">
+        <section className="py-16 md:py-32 bg-black relative px-4 text-white">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <motion.h2

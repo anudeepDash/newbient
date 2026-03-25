@@ -17,12 +17,6 @@ const UpcomingEventsManager = () => {
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
 
-    // Custom Link State
-    const [linkModalOpen, setLinkModalOpen] = useState(false);
-    const [linkEvent, setLinkEvent] = useState(null);
-    const [customPrice, setCustomPrice] = useState('');
-    const [generatedLink, setGeneratedLink] = useState('');
-    const [copiedLink, setCopiedLink] = useState(false);
 
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -54,22 +48,6 @@ const UpcomingEventsManager = () => {
         setUploading(false);
     };
 
-    const generateCustomLink = (e) => {
-        e.preventDefault();
-        if (!linkEvent || !customPrice) return;
-        const url = new URL(window.location.origin);
-        url.searchParams.set('customPrice', customPrice);
-        url.searchParams.set('discountEventId', linkEvent.id);
-        
-        setGeneratedLink(url.toString());
-        setCopiedLink(false);
-    };
-
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(generatedLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
-    };
 
     const handleEdit = (item) => {
         setEditingId(item.id);
@@ -161,10 +139,10 @@ const UpcomingEventsManager = () => {
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
                     <div className="space-y-4 max-w-full text-left">
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
                         </Link>
                         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.4] md:leading-[1.6] py-6 md:py-10 pr-4 md:pr-12 pl-1 overflow-visible">
-                            UPCOMING <span className="text-neon-green px-2 md:px-4">EVENTS.</span>
+                            Upcoming <span className="text-neon-green px-2 md:px-4">Events.</span>
                         </h1>
                     </div>
                     
@@ -178,7 +156,7 @@ const UpcomingEventsManager = () => {
                                 )}
                             >
                                 {siteSettings?.showUpcomingEvents ? <Eye size={16} /> : <EyeOff size={16} />}
-                                PUBLIC VIEW: {siteSettings?.showUpcomingEvents ? 'VISIBLE' : 'HIDDEN'}
+                                Public View: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
                             </button>
                             <Button onClick={() => { setIsAdding(true); setEditingId(null); }} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
                                 <Plus className="mr-2" size={18} /> Add Event
@@ -504,8 +482,8 @@ const UpcomingEventsManager = () => {
                                                                 header: item.title,
                                                                 body: item.description,
                                                                 heroImage: item.image,
-                                                                ctaText: 'SEE DETAILS',
-                                                                ctaUrl: `${window.location.origin}/concert-zone`
+                                                                ctaText: 'See Details',
+                                                                ctaUrl: `${window.location.origin}/ticket-selection?event=${item.id}`
                                                             });
                                                             window.location.href = `/admin/mailing?${params.toString()}`;
                                                         }}
@@ -520,7 +498,7 @@ const UpcomingEventsManager = () => {
                                                                 await notifyAllUsers(
                                                                     item.title,
                                                                     item.description,
-                                                                    `/concert-zone`,
+                                                                    `/ticket-selection?event=${item.id}`,
                                                                     item.image
                                                                 );
                                                                 alert("PUSH_SIGNAL_TRANSMITTED.");
@@ -531,9 +509,6 @@ const UpcomingEventsManager = () => {
                                                     >
                                                         <Sparkles size={18} />
                                                     </button>
-                                                    {item.isTicketed && (
-                                                        <button onClick={() => { setLinkEvent(item); setCustomPrice(''); setGeneratedLink(''); setLinkModalOpen(true); }} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all" title="Generate Custom Priced Link"><Link2 size={18} /></button>
-                                                    )}
                                                     <button onClick={() => handleEdit(item)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green transition-all"><Edit size={18} /></button>
                                                     <button onClick={() => deleteUpcomingEvent(item.id)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 transition-all"><Trash2 size={18} /></button>
                                                 </div>
@@ -569,71 +544,6 @@ const UpcomingEventsManager = () => {
                 </AnimatePresence>
             </div>
 
-            {/* Custom Link Modal */}
-            <AnimatePresence>
-                {linkModalOpen && linkEvent && (
-                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto bg-black/90 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-zinc-900 border border-white/10 rounded-[2rem] p-8 max-w-md w-full relative shrink-0 max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar"
-                        >
-                            <button onClick={() => setLinkModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors">
-                                <X size={20} />
-                            </button>
-                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2 flex items-center gap-2">
-                                <Link2 className="text-neon-blue" size={20} />
-                                Generate Custom Link
-                            </h3>
-                            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-6 truncate">
-                                {linkEvent.title}
-                            </p>
-
-                            <form onSubmit={generateCustomLink} className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Negotiated Price (₹)</label>
-                                    <Input
-                                        type="number"
-                                        placeholder="E.G. 499"
-                                        value={customPrice}
-                                        onChange={(e) => setCustomPrice(e.target.value)}
-                                        required
-                                        className="h-14 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-blue/30 px-6"
-                                    />
-                                    <p className="text-[9px] text-gray-500 pl-1 uppercase font-bold tracking-widest">
-                                        Standard Price: ₹{linkEvent.ticketPrice}
-                                    </p>
-                                </div>
-                                
-                                {!generatedLink ? (
-                                    <Button type="submit" className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-transform">
-                                        Generate Link
-                                    </Button>
-                                ) : (
-                                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="p-4 bg-black/50 rounded-2xl border border-white/5 flex items-center gap-3">
-                                            <p className="text-[10px] text-neon-blue font-medium truncate flex-1">
-                                                {generatedLink}
-                                            </p>
-                                            <button 
-                                                type="button" 
-                                                onClick={copyToClipboard}
-                                                className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all shrink-0"
-                                            >
-                                                {copiedLink ? <CheckCircle size={14} /> : <Copy size={14} />}
-                                            </button>
-                                        </div>
-                                        <Button type="button" onClick={() => { setLinkModalOpen(false); setGeneratedLink(''); setCustomPrice(''); }} className="w-full h-14 bg-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/10">
-                                            Done
-                                        </Button>
-                                    </div>
-                                )}
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };
