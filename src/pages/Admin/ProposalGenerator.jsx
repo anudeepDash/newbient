@@ -302,25 +302,25 @@ const ProposalGenerator = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Proposal ID</label>
-                                    <Input value={formData.proposalNumber} onChange={e => setFormData({...formData, proposalNumber: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
+                                    <Input value={formData.proposalNumber} onChange={e => setFormData({...formData, proposalNumber: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Creation Date</label>
-                                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
+                                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Client Business Name</label>
-                                    <Input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. RedBull Global" />
+                                    <Input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. RedBull Global" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Project Subject</label>
-                                    <Input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. Campus Activation Q4" />
+                                    <Input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. Campus Activation Q4" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2 mt-4">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Strategic Notes / Scope</label>
                                     <textarea 
                                         value={formData.notes} 
-                                        onChange={e => setFormData({...formData, notes: e.target.value})
+                                        onChange={e => setFormData({...formData, notes: e.target.value})}
                                         className="w-full bg-black/60 border border-white/10 rounded-xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none text-white scrollbar-hide"
                                         placeholder="Outline the scope, specific terms, or campaign objectives..."
                                     />
@@ -367,7 +367,7 @@ const ProposalGenerator = () => {
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-3">
                                         <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">GST (18%)</span>
-                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({...formData, showGst: e.target.checked}) className="accent-neon-blue" />
+                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({...formData, showGst: e.target.checked})} className="accent-neon-blue" />
                                     </div>
                                     <span className="text-white text-lg">₹{gstAmount.toLocaleString()}</span>
                                 </div>
@@ -378,7 +378,7 @@ const ProposalGenerator = () => {
                                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/5">
                                     <div className="space-y-1">
                                         <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Advance Paid</label>
-                                        <Input type="number" value={formData.advancePaid} onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 }) className="bg-black/40 border-white/5 h-8 text-[10px] font-bold" />
+                                        <Input type="number" value={formData.advancePaid} onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 })} className="bg-black/40 border-white/5 h-8 text-[10px] font-bold" />
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest pr-1">Balance Due</p>
@@ -397,19 +397,19 @@ const ProposalGenerator = () => {
                                     <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Signatory Style</label>
                                     <div className="flex gap-4">
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'none' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Default
                                         </button>
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'text' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Plain Text
                                         </button>
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'image' })
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'image' })}
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'image' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Digital Signature
@@ -420,7 +420,7 @@ const ProposalGenerator = () => {
                                             {formData.signatoryImage ? (
                                                 <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black/50 flex items-center justify-center">
                                                     <img src={formData.signatoryImage} alt="Signature" className="max-h-full p-4" />
-                                                    <button onClick={() => setFormData({ ...formData, signatoryImage: '' }) className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => setFormData({ ...formData, signatoryImage: '' })} className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <Trash2 size={12} />
                                                     </button>
                                                 </div>
@@ -441,27 +441,27 @@ const ProposalGenerator = () => {
                                     <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Strategic Config</label>
                                     <div className="flex flex-wrap gap-4">
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Notes</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Banking</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">UPI QR</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Footer Pill</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Advance Row</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showSignatureBlock} onChange={e => setFormData({ ...formData, showSignatureBlock: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showSignatureBlock} onChange={e => setFormData({ ...formData, showSignatureBlock: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sign Block</span>
                                         </div>
                                     </div>
@@ -471,20 +471,20 @@ const ProposalGenerator = () => {
                                     <div className="p-6 bg-black/30 rounded-2xl border border-white/5 space-y-4">
                                         <div className="flex gap-4">
                                             <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'auto' })
+                                                onClick={() => setFormData({ ...formData, qrType: 'auto' })}
                                                 className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'auto' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
                                             >
                                                 Dynamic UPI
                                             </button>
                                             <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'custom' })
+                                                onClick={() => setFormData({ ...formData, qrType: 'custom' })}
                                                 className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'custom' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
                                             >
                                                 Custom QR
                                             </button>
                                         </div>
                                         {formData.qrType === 'auto' ? (
-                                            <Input value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value }) placeholder="Enter UPI ID" className="bg-black border-white/10 h-10 text-[10px]" />
+                                            <Input value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value })} placeholder="Enter UPI ID" className="bg-black border-white/10 h-10 text-[10px]" />
                                         ) : (
                                             <div className="relative">
                                                 <input type="file" onChange={async (e) => {
