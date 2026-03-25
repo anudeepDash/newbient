@@ -623,7 +623,7 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Executive Overview</label>
                                     <textarea 
                                         value={formData.overview} 
-                                        onChange={e => setFormData({...formData, overview: e.target.value})
+                                        onChange={e => setFormData({...formData, overview: e.target.value})}
                                         className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none"
                                         placeholder="Summarize the project goals and Newbi's role..."
                                     />
@@ -632,7 +632,7 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Scope & Deliverables</label>
                                     <textarea 
                                         value={formData.scopeOfWork} 
-                                        onChange={e => setFormData({...formData, scopeOfWork: e.target.value})
+                                        onChange={e => setFormData({...formData, scopeOfWork: e.target.value})}
                                         className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[150px] focus:border-neon-blue/50 outline-none"
                                         placeholder="List specific services, dates, and student outreach targets..."
                                     />
