@@ -38,7 +38,7 @@ const Portfolio = () => {
     const filteredItems = portfolio.filter(item => item.category === activeTab);
 
     return (
-        <section className="py-16 md:py-40 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
+        <section className="py-16 md:py-32 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
         >

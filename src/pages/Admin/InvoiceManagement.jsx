@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload } from 'lucide-react';
+import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload, DollarSign, Mail, Send } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { sendInvoiceEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
@@ -13,6 +14,7 @@ const InvoiceManagement = () => {
     const { invoices, updateInvoice, deleteInvoice, addInvoice } = useStore();
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
 
     // Quick Upload State
     const [showQuickUpload, setShowQuickUpload] = useState(false);
@@ -64,8 +66,28 @@ const InvoiceManagement = () => {
     };
 
     const handleDelete = (id) => {
-        if (window.confirm('Delete this invoice forever?')) {
+        if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
+        }
+    };
+
+    const handleSendEmail = async (invoice) => {
+        const email = prompt("Enter client's email address:", invoice.clientEmail || "");
+        if (!email) return;
+
+        const amount = `₹${invoice.total?.toLocaleString() || invoice.amount?.toLocaleString()}`;
+        const url = `${window.location.origin}/invoice/${invoice.id}`;
+        
+        try {
+            const res = await sendInvoiceEmail(email, invoice.invoiceNumber, amount, url);
+            if (res.success) {
+                alert("Invoice link sent successfully!");
+            } else {
+                alert("Failed to send email. Check console for details.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred while sending.");
         }
     };
 
@@ -132,11 +154,11 @@ const InvoiceManagement = () => {
                 {/* Header Section */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
                     <div className="space-y-4 max-w-full">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
                         </Link>
-                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
-                            INVOICE <span className="text-neon-green px-4">MANAGER.</span>
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                            INVOICE <span className="text-neon-blue px-4">VAULT.</span>
                         </h1>
                     </div>
                     
@@ -146,11 +168,11 @@ const InvoiceManagement = () => {
                             onClick={() => setShowQuickUpload(true)} 
                             className="flex-1 md:flex-none h-14 px-8 rounded-2xl bg-white/5 border-white/5 hover:bg-white/10 text-xs font-black uppercase tracking-widest transition-all"
                         >
-                            <Plus className="mr-2 h-4 w-4" /> Import PDF
+                            <Plus className="mr-2 h-4 w-4" /> IMPORT PDF
                         </Button>
-                        <Link to="/admin/create-invoice" className="flex-1 md:flex-none">
-                            <Button className="w-full h-14 px-8 rounded-2xl bg-neon-blue text-black text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                                <FileText className="mr-2 h-4 w-4" /> New Invoice
+                        <Link to="/admin/create-invoice">
+                            <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                                <Plus className="mr-2 h-4 w-4" /> GENERATE NEW INVOICE
                             </Button>
                         </Link>
                     </div>
@@ -164,7 +186,7 @@ const InvoiceManagement = () => {
                             <input 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="SEARCH BY CLIENT OR INVOICE #..."
+                                placeholder="Search by client or invoice #..."
                                 className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                             />
                         </div>
@@ -184,6 +206,28 @@ const InvoiceManagement = () => {
                                 </button>
                             ))}
                         </div>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 mr-1 shrink-0">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={cn(
+                                    "p-3.5 rounded-xl transition-all duration-300",
+                                    viewMode === 'grid' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={cn(
+                                    "p-3.5 rounded-xl transition-all duration-300",
+                                    viewMode === 'table' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                <FileText size={18} />
+                            </button>
+                        </div>
                     </div>
                     
                     {/* Action Buttons */}
@@ -197,109 +241,190 @@ const InvoiceManagement = () => {
                     </div>
                 </div>
 
-                {/* Desktop Content */}
-                <Card className="hidden md:block overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] p-0">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                <th className="p-8">Document</th>
-                                <th className="p-8">Client</th>
-                                <th className="p-8">Created</th>
-                                <th className="p-8">Status</th>
-                                <th className="p-8 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {filteredInvoices.map((inv) => (
-                                <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors">
-                                    <td className="p-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
-                                                <FileText size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-black uppercase tracking-widest text-white">{inv.invoiceNumber || 'NEWBI-INV'}</div>
-                                                <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">{inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}</div>
-                                            </div>
+                {/* Main Content Area: Grid or Table */}
+                <AnimatePresence mode="wait">
+                    {viewMode === 'grid' ? (
+                        <motion.div 
+                            key="grid"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                        >
+                            {filteredInvoices.map((inv, i) => (
+                                <motion.div
+                                    key={inv.id}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                >
+                                    <Card className="group relative p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
+                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                                            <FileText size={100} />
                                         </div>
-                                    </td>
-                                    <td className="p-8">
-                                        <div className="text-sm font-black uppercase tracking-tight text-white">{inv.clientName}</div>
-                                    </td>
-                                    <td className="p-8">
-                                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                            {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}
-                                        </div>
-                                    </td>
-                                    <td className="p-8">
-                                        <div className={cn(
-                                            "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                            inv.status === 'Paid' ? "bg-neon-green/10 text-neon-green" : "bg-yellow-500/10 text-yellow-500"
-                                        )}>
-                                            {inv.status}
-                                        </div>
-                                    </td>
-                                    <td className="p-8">
-                                        <div className="flex justify-end gap-2">
-                                            <a href={`/invoice/${inv.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
-                                            <button onClick={() => handleCopyLink(inv.id)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Copy size={18} /></button>
-                                            {inv.status !== 'Paid' && (
-                                                <button onClick={() => handleMarkAsPaid(inv)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><CheckCircle size={18} /></button>
-                                            )}
-                                            <button onClick={() => handleEdit(inv)} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></button>
-                                            <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {filteredInvoices.length === 0 && (
-                        <div className="py-20 text-center flex flex-col items-center gap-4">
-                            <Sparkles className="text-gray-700" size={40} />
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No invoices found.</p>
-                        </div>
-                    )}
-                </Card>
 
-                {/* Mobile Content */}
-                <div className="md:hidden space-y-4">
-                    {filteredInvoices.map((inv) => (
-                        <div key={inv.id} className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
-                                        <FileText size={20} />
+                                        <div>
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
+                                                        {inv.invoiceNumber || 'NEWBI-INV'}
+                                                    </span>
+                                                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-1">
+                                                        {inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}
+                                                    </span>
+                                                </div>
+                                                <div className={cn(
+                                                    "w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_15px_currentColor]",
+                                                    inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500'
+                                                )} />
+                                            </div>
+
+                                            <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
+                                                {inv.clientName}
+                                            </h3>
+                                            <div className="flex items-center gap-4 mb-8">
+                                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                                    <Sparkles size={12} className="text-neon-blue" /> {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}
+                                                </p>
+                                                {inv.status === 'Paid' && (
+                                                    <span className="text-neon-green text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                        <CheckCircle size={12} /> PAID
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
+                                            <button 
+                                                onClick={() => handleEdit(inv)}
+                                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button 
+                                                onClick={() => handleCopyLink(inv.id)}
+                                                className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
+                                                title="Copy Link"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleSendEmail(inv)}
+                                                className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
+                                                title="Send Link"
+                                            >
+                                                <Send size={16} />
+                                            </button>
+                                            <a 
+                                                href={`/invoice/${inv.id}`} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                                title="View Online"
+                                            >
+                                                <Eye size={16} />
+                                            </a>
+                                            {inv.status !== 'Paid' && (
+                                                <button 
+                                                    onClick={() => handleMarkAsPaid(inv)}
+                                                    className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                                    title="Mark as Paid"
+                                                >
+                                                    <DollarSign size={16} />
+                                                </button>
+                                            )}
+                                            <button 
+                                                onClick={() => handleDelete(inv.id)}
+                                                className="p-3 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                            {filteredInvoices.length === 0 && (
+                                <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[3.5rem]">
+                                    <Sparkles className="mx-auto text-gray-800 mb-6" size={64} />
+                                    <h3 className="text-xl font-black font-heading text-gray-600 uppercase italic">No Invoices Found</h3>
+                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2">Start by generating or importing your first document.</p>
+                                </div>
+                            )}
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="table"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                        >
+                            <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] p-0 border">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                                            <th className="p-8">Document</th>
+                                            <th className="p-8">Client</th>
+                                            <th className="p-8">Created</th>
+                                            <th className="p-8">Status</th>
+                                            <th className="p-8 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredInvoices.map((inv) => (
+                                            <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                <td className="p-8">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
+                                                            <FileText size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-white">{inv.invoiceNumber || 'NEWBI-INV'}</div>
+                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">{inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className="text-sm font-black uppercase tracking-tight text-white">{inv.clientName}</div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                                        {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}
+                                                    </div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className={cn(
+                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
+                                                        inv.status === 'Paid' ? "bg-neon-green/10 text-neon-green" : "bg-yellow-500/10 text-yellow-500"
+                                                    )}>
+                                                        {inv.status}
+                                                    </div>
+                                                </td>
+                                                <td className="p-8">
+                                                    <div className="flex justify-end gap-2">
+                                                        <a href={`/invoice/${inv.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
+                                                        <button onClick={() => handleCopyLink(inv.id)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Copy size={18} /></button>
+                                                        {inv.status !== 'Paid' && (
+                                                            <button onClick={() => handleMarkAsPaid(inv)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><CheckCircle size={18} /></button>
+                                                        )}
+                                                        <button onClick={() => handleEdit(inv)} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></button>
+                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {filteredInvoices.length === 0 && (
+                                    <div className="py-20 text-center flex flex-col items-center gap-4">
+                                        <Sparkles className="text-gray-700" size={40} />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No invoices found.</p>
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-white">{inv.invoiceNumber}</div>
-                                        <div className="text-[8px] font-bold text-gray-500 uppercase">{new Date(inv.createdAt).toLocaleDateString()}</div>
-                                    </div>
-                                </div>
-                                <div className={cn(
-                                    "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                    inv.status === 'Paid' ? "bg-neon-green/10 text-neon-green" : "bg-yellow-500/10 text-yellow-500"
-                                )}>
-                                    {inv.status}
-                                </div>
-                            </div>
-                            <h3 className="text-lg font-black uppercase tracking-tight text-white mb-6 italic">{inv.clientName}</h3>
-                            <div className="flex justify-between items-center pt-6 border-t border-white/5">
-                                <div className="flex gap-1">
-                                    <a href={`/invoice/${inv.id}`} className="p-2.5 text-gray-500 hover:text-neon-green transition-colors"><Eye size={18} /></a>
-                                    <button onClick={() => handleCopyLink(inv.id)} className="p-2.5 text-gray-500 hover:text-neon-blue transition-colors"><Copy size={18} /></button>
-                                </div>
-                                <div className="flex gap-1">
-                                    {inv.status !== 'Paid' && (
-                                        <button onClick={() => handleMarkAsPaid(inv)} className="p-2.5 text-gray-500 hover:text-neon-green transition-colors"><CheckCircle size={18} /></button>
-                                    )}
-                                    <button onClick={() => handleEdit(inv)} className="p-2.5 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></button>
-                                    <button onClick={() => handleDelete(inv.id)} className="p-2.5 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                                )}
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Modals */}

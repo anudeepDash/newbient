@@ -156,8 +156,17 @@ const Navbar = () => {
                                 <Settings size={14} />
                             </Link>
                         )}
-                        <NotificationBell />
                         {user && <div className="h-4 w-px bg-white/10" />}
+                        {user && ['developer', 'super_admin'].includes(user.role) && (
+                            <Link 
+                                to="/admin" 
+                                className="p-2 rounded-xl bg-neon-blue/10 border border-neon-blue/20 text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
+                                title="Open Admin"
+                            >
+                                <LayoutGrid size={16} />
+                            </Link>
+                        )}
+                        <NotificationBell />
                         {user ? (
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2 pr-2">

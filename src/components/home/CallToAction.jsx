@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 
 const CallToAction = () => {
     return (
-        <section className="py-16 md:py-40 bg-[#020202] relative overflow-hidden flex flex-col items-center justify-center border-t border-white/5" id="contact">
+        <section className="py-16 md:py-32 bg-[#020202] relative overflow-hidden flex flex-col items-center justify-center border-t border-white/5" id="contact">
             {/* High-Impact Background */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-neon-green/10 via-transparent to-transparent opacity-50 animate-pulse" />

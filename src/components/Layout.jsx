@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import NotificationToast from './NotificationToast';
@@ -8,16 +8,20 @@ import { cn } from '../lib/utils';
 
 const Layout = () => {
     const { maintenanceState, user } = useStore();
+    const location = useLocation();
     const isBypassing = maintenanceState.global && user?.role === 'developer';
+    
+    // Hide global navigation on document viewer pages to prevent header overlap
+    const isDocumentPage = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/proposal/');
 
     return (
         <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden">
-            <Navbar />
+            {!isDocumentPage && <Navbar />}
             <NotificationToast />
             <main className={cn("flex-grow transition-all duration-300 pb-24 md:pb-0", isBypassing ? "pt-0" : "pt-0")}>
                 <Outlet />
             </main>
-            <Footer />
+            {!isDocumentPage && <Footer />}
 
             {/* Background Glow Effects - Enhanced */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">

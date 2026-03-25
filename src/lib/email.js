@@ -134,26 +134,41 @@ export const sendContactAutoReply = async (name, email, message) => {
     }
 };
 
-/**
- * Sends an invoice share email.
- * @param {string} toEmail - Recipient email
- * @param {string} invoiceNumber - Invoice ID/Number
- * @param {string} amount - Formatted amount (e.g. "$500")
- * @param {string} invoiceUrl - Link to the invoice
- */
 export const sendInvoiceEmail = async (toEmail, invoiceNumber, amount, invoiceUrl) => {
     try {
-        // Use your Invoice Share Template ID
         const templateParams = {
             to_email: toEmail,
             invoice_number: invoiceNumber,
             amount,
-            invoice_url: invoiceUrl
+            invoice_url: invoiceUrl,
+            message: `Your invoice ${invoiceNumber} for ${amount} is ready for review.`
         };
         const response = await emailjs.send(SERVICE_ID, 'YOUR_INVOICE_TEMPLATE_ID', templateParams, PUBLIC_KEY);
         return { success: true };
     } catch (error) {
         console.error('Failed to send invoice email:', error);
+        return { success: false, error };
+    }
+};
+
+/**
+ * Sends a proposal share email.
+ * @param {string} toEmail - Recipient email
+ * @param {string} proposalTitle - Proposal Title
+ * @param {string} proposalUrl - Link to the proposal
+ */
+export const sendProposalEmail = async (toEmail, proposalTitle, proposalUrl) => {
+    try {
+        const templateParams = {
+            to_email: toEmail,
+            proposal_title: proposalTitle,
+            proposal_url: proposalUrl,
+            message: `A new strategic proposal "${proposalTitle}" has been prepared for your review.`
+        };
+        const response = await emailjs.send(SERVICE_ID, 'YOUR_PROPOSAL_TEMPLATE_ID', templateParams, PUBLIC_KEY);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to send proposal email:', error);
         return { success: false, error };
     }
 };

@@ -41,6 +41,7 @@ import MailingManager from './pages/Admin/MailingManager';
 import GiveawayPage from './pages/GiveawayPage';
 import TicketViewer from './pages/TicketViewer';
 import ActionHandler from './pages/Auth/ActionHandler';
+import TicketSelection from './pages/TicketSelection';
 import AuthOverlay from './components/auth/AuthOverlay';
 import AdminGuard from './components/AdminGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
@@ -138,6 +139,7 @@ function App() {
           <Route path="admin/blog/create" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
           <Route path="admin/blog/edit/:id" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
 
+          <Route path="ticket-selection" element={<TicketSelection />} />
           {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
           <Route path="auth/action" element={<ActionHandler />} />
         </Route>

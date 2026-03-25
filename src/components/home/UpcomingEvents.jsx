@@ -38,12 +38,25 @@ const UpcomingEvents = () => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get('event');
+        const shouldBuy = params.get('buy') === 'true';
+
         if (eventId && upcomingEvents.length > 0) {
-            const element = document.getElementById(`event-card-${eventId}`);
-            if (element) {
-                setTimeout(() => {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 800);
+            const event = upcomingEvents.find(e => e.id === eventId);
+            if (event) {
+                // Scroll to card
+                const element = document.getElementById(`event-card-${eventId}`);
+                if (element) {
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 800);
+                }
+                
+                // Auto-open modal if 'buy' param is present
+                if (shouldBuy && !maintenanceState.features?.tickets) {
+                    setTimeout(() => {
+                        setSelectedEvent(event);
+                    }, 1200);
+                }
             }
         } else if (upcomingEvents.length > 0 && window.location.hash) {
             const hashId = window.location.hash.slice(1);
@@ -56,7 +69,7 @@ const UpcomingEvents = () => {
                 }
             }
         }
-    }, [upcomingEvents]);
+    }, [upcomingEvents, maintenanceState]);
 
     const handleShare = async (e, event) => {
         e.preventDefault();
@@ -139,7 +152,7 @@ const UpcomingEvents = () => {
     return (
         <section
             id="upcoming-events"
-            className="relative py-16 md:py-24 pt-16 pb-32 md:pb-24 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
+            className="relative py-16 md:py-32 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
             onMouseEnter={() => setIsAutoScrolling(false)}
             onMouseLeave={() => setIsAutoScrolling(true)}
         >
@@ -163,7 +176,7 @@ const UpcomingEvents = () => {
                             viewport={{ once: true }}
                             className="font-heading text-4xl md:text-6xl font-black tracking-tight italic"
                         >
-                            UPCOMING <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-cyan-400 to-neon-green not-italic">EVENTS.</span>
+                            Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-cyan-400 to-neon-green not-italic">Events.</span>
                         </motion.h2>
                     </div>
                 </div>

@@ -1,21 +1,23 @@
 import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign, LayoutGrid } from 'lucide-react';
+import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
+import NotificationBell from '../components/NotificationBell';
 
 
 const Invoice = () => {
     const { id } = useParams();
-    const { invoices, updateInvoiceStatus, loading } = useStore();
+    const { invoices, updateInvoiceStatus, loading, user } = useStore();
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
+    const [isExporting, setIsExporting] = React.useState(false);
 
     React.useEffect(() => {
         const handleResize = () => {
@@ -33,7 +35,23 @@ const Invoice = () => {
     }, []);
 
     const invoice = invoices.find(inv => inv.id === id);
-    const isAdmin = localStorage.getItem('adminAuth') === 'true';
+    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+
+    React.useEffect(() => {
+        if (invoice && !isAdmin) {
+            // Update last opened timestamp for non-admins
+            const updateLastOpened = async () => {
+                try {
+                    await useStore.getState().updateInvoice(id, { 
+                        lastOpened: new Date().toISOString() 
+                    });
+                } catch (err) {
+                    console.error("Analytics error:", err);
+                }
+            };
+            updateLastOpened();
+        }
+    }, [id, isAdmin]);
 
     if (loading) {
         return (
@@ -60,7 +78,7 @@ const Invoice = () => {
     const handleDownloadPDF = async () => {
         if (isQuickUpload) {
             const link = document.createElement('a');
-            link.href = invoice.pdfUrl;
+            link.href = displayInvoice.fileUrl; // Fix the download link
             link.download = `Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`;
             document.body.appendChild(link);
             link.click();
@@ -70,6 +88,7 @@ const Invoice = () => {
 
         const originalScale = scale;
         setScale(1);
+        setIsExporting(true);
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         try {
@@ -120,6 +139,7 @@ const Invoice = () => {
             alert("PDF Generation Error: " + error.message);
         } finally {
             setScale(originalScale);
+            setIsExporting(false);
         }
     };
 
@@ -128,13 +148,16 @@ const Invoice = () => {
         if (!frame) return;
 
         try {
-            let printUrl = invoice?.pdfUrl;
+            const displayInvoice = invoice || {};
+            const isQuickUpload = !!displayInvoice.fileUrl;
+            let printUrl = displayInvoice.pdfUrl || displayInvoice.fileUrl;
 
             // For generated invoices, generate a PDF blob first
             if (!isQuickUpload) {
                 const originalScale = scale;
                 setScale(1);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                setIsExporting(true);
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
                 try {
                     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -158,6 +181,7 @@ const Invoice = () => {
                     printUrl = URL.createObjectURL(blob);
                 } finally {
                     setScale(originalScale);
+                    setIsExporting(false);
                 }
             }
 
@@ -168,11 +192,12 @@ const Invoice = () => {
                     try {
                         frame.contentWindow.focus();
                         frame.contentWindow.print();
-                        if (!isQuickUpload) URL.revokeObjectURL(printUrl);
+                        if (!isQuickUpload && printUrl && printUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(printUrl);
+                        }
                     } catch (e) {
                         console.error("Iframe print error:", e);
-                        // Fallback: Open in new window if iframe print fails (e.g. cross-origin)
-                        window.open(printUrl, '_blank').print();
+                        window.open(printUrl, '_blank');
                     }
                 }, 500);
             };
@@ -237,7 +262,19 @@ const Invoice = () => {
     const paginatedPages = getPaginatedPages();
 
     return (
-        <div className="min-h-screen pt-16 md:pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-black scroll-smooth">
+        <div className="min-h-screen bg-[#050505] scroll-smooth overflow-x-hidden">
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    .fixed-header-nav, .print-hidden { display: none !important; }
+                    body { background: white !important; }
+                    .invoice-page-render { 
+                        margin: 0 !important; 
+                        box-shadow: none !important;
+                        page-break-after: always !important;
+                    }
+                    main { padding: 0 !important; margin: 0 !important; }
+                }
+            `}} />
             {/* Hidden Iframe for Printing */}
             <iframe
                 ref={printFrameRef}
@@ -245,75 +282,136 @@ const Invoice = () => {
                 title="print-frame"
             />
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                <div className="mb-8 print:hidden flex justify-between items-center">
-                        <Link to="/admin" className="relative z-[70] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                         </Link>
-                    {!invoice && !loading && (
-                        <span className="text-yellow-500 text-sm font-bold">Demo Mode / No Data</span>
-                    )}
-                </div>
-
-                <div className="flex flex-col gap-8">
-                    {/* TOP ACTIONS BAR */}
-                    <Card className="p-3 sm:p-4 bg-white/5 border-white/10 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center print:hidden backdrop-blur-xl">
-                        <div className="flex items-center justify-between sm:justify-start gap-4">
-                            <h2 className="text-white font-bold flex items-center gap-2">
-                                <CheckCircle className={displayInvoice.status === 'Paid' ? "text-neon-green" : "text-yellow-500"} size={20} />
-                                <span className="truncate max-w-[150px] sm:max-w-none">#{displayInvoice.invoiceNumber || displayInvoice.id}</span>
-                            </h2>
-
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${displayInvoice.status === 'Paid'
-                                ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                }`}>
-                                {displayInvoice.status}
+            {/* FIXED HEADER NAVIGATION */}
+            {!isExporting && (
+                <header data-html2canvas-ignore="true" className="fixed-header-nav fixed top-0 left-0 right-0 z-[100] bg-black/60 backdrop-blur-2xl border-b border-white/10 print:hidden px-4 md:px-8 h-20 md:h-24 flex items-center">
+                    <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between gap-4">
+                        {/* Left: Back Navigation & Logo */}
+                        <div className="flex items-center gap-4">
+                            <Link to={isAdmin ? "/admin/invoices" : "/"} className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-all">
+                                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                                <span className="hidden sm:inline">{isAdmin ? 'ADMIN VAULT' : 'BACK TO HOME'}</span>
+                            </Link>
+                            <div className="h-8 w-[1px] bg-white/10" />
+                            <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" />
+                            <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
+                            <div className="hidden md:flex flex-col">
+                                <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1">
+                                    {displayInvoice.invoiceNumber || 'NEWBI-INV'}
+                                </span>
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none">
+                                    OFFICIAL DOCUMENT
+                                </span>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 sm:ml-auto">
+                        {/* Center: Status (Compact) */}
+                        <div className={cn(
+                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border flex items-center gap-2 transition-all",
+                            displayInvoice.status === 'Paid' 
+                                ? "bg-green-500/10 text-green-500 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]" 
+                                : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
+                        )}>
+                            <div className={cn("w-2 h-2 rounded-full animate-pulse", displayInvoice.status === 'Paid' ? "bg-green-500" : "bg-yellow-500")} />
+                            {displayInvoice.status || 'Active'}
+                        </div>
+
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-2">
                             {isAdmin && (
-                                <>
-                                    <Button variant="outline" size="sm" onClick={handleShareWhatsApp} title="Share on WhatsApp" className="flex-1 sm:flex-none">
-                                        <MessageCircle size={16} />
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={handleShareEmail} title="Share via Email" className="flex-1 sm:flex-none">
-                                        <Mail size={16} />
-                                    </Button>
-                                    {displayInvoice.status !== 'Paid' && (
-                                        <Button variant="outline" size="sm" onClick={handleMarkPaid} className="flex-[2] sm:flex-none text-green-400 border-green-400/50 hover:bg-green-400/10">
-                                            <DollarSign size={16} />
-                                            <span className="sm:inline hidden">Mark Paid</span>
-                                            <span className="inline sm:hidden">Paid</span>
-                                        </Button>
-                                    )}
-                                </>
+                                <div className="hidden lg:flex items-center bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 px-4 h-12 gap-3 mr-2 shadow-xl relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    
+                                    <Link to="/admin" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Admin Dashboard">
+                                        <LayoutGrid size={14} />
+                                    </Link>
+
+                                    <div className="h-4 w-px bg-white/10 relative z-10" />
+
+                                    <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Site Settings">
+                                        <Settings size={14} />
+                                    </Link>
+                                    
+                                    <div className="relative z-10">
+                                        <NotificationBell />
+                                    </div>
+                                    
+                                    <div className="h-4 w-px bg-white/10 relative z-10" />
+                                    
+                                    <div className="flex items-center gap-2 pr-1 relative z-10">
+                                        <div className="w-7 h-7 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shrink-0">
+                                            <span className="text-neon-blue font-black text-[10px] uppercase">
+                                                {user?.displayName ? user.displayName.charAt(0) : 'A'}
+                                            </span>
+                                        </div>
+                                        <div className="text-left flex flex-col justify-center">
+                                            <span className="text-[10px] font-bold text-white leading-none capitalize tracking-tight">
+                                                {user?.displayName?.split(' ')[0] || 'Admin'}
+                                            </span>
+                                            <span className="text-[7px] text-neon-blue uppercase tracking-[0.2em] font-black mt-0.5">
+                                                {user?.role === 'developer' ? 'DEV' : 'ADMIN'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => useStore.getState().logout()}
+                                        className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all relative z-10"
+                                    >
+                                        <LogOut size={14} />
+                                    </button>
+                                </div>
                             )}
 
-                            <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden flex-1 sm:flex-none">
-                                <Printer size={16} /> <span className="sm:inline hidden ml-2">Print</span>
-                            </Button>
-                            <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="bg-neon-green text-black hover:bg-neon-green/90 flex-[2] sm:flex-none">
-                                <Download size={16} /> <span className="ml-2 font-bold uppercase text-[10px]">Download</span>
+                            {isAdmin && (
+                                <div className="flex items-center gap-1 md:gap-2 mr-1">
+                                    <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
+                                    <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
+                                    {displayInvoice.status !== 'Paid' && (
+                                        <button 
+                                            onClick={handleMarkPaid} 
+                                            className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-white hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
+                                        >
+                                            Mark as Paid
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                            <button onClick={handlePrint} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all" title="Print"><Printer size={18} /></button>
+                            <Button 
+                                variant="primary" 
+                                onClick={handleDownloadPDF} 
+                                className="bg-neon-blue text-black hover:bg-neon-blue/90 h-10 md:h-12 px-4 md:px-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-[0_10px_20px_rgba(56,182,255,0.2)] ml-2"
+                            >
+                                <Download size={16} className="md:mr-2" /><span className="hidden sm:inline">Export PDF</span>
                             </Button>
                         </div>
-                    </Card>
+                    </div>
+                </header>
+            )}
 
-                    {/* MAIN CONTENT AREA */}
-                    {isQuickUpload ? (
-                        <div className="w-full h-[80vh] rounded-2xl overflow-hidden border border-white/10 bg-white/5 shadow-2xl">
-                            <iframe
-                                src={invoice.pdfUrl}
-                                title="Invoice PDF"
-                                className="w-full h-full border-none"
-                            />
-                        </div>
-                    ) : (
-                        <div className="print-container flex flex-col items-center bg-zinc-900/40 backdrop-blur-3xl p-2 sm:p-4 md:p-8 rounded-[2.5rem] border border-white/5 shadow-2xl overflow-y-auto max-h-[85vh] custom-scrollbar relative">
-                            <div className="absolute top-6 right-6 z-20 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
+            {/* MAIN CONTENT AREA */}
+            <main className="relative z-10 pt-32 pb-32 px-4 flex flex-col items-center">
+                {!invoice && !loading && (
+                    <div className="mb-8 px-6 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                        Demo Mode / Visual Preview Only
+                    </div>
+                )}
+
+                {isQuickUpload ? (
+                    <div className="w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
+                        <iframe
+                            src={invoice.pdfUrl}
+                            title="Invoice PDF"
+                            className="w-full h-full border-none"
+                        />
+                    </div>
+                ) : (
+                    <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
+                        <div className="relative group bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center min-w-fit">
+                            <div className="absolute top-8 right-12 z-20 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
                             
-                            <div className="flex flex-col gap-8 py-8 origin-top" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
+                            <div className="flex flex-col gap-12 origin-top" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
                                 {paginatedPages.map((pageItems, pageIdx) => {
                                     const isLastPage = pageIdx === paginatedPages.length - 1;
                                     const isFirstPage = pageIdx === 0;
@@ -324,7 +422,7 @@ const Invoice = () => {
                                             className="invoice-page-render w-[794px] h-[1123px] bg-[#F3F4F6] text-black relative shadow-2xl shrink-0 p-[12mm] flex flex-col justify-between"
                                             style={{ fontFamily: "'Inter', sans-serif" }}
                                         >
-                                            <div>
+                                            <div className="pb-48 relative z-10">
                                                 {/* Header - Only on Page 1 */}
                                                 {isFirstPage ? (
                                                     <div className="flex justify-between items-start mb-12">
@@ -348,7 +446,7 @@ const Invoice = () => {
                                                     <div className="grid grid-cols-2 gap-8 mb-8">
                                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                             <div className="bg-[#39FF14]/40 px-6 py-2">
-                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">Invoice By</h4>
                                                             </div>
                                                             <div className="p-6">
                                                                 <p className="text-xl font-bold mb-3 leading-none">{displayInvoice.senderName || 'Newbi Entertainment'}</p>
@@ -361,7 +459,7 @@ const Invoice = () => {
                                                         </div>
                                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                             <div className="bg-[#39FF14]/40 px-6 py-2">
-                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">Invoice To</h4>
                                                             </div>
                                                             <div className="p-6">
                                                                 <p className="text-xl font-bold uppercase mb-3 leading-none">{displayInvoice.clientName || 'CLIENT NAME'}</p>
@@ -376,7 +474,7 @@ const Invoice = () => {
                                                     </div>
                                                 )}
 
-                                                {/* Table */}
+                                                {/* Items Table */}
                                                 <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20", !isFirstPage && "mt-4")}>
                                                     <table className="w-full">
                                                         <thead>
@@ -409,121 +507,143 @@ const Invoice = () => {
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {isLastPage && (
                                                     <div className="mt-4 space-y-6">
-                                                        <div className="flex justify-between items-start gap-12">
-                                                            <div className="flex-1">
-                                                                {invoice?.showNotes !== false && displayInvoice.note && (
-                                                                    <div className="bg-white/40 rounded-2xl overflow-hidden border border-gray-200 shadow-sm transition-all hover:bg-white/50">
-                                                                        <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
-                                                                        </div>
-                                                                        <div className="p-4">
-                                                                            <p className="text-[10px] font-bold text-gray-600 leading-relaxed italic whitespace-pre-line">{displayInvoice.note}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                        {(displayInvoice.layoutOrder || ['notes_totals', 'payment_qr', 'signatory']).map((item) => {
+                                                            const sectionId = typeof item === 'string' ? item : item.id;
+                                                            const x = item.x || 0;
+                                                            const y = item.y || 0;
+                                                            const s = item.scale || 1;
+                                                            const style = { transform: `translate(${x}px, ${y}px) scale(${s})`, transformOrigin: 'top left' };
 
-                                                            <div className="w-[45%] shrink-0 py-4">
-                                                                <div className="w-full space-y-3">
-                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                        <span>SUBTOTAL</span>
-                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
-                                                                    </div>
-                                                                    {invoice?.showGst && (
-                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                            <span>GST ({invoice.gstPercentage}%)</span>
-                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
+                                                            if (sectionId === 'notes_totals') {
+                                                                return (
+                                                                    <div key="notes_totals" className="flex justify-between items-start gap-12" style={style}>
+                                                                        <div className="flex-1">
+                                                                            {invoice?.showNotes !== false && displayInvoice.note && (
+                                                                                <div className="bg-white/40 rounded-2xl overflow-hidden border border-gray-200 shadow-sm transition-all hover:bg-white/50">
+                                                                                    <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
+                                                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                                                    </div>
+                                                                                    <div className="p-4">
+                                                                                        <p className="text-[10px] font-bold text-gray-600 leading-relaxed italic whitespace-pre-line">{displayInvoice.note}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                    )}
-                                                                    <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
-                                                                        <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
-                                                                        <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                    </div>
-                                                                    {displayInvoice.showAdvance !== false && (
-                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                            <span>ADVANCE PAID</span>
-                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{advancePaid.toLocaleString()}</span>
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
-                                                                        <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                        <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
 
-                                                        {(invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails || invoice?.showUPI) && (
-                                                            <div className="flex flex-row items-end justify-between gap-6 pt-4 border-t border-gray-300/50">
-                                                                {invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails && (
-                                                                    <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
-                                                                        <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
-                                                                        <div className="whitespace-pre-line tracking-wide">
-                                                                            {displayInvoice.paymentDetails}
+                                                                        <div className="w-[45%] shrink-0 py-4">
+                                                                            <div className="w-full space-y-3">
+                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                                    <span>SUBTOTAL</span>
+                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
+                                                                                </div>
+                                                                                {invoice?.showGst && (
+                                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                                        <span>GST ({invoice.gstPercentage}%)</span>
+                                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
+                                                                                    <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
+                                                                                    <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                                                                </div>
+                                                                                {displayInvoice.showAdvance !== false && (
+                                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                                                        <span>ADVANCE PAID</span>
+                                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{advancePaid.toLocaleString()}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
+                                                                                    <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
+                                                                                    <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                )}
-                                                                {invoice?.showUPI && invoice?.upiId && (
-                                                                    <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4 ml-auto">
-                                                                        <img 
-                                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${invoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
-                                                                            alt="Payment QR" 
-                                                                            className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
-                                                                            crossOrigin="anonymous"
-                                                                        />
-                                                                        <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
+                                                                );
+                                                            }
+
+                                                            if (sectionId === 'payment_qr') {
+                                                                return (invoice?.showPaymentDetails !== false && (displayInvoice.paymentDetails || (invoice?.showUPI && invoice?.upiId))) && (
+                                                                    <div key="payment_qr" className="flex flex-row items-end justify-between gap-6 pt-4 border-t border-gray-300/50" style={style}>
+                                                                        {invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails && (
+                                                                            <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
+                                                                                <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                                                <div className="whitespace-pre-line tracking-wide">
+                                                                                    {displayInvoice.paymentDetails}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {invoice?.showUPI && invoice?.upiId && (
+                                                                            <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4 ml-auto">
+                                                                                <img 
+                                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${invoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
+                                                                                    alt="Payment QR" 
+                                                                                    className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
+                                                                                    crossOrigin="anonymous"
+                                                                                />
+                                                                                <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                                );
+                                                            }
+
+                                                            if (sectionId === 'signatory') {
+                                                                return (displayInvoice.showSignatureBlock !== false) && (
+                                                                    <div key="signatory" className="grid grid-cols-2 gap-8 items-end px-2" style={style}>
+                                                                        <div>
+                                                                            {/* Empty block to push signatory to the right */}
+                                                                        </div>
+                                                                        <div className="text-right flex flex-col items-end">
+                                                                            <div className="flex flex-col items-end">
+                                                                                {invoice?.showSignatory === 'image' && invoice?.signatoryImage ? (
+                                                                                    <img src={invoice.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                                ) : invoice?.showSignatory === 'text' ? (
+                                                                                    <div className="h-16 flex items-end justify-center">
+                                                                                        <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{displayInvoice.senderName || 'Authorized Signatory'}</p>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="h-16" />
+                                                                                )}
+                                                                                {invoice?.showSignatory !== 'none' && (
+                                                                                    <div className="w-48 pt-4 border-t border-gray-400 text-center">
+                                                                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-700">Authorized Signature</p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return null;
+                                                        })}
                                                     </div>
                                                 )}
-                                            </div>
-
-                                            {/* Footer and Signatory */}
-                                            <div className="space-y-6 mt-auto relative">
-                                                {isLastPage && (
-                                                    <div className="grid grid-cols-2 gap-8 items-end px-2">
-                                                        <div>
-                                                            {/* Empty block to push signatory to the right */}
-                                                        </div>
-                                                        <div className="text-right flex flex-col items-end">
-                                                            <div className="flex flex-col items-end">
-                                                                {invoice?.showSignatory === 'image' && invoice?.signatoryImage ? (
-                                                                    <img src={invoice.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                ) : invoice?.showSignatory === 'text' ? (
-                                                                    <div className="h-16 flex items-end justify-center">
-                                                                        <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{displayInvoice.senderName || 'Authorized Signatory'}</p>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="h-16" />
-                                                                )}
-                                                                {invoice?.showSignatory !== 'none' && (
-                                                                    <div className="w-48 pt-4 border-t border-gray-400 text-center">
-                                                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-700">Authorized Signature</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                                 {/* Footer Pill */}
-                                                {invoice?.showFooter !== false && (
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-[#39FF14]/50 rounded-full py-3 px-10 flex justify-between items-center shadow-lg border border-black/10 min-h-[45px]">
-                                                        <div className="flex items-center gap-2 text-black">
-                                                            <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
-                                                            <p className="text-[10px] font-black text-black tracking-widest">+91 93043 72773</p>
+                                                {displayInvoice.showFooter !== false && (
+                                                    <footer 
+                                                        className="absolute bottom-2 left-10 right-10 h-12 flex items-center justify-between px-10 overflow-hidden rounded-full border border-black/5 shadow-xl backdrop-blur-md z-50"
+                                                        style={{
+                                                            transform: `translate(${(displayInvoice.layoutOrder || []).find(i => (typeof i === 'object' ? i.id : i) === 'footer')?.x || 0}px, ${(displayInvoice.layoutOrder || []).find(i => (typeof i === 'object' ? i.id : i) === 'footer')?.y || 0}px)`
+                                                        }}
+                                                    >
+                                                        <div className="absolute inset-0 bg-[#39FF14]/40" />
+                                                        <div className="relative z-10 flex items-center justify-between w-full text-black">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
+                                                                <p className="text-[10px] font-black tracking-widest uppercase">+91 93043 72773</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 border-x border-black/5 px-10 h-12">
+                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
+                                                                <p className="text-[10px] font-black tracking-widest uppercase">partnership@newbi.live</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
+                                                                <p className="text-[10px] font-black tracking-widest uppercase">newbi.live</p>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 border-x border-black/10 px-10">
-                                                            <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                                            <p className="text-[10px] font-black text-black tracking-widest">partnership@newbi.live</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                                            <a href="https://newbi.live" target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-black tracking-widest hover:underline">newbi.live</a>
-                                                        </div>
-                                                    </div>
+                                                    </footer>
                                                 )}
                                             </div>
                                         </div>
@@ -531,9 +651,9 @@ const Invoice = () => {
                                 })}
                             </div>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

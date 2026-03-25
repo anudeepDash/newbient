@@ -42,7 +42,7 @@ const ConcertZone = () => {
                         transition={{ delay: 0.2 }}
                         className="text-4xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-white to-purple-500 mb-6 tracking-tight leading-none text-center"
                     >
-                        CONCERT <span className="text-white">ZONE.</span>
+                        Concert <span className="text-white">Zone.</span>
                     </motion.h1>
 
                     <motion.p
