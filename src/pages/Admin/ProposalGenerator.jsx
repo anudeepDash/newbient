@@ -904,7 +904,7 @@ const ProposalGenerator = () => {
                                         )}
                                     </div>
                                 );
-                            })
+                            })}
                         </div>
                     </div>
                 </div>
