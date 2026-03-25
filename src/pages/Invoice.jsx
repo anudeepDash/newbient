@@ -408,22 +408,22 @@ const Invoice = () => {
                     </div>
                 ) : (
                     <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
-                        <div className="relative group bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center min-w-fit">
+                        <div className="relative group bg-zinc-900/40 backdrop-blur-3xl p-4 md:p-12 rounded-[3.5rem] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col items-center">
                             <div className="absolute top-8 right-12 z-20 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest text-[#39FF14]">Digital Archive</div>
                             
-                            <div className="flex flex-col gap-12 origin-top" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
+                            <div className="flex flex-col items-center" style={{ gap: `${48 * scale}px` }}>
                                 {paginatedPages.map((pageItems, pageIdx) => {
                                     const isLastPage = pageIdx === paginatedPages.length - 1;
                                     const isFirstPage = pageIdx === 0;
 
                                     return (
-                                        <div
-                                            key={pageIdx}
-                                            className="invoice-page-render w-[794px] h-[1123px] bg-[#F3F4F6] text-black relative shadow-2xl shrink-0 p-[12mm] flex flex-col justify-between"
-                                            style={{ fontFamily: "'Inter', sans-serif" }}
-                                        >
-                                            <div className="pb-48 relative z-10">
-                                                {/* Header - Only on Page 1 */}
+                                        <div key={pageIdx} style={{ width: 794 * scale, height: 1123 * scale }} className="relative shrink-0 shadow-2xl rounded-xl overflow-hidden bg-[#F3F4F6]">
+                                            <div
+                                                className="invoice-page-render absolute top-0 left-0 w-[794px] h-[1123px] bg-[#F3F4F6] text-black overflow-hidden shrink-0 p-[12mm] flex flex-col origin-top-left"
+                                                style={{ fontFamily: "'Inter', sans-serif", transform: `scale(${scale})` }}
+                                            >
+                                                <div className="pb-48 relative z-10 h-full flex flex-col">
+                                                    {/* Header - Only on Page 1 */}
                                                 {isFirstPage ? (
                                                     <div className="flex justify-between items-start mb-12">
                                                         <div>
@@ -506,56 +506,71 @@ const Invoice = () => {
 
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {isLastPage && (
-                                                    <div className="mt-4 space-y-6">
-                                                        {(displayInvoice.layoutOrder || ['notes_totals', 'payment_qr', 'signatory']).map((item) => {
+                                                    <div className="mt-4 grid grid-cols-2 gap-y-8 gap-x-12 relative z-10 w-full items-start">
+                                                        {(displayInvoice.layoutOrder || ['notes', 'totals', 'payment_details', 'payment_qr', 'signatory']).map((item) => {
                                                             const sectionId = typeof item === 'string' ? item : item.id;
                                                             const x = item.x || 0;
                                                             const y = item.y || 0;
                                                             const s = item.scale || 1;
                                                             const style = { transform: `translate(${x}px, ${y}px) scale(${s})`, transformOrigin: 'top left' };
 
-                                                            if (sectionId === 'notes_totals') {
+                                                            if (sectionId === 'notes') {
+                                                                return invoice?.showNotes !== false && displayInvoice.note && (
+                                                                    <div key="notes" style={style} className="col-start-1 row-start-1 w-full relative">
+                                                                        <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                                                                            <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
+                                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                                            </div>
+                                                                            <div className="p-4">
+                                                                                <p className="text-[10px] font-bold text-gray-600 leading-relaxed italic whitespace-pre-line tracking-wide">
+                                                                                    {displayInvoice.note}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            
+                                                            if (sectionId === 'totals') {
                                                                 return (
-                                                                    <div key="notes_totals" className="flex justify-between items-start gap-12" style={style}>
-                                                                        <div className="flex-1">
-                                                                            {invoice?.showNotes !== false && displayInvoice.note && (
-                                                                                <div className="bg-white/40 rounded-2xl overflow-hidden border border-gray-200 shadow-sm transition-all hover:bg-white/50">
-                                                                                    <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
-                                                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
-                                                                                    </div>
-                                                                                    <div className="p-4">
-                                                                                        <p className="text-[10px] font-bold text-gray-600 leading-relaxed italic whitespace-pre-line">{displayInvoice.note}</p>
-                                                                                    </div>
+                                                                    <div key="totals" style={style} className="col-start-2 row-start-1 w-full relative">
+                                                                        <div className="w-full space-y-3">
+                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                                <span>SUBTOTAL</span>
+                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
+                                                                            </div>
+                                                                            {invoice?.showGst && (
+                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                                                    <span>GST ({invoice?.gstPercentage}%)</span>
+                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
                                                                                 </div>
                                                                             )}
+                                                                            <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl">
+                                                                                <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
+                                                                                <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                                                            </div>
+                                                                            {displayInvoice.showAdvance !== false && (
+                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                                                    <span>ADVANCE PAID</span>
+                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{advancePaid.toLocaleString()}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
+                                                                                <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
+                                                                                <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
+                                                                            </div>
                                                                         </div>
+                                                                    </div>
+                                                                );
+                                                            }
 
-                                                                        <div className="w-[45%] shrink-0 py-4">
-                                                                            <div className="w-full space-y-3">
-                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                                    <span>SUBTOTAL</span>
-                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
-                                                                                </div>
-                                                                                {invoice?.showGst && (
-                                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                                        <span>GST ({invoice.gstPercentage}%)</span>
-                                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                                <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
-                                                                                    <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
-                                                                                    <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                                </div>
-                                                                                {displayInvoice.showAdvance !== false && (
-                                                                                    <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                                        <span>ADVANCE PAID</span>
-                                                                                        <span className="text-black text-xs font-bold font-heading italic">₹{advancePaid.toLocaleString()}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                                <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
-                                                                                    <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                                    <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
-                                                                                </div>
+                                                            if (sectionId === 'payment_details') {
+                                                                return invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails && (
+                                                                    <div key="payment_details" style={style} className="col-start-1 row-start-2 w-full pt-4 border-t border-gray-300/50 relative">
+                                                                        <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                                            <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                                            <div className="whitespace-pre-line tracking-wide">
+                                                                                {displayInvoice.paymentDetails}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -563,41 +578,36 @@ const Invoice = () => {
                                                             }
 
                                                             if (sectionId === 'payment_qr') {
-                                                                return (invoice?.showPaymentDetails !== false && (displayInvoice.paymentDetails || (invoice?.showUPI && invoice?.upiId))) && (
-                                                                    <div key="payment_qr" className="flex flex-row items-end justify-between gap-6 pt-4 border-t border-gray-300/50" style={style}>
-                                                                        {invoice?.showPaymentDetails !== false && displayInvoice.paymentDetails && (
-                                                                            <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
-                                                                                <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
-                                                                                <div className="whitespace-pre-line tracking-wide">
-                                                                                    {displayInvoice.paymentDetails}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        {invoice?.showUPI && invoice?.upiId && (
-                                                                            <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4 ml-auto">
+                                                                return invoice?.showUPI && invoice?.upiId && (
+                                                                    <div key="payment_qr" style={style} className="col-start-2 row-start-2 w-full flex justify-end shrink-0 pt-4 border-t border-gray-300/50 relative">
+                                                                        <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4">
+                                                                            {invoice?.qrType === 'auto' || !invoice?.qrType ? (
                                                                                 <img 
                                                                                     src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${invoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
                                                                                     alt="Payment QR" 
                                                                                     className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
                                                                                     crossOrigin="anonymous"
                                                                                 />
-                                                                                <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
-                                                                            </div>
-                                                                        )}
+                                                                            ) : invoice.customQrImage ? (
+                                                                                <img 
+                                                                                    src={invoice.customQrImage} 
+                                                                                    alt="Custom QR" 
+                                                                                    className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
+                                                                                    crossOrigin="anonymous"
+                                                                                />
+                                                                            ) : null}
+                                                                            <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
+                                                                        </div>
                                                                     </div>
                                                                 );
                                                             }
 
                                                             if (sectionId === 'signatory') {
                                                                 return (displayInvoice.showSignatureBlock !== false) && (
-                                                                    <div key="signatory" className="grid grid-cols-2 gap-8 items-end px-2" style={style}>
-                                                                        <div>
-                                                                            {/* Empty block to push signatory to the right */}
-                                                                        </div>
-                                                                        <div className="text-right flex flex-col items-end">
-                                                                            <div className="flex flex-col items-end">
-                                                                                {invoice?.showSignatory === 'image' && invoice?.signatoryImage ? (
-                                                                                    <img src={invoice.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                    <div key="signatory" style={style} className="col-start-2 row-start-3 w-full flex justify-end mt-4 relative">
+                                                                        <div className="flex flex-col items-end text-right w-[200px]">
+                                                                            {invoice?.showSignatory === 'image' && invoice?.signatoryImage ? (
+                                                                                <img src={invoice.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                                 ) : invoice?.showSignatory === 'text' ? (
                                                                                     <div className="h-16 flex items-end justify-center">
                                                                                         <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{displayInvoice.senderName || 'Authorized Signatory'}</p>
@@ -612,7 +622,6 @@ const Invoice = () => {
                                                                                 )}
                                                                             </div>
                                                                         </div>
-                                                                    </div>
                                                                 );
                                                             }
 
@@ -620,10 +629,11 @@ const Invoice = () => {
                                                         })}
                                                     </div>
                                                 )}
+                                            </div>
                                                 {/* Footer Pill */}
                                                 {displayInvoice.showFooter !== false && (
                                                     <footer 
-                                                        className="absolute bottom-2 left-10 right-10 h-12 flex items-center justify-between px-10 overflow-hidden rounded-full border border-black/5 shadow-xl backdrop-blur-md z-50"
+                                                        className="absolute bottom-6 left-10 right-10 h-10 flex items-center justify-between px-10 overflow-hidden rounded-full border border-black/5 shadow-xl backdrop-blur-md z-50 print-hidden"
                                                         style={{
                                                             transform: `translate(${(displayInvoice.layoutOrder || []).find(i => (typeof i === 'object' ? i.id : i) === 'footer')?.x || 0}px, ${(displayInvoice.layoutOrder || []).find(i => (typeof i === 'object' ? i.id : i) === 'footer')?.y || 0}px)`
                                                         }}
@@ -634,7 +644,7 @@ const Invoice = () => {
                                                                 <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
                                                                 <p className="text-[10px] font-black tracking-widest uppercase">+91 93043 72773</p>
                                                             </div>
-                                                            <div className="flex items-center gap-3 border-x border-black/5 px-10 h-12">
+                                                            <div className="flex items-center gap-3 border-x border-black/5 px-10 h-10">
                                                                 <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
                                                                 <p className="text-[10px] font-black tracking-widest uppercase">partnership@newbi.live</p>
                                                             </div>

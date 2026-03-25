@@ -114,11 +114,18 @@ const ProposalGenerator = () => {
                     showFooter: proposal.showFooter !== undefined ? proposal.showFooter : true,
                     showAdvance: proposal.showAdvance !== undefined ? proposal.showAdvance : true,
                     advancePaid: Number(proposal.advancePaid) || 0,
-                    layoutOrder: proposal.layoutOrder?.map(item => typeof item === 'string' ? { id: item, x: 0, y: 0 } : item) || [
-                        { id: 'terms_totals', x: 0, y: 0 },
-                        { id: 'payment_qr', x: 0, y: 0 },
-                        { id: 'signatory', x: 0, y: 0 },
-                        { id: 'footer', x: 0, y: 0 }
+                    layoutOrder: proposal.layoutOrder?.map(item => {
+                        const parsed = typeof item === 'string' ? { id: item, x: 0, y: 0, scale: 1 } : item;
+                        if (parsed.id === 'terms_totals') return [{ id: 'terms', x: 0, y: 0, scale: 1 }, { id: 'totals', x: 0, y: 0, scale: 1 }];
+                        if (parsed.id === 'payment_qr') return [{ id: 'payment_details', x: 0, y: 0, scale: 1 }, { id: 'payment_qr', x: 0, y: 0, scale: 1 }];
+                        return parsed;
+                    }).flat() || [
+                        { id: 'terms', x: 0, y: 0, scale: 1 },
+                        { id: 'totals', x: 0, y: 0, scale: 1 },
+                        { id: 'payment_details', x: 0, y: 0, scale: 1 },
+                        { id: 'payment_qr', x: 0, y: 0, scale: 1 },
+                        { id: 'signatory', x: 0, y: 0, scale: 1 },
+                        { id: 'footer', x: 0, y: 0, scale: 1 }
                     ]
                 });
                 setItems(proposal.items || []);
@@ -295,25 +302,25 @@ const ProposalGenerator = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Proposal ID</label>
-                                    <Input value={formData.proposalNumber} onChange={e => setFormData({...formData, proposalNumber: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
+                                    <Input value={formData.proposalNumber} onChange={e => setFormData({...formData, proposalNumber: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Creation Date</label>
-                                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
+                                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Client Business Name</label>
-                                    <Input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. RedBull Global" />
+                                    <Input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. RedBull Global" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Project Subject</label>
-                                    <Input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. Campus Activation Q4" />
+                                    <Input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value}) className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. Campus Activation Q4" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2 mt-4">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Strategic Notes / Scope</label>
                                     <textarea 
                                         value={formData.notes} 
-                                        onChange={e => setFormData({...formData, notes: e.target.value})}
+                                        onChange={e => setFormData({...formData, notes: e.target.value})
                                         className="w-full bg-black/60 border border-white/10 rounded-xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none text-white scrollbar-hide"
                                         placeholder="Outline the scope, specific terms, or campaign objectives..."
                                     />
@@ -360,7 +367,7 @@ const ProposalGenerator = () => {
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-3">
                                         <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">GST (18%)</span>
-                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({...formData, showGst: e.target.checked})} className="accent-neon-blue" />
+                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({...formData, showGst: e.target.checked}) className="accent-neon-blue" />
                                     </div>
                                     <span className="text-white text-lg">₹{gstAmount.toLocaleString()}</span>
                                 </div>
@@ -371,7 +378,7 @@ const ProposalGenerator = () => {
                                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/5">
                                     <div className="space-y-1">
                                         <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Advance Paid</label>
-                                        <Input type="number" value={formData.advancePaid} onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 })} className="bg-black/40 border-white/5 h-8 text-[10px] font-bold" />
+                                        <Input type="number" value={formData.advancePaid} onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 }) className="bg-black/40 border-white/5 h-8 text-[10px] font-bold" />
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest pr-1">Balance Due</p>
@@ -390,19 +397,19 @@ const ProposalGenerator = () => {
                                     <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Signatory Style</label>
                                     <div className="flex gap-4">
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'none' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Default
                                         </button>
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'text' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Plain Text
                                         </button>
                                         <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'image' })}
+                                            onClick={() => setFormData({ ...formData, showSignatory: 'image' })
                                             className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'image' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
                                         >
                                             Digital Signature
@@ -413,7 +420,7 @@ const ProposalGenerator = () => {
                                             {formData.signatoryImage ? (
                                                 <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black/50 flex items-center justify-center">
                                                     <img src={formData.signatoryImage} alt="Signature" className="max-h-full p-4" />
-                                                    <button onClick={() => setFormData({ ...formData, signatoryImage: '' })} className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => setFormData({ ...formData, signatoryImage: '' }) className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <Trash2 size={12} />
                                                     </button>
                                                 </div>
@@ -434,27 +441,27 @@ const ProposalGenerator = () => {
                                     <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Strategic Config</label>
                                     <div className="flex flex-wrap gap-4">
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Notes</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Banking</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">UPI QR</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Footer Pill</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Advance Row</span>
                                         </div>
                                         <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showSignatureBlock} onChange={e => setFormData({ ...formData, showSignatureBlock: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
+                                            <input type="checkbox" checked={formData.showSignatureBlock} onChange={e => setFormData({ ...formData, showSignatureBlock: e.target.checked }) className="w-4 h-4 accent-neon-blue rounded" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sign Block</span>
                                         </div>
                                     </div>
@@ -464,20 +471,20 @@ const ProposalGenerator = () => {
                                     <div className="p-6 bg-black/30 rounded-2xl border border-white/5 space-y-4">
                                         <div className="flex gap-4">
                                             <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'auto' })}
+                                                onClick={() => setFormData({ ...formData, qrType: 'auto' })
                                                 className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'auto' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
                                             >
                                                 Dynamic UPI
                                             </button>
                                             <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'custom' })}
+                                                onClick={() => setFormData({ ...formData, qrType: 'custom' })
                                                 className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'custom' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
                                             >
                                                 Custom QR
                                             </button>
                                         </div>
                                         {formData.qrType === 'auto' ? (
-                                            <Input value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value })} placeholder="Enter UPI ID" className="bg-black border-white/10 h-10 text-[10px]" />
+                                            <Input value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value }) placeholder="Enter UPI ID" className="bg-black border-white/10 h-10 text-[10px]" />
                                         ) : (
                                             <div className="relative">
                                                 <input type="file" onChange={async (e) => {
@@ -616,7 +623,7 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Executive Overview</label>
                                     <textarea 
                                         value={formData.overview} 
-                                        onChange={e => setFormData({...formData, overview: e.target.value})}
+                                        onChange={e => setFormData({...formData, overview: e.target.value})
                                         className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none"
                                         placeholder="Summarize the project goals and Newbi's role..."
                                     />
@@ -625,7 +632,7 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Scope & Deliverables</label>
                                     <textarea 
                                         value={formData.scopeOfWork} 
-                                        onChange={e => setFormData({...formData, scopeOfWork: e.target.value})}
+                                        onChange={e => setFormData({...formData, scopeOfWork: e.target.value})
                                         className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[150px] focus:border-neon-blue/50 outline-none"
                                         placeholder="List specific services, dates, and student outreach targets..."
                                     />
@@ -736,107 +743,113 @@ const ProposalGenerator = () => {
                                                 </table>
                                             </div>
 
-                                            {/* Totals Section & Left Details - Only on Last Page */}
+                                             {/* Totals Section & Left Details - Only on Last Page */}
                                              {isLastPage && (
-                                                <div className="mt-8 space-y-8">
+                                                <div className="mt-8 grid grid-cols-2 gap-y-8 gap-x-12 relative z-10 w-full items-start">
                                                     {formData.layoutOrder.map((item) => {
                                                         const sectionId = typeof item === 'string' ? item : item.id;
                                                         const x = item.x || 0;
                                                         const y = item.y || 0;
-                                                        const style = { transform: `translate(${x}px, ${y}px)` };
+                                                        const s = item.scale || 1;
+                                                        const style = { transform: `translate(${x}px, ${y}px) scale(${s})`, transformOrigin: 'top left' };
 
-                                                        if (sectionId === 'terms_totals') {
-                                                            return (
-                                                                <div key="terms_totals" className="flex justify-between items-start gap-12" style={style}>
-                                                                    <div className="flex-1">
-                                                                        <div className="bg-white/20 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                                            <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
-                                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">TERMS & CONDITIONS</h4>
-                                                                            </div>
-                                                                            <div className="p-4">
-                                                                                <p className="text-[9px] font-bold leading-relaxed text-gray-500 whitespace-pre-line tracking-wide">
-                                                                                    {formData.terms || "Standard terms apply."}
-                                                                                </p>
-                                                                            </div>
+                                                        if (sectionId === 'terms') {
+                                                            return formData.showNotes !== false && (
+                                                                <div key="terms" style={style} className="col-start-1 row-start-1 w-full relative">
+                                                                    <div className="bg-white/20 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                                                                        <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
+                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">TERMS & CONDITIONS</h4>
                                                                         </div>
-                                                                    </div>
-
-                                                                    <div className="w-[45%] shrink-0">
-                                                                        <div className="w-full space-y-3">
-                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                                <span>SUBTOTAL</span>
-                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
-                                                                            </div>
-                                                                            {formData.showGst && (
-                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                                    <span>GST ({formData.gstRate}%)</span>
-                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
-                                                                                </div>
-                                                                            )}
-                                                                            <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl transition-transform hover:scale-[1.02]">
-                                                                                <span className="text-[10px] font-black uppercase italic">TOTAL INVESTMENT</span>
-                                                                                <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                            </div>
-                                                                            {formData.showAdvance !== false && (
-                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                                    <span>ADVANCE PAID</span>
-                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
-                                                                                </div>
-                                                                            )}
-                                                                            <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4 transition-transform hover:scale-[1.02]">
-                                                                                <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                                <span className="text-3xl font-black italic tracking-tighter">₹{(totalAmount - formData.advancePaid).toLocaleString()}</span>
-                                                                            </div>
+                                                                        <div className="p-4">
+                                                                            <p className="text-[9px] font-bold leading-relaxed text-gray-500 whitespace-pre-line tracking-wide">
+                                                                                {formData.terms || "Standard terms apply."}
+                                                                            </p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             );
                                                         }
+
+                                                        if (sectionId === 'totals') {
+                                                            return (
+                                                                <div key="totals" style={style} className="col-start-2 row-start-1 w-full relative">
+                                                                    <div className="w-full space-y-3">
+                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                            <span>SUBTOTAL</span>
+                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
+                                                                        </div>
+                                                                        {formData.showGst && (
+                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                                                <span>GST ({formData.gstRate}%)</span>
+                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl">
+                                                                            <span className="text-[10px] font-black uppercase italic">TOTAL INVESTMENT</span>
+                                                                            <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                                                        </div>
+                                                                        {formData.showAdvance !== false && (
+                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                                                <span>ADVANCE PAID</span>
+                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
+                                                                            <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
+                                                                            <span className="text-3xl font-black italic tracking-tighter">₹{(totalAmount - formData.advancePaid).toLocaleString()}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        if (sectionId === 'payment_details') {
+                                                            return formData.showPaymentDetails && (
+                                                                <div key="payment_details" style={style} className="col-start-1 row-start-2 w-full pt-4 border-t border-gray-300/50 relative">
+                                                                    <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                                        <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                                        <div className="whitespace-pre-line tracking-wide">
+                                                                            {formData.paymentDetails}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
                                                         if (sectionId === 'payment_qr') {
-                                                            return (formData.showPaymentDetails || formData.showUPI) && (
-                                                                <div key="payment_qr" className="flex flex-row items-end justify-between gap-6 pt-4 border-t border-gray-300/50" style={style}>
-                                                                    {formData.showPaymentDetails && (
-                                                                        <div className="inline-block p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm shrink-0">
-                                                                            <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
-                                                                            <div className="whitespace-pre-line tracking-wide">
-                                                                                {formData.paymentDetails}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {formData.showUPI && (
-                                                                        <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 ml-auto">
-                                                                            {formData.qrType === 'auto' ? (
-                                                                                <img
-                                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${totalAmount}&cu=INR`)}`}
-                                                                                    alt="Payment QR"
-                                                                                    className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
-                                                                                />
-                                                                            ) : formData.customQrImage ? (
-                                                                                <img
-                                                                                    src={formData.customQrImage}
-                                                                                    alt="Custom QR"
-                                                                                    className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
-                                                                            )}
-                                                                            <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
-                                                                        </div>
-                                                                    )}
+                                                            return formData.showUPI && (
+                                                                <div key="payment_qr" style={style} className="col-start-2 row-start-2 w-full flex justify-end shrink-0 pt-4 border-t border-gray-300/50 relative">
+                                                                    <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4">
+                                                                        {formData.qrType === 'auto' ? (
+                                                                            <img
+                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${totalAmount}&cu=INR`)}`}
+                                                                                alt="Payment QR"
+                                                                                className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
+                                                                            />
+                                                                        ) : formData.customQrImage ? (
+                                                                            <img
+                                                                                src={formData.customQrImage}
+                                                                                alt="Custom QR"
+                                                                                className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
+                                                                        )}
+                                                                        <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
+                                                                    </div>
                                                                 </div>
                                                             );
                                                         }
+
                                                         if (sectionId === 'signatory') {
-                                                            return (
-                                                                <div key="signatory" className="grid grid-cols-2 gap-8 items-end pt-8" style={style}>
-                                                                    <div>
+                                                            return formData.showSignatureBlock !== false && (
+                                                                <div key="signatory" style={style} className="col-start-2 row-start-3 w-full flex justify-end mt-4 relative">
+                                                                    <div className="flex flex-col items-end text-right w-[200px]">
                                                                         {formData.showNotes && formData.notes && (
-                                                                            <div className="text-[8px] font-bold text-gray-400 uppercase italic max-w-[250px] leading-relaxed">
+                                                                            <div className="text-[8px] font-bold text-gray-400 uppercase italic max-w-[250px] leading-relaxed mb-4 text-left mr-auto">
                                                                                 * {formData.notes.substring(0, 100)}...
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                    <div className="text-right flex flex-col items-end">
                                                                         <div className="flex flex-col items-end">
                                                                             {formData.showSignatory === 'image' && formData.signatoryImage ? (
                                                                                 <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" />
@@ -857,9 +870,10 @@ const ProposalGenerator = () => {
                                                                 </div>
                                                             );
                                                         }
+
                                                         return null;
-                                                    })}
-                                                </div>
+                                                     })
+                                                 </div>
                                              )}
 
                                         </div>
@@ -890,7 +904,7 @@ const ProposalGenerator = () => {
                                         )}
                                     </div>
                                 );
-                            })}
+                            })
                         </div>
                     </div>
                 </div>
