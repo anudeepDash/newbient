@@ -872,8 +872,8 @@ const ProposalGenerator = () => {
                                                         }
 
                                                         return null;
-                                                     })
-                                                 </div>
+                                                      })}
+                                                  </div>
                                              )}
 
                                         </div>
