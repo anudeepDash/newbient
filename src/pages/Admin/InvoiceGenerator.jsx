@@ -305,10 +305,8 @@ const InvoiceGenerator = () => {
             const safeInvoiceNumber = (formData.invoiceNumber || 'INV').toString().replace(/[/\\?%*:|"<>]/g, '-');
             const fileName = `Newbi_INV-${safeInvoiceNumber}.pdf`;
             
+            // Force manual download with explicit fileName and MIME type
             try {
-                pdf.save(fileName);
-            } catch (err) {
-                console.error("PDF Save Error, using fallback:", err);
                 const blob = pdf.output('blob');
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -316,8 +314,16 @@ const InvoiceGenerator = () => {
                 link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } catch (err) {
+                console.error("Manual Download Error:", err);
+                // Last ditch effort
+                pdf.save(fileName);
             }
         }
     };
