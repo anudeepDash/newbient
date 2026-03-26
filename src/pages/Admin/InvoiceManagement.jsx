@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload, DollarSign, Mail, Send } from 'lucide-react';
+import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload, DollarSign, Mail, Send, CopyPlus, MoreVertical } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { sendInvoiceEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
@@ -15,6 +15,13 @@ const InvoiceManagement = () => {
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
+    const [openMenuId, setOpenMenuId] = useState(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = () => setOpenMenuId(null);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     // Quick Upload State
     const [showQuickUpload, setShowQuickUpload] = useState(false);
@@ -68,6 +75,23 @@ const InvoiceManagement = () => {
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
+        }
+    };
+
+    const handleDuplicate = async (invoice) => {
+        try {
+            const { id, ...restOptions } = invoice;
+            const newInvoice = {
+                ...restOptions,
+                invoiceNumber: `NB-${Math.floor(100000 + Math.random() * 900000)}`,
+                status: 'Pending',
+                createdAt: new Date().toISOString(),
+                issueDate: new Date().toISOString().split('T')[0],
+                lastOpened: null
+            };
+            await addInvoice(newInvoice);
+        } catch (error) {
+            alert("Failed to duplicate invoice.");
         }
     };
 
@@ -235,9 +259,6 @@ const InvoiceManagement = () => {
                         <Button onClick={() => setShowQuickUpload(true)} variant="outline" className="flex-1 xl:flex-none h-full xl:min-h-[4rem] px-8 rounded-[2rem] bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
                             <Upload className="mr-3 text-neon-blue" size={16} /> Quick Upload
                         </Button>
-                        <Button variant="outline" className="flex-1 xl:flex-none h-full xl:min-h-[4rem] px-8 rounded-[2rem] bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
-                            <Download className="mr-3" size={16} /> Export
-                        </Button>
                     </div>
                 </div>
 
@@ -264,7 +285,7 @@ const InvoiceManagement = () => {
                                         </div>
 
                                         <div>
-                                            <div className="flex justify-between items-start mb-6">
+                                            <div className="flex justify-between items-start mb-6 w-full relative z-20">
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
                                                         {inv.invoiceNumber || 'NEWBI-INV'}
@@ -273,10 +294,38 @@ const InvoiceManagement = () => {
                                                         {inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}
                                                     </span>
                                                 </div>
-                                                <div className={cn(
-                                                    "w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_15px_currentColor]",
-                                                    inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500'
-                                                )} />
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_15px_currentColor]",
+                                                        inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500'
+                                                    )} />
+                                                    
+                                                    <div className="relative">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === inv.id ? null : inv.id); }}
+                                                            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-gray-400 hover:text-white transition-all shadow-xl"
+                                                        >
+                                                            <MoreVertical size={16} />
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {openMenuId === inv.id && (
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                                    className="absolute top-12 right-0 min-w-[160px] bg-zinc-900 rounded-2xl border border-white/10 p-2 shadow-2xl z-30 overflow-hidden"
+                                                                >
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleDuplicate(inv); setOpenMenuId(null); }}
+                                                                        className="w-full text-left px-4 py-3 bg-transparent hover:bg-neon-blue/10 text-gray-300 hover:text-neon-blue rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between"
+                                                                    >
+                                                                        Duplicate <CopyPlus size={14} />
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
@@ -407,8 +456,9 @@ const InvoiceManagement = () => {
                                                         {inv.status !== 'Paid' && (
                                                             <button onClick={() => handleMarkAsPaid(inv)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><CheckCircle size={18} /></button>
                                                         )}
-                                                        <button onClick={() => handleEdit(inv)} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></button>
-                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                        <button onClick={() => handleEdit(inv)} className="p-2 text-gray-500 hover:text-white transition-colors" title="Edit"><Edit size={18} /></button>
+                                                        <button onClick={() => handleDuplicate(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors" title="Duplicate"><CopyPlus size={18} /></button>
+                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
                                                     </div>
                                                 </td>
                                             </tr>
