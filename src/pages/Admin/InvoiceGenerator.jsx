@@ -1112,24 +1112,24 @@ const InvoiceGenerator = () => {
 
                                         {formData.showFooter && (
                                             <footer 
-                                                className="absolute bottom-4 left-10 right-10 h-10 flex items-center justify-between px-10 rounded-full border border-black/10 shadow-lg z-50 bg-[#ccffcc]"
+                                                className="absolute bottom-4 left-10 right-10 h-10 flex items-center justify-between px-10 rounded-full border border-black/10 shadow-lg z-50 bg-[#39FF14]/40"
                                                 style={{
                                                     transform: `translate(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).x || 0}px, ${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).y || 0}px) scale(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).scale || 0.85})`,
                                                     transformOrigin: 'bottom center'
                                                 }}
                                             >
-                                                <div className="flex items-center justify-between w-full text-black font-bold">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[7px] font-black text-black/40 tracking-[0.2em]">CALL</span>
-                                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold">+91 93043 72773</p>
+                                                <div className="flex items-center justify-between w-full text-black">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
+                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">+91 93043 72773</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2 border-x border-black/5 px-6 h-6">
-                                                        <span className="text-[7px] font-black text-black/40 tracking-[0.2em]">EMAIL</span>
-                                                        <p className="text-[9px] font-black tracking-widest uppercase">partnership@newbi.live</p>
+                                                    <div className="flex items-center gap-3 border-x border-black/10 px-10 h-10">
+                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
+                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">partnership@newbi.live</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[7px] font-black text-black/40 tracking-[0.2em]">WEB</span>
-                                                        <p className="text-[9px] font-black tracking-widest uppercase">newbi.live</p>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
+                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">newbi.live</p>
                                                     </div>
                                                 </div>
                                             </footer>
