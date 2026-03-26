@@ -255,7 +255,24 @@ const ProposalGenerator = () => {
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
             
-            pdf.save(`Proposal_${formData.proposalNumber}.pdf`);
+            // Sanitize filename to prevent "random file type" issues
+            const safeProposalNumber = (formData.proposalNumber || 'PROP').toString().replace(/[/\\?%*:|"<>]/g, '-');
+            const fileName = `Proposal_${safeProposalNumber}.pdf`;
+            
+            try {
+                pdf.save(fileName);
+            } catch (err) {
+                console.error("PDF Save Error, using fallback:", err);
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
         } catch (error) {
             console.error("PDF Gen Error:", error);
             alert("PDF Generation Failed!");
