@@ -998,16 +998,18 @@ const InvoiceGenerator = () => {
                                                                             <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
                                                                             <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                                                         </div>
-                                                                        {formData.showAdvance !== false && (
-                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                                <span>ADVANCE PAID</span>
-                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
-                                                                            </div>
+                                                                        {formData.showAdvance !== false && formData.advancePaid > 0 && (
+                                                                            <>
+                                                                                <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                                                                    <span>ADVANCE PAID</span>
+                                                                                    <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                                                </div>
+                                                                                <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
+                                                                                    <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
+                                                                                    <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
+                                                                                </div>
+                                                                            </>
                                                                         )}
-                                                                        <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
-                                                                            <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                            <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
-                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             );
@@ -1054,7 +1056,7 @@ const InvoiceGenerator = () => {
                                                         }
 
                                                         if (sectionId === 'signatory') {
-                                                            return formData.showSignatureBlock !== false && (
+                                                            return formData.showSignatureBlock && (
                                                                 <div key="signatory" style={style} className="col-start-2 row-start-3 w-full flex justify-end mt-4 relative">
                                                                     <div className="flex flex-col items-end text-right w-[200px]">
                                                                         {formData.showSignatory === 'image' && formData.signatoryImage ? (
@@ -1086,7 +1088,8 @@ const InvoiceGenerator = () => {
                                             <footer 
                                                 className="absolute bottom-4 left-10 right-10 h-10 flex items-center justify-between px-10 overflow-hidden rounded-full border border-black/5 shadow-xl backdrop-blur-md z-50 transition-all hover:scale-[1.02]"
                                                 style={{
-                                                    transform: `translate(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).x || 0}px, ${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).y || 0}px)`
+                                                    transform: `translate(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).x || 0}px, ${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).y || 0}px) scale(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).scale || 0.85})`,
+                                                    transformOrigin: 'bottom center'
                                                 }}
                                             >
                                                 <div className="absolute inset-0 bg-[#39FF14]/40" />
