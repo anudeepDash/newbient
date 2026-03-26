@@ -300,7 +300,26 @@ const InvoiceGenerator = () => {
 
     const handleDownload = async () => {
         const pdf = await generatePDF();
-        if (pdf) pdf.save(`Newbi_INV-${formData.invoiceNumber}.pdf`);
+        if (pdf) {
+            // Sanitize filename to prevent "random file type" issues
+            const safeInvoiceNumber = (formData.invoiceNumber || 'INV').toString().replace(/[/\\?%*:|"<>]/g, '-');
+            const fileName = `Newbi_INV-${safeInvoiceNumber}.pdf`;
+            
+            try {
+                pdf.save(fileName);
+            } catch (err) {
+                console.error("PDF Save Error, using fallback:", err);
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
     };
 
     const handleSaveToDB = async () => {
