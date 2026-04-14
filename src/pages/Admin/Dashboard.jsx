@@ -239,7 +239,7 @@ const Dashboard = () => {
                     <DashboardSection title="Core Content" gradient="from-neon-pink via-purple-500 to-white">
                         <ControlCard title="Upcoming" desc="Pin events to the live home carousel." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
                         <ControlCard title="PORTFOLIO" desc="The record of all past events & fests." icon={Music} color="neon-green" link="/admin/concertzone" isHidden={cards.portfolio} />
-                        <ControlCard title="Gallery" desc="Immersive photo-cloud management." icon={Image} color="neon-blue" link="/admin/gallery-manager" isHidden={cards.gallery} />
+
                         <ControlCard title="Announcements" desc="Post updates and site news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
                         <ControlCard title="Blog" desc="Manage Concert Zone articles." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
                     </DashboardSection>

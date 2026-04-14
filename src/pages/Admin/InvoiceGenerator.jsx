@@ -10,11 +10,13 @@ import { storage } from '../../lib/firebase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
+import StudioDatePicker from '../../components/ui/StudioDatePicker';
+import { Loader } from 'lucide-react';
 
 const InvoiceGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addInvoice, updateInvoice, invoices } = useStore();
+    const { addInvoice, updateInvoice, invoices, uploadToCloudinary } = useStore();
     const invoiceRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(0.65);
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
@@ -217,13 +219,13 @@ const InvoiceGenerator = () => {
         if (!file) return;
         setGenerating(true);
         try {
-            const storageRef = ref(storage, `signatories/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            setFormData(prev => ({ ...prev, signatoryImage: url }));
+            const url = await uploadToCloudinary(file);
+            if (url) {
+                setFormData(prev => ({ ...prev, signatoryImage: url }));
+            }
         } catch (error) {
             console.error("Signatory Upload Error:", error);
-            alert("Failed to upload signature.");
+            alert("FAILED TO UPLOAD SIGNATURE.");
         } finally {
             setGenerating(false);
         }
@@ -263,19 +265,34 @@ const InvoiceGenerator = () => {
                 const canvas = await html2canvas(pageElements[i], {
                     scale: 2,
                     useCORS: true,
-                    logging: true, // Enable logging to debug if it fails
-                    backgroundColor: '#F3F4F6', // Changed from #E5E7EB to #F3F4F6
+                    logging: false,
+                    backgroundColor: '#F3F4F6',
                     width: 794,
                     height: 1123,
                     windowWidth: 794,
                     windowHeight: 1123,
-                    allowTaint: true,
+                    scrollX: 0,
+                    scrollY: 0,
                     onclone: (clonedDoc) => {
-                        const clonedPage = clonedDoc.querySelectorAll('.invoice-page-render')[i];
-                        if (clonedPage) {
-                            clonedPage.style.transform = 'none';
-                            clonedPage.style.boxShadow = 'none';
-                        }
+                        const style = clonedDoc.createElement('style');
+                        style.innerHTML = `
+                            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                            .invoice-page-render { 
+                                position: absolute !important; 
+                                top: 0 !important; 
+                                left: 0 !important; 
+                                margin: 0 !important; 
+                                transform: none !important;
+                                box-shadow: none !important;
+                                text-rendering: optimizeLegibility !important;
+                                -webkit-font-smoothing: antialiased !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                        
+                        clonedDoc.body.style.margin = '0';
+                        clonedDoc.body.style.padding = '0';
+                        clonedDoc.body.style.overflow = 'hidden';
                     }
                 });
                 
@@ -471,24 +488,24 @@ const InvoiceGenerator = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Company / Entity Name</label>
-                                    <Input value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="Organization Name" />
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">COMPANY / ENTITY NAME</label>
+                                    <Input value={formData.senderName} onChange={e => setFormData({ ...formData, senderName: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="ORGANIZATION NAME" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Authorized Contact</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">AUTHORIZED CONTACT</label>
                                     <Input value={formData.senderContact} onChange={e => setFormData({ ...formData, senderContact: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="+91 XXX XXX XXXX" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Business Email</label>
-                                    <Input value={formData.senderEmail} onChange={e => setFormData({ ...formData, senderEmail: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="admin@business.com" />
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">BUSINESS EMAIL</label>
+                                    <Input value={formData.senderEmail} onChange={e => setFormData({ ...formData, senderEmail: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="ADMIN@BUSINESS.COM" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PAN / Tax Identifier</label>
-                                    <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="Tax Registration ID" />
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PAN / TAX IDENTIFIER</label>
+                                    <Input value={formData.senderPan} onChange={e => setFormData({ ...formData, senderPan: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="TAX REGISTRATION ID" />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">GST Registration Number</label>
-                                    <Input value={formData.senderGst} onChange={e => setFormData({ ...formData, senderGst: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="Leave empty if not applicable" />
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">GST REGISTRATION NUMBER</label>
+                                    <Input value={formData.senderGst} onChange={e => setFormData({ ...formData, senderGst: e.target.value })} className="bg-black/50 border-white/5 rounded-xl h-12" placeholder="LEAVE EMPTY IF NOT APPLICABLE" />
                                 </div>
                             </div>
                         </Card>
@@ -519,16 +536,24 @@ const InvoiceGenerator = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Invoice ID</label>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">INVOICE ID</label>
                                     <Input value={formData.invoiceNumber} onChange={e => setFormData({ ...formData, invoiceNumber: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Invoice Date</label>
-                                    <Input type="date" value={formData.invoiceDate} onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">INVOICE DATE</label>
+                                    <StudioDatePicker 
+                                        value={formData.invoiceDate} 
+                                        onChange={val => setFormData({ ...formData, invoiceDate: val })}
+                                        className="h-12"
+                                    />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Due Date</label>
-                                    <Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">DUE DATE</label>
+                                    <StudioDatePicker 
+                                        value={formData.dueDate} 
+                                        onChange={val => setFormData({ ...formData, dueDate: val })}
+                                        className="h-12"
+                                    />
                                 </div>
                             </div>
                         </Card>
@@ -912,7 +937,7 @@ const InvoiceGenerator = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                    <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" />
+                                                    <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice #{formData.invoiceNumber} — Page {pageIdx + 1}</p>
                                                 </div>
                                             )}

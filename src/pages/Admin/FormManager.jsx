@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Share2, Bell, Eye, ClipboardList } from 'lucide-react';
+import { Plus, Edit, Trash2, Share2, Bell, Eye, ClipboardList, Pin, Sparkles, ArrowRight, Info, Calendar, MapPin, Megaphone } from 'lucide-react';
 import { useStore } from '../../lib/store';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import CommunityCard from '../../components/community/CommunityCard';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { cn } from '../../lib/utils';
 
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 
@@ -20,21 +22,21 @@ const FormManager = () => {
 
     const handlePushNotification = async (form) => {
         const announcement = {
-            title: `New Form: ${form.title}`,
+            title: `Form Access: ${form.title}`,
             date: new Date().toISOString().split('T')[0],
-            content: form.description || "Check out this new form!",
+            content: form.description || "YOUR PARTICIPATION IS REQUIRED. PARTICIPATE IN THIS FORM NOW.",
             isPinned: false,
             link: `/forms/${form.id}`,
-            image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+            image: form.image || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
         };
         await addAnnouncement(announcement);
         
         // Trigger Push Notification
         await notifyAllUsers(
-            `NEW COMMUNITY FORM: ${form.title.toUpperCase()}`,
-            form.description || "YOUR INTEL IS REQUIRED. PARTICIPATE IN THIS PULSE NOW.",
+            `FORM ACCESS: ${form.title.toUpperCase()}`,
+            form.description || "YOUR FEEDBACK IS REQUIRED. PARTICIPATE IN THIS FORM NOW.",
             `/forms/${form.id}`,
-            announcement.image
+            'form'
         );
         
         alert('Form pushed to announcements and notifications triggered!');
@@ -42,64 +44,108 @@ const FormManager = () => {
 
     const handleShareWhatsApp = (form) => {
         const link = `${window.location.origin}/forms/${form.id}`;
-        const text = `Check out this form: ${form.title} - ${link}`;
+        const text = `Take the form: ${form.title} - ${link}`;
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };
 
     return (
         <AdminCommunityHubLayout 
-            title="Form Management" 
-            description="Create and manage interactive pulses, surveys, and feedback loops."
+            title="Form Systems" 
+            description="Create and manage interactive surveys, feedback forms, and loops."
+            studioHeader={{
+                title: "FORM",
+                subtitle: "MANAGEMENT",
+                accentClass: "text-neon-pink"
+            }}
         >
-            <div className="space-y-6">
-                <div className="flex justify-end mb-6">
+            <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
+                {/* Mode Actions */}
+                <div className="flex justify-end mb-12">
                     <Link to="/admin/forms/create">
-                        <Button className="h-12 px-8 bg-neon-pink text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Google Form
+                        <Button className="h-14 px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(255,79,139,0.2)] hover:scale-105 transition-all outline-none border-none">
+                            <Plus className="mr-2" size={18} /> New Form
                         </Button>
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {forms.map((form) => (
-                        <Card key={form.id} className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] hover:border-neon-pink/30 hover:bg-zinc-900/60 transition-all duration-500 group">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="p-3 rounded-2xl bg-neon-pink/10 text-neon-pink border border-neon-pink/20 group-hover:scale-110 transition-transform duration-500">
-                                    <ClipboardList size={24} />
+
+                <div className="grid grid-cols-1 gap-6">
+                    {forms.map((item) => (
+                        <Card key={item.id} className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] hover:border-neon-pink/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,79,139,0.05)]">
+                            <div className="flex items-center gap-6 flex-1">
+                                {/* Mini Image Preview */}
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/5 shrink-0 hidden md:block">
+                                    <img src={item.image} alt="" className="w-full h-full object-cover opacity-50" />
                                 </div>
-                                <div className="flex gap-2">
-                                    <Link to={`/admin/forms/edit/${form.id}`}>
-                                        <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit size={16} /></button>
-                                    </Link>
-                                    <button onClick={() => handleDelete(form.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors"><Trash2 size={16} /></button>
+                                
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h3 className="text-xl font-black text-white uppercase italic tracking-tight">{item.title}</h3>
+                                        <div className="px-3 py-1 bg-neon-pink/10 border border-neon-pink/20 rounded-full text-[9px] font-black uppercase tracking-widest text-neon-pink">
+                                            Active
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+                                        <span className="flex items-center gap-1.5"><Calendar size={12} className="text-neon-pink" /> {item.date || 'PERPETUAL'}</span>
+                                        <span className="flex items-center gap-1.5"><ClipboardList size={12} className="text-neon-pink" /> SURVEY</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <h3 className="text-xl font-black font-heading text-white mb-3 tracking-tight group-hover:text-neon-pink transition-colors truncate">{form.title}</h3>
-                            <p className="text-gray-500 text-xs font-medium line-clamp-2 mb-8 leading-relaxed italic">"{form.description}"</p>
+                            <div className="flex items-center gap-3 self-end md:self-center">
+                                <div className="flex gap-2 mr-4 pr-4 border-r border-white/5">
+                                    <button 
+                                        onClick={() => handlePushNotification(item)}
+                                        className="px-5 py-2.5 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-yellow-500 hover:text-black transition-all flex items-center gap-2 group/btn"
+                                        title="Signal Boost"
+                                    >
+                                        <Megaphone size={14} className="group-hover/btn:rotate-12 transition-transform" />
+                                        Promote
+                                    </button>
+                                    <button 
+                                        onClick={() => handleShareWhatsApp(item)}
+                                        className="p-2.5 bg-neon-pink/10 text-neon-pink border border-neon-pink/20 rounded-xl hover:bg-neon-pink hover:text-black transition-all"
+                                        title="Share Link"
+                                    >
+                                        <Share2 size={16} />
+                                    </button>
+                                </div>
 
-                            <div className="flex flex-wrap gap-2 pt-6 border-t border-white/5">
-                                <Button size="sm" variant="outline" onClick={() => handlePushNotification(form)} className="flex-1 py-4 border-white/10 hover:border-yellow-400/30 hover:text-yellow-400">
-                                    <Bell className="h-4 w-4 mr-2" /> Push
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleShareWhatsApp(form)} className="flex-1 py-4 border-white/10 hover:border-green-400/30 hover:text-green-400">
-                                    <Share2 className="h-4 w-4 mr-2" /> WhatsApp
-                                </Button>
-                                <Link to={`/forms/${form.id}`} target="_blank" className="flex-1">
-                                    <Button size="sm" variant="secondary" className="w-full py-4">
-                                        <Eye className="h-4 w-4 mr-2" /> View
-                                    </Button>
+                                <Link to={`/admin/forms/edit/${item.id}`}>
+                                    <button className="px-5 py-2.5 bg-white/5 border border-white/10 text-[9px] font-black text-white hover:text-black hover:bg-white uppercase tracking-widest rounded-xl transition-all">
+                                        Edit Form
+                                    </button>
                                 </Link>
+                                
+                                <Link to={`/forms/${item.id}`} target="_blank">
+                                    <button 
+                                        className="p-2.5 bg-white/5 border border-white/10 text-gray-500 hover:text-white rounded-xl transition-all"
+                                        title="View Live"
+                                    >
+                                        <Eye size={16} />
+                                    </button>
+                                </Link>
+                                
+                                <button 
+                                    onClick={() => handleDelete(item.id)}
+                                    className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-black rounded-xl transition-all"
+                                    title="Delete"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         </Card>
                     ))}
 
                     {forms.length === 0 && (
-                        <div className="col-span-full text-center py-20 text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                            <p className="font-bold uppercase tracking-widest text-xs">No active forms detected</p>
-                            <Link to="/admin/forms/create" className="text-neon-pink hover:underline underline-offset-4 mt-4 inline-block font-black">Initialize First Pulse</Link>
+                        <div className="col-span-full py-16 text-center text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                            <p className="mb-2">No active forms available.</p>
+                            <Link to="/admin/forms/create">
+                                <Button variant="link" className="text-neon-pink p-0 h-auto font-black uppercase tracking-widest text-[10px]">
+                                    Create first form
+                                </Button>
+                            </Link>
                         </div>
                     )}
                 </div>
@@ -109,4 +155,3 @@ const FormManager = () => {
 };
 
 export default FormManager;
-

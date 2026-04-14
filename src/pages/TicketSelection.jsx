@@ -19,7 +19,7 @@ const TicketSelection = () => {
     const { upcomingEvents, addTicketOrder, paymentDetails, user } = useStore();
     
     const [event, setEvent] = useState(null);
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(1); // 0: Layout, 1: Selection, 1.5: Briefing, 2: Details, 3: Payment
     const [loading, setLoading] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -75,10 +75,30 @@ const TicketSelection = () => {
         : formData.count;
 
     const updateCart = (catId, delta) => {
+        const cat = event.ticketCategories.find(c => c.id === catId);
+        const currentCount = cart[catId] || 0;
+        const newCount = currentCount + delta;
+
+        if (newCount < 0) return;
+        
+        // Fix: Use cat.perUserLimit or fallback to event-level perUserLimit
+        const effectiveLimit = cat.perUserLimit || event.perUserLimit;
+        if (effectiveLimit && newCount > effectiveLimit) return;
+        
         setCart(prev => ({
             ...prev,
-            [catId]: Math.max(0, (prev[catId] || 0) + delta)
+            [catId]: newCount
         }));
+    };
+
+    // Helper to format values (e.g., adding commas for numbers)
+    const formatResponseValue = (val) => {
+        if (!val) return '';
+        // If it looks like a number, format it with commas
+        if (/^\d+$/.test(val)) {
+            return Number(val).toLocaleString();
+        }
+        return val;
     };
 
     const handleNext = (e) => {
@@ -86,16 +106,23 @@ const TicketSelection = () => {
         if (step === 0) setStep(1);
         else if (step === 1) {
             if (cartTotalCount === 0) return alert("Please select at least one ticket.");
+            setStep(1.5);
+        } else if (step === 1.5) {
             setStep(2);
         } else if (step === 2) {
             if (!formData.name || !formData.email || !formData.phone) return alert("Please fill all details.");
-            setStep(3);
+            if (totalAmount === 0) {
+                // Skip payment for free tickets
+                handleSubmit();
+            } else {
+                setStep(3);
+            }
         }
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!paymentRef) return alert("Please enter the UTR/Reference No.");
+        if (e) e.preventDefault();
+        if (totalAmount > 0 && !paymentRef) return alert("Please enter the UTR/Reference No.");
 
         setLoading(true);
         try {
@@ -117,8 +144,8 @@ const TicketSelection = () => {
                 userId: user?.uid || null,
                 items: items,
                 totalAmount,
-                paymentRef,
-                status: 'pending'
+                paymentRef: totalAmount === 0 ? 'FREE_ENTRY' : paymentRef,
+                status: totalAmount === 0 ? 'approved' : 'pending'
             });
 
             await notifyAdmins(
@@ -257,7 +284,7 @@ const TicketSelection = () => {
                     <div className="bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         {/* Progress Bar */}
                         <div className="h-1 bg-white/5 w-full flex">
-                            <div className="h-full bg-neon-blue transition-all duration-500" style={{ width: `${(step / 3) * 100}%` }}></div>
+                            <div className="h-full bg-neon-blue transition-all duration-500" style={{ width: `${(step === 1.5 ? 45 : (step / 3) * 100)}%` }}></div>
                         </div>
 
                         <div className="p-8 md:p-12">
@@ -270,6 +297,7 @@ const TicketSelection = () => {
                                     <h2 className="text-3xl font-black font-heading tracking-tighter italic">
                                         {step === 0 && 'Environmental Scan.'}
                                         {step === 1 && 'Tier Selection.'}
+                                        {step === 1.5 && 'Mission Briefing.'}
                                         {step === 2 && 'Identity Verification.'}
                                         {step === 3 && 'Financial Protocol.'}
                                     </h2>
@@ -296,35 +324,46 @@ const TicketSelection = () => {
                                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {hasCategories ? (
                                         <div className="space-y-4">
-                                            {event.ticketCategories.map(cat => (
-                                                <div key={cat.id} className="p-6 rounded-[2rem] bg-black/40 border border-white/5 hover:border-neon-blue/30 transition-all group">
+                                            {event.ticketCategories.map(cat => {
+                                                const isSoldOut = cat.limit !== null && cat.sold >= cat.limit;
+                                                return (
+                                                <div key={cat.id} className={cn(
+                                                    "p-6 rounded-[2rem] bg-black/40 border transition-all group",
+                                                    isSoldOut ? "opacity-50 border-white/5 grayscale" : "border-white/5 hover:border-neon-blue/30"
+                                                )}>
                                                     <div className="flex justify-between items-start mb-6">
                                                         <div>
                                                             <h3 className="text-lg font-black italic tracking-tight mb-1">{cat.name}</h3>
                                                             {cat.description && <p className="text-xs text-gray-500 font-medium leading-relaxed">{cat.description}</p>}
                                                         </div>
-                                                        <p className="text-xl font-black text-neon-green italic">₹{cat.price.toLocaleString()}</p>
+                                                        <p className="text-xl font-black text-neon-green italic">
+                                                            {isSoldOut ? 'Sold Out' : `₹${cat.price.toLocaleString()}`}
+                                                        </p>
                                                     </div>
                                                     <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Select Position</p>
+                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                            {isSoldOut ? 'Archive' : 'Select Position'}
+                                                        </p>
                                                         <div className="flex items-center gap-4">
                                                             <button
+                                                                disabled={isSoldOut}
                                                                 onClick={() => updateCart(cat.id, -1)}
-                                                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0"
                                                             >
                                                                 <Minus size={16} />
                                                             </button>
                                                             <span className="w-6 text-center text-lg font-black">{cart[cat.id] || 0}</span>
                                                             <button
+                                                                disabled={isSoldOut || (cat.perUserLimit !== null && (cart[cat.id] || 0) >= cat.perUserLimit)}
                                                                 onClick={() => updateCart(cat.id, 1)}
-                                                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-neon-blue text-black hover:scale-110 shadow-lg shadow-neon-blue/20 transition-all"
+                                                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-neon-blue text-black hover:scale-110 shadow-lg shadow-neon-blue/20 transition-all disabled:opacity-0"
                                                             >
                                                                 <Plus size={16} />
                                                             </button>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )})}
                                         </div>
                                     ) : (
                                         <div className="p-10 rounded-[2.5rem] bg-black/40 border border-white/5 text-center relative overflow-hidden group">
@@ -350,7 +389,12 @@ const TicketSelection = () => {
                                                 </button>
                                                 <span className="text-5xl font-black font-heading tracking-tighter italic w-16">{formData.count}</span>
                                                 <button
-                                                    onClick={() => setFormData(p => ({ ...p, count: Math.min(10, p.count + 1) }))}
+                                                    onClick={() => {
+                                                        const limit = event.perUserLimit || 10;
+                                                        if (formData.count < limit) {
+                                                            setFormData(p => ({ ...p, count: p.count + 1 }));
+                                                        }
+                                                    }}
                                                     className="w-14 h-14 rounded-2xl bg-neon-blue text-black flex items-center justify-center hover:scale-110 transition-all shadow-xl shadow-neon-blue/20"
                                                 >
                                                     <Plus size={20} />
@@ -380,6 +424,43 @@ const TicketSelection = () => {
                                 </div>
                             )}
 
+                             {/* Step 1.5: Briefing */}
+                            {step === 1.5 && (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="space-y-6">
+                                        <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-4">
+                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest flex items-center gap-2">
+                                                <Info size={14} /> Operational Directive
+                                            </p>
+                                            <p className="text-sm text-gray-300 leading-relaxed font-medium whitespace-pre-wrap">
+                                                {event.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="p-8 rounded-[2rem] bg-neon-blue/5 border border-neon-blue/10 space-y-4">
+                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest flex items-center gap-2">
+                                                <ShieldCheck size={14} /> Critical Instructions
+                                            </p>
+                                            <p className="text-sm text-white leading-relaxed font-bold whitespace-pre-wrap">
+                                                {event.instructions || "No special instructions provided. Proceed with standard protocol."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4">
+                                        <Button 
+                                            onClick={handleNext}
+                                            className="h-16 w-full bg-white text-black font-black uppercase tracking-widest text-xs hover:scale-[1.02] shadow-2xl"
+                                        >
+                                            I Understand & Accept <ArrowRight size={16} className="ml-2" />
+                                        </Button>
+                                        <button onClick={() => setStep(1)} className="w-full text-center text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-all">
+                                            Return to Selection
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Step 2: Details */}
                             {step === 2 && (
                                 <form onSubmit={handleNext} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -400,10 +481,10 @@ const TicketSelection = () => {
 
                                     <div className="pt-6 space-y-4">
                                         <Button type="submit" className="h-16 w-full bg-white text-black font-black uppercase tracking-widest text-xs hover:scale-[1.02] shadow-2xl">
-                                            Confirm Identity & Pay ₹{totalAmount.toLocaleString()}
+                                            Confirm Identity & {totalAmount === 0 ? 'Claim Free Entry' : `Pay ₹${totalAmount.toLocaleString()}`}
                                         </Button>
-                                        <button type="button" onClick={() => setStep(1)} className="w-full text-center text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-all">
-                                            Re-adjust Selection
+                                        <button type="button" onClick={() => setStep(1.5)} className="w-full text-center text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-all">
+                                            Review Mission Briefing
                                         </button>
                                     </div>
                                 </form>

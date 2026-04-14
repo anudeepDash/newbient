@@ -5,7 +5,7 @@ import { useStore } from './lib/store'; // Import store
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import Layout from './components/Layout';
 import Home from './pages/Home';
-import MediaGallery from './pages/MediaGallery';
+
 import ConcertZone from './pages/ConcertZone';
 import Contact from './pages/Contact';
 import Invoice from './pages/Invoice';
@@ -16,7 +16,7 @@ import AnnouncementsManager from './pages/Admin/AnnouncementsManager';
 import ConcertManager from './pages/Admin/ConcertManager';
 import SiteSettings from './pages/Admin/SiteSettings';
 import MessageManager from './pages/Admin/MessageManager';
-import GalleryManager from './pages/Admin/GalleryManager';
+
 import ProposalManagement from './pages/Admin/ProposalManagement';
 import ProposalGenerator from './pages/Admin/ProposalGenerator';
 import Proposal from './pages/Proposal';
@@ -26,6 +26,7 @@ import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
 import GuestlistManager from './pages/Admin/GuestlistManager';
 import CommunityJoin from './pages/CommunityJoin';
+import GuestlistJoin from './pages/GuestlistJoin';
 import CreatorJoin from './pages/CreatorJoin';
 import CreatorDashboard from './pages/CreatorDashboard';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
@@ -50,6 +51,7 @@ import ConcertZoneBlog from './pages/ConcertZoneBlog'; // New Blog
 import BlogPostDetail from './pages/BlogPostDetail'; // New Post
 import BlogManager from './pages/Admin/BlogManager'; // New Admin Blog
 import BlogPostEditor from './pages/Admin/BlogPostEditor'; // New Editor
+import CampaignPublicView from './pages/CampaignPublicView'; // New Public View
 
 function App() {
   const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
@@ -85,12 +87,12 @@ function App() {
 
     return (
     <Router>
-      {/* <LoadingScreen isVisible={loading || !authInitialized} /> */}
+      <LoadingScreen isVisible={loading || !authInitialized} />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
-          <Route path="gallery" element={<MaintenanceGuard isPage featureId="gallery"><MediaGallery /></MaintenanceGuard>} />
+
           <Route path="concertzone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZone /></MaintenanceGuard>} />
           <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
           <Route path="invoice/:id" element={<Invoice />} />
@@ -99,6 +101,7 @@ function App() {
           <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
+          <Route path="guestlist/join/:id" element={<GuestlistJoin />} />
           <Route path="ticket/:bookingRef" element={<TicketViewer />} />
           <Route path="giveaway/:slug" element={<GiveawayPage />} />
           
@@ -122,7 +125,7 @@ function App() {
           <Route path="admin/proposals" element={<AdminGuard><ProposalManagement /></AdminGuard>} />
           <Route path="admin/create-proposal" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
           <Route path="admin/edit-proposal/:id" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
-          <Route path="admin/gallery-manager" element={<AdminGuard><MaintenanceGuard featureId="gallery_manager"><GalleryManager /></MaintenanceGuard></AdminGuard>} />
+
           <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/guestlists" element={<AdminGuard><GuestlistManager /></AdminGuard>} />
 
@@ -139,6 +142,7 @@ function App() {
           <Route path="admin/blog/create" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
           <Route path="admin/blog/edit/:id" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
 
+          <Route path="campaign/:id" element={<CampaignPublicView />} />
           <Route path="ticket-selection" element={<TicketSelection />} />
           {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
           <Route path="auth/action" element={<ActionHandler />} />

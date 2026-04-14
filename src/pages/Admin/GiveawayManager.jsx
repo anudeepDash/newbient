@@ -71,15 +71,15 @@ const GiveawayManager = () => {
         }
 
         if (winner) {
-            const confirmCrown = window.confirm(`🏆 WEIGHT-BASED WINNER SELECTED!\n\nName: ${winner.name}\nScore: ${winner.entryScore} points\n\nWould you like to crown this winner and close the giveaway?`);
+            const confirmWinner = window.confirm(`🏆 WEIGHT-BASED WINNER SELECTED!\n\nName: ${winner.name}\nScore: ${winner.entryScore} points\n\nWould you like to approve this winner and close the giveaway?`);
             
-            if (confirmCrown) {
+            if (confirmWinner) {
                 // Crown the winner
                 // Assuming updateGiveawayEntry exists and is imported/available
                 // await updateGiveawayEntry(winner.id, { isWinner: true, winnerReward: true }); 
                 // Close the giveaway
                 await handleCloseGiveaway(campaignId);
-                alert(`🎊 ${winner.name} HAS BEEN CROWNED AND GIVEAWAY CLOSED!`);
+                alert(`🎊 ${winner.name} HAS BEEN SELECTED AND GIVEAWAY CLOSED!`);
             }
         }
     };
@@ -213,13 +213,14 @@ const GiveawayManager = () => {
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic pr-4">
-                            GIVEAWAY <span className="text-purple-500">REGISTRY.</span>
+                        <div className="flex items-center gap-3">
+                            <Sparkles size={16} className="text-purple-500" />
+                            <span className="text-purple-500 text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                        </div>
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
+                            GIVEAWAY <span className="text-purple-500">MANAGEMENT.</span>
                         </h1>
                     </div>
                     
@@ -235,7 +236,7 @@ const GiveawayManager = () => {
                             });
                             setIsCreating(true);
                         }} 
-                        className="h-14 px-8 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+                        className="h-14 px-10 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
                     >
                         <Plus className="mr-2 h-4 w-4" /> New Giveaway
                     </Button>
@@ -328,14 +329,14 @@ const GiveawayManager = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={async () => {
-                                            if (window.confirm(`Transmit direct push signal for "${giveaway.name}"?`)) {
+                                            if (window.confirm(`Send push notification for "${giveaway.name}"?`)) {
                                                 await notifyAllUsers(
                                                     `New Giveaway: ${giveaway.name}`,
                                                     giveaway.description,
                                                     `/giveaways/${giveaway.slug}`,
                                                     giveaway.posterUrl
                                                 );
-                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                alert("Notification sent successfully.");
                                             }
                                         }}
                                         className="p-2.5 bg-neon-blue/10 rounded-xl text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
@@ -429,10 +430,10 @@ const GiveawayManager = () => {
                         >
                             <div className="flex items-center justify-between p-8 border-b border-white/5">
                                 <div className="space-y-1">
-                                    <h2 className="text-3xl font-black font-heading tracking-tight uppercase italic text-white">
-                                        {editingId ? 'EDIT' : 'NEW'} <span className="text-purple-500">GIVEAWAY.</span>
+                                    <h2 className="text-3xl font-black font-heading tracking-tight uppercase italic text-white text-4xl">
+                                        {editingId ? 'EDIT' : 'CREATE'} <span className="text-purple-500">GIVEAWAY.</span>
                                     </h2>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CONFIGURE CAMPAIGN PARAMETERS</p>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">CONFIGURE GIVEAWAY PARAMETERS</p>
                                 </div>
                                 <button onClick={() => setIsCreating(false)} className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
                                     <X size={20} />
@@ -472,13 +473,13 @@ const GiveawayManager = () => {
 
                                     {/* Section 2: Details */}
                                     <div className="space-y-3">
-                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Narrative</label>
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Giveaway Description</label>
                                         <textarea
                                             required
                                             value={formData.description}
                                             onChange={e => setFormData({ ...formData, description: e.target.value })}
                                             className="w-full bg-black/50 border border-white/5 rounded-2xl p-6 text-sm font-medium text-gray-300 focus:outline-none focus:border-purple-500 transition-all h-32 resize-none"
-                                            placeholder="TELL THE STORY..."
+                                            placeholder="DESCRIBE THE GIVEAWAY..."
                                         />
                                     </div>
 
@@ -498,8 +499,8 @@ const GiveawayManager = () => {
                                     <div className="space-y-8">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-1">MISSION TASKS</h3>
-                                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">DRIVE ENGAGEMENT THROUGH CUSTOM CHALLENGES</p>
+                                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-1">GIVEAWAY TASKS</h3>
+                                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">DRIVE ENGAGEMENT THROUGH CUSTOM TASKS</p>
                                             </div>
                                             <Button 
                                                 type="button" 
@@ -644,7 +645,7 @@ const GiveawayManager = () => {
                                             {formData.tasks.length === 0 && (
                                                 <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-white/5 rounded-[3rem] text-gray-600 space-y-4">
                                                     <Plus size={48} className="opacity-20" />
-                                                    <p className="text-[10px] font-black uppercase tracking-widest">No Missions Configured</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest">No Tasks Configured</p>
                                                 </div>
                                             )}
                                         </div>

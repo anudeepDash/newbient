@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h3>Image 1 (Original Artsy)</h3>
+    <img id="img1" src="file:///C:/Users/anude/.gemini/antigravity/brain/70af8ccd-6cba-4cab-b818-f025ca0f8476/community_cards_artsy_1775224555951.png" onload="report1()" style="max-height: 300px;" />
+    <div id="out1">Loading...</div>
+
+    <h3>Image 2 (Screenshot provided just now)</h3>
+    <img id="img2" src="file:///C:/Users/anude/.gemini/antigravity/brain/70af8ccd-6cba-4cab-b818-f025ca0f8476/media__1775227436200.png" onload="report2()" style="max-height: 300px;" />
+    <div id="out2">Loading...</div>
+
+    <script>
+        function report1() {
+            var img = document.getElementById('img1');
+            document.getElementById('out1').innerText = "Dimensions: " + img.naturalWidth + "w x " + img.naturalHeight + "h | Ratio: " + (img.naturalWidth / img.naturalHeight);
+        }
+        function report2() {
+            var img = document.getElementById('img2');
+            document.getElementById('out2').innerText = "Dimensions: " + img.naturalWidth + "w x " + img.naturalHeight + "h | Ratio: " + (img.naturalWidth / img.naturalHeight);
+        }
+    </script>
+</body>
+</html>

@@ -245,9 +245,35 @@ const ProposalGenerator = () => {
                 const canvas = await html2canvas(pageElements[i], {
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true,
                     logging: false,
-                    backgroundColor: '#F3F4F6'
+                    backgroundColor: '#F3F4F6',
+                    width: 794,
+                    height: 1123,
+                    windowWidth: 794,
+                    windowHeight: 1123,
+                    scrollX: 0,
+                    scrollY: 0,
+                    onclone: (clonedDoc) => {
+                        const style = clonedDoc.createElement('style');
+                        style.innerHTML = `
+                            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                            .proposal-page-render { 
+                                position: absolute !important; 
+                                top: 0 !important; 
+                                left: 0 !important; 
+                                margin: 0 !important; 
+                                transform: none !important;
+                                box-shadow: none !important;
+                                text-rendering: optimizeLegibility !important;
+                                -webkit-font-smoothing: antialiased !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                        
+                        clonedDoc.body.style.margin = '0';
+                        clonedDoc.body.style.padding = '0';
+                        clonedDoc.body.style.overflow = 'hidden';
+                    }
                 });
                 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -684,7 +710,7 @@ const ProposalGenerator = () => {
                                             {isFirstPage ? (
                                                 <div className="flex justify-between items-start mb-10 relative z-10">
                                                     <div className="flex items-center gap-4">
-                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" />
+                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" crossOrigin="anonymous" />
                                                     </div>
                                                     <div className="text-right">
                                                         <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.proposalNumber}</h2>
@@ -693,7 +719,7 @@ const ProposalGenerator = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                    <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" />
+                                                    <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Proposal #{formData.proposalNumber} — Page {pageIdx + 1}</p>
                                                 </div>
                                             )}
@@ -847,12 +873,14 @@ const ProposalGenerator = () => {
                                                                             <img
                                                                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${totalAmount}&cu=INR`)}`}
                                                                                 alt="Payment QR"
+                                                                                crossOrigin="anonymous"
                                                                                 className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
                                                                             />
                                                                         ) : formData.customQrImage ? (
                                                                             <img
                                                                                 src={formData.customQrImage}
                                                                                 alt="Custom QR"
+                                                                                crossOrigin="anonymous"
                                                                                 className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
                                                                             />
                                                                         ) : (
@@ -875,7 +903,7 @@ const ProposalGenerator = () => {
                                                                         )}
                                                                         <div className="flex flex-col items-end">
                                                                             {formData.showSignatory === 'image' && formData.signatoryImage ? (
-                                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" />
+                                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                                             ) : formData.showSignatory === 'text' ? (
                                                                                 <div className="h-16 flex items-end justify-center">
                                                                                     <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{formData.senderName || 'Authorized Signatory'}</p>
