@@ -1,9 +1,32 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment } from 'firebase/firestore';
 import { sendBookingConfirmation } from './email';
 
 export const useStore = create((set, get) => ({
+    // ... existing state ...
+    
+    // Centralized Cloudinary Upload Utility
+    uploadToCloudinary: async (file) => {
+        if (!file) return null;
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "maw1e4ud");
+        data.append("cloud_name", "dgtalrz4n");
+
+        try {
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { 
+                method: "POST", 
+                body: data 
+            });
+            if (!res.ok) throw new Error("Upload failed");
+            const uploadedImage = await res.json();
+            return uploadedImage.secure_url;
+        } catch (error) {
+            console.error("Cloudinary Upload Error:", error);
+            throw new Error("Asset uplink failed. Please check connection.");
+        }
+    },
     announcements: [],
     concerts: [],
     portfolio: [],
@@ -12,6 +35,7 @@ export const useStore = create((set, get) => ({
     upcomingEvents: [],
     messages: [], // New state
     guestlists: [], // New state
+    volunteerGigs: [], // New state
     ticketOrders: [], // New state
     proposals: [], // New Proposal Generator state
     creators: [], // Influencer Marketing
@@ -53,9 +77,17 @@ export const useStore = create((set, get) => ({
                     return { ...d, id: doc.id };
                 });
 
-                // Sort by 'order' field if available (ascending)
-                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs') {
-                    data.sort((a, b) => (a.order || 0) - (b.order || 0));
+                // Sort by 'isPinned' (descending) first, then by 'order' or 'createdAt'
+                if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs' || colName === 'guestlists' || colName === 'forms') {
+                    data.sort((a, b) => {
+                        if (a.isPinned !== b.isPinned) {
+                            return b.isPinned ? -1 : 1;
+                        }
+                        if (colName === 'portfolio' || colName === 'upcoming_events' || colName === 'announcements' || colName === 'volunteer_gigs') {
+                            return (a.order || 0) - (b.order || 0);
+                        }
+                        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                    });
                 }
 
                 // Sort invoices by createdAt (descending) - Newest First
@@ -95,7 +127,7 @@ export const useStore = create((set, get) => ({
         const unsub3 = sub('portfolio', 'portfolio');
         const unsub4 = sub('invoices', 'invoices');
         const unsub5 = sub('forms', 'forms');
-        const unsub6 = sub('gallery', 'galleryImages');
+
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
         const unsub8 = sub('upcoming_events', 'upcomingEvents');
         const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
@@ -171,7 +203,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins();
         };
     },
@@ -203,39 +235,68 @@ export const useStore = create((set, get) => ({
         const currentItems = get().upcomingEvents;
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
 
-        const docRef = await addDoc(collection(db, 'upcoming_events'), {
+        const cleanedEvent = Object.entries({
             ...event,
             category: event.category || '', // Added category
             order: maxOrder + 1
-        });
+        }).reduce((acc, [k, v]) => {
+            if (v !== undefined) acc[k] = v;
+            return acc;
+        }, {});
+
+        // Safely remove id if it exists
+        delete cleanedEvent.id;
+
+        const docRef = await addDoc(collection(db, 'upcoming_events'), cleanedEvent);
 
         if (alsoAddToAnnouncements) {
-            await addDoc(collection(db, 'announcements'), {
+             const announcementData = {
                 title: event.title || 'New Upcoming Event',
                 content: event.description || `Check out our regular event on ${event.date}!`,
-                date: event.date || new Date().toISOString().split('T')[0],
+                date: event.date?.split('T')[0] || new Date().toISOString().split('T')[0],
                 image: event.image || '',
                 isPinned: false,
                 linkedEventId: docRef.id
-            });
+            };
+            const cleanedAnnouncement = Object.entries(announcementData).reduce((acc, [k, v]) => {
+                if (v !== undefined) acc[k] = v;
+                return acc;
+            }, {});
+            await addDoc(collection(db, 'announcements'), cleanedAnnouncement);
         }
+
+        return docRef.id;
     },
     updateUpcomingEvent: async (id, updates) => {
-        await updateDoc(doc(db, 'upcoming_events', id), {
+        // Remove undefined values to prevent Firestore errors
+        const cleanedUpdates = Object.entries({
             ...updates,
             category: updates.category || '' // Ensure category is updated
-        });
+        }).reduce((acc, [k, v]) => {
+            if (v !== undefined) acc[k] = v;
+            return acc;
+        }, {});
+
+        // Safely remove id if it exists in updates to avoid rewriting document id
+        delete cleanedUpdates.id;
+
+        await updateDoc(doc(db, 'upcoming_events', id), cleanedUpdates);
 
         // Sync mirrored Announcement
         const announcementQ = query(collection(db, 'announcements'), where('linkedEventId', '==', id));
         const announcementSnap = await getDocs(announcementQ);
         announcementSnap.forEach(async (d) => {
-            await updateDoc(doc(db, 'announcements', d.id), {
+            const announcementUpdates = {
                 title: updates.title,
                 content: updates.description,
                 image: updates.image,
                 date: updates.date?.split('T')[0] || ''
-            });
+            };
+            const cleanedAnnouncements = Object.entries(announcementUpdates).reduce((acc, [k, v]) => {
+                if (v !== undefined) acc[k] = v;
+                return acc;
+            }, {});
+            await updateDoc(doc(db, 'announcements', d.id), cleanedAnnouncements);
         });
     },
     deleteUpcomingEvent: async (id) => {
@@ -303,7 +364,7 @@ export const useStore = create((set, get) => ({
         for (const gig of gigsToArchive) {
             await addPortfolioItem({
                 title: gig.title,
-                image: '', // Community items might not have a dedicated card image
+                image: gig.image || '', // include custom image if provided
                 category: defaultCategory,
                 highlightUrl: '',
                 date: gig.date || (gig.dates && gig.dates.length > 0 ? gig.dates[0] : null)
@@ -325,7 +386,7 @@ export const useStore = create((set, get) => ({
         for (const gl of guestlistsToArchive) {
             await addPortfolioItem({
                 title: gl.title,
-                image: '',
+                image: gl.image || '',
                 category: defaultCategory,
                 highlightUrl: '',
                 date: gl.date
@@ -343,7 +404,7 @@ export const useStore = create((set, get) => ({
         for (const form of formsToArchive) {
             await addPortfolioItem({
                 title: form.title,
-                image: '',
+                image: form.image || '',
                 category: defaultCategory,
                 highlightUrl: '',
                 date: null // Forms usually don't have event dates
@@ -494,13 +555,7 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'forms', id));
     },
 
-    // Gallery (Moved to DB)
-    addGalleryImage: async (image) => {
-        await addDoc(collection(db, 'gallery'), image);
-    },
-    deleteGalleryImage: async (id) => {
-        await deleteDoc(doc(db, 'gallery', id));
-    },
+
 
     // Volunteer Gigs
     addVolunteerGig: async (gig) => {
@@ -523,13 +578,71 @@ export const useStore = create((set, get) => ({
 
     // Guestlists
     addGuestlist: async (guestlist) => {
-        await addDoc(collection(db, 'guestlists'), { ...guestlist, createdAt: new Date().toISOString() });
+        const docRef = await addDoc(collection(db, 'guestlists'), { ...guestlist, createdAt: new Date().toISOString() });
+        return docRef.id;
+    },
+    duplicateGuestlist: async (id) => {
+        const { guestlists, addGuestlist } = get();
+        const original = guestlists.find(gl => gl.id === id);
+        if (!original) throw new Error("Guestlist not found");
+
+        const { id: _, createdAt: __, ...duplicateData } = original;
+        return await addGuestlist({
+            ...duplicateData,
+            title: `${original.title} (COPY)`,
+            status: 'Open'
+        });
+    },
+    demoteToGuestlist: async (upcomingEventId) => {
+        const { upcomingEvents, deleteUpcomingEvent, updateGuestlist } = get();
+        const event = upcomingEvents.find(e => e.id === upcomingEventId);
+        if (!event) throw new Error("Event not found");
+
+        // If it was linked to a guestlist, we might want to ensure that guestlist is 'Open' again
+        if (event.linkedGuestlistId) {
+            await updateGuestlist(event.linkedGuestlistId, { status: 'Open' });
+        }
+
+        await deleteUpcomingEvent(upcomingEventId);
     },
     updateGuestlist: async (id, updates) => {
-        await updateDoc(doc(db, 'guestlists', id), updates);
+        const docRef = doc(db, 'guestlists', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            await updateDoc(docRef, updates);
+        } else {
+            console.warn(`[Store] Attempted to update non-existent guestlist: ${id}`);
+        }
     },
     deleteGuestlist: async (id) => {
         await deleteDoc(doc(db, 'guestlists', id));
+    },
+
+    addGuestlistEntry: async (id, entry) => {
+        const docRef = doc(db, 'guestlists', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            console.error(`[Store] Guestlist ${id} does not exist. Aborting entry.`);
+            throw new Error("Guestlist no longer active.");
+        }
+
+        // 1. Add the entry to sub-collection
+        await addDoc(collection(db, 'guestlists', id, 'entries'), {
+            ...entry,
+            createdAt: new Date().toISOString()
+        });
+
+        // 2. Increment currentSpots on the parent document
+        await updateDoc(docRef, {
+            currentSpots: increment(entry.guestsCount || 1)
+        });
+    },
+    markGuestlistAttendance: async (id, entryId, attended) => {
+        await updateDoc(doc(db, 'guestlists', id, 'entries', entryId), {
+            attended,
+            attendedAt: attended ? new Date().toISOString() : null
+        });
     },
 
     // Messages
@@ -555,7 +668,9 @@ export const useStore = create((set, get) => ({
     addCampaign: async (campaign) => {
         await addDoc(collection(db, 'campaigns'), {
             ...campaign,
-            tasks: [], // Store tasks directly in campaign structure for now
+            minInstagramFollowers: campaign.minInstagramFollowers || 0,
+            thumbnail: campaign.thumbnail || '',
+            tasks: campaign.tasks || [], // Store tasks directly in campaign structure for now
             createdAt: new Date().toISOString()
         });
     },
@@ -564,6 +679,65 @@ export const useStore = create((set, get) => ({
     },
     deleteCampaign: async (id) => {
         await deleteDoc(doc(db, 'campaigns', id));
+    },
+
+    // Task Submission & Review (Dynamic Task System)
+    submitTaskProof: async (campaignId, taskId, creatorUid, { contentLink, proofUrl }) => {
+        const { campaigns } = get();
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) throw new Error("Campaign not found");
+
+        const updatedTasks = campaign.tasks.map(t => {
+            if (t.id === taskId) {
+                const submissions = t.submissions || {};
+                submissions[creatorUid] = {
+                    status: 'submitted',
+                    contentLink: contentLink || '',
+                    proofUrl: proofUrl || '',
+                    submittedAt: new Date().toISOString(),
+                    reviewedAt: null,
+                    rejectionReason: ''
+                };
+                // Also add to legacy completedBy for backward compat
+                const completedBy = t.completedBy || [];
+                if (!completedBy.includes(creatorUid)) {
+                    return { ...t, submissions, completedBy: [...completedBy, creatorUid] };
+                }
+                return { ...t, submissions };
+            }
+            return t;
+        });
+        await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
+    },
+
+    reviewTaskSubmission: async (campaignId, taskId, creatorUid, status, rejectionReason = '') => {
+        const { campaigns } = get();
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) throw new Error("Campaign not found");
+
+        const updatedTasks = campaign.tasks.map(t => {
+            if (t.id === taskId) {
+                const submissions = t.submissions || {};
+                if (submissions[creatorUid]) {
+                    submissions[creatorUid] = {
+                        ...submissions[creatorUid],
+                        status,
+                        rejectionReason: status === 'rejected' ? rejectionReason : '',
+                        reviewedAt: new Date().toISOString()
+                    };
+                }
+                // Sync with legacy arrays
+                const verifiedBy = t.verifiedBy || [];
+                if (status === 'approved' && !verifiedBy.includes(creatorUid)) {
+                    return { ...t, submissions, verifiedBy: [...verifiedBy, creatorUid] };
+                } else if (status === 'rejected') {
+                    return { ...t, submissions, verifiedBy: verifiedBy.filter(uid => uid !== creatorUid) };
+                }
+                return { ...t, submissions };
+            }
+            return t;
+        });
+        await updateDoc(doc(db, 'campaigns', campaignId), { tasks: updatedTasks });
     },
 
     // Giveaways
@@ -1170,6 +1344,18 @@ export const useStore = create((set, get) => ({
             await updateDoc(doc(db, 'ticket_orders', id), data);
         } catch (error) {
             console.error("Error updating ticket order:", error);
+            throw error;
+        }
+    },
+
+    markAttendance: async (id) => {
+        try {
+            await updateDoc(doc(db, 'ticket_orders', id), {
+                attendedAt: new Date().toISOString(),
+                status: 'attended'
+            });
+        } catch (error) {
+            console.error("Error marking attendance:", error);
             throw error;
         }
     },

@@ -32,7 +32,7 @@ const DevSettings = () => {
             key: "pages",
             developerOnly: true,
             items: [
-                { label: "Gallery", id: "gallery" },
+
                 { label: "Concert Zone", id: "concerts" },
                 { label: "Contact", id: "contact" },
                 { label: "Community Join", id: "community" },
@@ -48,7 +48,7 @@ const DevSettings = () => {
                 { label: "Invoices", id: "invoices" },
                 { label: "Announcements", id: "announcements" },
                 { label: "Messages", id: "messages" },
-                { label: "Gallery Manager", id: "gallery_manager" },
+
                 { label: "Forms/Community", id: "forms" },
             ]
         },

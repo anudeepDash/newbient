@@ -3,9 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { motion } from 'framer-motion';
-import { Download, Ticket, ArrowLeft, Loader, QrCode, Mail, Lock } from 'lucide-react';
+import { Download, Ticket, ArrowLeft, Loader, QrCode, Mail, Lock, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
+import { cn } from '../lib/utils';
+import html2canvas from 'html2canvas';
 
 const TicketViewer = () => {
     const { bookingRef } = useParams();
@@ -14,6 +16,20 @@ const TicketViewer = () => {
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const ticketRef = React.useRef(null);
+
+    const downloadTicket = async () => {
+        if (!ticketRef.current) return;
+        const canvas = await html2canvas(ticketRef.current, {
+            backgroundColor: '#000000',
+            scale: 2,
+            useCORS: true
+        });
+        const link = document.createElement('a');
+        link.download = `Ticket-${order.bookingRef}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
 
     useEffect(() => {
         const fetchTicket = async () => {
@@ -115,6 +131,81 @@ const TicketViewer = () => {
                             <p className="text-gray-400 font-bold text-sm tracking-widest uppercase mb-1">
                                 Code: {order.bookingRef}
                             </p>
+                        </div>
+
+                        {/* Digital QR Graphic (Merged from Guestlist) */}
+                        <div ref={ticketRef} className="relative bg-zinc-950 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl mb-10 group">
+                            {event?.image && (
+                                <div className="absolute inset-0 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-1000">
+                                    <img src={event.image} alt="" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/40" />
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+
+                            <div className="relative z-10 p-10 flex flex-col items-center">
+                                {/* Brand Header */}
+                                <div className="w-full flex items-center justify-between mb-10 pb-6 border-b border-white/10">
+                                    <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">NEWBI_ENT</span>
+                                    <span className={cn(
+                                        "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                                        "bg-neon-green/10 border-neon-green/20 text-neon-green"
+                                    )}>VERIFIED TICKET</span>
+                                </div>
+
+                                <div className="text-center mb-10">
+                                    <h1 className="text-4xl font-black font-heading tracking-tighter italic uppercase mb-2 leading-none">{event?.title || order.eventTitle}</h1>
+                                    <p className="text-gray-400 font-black text-[9px] uppercase tracking-[0.3em]">{order.bookingRef}</p>
+                                </div>
+
+                                {/* QR Code Container */}
+                                <div className="p-4 bg-white rounded-3xl mb-10 shadow-[0_0_50px_rgba(255,255,255,0.1)] inline-block">
+                                    <img 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${order.bookingRef}`} 
+                                        alt="Access QR" 
+                                        crossOrigin="anonymous"
+                                        className="w-48 h-48 mix-blend-multiply"
+                                    />
+                                </div>
+
+                                <div className="w-full grid grid-cols-2 gap-8 mb-10">
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Issued To</p>
+                                        <p className="text-sm font-bold text-white uppercase">{order.customerName}</p>
+                                    </div>
+                                    <div className="space-y-1 text-right">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Deployment</p>
+                                        <p className="text-sm font-bold text-white uppercase">{event?.date || 'TBA'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Terminal</p>
+                                        <p className="text-sm font-bold text-white uppercase truncate">{event?.location || 'TBA'}</p>
+                                    </div>
+                                    <div className="space-y-1 text-right flex flex-col">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Authorized Items</p>
+                                        {order.items?.map((item, i) => (
+                                            <p key={i} className="text-xs font-black text-neon-blue uppercase">{item.count}X {item.name}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="w-full p-6 bg-white/5 rounded-2xl border border-white/5 space-y-2 text-center">
+                                    <p className="text-[9px] font-bold text-gray-500 uppercase leading-relaxed max-w-[240px] mx-auto italic">
+                                        TAKE A SCREENSHOT FOR EASY ACCESS AT THE ENTRY. THIS PASS IS NON-TRANSFERABLE.
+                                    </p>
+                                </div>
+                            </div>
+                            {/* Aesthetic Footer Strip */}
+                            <div className="h-2 w-full bg-gradient-to-r from-neon-blue via-neon-pink to-neon-green opacity-50" />
+                        </div>
+                        
+                        <div className="flex flex-col gap-4 mb-8">
+                            <Button 
+                                onClick={downloadTicket}
+                                className="h-16 w-full bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-3 shadow-2xl"
+                            >
+                                <Download size={18} /> Download Digital Pass
+                            </Button>
                         </div>
 
                         <div className="bg-black/50 rounded-3xl p-6 border border-white/5 mb-8">

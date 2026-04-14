@@ -13,11 +13,12 @@ const CreatorJoin = () => {
     const navigate = useNavigate();
 
     // Form State
+    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
         city: '',
-        niches: '',
+        categories: '',
         bio: '',
         instagram: '',
         instagramFollowers: '',
@@ -39,26 +40,12 @@ const CreatorJoin = () => {
         }
     }, [user, creators]);
 
-    const handleStart = () => {
-        if (!user) {
-            setAuthModal(true);
-        } else {
-            document.getElementById('creator-form')?.scrollIntoView({ behavior: 'smooth' });
-        }
-    };
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSocialChange = (e, platform) => {
-        const val = e.target.value;
-        if (platform === 'ig') {
-            setFormData(prev => ({ ...prev, instagramFollowers: val }));
-        } else {
-            setFormData(prev => ({ ...prev, youtubeSubscribers: val }));
-        }
-    };
+    const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
+    const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -76,11 +63,10 @@ const CreatorJoin = () => {
                 profileStatus: 'pending',
                 ...formData,
                 isVerified: false,
-                niches: formData.niches.split(',').map(n => n.trim())
+                specializations: formData.categories.split(',').map(n => n.trim())
             });
             setHasJoined(true);
-            alert("Application submitted successfully! Welcome to the Creator Hub.");
-            navigate('/creator-dashboard');
+            // navigate('/creator-dashboard'); // Handled by the success state UI
         } catch (error) {
             console.error("Error joining creator hub:", error);
             alert("Failed to submit application: " + error.message);
@@ -90,196 +76,242 @@ const CreatorJoin = () => {
     };
 
     if (!authInitialized) {
-        return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-pink" size={48} /></div>;
+        return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-blue" size={48} /></div>;
     }
 
     if (hasJoined) {
         return (
-            <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 text-center">
+            <div className="min-h-screen bg-[#020202] text-white pt-40 pb-20 px-4 text-center relative overflow-hidden">
+                <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px] pointer-events-none" />
+                
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    className="max-w-xl mx-auto p-12 bg-zinc-900/40 backdrop-blur-3xl border border-neon-pink/20 rounded-[3rem] shadow-[0_0_60px_rgba(255,0,255,0.08)]"
+                    initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="max-w-xl mx-auto p-12 md:p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] shadow-2xl relative z-10"
                 >
-                    <div className="w-20 h-20 bg-neon-pink rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,0,255,0.3)]">
-                        <Camera size={40} className="text-black" />
+                    <div className="w-24 h-24 bg-neon-blue rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(46,191,255,0.3)]">
+                        <CheckCircle2 size={48} className="text-black" />
                     </div>
-                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase mb-4">YOU'RE IN.</h2>
-                    <p className="text-gray-400 mb-10 font-medium">Your creator profile is live. Head to the dashboard to find campaigns in your city.</p>
-                    <button onClick={() => navigate('/creator-dashboard')} className="w-full h-16 rounded-2xl font-black font-heading uppercase tracking-widest bg-neon-pink text-black hover:scale-[1.02] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_rgba(255,0,255,0.2)]">
-                        Go to Dashboard <ArrowRight size={18} />
+                    <h2 className="text-5xl font-black font-heading tracking-tighter uppercase mb-6 italic italic">APPLICATION SENT.</h2>
+                    <p className="text-gray-400 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Your creator profile is being analyzed by our team. You can now access your studio workspace.</p>
+                    <button onClick={() => navigate('/creator-dashboard')} className="w-full h-20 rounded-2xl font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(255,255,255,0.1)] group">
+                        Enter Creator Studio <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
                     </button>
                 </motion.div>
             </div>
         );
     }
 
+    const steps = [
+        { id: 1, title: 'IDENTITY', icon: Users },
+        { id: 2, title: 'SOCIALS', icon: Instagram },
+        { id: 3, title: 'PITCH', icon: Camera }
+    ];
+
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 relative overflow-hidden">
-            {/* Ambient Glows */}
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-40 px-4 relative overflow-hidden">
+            {/* Immersive Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[150px] animate-pulse" />
-                <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
+                <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px]" />
+                <div className="absolute bottom-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px]" />
             </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-20">
+            <div className="relative z-10 max-w-5xl mx-auto">
+                {/* Cinema Header */}
+                <div className="text-center mb-24">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-10"
+                        initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                        className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-12"
                     >
-                        <Sparkles size={16} className="text-neon-pink" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Influencer Marketing</span>
+                        <Zap size={14} className="text-neon-blue" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Creator Registration Phase II</span>
                     </motion.div>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-8xl font-black font-heading mb-6 tracking-tighter leading-none uppercase"
+                        className="text-6xl md:text-[10rem] font-black font-heading mb-8 tracking-tighter leading-none uppercase italic"
                     >
-                        JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-blue">CREATOR NETWORK.</span>
+                        JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">TRIBE.</span>
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-lg md:text-xl font-medium leading-relaxed"
+                        className="text-gray-500 max-w-3xl mx-auto text-lg md:text-2xl font-bold leading-relaxed uppercase tracking-widest"
                     >
-                        Partner with top brands, get exclusive local gigs, and monetize your influence. Apply to become a certified Newbi Creator.
+                        Collaborate with elite brands, secure exclusive gigs, and monetize your influence. Apply for certification.
                     </motion.p>
-
-                    {!user && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-10">
-                            <button onClick={handleStart} className="h-16 px-10 rounded-2xl text-base font-black font-heading uppercase tracking-widest bg-neon-pink text-black hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,0,255,0.2)] inline-flex items-center gap-3">
-                                Sign In to Apply <ArrowRight size={18} />
-                            </button>
-                        </motion.div>
-                    )}
                 </div>
 
-                {user && (
-                    <motion.div
-                        id="creator-form"
-                        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                        className="bg-zinc-900/40 backdrop-blur-[20px] border border-white/10 rounded-[2rem] p-8 md:p-14 shadow-2xl relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[100px] -mr-40 -mt-40 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-60 h-60 bg-neon-pink/10 blur-[100px] -ml-30 -mb-30 pointer-events-none" />
-
-                        <div className="flex items-center gap-5 mb-12 border-b border-white/5 pb-10 relative z-10">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-pink/20 to-neon-blue/20 border border-white/10 flex items-center justify-center">
-                                <Users className="w-8 h-8 text-neon-pink" />
-                            </div>
-                            <div>
-                                <h2 className="text-4xl font-black font-heading text-white mb-4 uppercase">CREATOR PROFILE.</h2>
-                                <p className="text-gray-500 font-medium">Join our network of storytellers and disruptors.</p>
-                            </div>
+                {!user ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center">
+                        <div className="p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] shadow-2xl">
+                            <Activity className="w-20 h-20 text-neon-blue mx-auto mb-10" />
+                            <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
+                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the creator hub. Sign in to proceed.</p>
+                            <button onClick={() => setAuthModal(true)} className="h-20 px-16 rounded-2xl text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
+                                Sign In <ArrowRight size={20} />
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <div className="max-w-4xl mx-auto">
+                        {/* Step Progress */}
+                        <div className="flex items-center justify-between mb-16 px-4">
+                            {steps.map((s, idx) => (
+                                <React.Fragment key={s.id}>
+                                    <div className="flex flex-col items-center gap-4 group cursor-pointer" onClick={() => step > s.id && setStep(s.id)}>
+                                        <div className={cn(
+                                            "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 border",
+                                            step === s.id ? "bg-neon-blue text-black border-neon-blue shadow-[0_0_30px_rgba(46,191,255,0.4)]" : 
+                                            step > s.id ? "bg-white/10 text-neon-blue border-white/10" : "bg-black/40 text-gray-700 border-white/5"
+                                        )}>
+                                            <s.icon size={24} />
+                                        </div>
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-[0.3em] transition-colors",
+                                            step >= s.id ? "text-white" : "text-gray-700"
+                                        )}>{s.title}</span>
+                                    </div>
+                                    {idx < steps.length - 1 && (
+                                        <div className={cn(
+                                            "flex-1 h-px transition-all duration-700 mx-4",
+                                            step > s.id ? "bg-neon-blue" : "bg-white/5"
+                                        )} />
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Full Name</label>
-                                    <Input required name="name" value={formData.name} onChange={handleChange} placeholder="Your legal or stage name" className="h-14 bg-black/50 border-white/5 rounded-2xl" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Phone Number</label>
-                                    <Input required name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+91 98765 43210" className="h-14 bg-black/50 border-white/5 rounded-2xl" />
-                                </div>
-                            </div>
+                        {/* Form Card */}
+                        <motion.div
+                            key={step}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
+                            
+                            <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); nextStep(); }} className="space-y-10 relative z-10">
+                                {step === 1 && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-5 mb-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Users size={24} /></div>
+                                            <div>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Personal Identity</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Foundational Details</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                                                <Input required name="name" value={formData.name} onChange={handleChange} placeholder="Stage or Legal Name" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
+                                                <Input required name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+91 00000 00000" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operating City</label>
+                                                <select
+                                                    required name="city" value={formData.city} onChange={handleChange}
+                                                    className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl px-6 text-white text-[12px] font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer"
+                                                >
+                                                    <option value="" disabled className="bg-zinc-900">Select Universal Hub</option>
+                                                    {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c.toUpperCase()}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Content Categories</label>
+                                                <Input required name="categories" value={formData.categories} onChange={handleChange} placeholder="e.g. Fashion, Tech, Music" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Primary City</label>
-                                    <select
-                                        required name="city" value={formData.city} onChange={handleChange}
-                                        className="w-full h-14 bg-black/50 border border-white/5 rounded-2xl px-5 text-white focus:outline-none focus:border-neon-pink/50 transition-colors appearance-none text-sm"
+                                {step === 2 && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-5 mb-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue"><Instagram size={24} /></div>
+                                            <div>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic text-neon-blue">Social Impact</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Analytics & Reach</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-10">
+                                            {/* Instagram Section */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 italic"><Instagram size={14} className="text-pink-500" /> Handle</label>
+                                                    <Input required name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@your_user" className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 italic"><Users size={14} className="text-neon-blue" /> Followers</label>
+                                                    <Input required type="number" name="instagramFollowers" value={formData.instagramFollowers} onChange={handleChange} placeholder="e.g. 25000" className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
+                                                </div>
+                                            </div>
+                                            {/* Other Section */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 italic"><Youtube size={14} className="text-red-500" /> YouTube <span className="opacity-30 normal-case">(Optional)</span></label>
+                                                    <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 italic"><Globe size={14} className="text-neon-blue" /> X / Website <span className="opacity-30 normal-case">(Optional)</span></label>
+                                                    <Input name="twitter" value={formData.twitter} onChange={handleChange} placeholder="URL or Handle" className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {step === 3 && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-5 mb-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Camera size={24} /></div>
+                                            <div>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Brand Pitch</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Creative Authority</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-8">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Professional Bio</label>
+                                                <textarea
+                                                    required name="bio" value={formData.bio} onChange={handleChange}
+                                                    placeholder="Briefly describe your content niche and why brands should collaborate with you..."
+                                                    className="w-full bg-black/50 border border-white/5 rounded-[2rem] p-6 text-white text-[12px] font-medium leading-relaxed focus:border-neon-blue transition-all h-40 resize-none shadow-inner"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Portfolio / Media Kit Link</label>
+                                                <Input name="portfolioInfo" value={formData.portfolioInfo} onChange={handleChange} placeholder="https://..." className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center pt-10 border-t border-white/5">
+                                    {step > 1 ? (
+                                        <button type="button" onClick={prevStep} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
+                                            <ArrowRight size={14} className="rotate-180" /> Back
+                                        </button>
+                                    ) : <div />}
+                                    
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="h-20 px-16 rounded-2xl text-sm font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all flex items-center gap-4 disabled:opacity-50"
                                     >
-                                        <option value="" disabled className="text-gray-500 bg-zinc-900">Select City</option>
-                                        {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c}</option>)}
-                                    </select>
+                                        {isSubmitting ? <Loader2 className="animate-spin" /> : 
+                                         step === 3 ? 'Finalize Registration' : 'Continue'}
+                                        {step < 3 && <ArrowRight size={18} />}
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Content Niches</label>
-                                    <Input required name="niches" value={formData.niches} onChange={handleChange} placeholder="Fashion, Tech, Music (comma separated)" className="h-14 bg-black/50 border-white/5 rounded-2xl" />
-                                </div>
-                            </div>
-
-                            {/* Social Presence */}
-                            <div className="pt-4 border-t border-white/5">
-                                <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                                    <div className="w-6 h-px bg-neon-pink" /> Social Presence
-                                </h3>
-                                <div className="space-y-6">
-                                    {/* Instagram */}
-                                    <div className="p-6 rounded-2xl bg-black/30 border border-white/5">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Instagram size={12} className="text-pink-500" /> Instagram Handle
-                                                </label>
-                                                <Input required name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@yourusername" className="h-12 bg-black/50 border-white/5 rounded-xl" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Users size={12} className="text-neon-blue" /> Follower Count
-                                                </label>
-                                                <Input required type="number" name="instagramFollowers" value={formData.instagramFollowers} onChange={(e) => handleSocialChange(e, 'ig')} placeholder="e.g. 15000" className="h-12 bg-black/50 border-white/5 rounded-xl" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* YouTube */}
-                                    <div className="p-6 rounded-2xl bg-black/30 border border-white/5">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Youtube size={12} className="text-red-500" /> YouTube Channel <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
-                                                </label>
-                                                <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="Channel URL" className="h-12 bg-black/50 border-white/5 rounded-xl" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Users size={12} className="text-neon-blue" /> Subscriber Count <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
-                                                </label>
-                                                <Input type="number" name="youtubeSubscribers" value={formData.youtubeSubscribers} onChange={(e) => handleSocialChange(e, 'yt')} placeholder="e.g. 5000" className="h-12 bg-black/50 border-white/5 rounded-xl" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* About */}
-                            <div className="pt-4 border-t border-white/5">
-                                <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                                    <div className="w-6 h-px bg-neon-green" /> About You
-                                </h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Short Bio</label>
-                                        <textarea
-                                            required name="bio" value={formData.bio} onChange={handleChange}
-                                            placeholder="Tell brands why they should work with you..."
-                                            className="w-full bg-black/50 border border-white/5 rounded-2xl p-5 text-white focus:outline-none focus:border-neon-pink/50 transition-colors h-32 resize-none text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 pl-1">Past Campaigns / Portfolio Link (Optional)</label>
-                                        <Input name="portfolioInfo" value={formData.portfolioInfo} onChange={handleChange} placeholder="Link to your media kit or past work" className="h-12 bg-black/50 border-white/5 rounded-xl" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-6">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full h-16 rounded-2xl text-base font-black font-heading uppercase tracking-widest bg-white text-black hover:bg-neon-green transition-all shadow-[0_20px_50px_rgba(255,255,255,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? 'Submitting Application...' : 'Register as Creator'}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.div>
+                            </form>
+                        </motion.div>
+                    </div>
                 )}
             </div>
         </div>

@@ -18,7 +18,6 @@ const Navbar = () => {
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
-        { name: 'GALLERY', path: '/gallery', featureId: 'gallery', icon: ImageIcon },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
 
@@ -50,32 +49,40 @@ const Navbar = () => {
 
             {/* Global Pinned Announcement Banner */}
             {(pinnedAnnouncement && !(maintenanceState.global && user?.role === 'developer')) && (
-                <div className="fixed top-0 left-0 right-0 z-[55] bg-neon-pink text-black text-[10px] font-black uppercase tracking-widest py-2 px-4 text-center break-words flex flex-col items-center justify-center gap-1 shadow-[0_0_20px_rgba(255,0,255,0.3)]">
+                <motion.div 
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="fixed top-0 left-0 right-0 z-[55] bg-zinc-950/20 backdrop-blur-2xl border-b border-white/5 py-4 px-6 text-center shadow-[0_4px_30px_rgba(0,0,0,0.5)] overflow-hidden group"
+                >
+                    {/* Animated Neon Underline */}
+                    <motion.div 
+                        initial={{ x: '-100%' }}
+                        animate={{ x: '100%' }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-neon-pink to-transparent opacity-50"
+                    />
+
                     {(() => {
                         const destination = pinnedAnnouncement.link || (pinnedAnnouncement.linkedEventId ? `/?event=${pinnedAnnouncement.linkedEventId}` : null);
                         const content = (
-                            <span className="leading-tight">
-                                <span className="font-extrabold mr-2 uppercase">{pinnedAnnouncement.title}:</span>{pinnedAnnouncement.content}
-                            </span>
+                            <div className="flex items-center justify-center gap-3">
+                                <Sparkles size={12} className="text-neon-pink animate-pulse" />
+                                <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white/90">
+                                    <span className="text-neon-pink mr-2">{pinnedAnnouncement.title}</span>
+                                    <span className="opacity-60">{pinnedAnnouncement.content}</span>
+                                </p>
+                            </div>
                         );
 
                         if (!destination) return content;
 
-                        if (destination.startsWith('http')) {
-                            return (
-                                <a href={destination} target="_blank" rel="noopener noreferrer" className="hover:underline flex flex-col items-center justify-center gap-1 w-full h-full">
-                                    {content}
-                                </a>
-                            );
-                        }
-
                         return (
-                            <Link to={destination} className="hover:underline flex flex-col items-center justify-center gap-1 w-full h-full">
+                            <Link to={destination} className="hover:opacity-80 transition-all block">
                                 {content}
                             </Link>
                         );
                     })()}
-                </div>
+                </motion.div>
             )}
 
             {/* Top Navbar */}

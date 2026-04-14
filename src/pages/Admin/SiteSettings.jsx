@@ -107,11 +107,7 @@ const SiteSettings = () => {
                                             checked={maintenanceState.pages?.concerts === true}
                                             onChange={() => toggleMaintenanceFeature('pages', 'concerts')}
                                         />
-                                        <MiniToggle 
-                                            label="Media Gallery" 
-                                            checked={maintenanceState.pages?.gallery === true}
-                                            onChange={() => toggleMaintenanceFeature('pages', 'gallery')}
-                                        />
+
                                         <MiniToggle 
                                             label="Community" 
                                             checked={maintenanceState.pages?.community === true}
@@ -135,7 +131,7 @@ const SiteSettings = () => {
                                         <MiniToggle label="Ticketing" checked={maintenanceState.cards?.tickets === true} onChange={() => toggleMaintenanceFeature('cards', 'tickets')} />
                                         <MiniToggle label="Upcoming Events" checked={maintenanceState.cards?.upcoming === true} onChange={() => toggleMaintenanceFeature('cards', 'upcoming')} />
                                         <MiniToggle label="Portfolio" checked={maintenanceState.cards?.portfolio === true} onChange={() => toggleMaintenanceFeature('cards', 'portfolio')} />
-                                        <MiniToggle label="Gallery" checked={maintenanceState.cards?.gallery === true} onChange={() => toggleMaintenanceFeature('cards', 'gallery')} />
+
                                         <MiniToggle label="Broadcast" checked={maintenanceState.cards?.announcements === true} onChange={() => toggleMaintenanceFeature('cards', 'announcements')} />
                                         <MiniToggle label="Creators" checked={maintenanceState.cards?.creators === true} onChange={() => toggleMaintenanceFeature('cards', 'creators')} />
                                         <MiniToggle label="Campaigns" checked={maintenanceState.cards?.campaigns === true} onChange={() => toggleMaintenanceFeature('cards', 'campaigns')} />

@@ -10,27 +10,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import StudioSelect from '../../components/ui/StudioSelect';
 
 const CreatorManager = () => {
     const { creators, updateCreator, deleteCreator } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
+    const [filterFollowers, setFilterFollowers] = useState('All');
     const [selectedCreator, setSelectedCreator] = useState(null);
-    const [viewMode, setViewMode] = useState('table'); // Default to table as requested
+    const [viewMode, setViewMode] = useState('table'); 
     const [exportLoading, setExportLoading] = useState(false);
 
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
 
     const filteredCreators = creators.filter(c => {
+        const specs = c.specializations || c.niches || [];
         const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.niches.some(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
+            specs.some(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesCity = filterCity === 'All' || c.city === filterCity;
         const matchesStatus = filterStatus === 'All' || 
             (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
             c.profileStatus === filterStatus;
             
-        return matchesSearch && matchesCity && matchesStatus;
+        const followers = Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0));
+        let matchesFollowers = true;
+        if (filterFollowers === '10k+') matchesFollowers = followers >= 10000;
+        else if (filterFollowers === '50k+') matchesFollowers = followers >= 50000;
+        else if (filterFollowers === '100k+') matchesFollowers = followers >= 100000;
+        else if (filterFollowers === '500k+') matchesFollowers = followers >= 500000;
+
+        return matchesSearch && matchesCity && matchesStatus && matchesFollowers;
     });
 
     const handleUpdateStatus = async (uid, newStatus) => {
@@ -45,61 +55,58 @@ const CreatorManager = () => {
     };
 
     const handleDeleteCreator = async (uid) => {
-        if (window.confirm("Permanently erase this creator profile from the database?")) {
+        if (window.confirm("Permanently delete this creator profile?")) {
             try {
                 await deleteCreator(uid);
                 setSelectedCreator(null);
             } catch (error) {
-                alert("Erasure failed.");
+                alert("Deletion failed.");
             }
         }
     };
     
     const exportToCSV = () => {
-        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'YouTube', 'YouTube Subs', 'Niches', 'Status'];
+        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
         const csvRows = [
             headers.join(','),
             ...filteredCreators.map(c => [
-                `"${c.name}"`,
-                `"${c.email}"`,
-                `"${c.phone}"`,
-                `"${c.city}"`,
+                `"${(c.name || '').replace(/"/g, '""')}"`,
+                `"${(c.email || '').replace(/"/g, '""')}"`,
+                `"${(c.phone || '').replace(/"/g, '""')}"`,
+                `"${(c.city || '').replace(/"/g, '""')}"`,
                 `"${c.instagram ? (c.instagram.includes('http') ? c.instagram : `https://instagram.com/${c.instagram.replace('@', '')}`) : ''}"`,
                 `"${c.instagramFollowers || 0}"`,
                 `"${c.youtube || ''}"`,
                 `"${c.youtubeSubscribers || 0}"`,
-                `"${c.niches.join(', ')}"`,
+                `"${(c.specializations || c.niches || []).join(', ').replace(/"/g, '""')}"`,
                 `"${c.profileStatus || 'pending'}"`
             ].join(','))
         ];
         
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        a.setAttribute('download', `Newbi_Creators_${filterCity}_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `NEWBI_CREATORS_EXPORT_${filterCity.toUpperCase()}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text(`Newbi Creators Registry - ${filterCity}`, 14, 15);
         
-        const tableData = filteredCreators.map(c => [
-            c.name,
-            c.city,
-            c.instagram || '-',
-            c.instagramFollowers || '0',
-            c.niches.slice(0, 2).join(', '),
-            c.profileStatus || 'pending'
-        ]);
-
         doc.autoTable({
-            head: [['Name', 'City', 'Instagram', 'Followers', 'Niches', 'Status']],
-            body: tableData,
+            head: [['Name', 'City', 'Instagram', 'Followers', 'Specializations', 'Status']],
+            body: filteredCreators.map(c => [
+                c.name,
+                c.city,
+                c.instagram || '-',
+                c.instagramFollowers || '0',
+                (c.specializations || c.niches || []).slice(0, 2).join(', '),
+                c.profileStatus || 'pending'
+            ]),
             startY: 20,
             theme: 'grid',
             headStyles: { fillColor: [46, 255, 144] }, // neon-green
@@ -118,19 +125,19 @@ const CreatorManager = () => {
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8 relative z-[100]">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            CREATOR <span className="text-neon-pink">REGISTRY.</span>
+                        <div className="flex items-center gap-3">
+                            <Sparkles size={16} className="text-neon-pink" />
+                            <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                        </div>
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
+                            CREATOR <span className="text-neon-pink">MANAGEMENT.</span>
                         </h1>
                         <div className="flex items-center gap-3">
                             <div className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-full backdrop-blur-md">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                                    TOTAL: <span className="text-white">{creators.length}</span>
+                                    TOTAL CREATORS: <span className="text-white">{creators.length}</span>
                                 </span>
                             </div>
                             {filterCity !== 'All' && (
@@ -143,75 +150,89 @@ const CreatorManager = () => {
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-4 w-full lg:w-auto items-center">
-                        {/* View Toggle & Search */}
-                        <div className="flex gap-4 w-full sm:w-auto">
-                            <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 shrink-0">
-                                <button onClick={() => setViewMode('grid')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Grid</button>
-                                <button onClick={() => setViewMode('table')} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'table' ? "bg-white text-black" : "text-gray-500 hover:text-white")}>Table</button>
+                    <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                        {/* SEARCH ENGINE */}
+                        <div className="relative flex-1 max-w-md w-full relative z-[70]">
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                            <input
+                                type="text"
+                                placeholder="SEARCH CREATORS..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full h-16 pl-14 pr-6 bg-zinc-900/40 border border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-700 shadow-inner"
+                            />
+                        </div>
+
+                        {/* FILTER BAR */}
+                        <div className="flex flex-wrap gap-2 p-1.5 bg-zinc-900/40 border border-white/5 rounded-[1.5rem] backdrop-blur-xl">
+                            <div className="w-[180px]">
+                                <StudioSelect
+                                    value={filterCity}
+                                    options={cities.map(city => ({ value: city, label: city === 'All' ? 'LOCATION' : city.toUpperCase() }))}
+                                    onChange={val => setFilterCity(val)}
+                                    className="h-13"
+                                    accentColor="neon-pink"
+                                />
                             </div>
-                            <div className="relative flex-1">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="SEARCH..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full h-14 pl-12 pr-6 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all placeholder:text-gray-600"
+
+                            <div className="w-[180px]">
+                                <StudioSelect
+                                    value={filterFollowers}
+                                    options={[
+                                        { value: 'All', label: 'REACH (%)' },
+                                        { value: '10k+', label: '10K+ REACH' },
+                                        { value: '50k+', label: '50K+ REACH' },
+                                        { value: '100k+', label: '100K+ REACH' },
+                                        { value: '500k+', label: '500K+ REACH' }
+                                    ]}
+                                    onChange={val => setFilterFollowers(val)}
+                                    className="h-13"
+                                    accentColor="neon-pink"
+                                />
+                            </div>
+
+                            <div className="w-[180px]">
+                                <StudioSelect
+                                    value={filterStatus}
+                                    options={[
+                                        { value: 'All', label: 'STATUS' },
+                                        { value: 'approved', label: 'APPROVED' },
+                                        { value: 'pending', label: 'PENDING' },
+                                        { value: 'rejected', label: 'REJECTED' }
+                                    ]}
+                                    onChange={val => setFilterStatus(val)}
+                                    className="h-13"
+                                    accentColor="neon-pink"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex gap-4 w-full sm:w-auto">
-                            <div className="relative flex-1 sm:min-w-[140px]">
-                                <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                                <select
-                                    value={filterCity}
-                                    onChange={(e) => setFilterCity(e.target.value)}
-                                    className="w-full h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer"
-                                >
-                                    {cities.map(city => <option key={city} value={city} className="bg-zinc-900">{city.toUpperCase()}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                        {/* EXPORT TOOLS */}
+                        <div className="flex gap-2 p-1.5 bg-black/20 border border-white/5 rounded-[1.5rem]">
+                            <button 
+                                onClick={exportToCSV}
+                                className="h-13 px-6 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all flex items-center gap-2"
+                            >
+                                <FileSpreadsheet size={16} /> EXPORT CSV
+                            </button>
+                            <div className="w-px h-6 bg-white/10 self-center" />
+                            <div className="flex bg-zinc-900/50 p-1 rounded-xl">
+                                <button onClick={() => setViewMode('grid')} className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-white text-black" : "text-gray-500 hover:text-white")}><LayoutGrid size={16} /></button>
+                                <button onClick={() => setViewMode('table')} className={cn("p-2 rounded-lg transition-all", viewMode === 'table' ? "bg-white text-black" : "text-gray-500 hover:text-white")}><Activity size={16} /></button>
                             </div>
-
-                            <div className="relative flex-1 sm:min-w-[140px]">
-                                <Zap className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                                <select
-                                    value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value)}
-                                    className="w-full h-14 pl-12 pr-10 bg-zinc-900/50 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/30 outline-none transition-all appearance-none cursor-pointer"
-                                >
-                                    <option value="All" className="bg-zinc-900">STATUS</option>
-                                    <option value="approved" className="bg-zinc-900">APPROVED</option>
-                                    <option value="pending" className="bg-zinc-900">PENDING</option>
-                                    <option value="rejected" className="bg-zinc-900">REJECTED</option>
-                                    <option value="blocked" className="bg-zinc-900">BLOCKED</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2 w-full sm:w-auto">
-                             <Button onClick={exportToCSV} variant="outline" className="flex-1 sm:flex-none h-14 px-4 border-white/10 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-2xl">
-                                <FileSpreadsheet className="mr-2 text-neon-green" size={12} /> CSV
-                            </Button>
-                            <Button onClick={exportToPDF} variant="outline" className="flex-1 sm:flex-none h-14 px-4 border-white/10 hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-2xl">
-                                <FileText className="mr-2 text-neon-pink" size={12} /> PDF
-                            </Button>
                         </div>
                     </div>
                 </div>
 
-                {/* Content Area */}
-                {creators.length === 0 ? (
-                    <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
+                <div className="relative z-0">
+                    {creators.length === 0 ? (
+                        <div className="py-32 text-center bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center gap-6">
                         <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
                             <Users size={40} />
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-xl font-black uppercase tracking-tighter text-gray-500 italic">No creators found.</h3>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">No Newbi creator registrations found on the network.</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">No Newbi creator registrations found in the database.</p>
                         </div>
                     </div>
                 ) : (
@@ -220,67 +241,74 @@ const CreatorManager = () => {
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
                             >
                                 {filteredCreators.map(creator => (
                                     <motion.div
                                         key={creator.uid}
                                         onClick={() => setSelectedCreator(creator)}
-                                        className="snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 hover:border-neon-pink/30 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_40px_rgba(255,46,144,0.05)] overflow-hidden"
+                                        className="snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 hover:border-neon-pink/40 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,46,144,0.08)] overflow-hidden flex flex-col min-h-[400px]"
                                     >
-                                        {/* Status Light */}
+                                        {/* GLOW DECOR */}
+                                        <div className="absolute -top-20 -right-20 w-40 h-40 bg-neon-pink/5 rounded-full blur-[60px] group-hover:bg-neon-pink/10 transition-all duration-700" />
+                                        
+                                        {/* Status indicator line */}
                                         <div className={cn(
-                                            "absolute top-0 left-0 w-1.5 h-full opacity-50 group-hover:opacity-100 transition-opacity",
-                                            creator.profileStatus === 'approved' ? 'bg-neon-green' : 
+                                            "absolute top-0 left-0 w-full h-1 transition-all duration-500",
+                                            creator.profileStatus === 'approved' ? 'bg-neon-green shadow-[0_0_15px_rgba(57,255,20,0.5)]' : 
                                             creator.profileStatus === 'blocked' ? 'bg-red-600' : 'bg-yellow-500'
                                         )}></div>
 
-                                        <div className="flex items-center gap-4 md:gap-5 mb-6 md:mb-8">
-                                            <div className="w-12 h-12 md:w-14 md:h-14 bg-white/5 rounded-2xl flex items-center justify-center text-lg md:xl font-black font-heading group-hover:bg-neon-pink/10 group-hover:text-neon-pink transition-all">
-                                                {creator.name.charAt(0).toUpperCase()}
+                                        <div className="relative z-10 flex flex-col h-full">
+                                            <div className="flex items-start justify-between mb-8">
+                                                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-2xl font-black font-heading group-hover:bg-neon-pink group-hover:text-black transition-all duration-500 transform group-hover:rotate-3 shadow-xl">
+                                                    {creator.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className={cn(
+                                                    "px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border backdrop-blur-md",
+                                                    creator.profileStatus === 'approved' ? 'bg-neon-green/10 text-neon-green border-neon-green/30' : 
+                                                    creator.profileStatus === 'blocked' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                                                )}>
+                                                    {creator.profileStatus || 'PENDING'}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-black text-base md:text-lg uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</h3>
-                                                <p className="text-[8px] font-black text-gray-500 flex items-center gap-1.5 mt-1 uppercase tracking-widest"><MapPin size={10} className="text-neon-pink" /> {creator.city}</p>
+
+                                            <div className="mb-8">
+                                                <h3 className="font-black text-xl uppercase tracking-tighter text-white group-hover:text-neon-pink transition-colors leading-none mb-2">{creator.name}</h3>
+                                                <p className="text-[9px] font-black text-gray-500 flex items-center gap-2 uppercase tracking-[0.2em]">
+                                                    <MapPin size={12} className="text-neon-pink" /> {creator.city}
+                                                </p>
                                             </div>
-                                        </div>
 
-                                        <div className="flex flex-wrap gap-2 mb-8 items-center min-h-[3rem]">
-                                            {creator.niches.slice(0, 3).map((n, i) => (
-                                                <span key={i} className="text-[8px] px-2.5 py-1 bg-white/5 border border-white/5 rounded-full text-gray-400 font-black uppercase tracking-widest whitespace-nowrap">{n}</span>
-                                            ))}
-                                        </div>
+                                            <div className="flex flex-wrap gap-2 mb-8 items-center min-h-[3rem]">
+                                                {(creator.specializations || creator.niches || []).slice(0, 3).map((n, i) => (
+                                                    <span key={i} className="text-[8px] px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl text-gray-400 font-black uppercase tracking-widest group-hover:border-white/20 transition-all">{n}</span>
+                                                ))}
+                                            </div>
 
-                                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
-                                            <span className={cn(
-                                                "text-[9px] font-black uppercase tracking-widest",
-                                                creator.profileStatus === 'approved' ? 'text-neon-green' : 
-                                                creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
-                                            )}>
-                                                {creator.profileStatus || 'PENDING'}
-                                            </span>
-                                            <div className="flex gap-3">
-                                                <button
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm(`Broadcast push notification for "${creator.name}"?`)) {
-                                                            await notifyAllUsers(
-                                                                `Featured Creator: ${creator.name}`,
-                                                                `Check out ${creator.name}'s profile and media kit on Newbi!`,
-                                                                `/community`,
-                                                                ''
-                                                            );
-                                                            alert("PUSH_SIGNAL_TRANSMITTED.");
-                                                        }
-                                                    }}
-                                                    className="w-8 h-8 rounded-lg bg-neon-blue/10 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"
-                                                    title="Announce Creator"
-                                                >
-                                                    <Sparkles size={14} />
-                                                </button>
-                                                {creator.instagram && <Instagram size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
-                                                {creator.youtube && <Youtube size={14} className="text-gray-500 group-hover:text-white transition-colors" />}
+                                            <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-0.5">Reach</span>
+                                                        <span className="text-[11px] font-black text-white font-mono">
+                                                            {Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            handlePushNotification(creator);
+                                                        }}
+                                                        className="w-10 h-10 rounded-xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all shadow-lg"
+                                                        title="Broadcast Profile"
+                                                    >
+                                                        <Sparkles size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -290,80 +318,93 @@ const CreatorManager = () => {
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] overflow-hidden"
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl"
                             >
                                 <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-left">
+                                    <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                                <th className="p-8">CREATOR</th>
-                                                <th className="p-8">CITY</th>
-                                                <th className="p-8">SOCIALS</th>
+                                            <tr className="bg-white/[0.02] text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">
+                                                <th className="p-8 first:pl-10">IDENTITY</th>
+                                                <th className="p-8">LOCATION</th>
+                                                <th className="p-8">SOCIAL METRICS</th>
                                                 <th className="p-8">SPECIALIZATION</th>
                                                 <th className="p-8">STATUS</th>
-                                                <th className="p-8 text-right">ACTION</th>
+                                                <th className="p-8 last:pr-10 text-right">SYSTEMS</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
                                             {filteredCreators.map(creator => (
-                                                <tr key={creator.uid} className="group hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setSelectedCreator(creator)}>
-                                                    <td className="p-8">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center font-black text-sm group-hover:text-neon-pink transition-colors">
+                                                <tr key={creator.uid} className="group hover:bg-neon-pink/[0.02] transition-colors cursor-pointer" onClick={() => setSelectedCreator(creator)}>
+                                                    <td className="p-8 first:pl-10">
+                                                        <div className="flex items-center gap-5">
+                                                            <div className="w-12 h-12 bg-zinc-800 border border-white/5 rounded-2xl flex items-center justify-center font-black text-lg group-hover:text-neon-pink transition-colors shadow-lg">
                                                                 {creator.name.charAt(0).toUpperCase()}
                                                             </div>
-                                                            <span className="text-sm font-black uppercase tracking-tight text-white">{creator.name}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-base font-black uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{creator.name}</span>
+                                                                <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{creator.email}</span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="p-8">
-                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{creator.city}</span>
-                                                    </td>
-                                                    <td className="p-8">
-                                                        <div className="flex gap-3 text-gray-500">
-                                                            {creator.instagram && <Instagram size={14} />}
-                                                            {creator.youtube && <Youtube size={14} />}
-                                                            {creator.instagramFollowers && <span className="text-[10px] font-black text-neon-pink">{(Number(creator.instagramFollowers)/1000).toFixed(1)}K</span>}
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin size={12} className="text-neon-pink" />
+                                                            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">{creator.city}</span>
                                                         </div>
                                                     </td>
                                                     <td className="p-8">
-                                                        <div className="flex gap-2">
-                                                            {creator.niches.slice(0, 2).map((n, i) => (
-                                                                <span key={i} className="text-[8px] px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-gray-500 uppercase font-black">{n}</span>
+                                                        <div className="flex items-center gap-6">
+                                                            <div className="flex items-center gap-2">
+                                                                <Instagram size={14} className="text-neon-pink" />
+                                                                <span className="text-[11px] font-black text-white font-mono">{(Number(creator.instagramFollowers || 0)/1000).toFixed(1)}K</span>
+                                                            </div>
+                                                            {creator.youtube && (
+                                                                <div className="flex items-center gap-2 opacity-60">
+                                                                    <Youtube size={14} className="text-red-500" />
+                                                                    <span className="text-[11px] font-black text-white font-mono">{(Number(creator.youtubeSubscribers || 0)/1000).toFixed(1)}K</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <div className="flex flex-wrap gap-2 max-w-[200px]">
+                                                            {(creator.specializations || creator.niches || []).slice(0, 2).map((n, i) => (
+                                                                <span key={i} className="text-[8px] px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-gray-400 uppercase font-black tracking-widest">{n}</span>
                                                             ))}
                                                         </div>
                                                     </td>
                                                     <td className="p-8">
-                                                        <span className={cn(
-                                                            "text-[9px] font-black uppercase tracking-widest",
-                                                            creator.profileStatus === 'approved' ? 'text-neon-green' : 
-                                                            creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
-                                                        )}>
-                                                            {creator.profileStatus || 'PENDING'}
-                                                        </span>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn(
+                                                                "w-2 h-2 rounded-full",
+                                                                creator.profileStatus === 'approved' ? 'bg-neon-green shadow-[0_0_10px_rgba(57,255,20,0.5)]' : 
+                                                                creator.profileStatus === 'blocked' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+                                                            )} />
+                                                            <span className={cn(
+                                                                "text-[10px] font-black uppercase tracking-widest",
+                                                                creator.profileStatus === 'approved' ? 'text-neon-green' : 
+                                                                creator.profileStatus === 'blocked' ? 'text-red-500' : 'text-yellow-500'
+                                                            )}>
+                                                                {creator.profileStatus || 'PENDING'}
+                                                            </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="p-8 text-right flex justify-end gap-3 items-center">
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (window.confirm(`Broadcast push notification for "${creator.name}"?`)) {
-                                                                    await notifyAllUsers(
-                                                                        `Featured Creator: ${creator.name}`,
-                                                                        `Check out ${creator.name}'s profile and media kit on Newbi!`,
-                                                                        `/community`,
-                                                                        ''
-                                                                    );
-                                                                    alert("PUSH_SIGNAL_TRANSMITTED.");
-                                                                }
-                                                            }}
-                                                            className="w-10 h-10 rounded-xl bg-neon-blue/10 text-neon-blue flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"
-                                                            title="Announce Creator"
-                                                        >
-                                                            <Sparkles size={16} />
-                                                        </button>
-                                                        <Button variant="outline" className="h-10 px-4 rounded-xl text-[8px] font-black border-white/10 hover:bg-white/5 uppercase tracking-widest">
-                                                            Review
-                                                        </Button>
+                                                    <td className="p-8 last:pr-10 text-right">
+                                                        <div className="flex justify-end gap-3 items-center">
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    handlePushNotification(creator);
+                                                                }}
+                                                                className="w-11 h-11 rounded-xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all shadow-md"
+                                                            >
+                                                                <Sparkles size={18} />
+                                                            </button>
+                                                            <button className="h-11 px-6 rounded-xl text-[10px] font-black border border-white/10 hover:bg-white hover:text-black uppercase tracking-widest transition-all">
+                                                                Inspect
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -374,189 +415,213 @@ const CreatorManager = () => {
                         )}
                     </AnimatePresence>
                 )}
+                </div>
             </div>
 
             {/* Detailed User Modal */}
             <AnimatePresence>
                 {selectedCreator && (
-                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-6 pt-20 pb-20 overflow-y-auto">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 pt-20 pb-20 overflow-hidden">
                         <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/95 backdrop-blur-sm"
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/95 backdrop-blur-md"
                             onClick={() => setSelectedCreator(null)}
                         />
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            className="relative bg-zinc-900 border border-white/10 rounded-[3rem] p-6 md:p-10 max-w-3xl w-full max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar shadow-[0_40px_100px_rgba(0,0,0,0.8)] shrink-0"
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="relative bg-[#050505] border border-white/10 rounded-[3.5rem] p-8 md:p-14 max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar shadow-[0_50px_100px_rgba(0,0,0,0.9)] z-[101]"
                         >
-                            <button onClick={() => setSelectedCreator(null)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-20">
-                                <X size={20} className="group-hover:scale-110 transition-transform" />
+                            {/* DECORATIVE BACKGROUND */}
+                            <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[100px] pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[100px] pointer-events-none" />
+
+                            <button onClick={() => setSelectedCreator(null)} className="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50">
+                                <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                             </button>
 
-                            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 mb-8 md:mb-12 relative z-10">
-                                <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-neon-pink to-neon-blue rounded-[2rem] md:rounded-[2.5rem] p-1 shrink-0 rotate-3 group-hover:rotate-0 transition-all duration-500">
-                                    <div className="w-full h-full bg-black rounded-[1.8rem] md:rounded-[2.2rem] flex items-center justify-center text-3xl md:text-4xl font-black font-heading text-white">
-                                        {selectedCreator.name.charAt(0).toUpperCase()}
-                                    </div>
-                                </div>
-                                <div className="text-center md:text-left pt-2">
-                                    <h2 className="text-3xl md:text-5xl font-black font-heading mb-2 tracking-tighter uppercase italic line-clamp-2 md:line-clamp-none">{selectedCreator.name}</h2>
-                                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                                        <p className="text-neon-pink text-[10px] md:text-xs uppercase tracking-[0.3em] font-black flex items-center gap-2">
-                                            <MapPin size={12} /> {selectedCreator.city}
-                                        </p>
-                                        <div className="hidden sm:block w-1 h-1 rounded-full bg-gray-700 self-center" />
-                                        <p className="text-gray-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                            <Clock size={12} /> REGISTERED {new Date(selectedCreator.createdAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-                                <div className="space-y-6">
-                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-4 flex items-center gap-3">
-                                        <div className="w-8 h-px bg-white/5" /> CONNECTIVITY
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-all group/info">
-                                            <div className="flex items-center gap-4 text-xs font-bold text-gray-300">
-                                                <Mail size={16} className="text-neon-blue" />
-                                                <span className="selection:bg-neon-blue selection:text-black">{selectedCreator.email}</span>
-                                            </div>
+                            <div className="relative z-20">
+                                <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-16 px-2">
+                                    <div className="w-40 h-40 bg-white/5 border border-white/10 p-2 rounded-[3.5rem] shadow-2xl shrink-0">
+                                        <div className="w-full h-full bg-zinc-900 rounded-[2.8rem] flex items-center justify-center text-6xl font-black font-heading text-neon-pink">
+                                            {selectedCreator.name.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-all group/info">
-                                            <div className="flex items-center gap-4 text-xs font-bold text-gray-300">
-                                                <Phone size={16} className="text-neon-green" />
-                                                <span>{selectedCreator.phone}</span>
-                                            </div>
+                                    </div>
+                                    <div className="text-center md:text-left pt-4">
+                                        <h2 className="text-5xl md:text-7xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white">
+                                            {selectedCreator.name.split(' ')[0]} <br/> <span className="text-neon-pink">{selectedCreator.name.split(' ').slice(1).join(' ') || 'PROFILE.'}</span>
+                                        </h2>
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-6">
+                                            <p className="text-neon-pink text-sm uppercase tracking-[0.4em] font-black flex items-center gap-3">
+                                                <MapPin size={16} /> {selectedCreator.city}
+                                            </p>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 self-center" />
+                                            <p className="text-gray-500 text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-3">
+                                                <Clock size={16} /> REGISTERED {new Date(selectedCreator.createdAt).toLocaleDateString()}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-4 flex items-center gap-3">
-                                        <div className="w-8 h-px bg-white/5" /> SOCIAL METRICS
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {selectedCreator.instagram && (
-                                            <div className="bg-black/40 p-5 rounded-2xl border border-white/5 hover:border-neon-pink/30 transition-all">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest">
-                                                        <Instagram size={16} className="text-neon-pink" /> 
-                                                        {selectedCreator.instagram}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-20 px-4">
+                                    <div className="space-y-12">
+                                        <div>
+                                            <h3 className="text-[11px] font-black text-neon-blue uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
+                                                <div className="w-12 h-px bg-neon-blue/20" /> CREATOR DOSSIER
+                                            </h3>
+                                            <div className="space-y-6">
+                                                <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl group hover:border-white/20 transition-all">
+                                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4">Identity Signal</span>
+                                                    <div className="flex items-center gap-6 text-sm font-black text-white">
+                                                        <Mail size={20} className="text-neon-blue" />
+                                                        <span className="selection:bg-neon-blue selection:text-black">{selectedCreator.email}</span>
                                                     </div>
-                                                    <a href={`https://instagram.com/${selectedCreator.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors">
-                                                        <ExternalLink size={12} />
-                                                    </a>
                                                 </div>
-                                                {selectedCreator.instagramFollowers && (
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest pl-7">
-                                                        <Activity size={10} className="text-neon-pink" /> {Number(selectedCreator.instagramFollowers).toLocaleString()} FOLLOWERS
+                                                <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl group hover:border-white/20 transition-all">
+                                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-4">Direct Channel</span>
+                                                    <div className="flex items-center gap-6 text-sm font-black text-white">
+                                                        <Phone size={20} className="text-neon-green" />
+                                                        <span>{selectedCreator.phone}</span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {selectedCreator.youtube && (
-                                            <div className="bg-black/40 p-5 rounded-2xl border border-white/5 hover:border-red-500/30 transition-all">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest">
-                                                        <Youtube size={16} className="text-red-500" /> 
-                                                        YOUTUBE CHANNEL
-                                                    </div>
-                                                    <a href={selectedCreator.youtube.includes('http') ? selectedCreator.youtube : `https://${selectedCreator.youtube}`} target="_blank" rel="noreferrer" className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors">
-                                                        <ExternalLink size={12} />
-                                                    </a>
                                                 </div>
-                                                {selectedCreator.youtubeSubscribers && (
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest pl-7">
-                                                        <Activity size={10} className="text-red-500" /> {Number(selectedCreator.youtubeSubscribers).toLocaleString()} SUBS
-                                                    </div>
-                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                                        </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-                                <div className="space-y-6">
-                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-4 flex items-center gap-3">
-                                        <div className="w-8 h-px bg-white/5" /> USER BIO
-                                    </h3>
-                                    <div className="p-8 bg-black/40 border border-white/5 rounded-[2rem] text-sm font-medium text-gray-400 leading-relaxed italic relative">
-                                        <Sparkles className="absolute top-4 right-4 text-neon-pink/10" size={40} />
-                                        "{selectedCreator.bio || 'No bio provided.'}"
+                                        <div>
+                                            <h3 className="text-[11px] font-black text-neon-pink uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
+                                                <div className="w-12 h-px bg-neon-pink/20" /> VISION & BIO
+                                            </h3>
+                                            <div className="p-10 bg-white/5 border border-white/5 rounded-[3rem] text-base font-medium text-gray-400 leading-relaxed italic relative overflow-hidden backdrop-blur-3xl">
+                                                <Sparkles className="absolute -bottom-4 -right-4 text-neon-pink/5" size={120} />
+                                                "{selectedCreator.bio || 'No strategic vision provided.'}"
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-12">
+                                        <div>
+                                            <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
+                                                <div className="w-12 h-px bg-white/10" /> SOCIAL VELOCITY
+                                            </h3>
+                                            <div className="space-y-6">
+                                                {selectedCreator.instagram && (
+                                                    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 hover:border-neon-pink/40 transition-all backdrop-blur-3xl">
+                                                        <div className="flex items-center justify-between mb-6">
+                                                            <div className="flex items-center gap-4 text-sm font-black uppercase tracking-widest text-white">
+                                                                <Instagram size={22} className="text-neon-pink" /> 
+                                                                {selectedCreator.instagram}
+                                                            </div>
+                                                            <a href={`https://instagram.com/${selectedCreator.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-500 hover:text-white transition-all">
+                                                                <ExternalLink size={16} />
+                                                            </a>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1 pl-10">
+                                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Validated Followers</span>
+                                                            <span className="text-2xl font-black text-white font-mono">{Number(selectedCreator.instagramFollowers || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {selectedCreator.youtube && (
+                                                    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 hover:border-red-500/40 transition-all backdrop-blur-3xl">
+                                                        <div className="flex items-center justify-between mb-6">
+                                                            <div className="flex items-center gap-4 text-sm font-black uppercase tracking-widest text-white">
+                                                                <Youtube size={22} className="text-red-500" /> 
+                                                                BROADCAST CHANNEL
+                                                            </div>
+                                                            <a href={selectedCreator.youtube.includes('http') ? selectedCreator.youtube : `https://${selectedCreator.youtube}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-500 hover:text-white transition-all">
+                                                                <ExternalLink size={16} />
+                                                            </a>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1 pl-10">
+                                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Channel Subscribers</span>
+                                                            <span className="text-2xl font-black text-white font-mono">{Number(selectedCreator.youtubeSubscribers || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em] mb-10 flex items-center gap-4">
+                                                <div className="w-12 h-px bg-white/10" /> SPECIALIZATION
+                                            </h3>
+                                            <div className="flex flex-wrap gap-3 mb-12">
+                                                {(selectedCreator.specializations || selectedCreator.niches || []).map((n, i) => (
+                                                    <span key={i} className="px-6 py-3 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">
+                                                        {n}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            {selectedCreator.portfolioInfo && (
+                                                <Button 
+                                                    onClick={() => window.open(selectedCreator.portfolioInfo.includes('http') ? selectedCreator.portfolioInfo : `https://${selectedCreator.portfolioInfo}`, '_blank')}
+                                                    className="w-full h-18 bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-[11px] rounded-[2.5rem] shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
+                                                >
+                                                    <Globe size={20} /> VIEW BRAND MEDIA KIT
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="space-y-6">
-                                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-4 flex items-center gap-3">
-                                        <div className="w-8 h-px bg-white/5" /> SPECIALIZATIONS
-                                    </h3>
-                                    <div className="flex flex-wrap gap-3 p-2">
-                                        {selectedCreator.niches.map((n, i) => (
-                                            <span key={i} className="px-5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-300 group-hover:bg-neon-pink group-hover:text-black transition-all">
-                                                {n}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    {selectedCreator.portfolioInfo && (
-                                        <div className="pt-6">
-                                            <Button 
-                                                onClick={() => window.open(selectedCreator.portfolioInfo.includes('http') ? selectedCreator.portfolioInfo : `https://${selectedCreator.portfolioInfo}`, '_blank')}
-                                                className="w-full h-14 bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs rounded-2xl"
+
+                                <div className="sticky bottom-0 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-12 pb-2">
+                                    <div className="bg-zinc-900 border border-white/10 p-4 rounded-[3rem] flex flex-col sm:flex-row gap-4 shadow-3xl">
+                                        <div className="px-10 py-5 flex flex-col justify-center border-r border-white/5 hidden md:flex">
+                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Status</span>
+                                            <span className={cn(
+                                                "text-[12px] font-black uppercase tracking-widest",
+                                                selectedCreator.profileStatus === 'approved' ? 'text-neon-green' : 'text-yellow-500'
+                                            )}>{selectedCreator.profileStatus || 'PENDING'}</span>
+                                        </div>
+                                        
+                                        <div className="flex-1 flex gap-3">
+                                            {selectedCreator.profileStatus !== 'approved' && (
+                                                <Button
+                                                    onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
+                                                    className="flex-1 h-16 bg-neon-green text-black hover:scale-[1.02] active:scale-95 transition-all font-black font-heading tracking-widest gap-4 rounded-[2rem]"
+                                                >
+                                                    <CheckCircle2 size={24} /> ACTIVATE ACCOUNT
+                                                </Button>
+                                            )}
+                                            
+                                            <div className="flex flex-1 gap-3">
+                                                {selectedCreator.profileStatus !== 'rejected' && selectedCreator.profileStatus !== 'blocked' && (
+                                                    <Button
+                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'rejected')}
+                                                        className="flex-1 h-16 bg-white/5 border border-white/10 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
+                                                    >
+                                                        <XCircle size={20} /> REJECT
+                                                    </Button>
+                                                )}
+                                                {selectedCreator.profileStatus !== 'blocked' ? (
+                                                    <Button
+                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'blocked')}
+                                                        className="flex-1 h-16 bg-white/5 border border-white/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
+                                                    >
+                                                        <Ban size={20} /> BLOCK
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
+                                                        className="flex-1 h-16 bg-neon-green/10 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
+                                                    >
+                                                        <CheckCircle2 size={20} /> REINSTATE
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleDeleteCreator(selectedCreator.uid)}
+                                                className="h-16 w-16 bg-red-600/10 border border-red-600/20 rounded-[2rem] flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all group/del"
                                             >
-                                                <Globe className="mr-3" size={16} /> VIEW MEDIA KIT / PORTFOLIO
-                                            </Button>
+                                                <Trash2 size={24} className="group-hover:rotate-12 transition-transform" />
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-white/10 relative">
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.3em] text-gray-500">ADMIN ACTIONS</div>
-                                
-                                {selectedCreator.profileStatus !== 'approved' && (
-                                    <Button
-                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
-                                        className="flex-1 h-16 bg-neon-green text-black hover:scale-[1.02] active:scale-95 transition-all font-black font-heading tracking-widest gap-3 rounded-2xl"
-                                    >
-                                        <CheckCircle2 size={20} /> APPROVE
-                                    </Button>
-                                )}
-                                
-                                <div className="flex flex-1 gap-4">
-                                    {selectedCreator.profileStatus !== 'rejected' && selectedCreator.profileStatus !== 'blocked' && (
-                                        <Button
-                                            onClick={() => handleUpdateStatus(selectedCreator.uid, 'rejected')}
-                                            className="flex-1 h-16 bg-white/5 border border-white/10 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all font-black font-heading tracking-widest gap-2 rounded-2xl"
-                                        >
-                                            <XCircle size={18} /> REJECT
-                                        </Button>
-                                    )}
-                                    {selectedCreator.profileStatus !== 'blocked' ? (
-                                        <Button
-                                            onClick={() => handleUpdateStatus(selectedCreator.uid, 'blocked')}
-                                            className="flex-1 h-16 bg-white/5 border border-white/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-black font-heading tracking-widest gap-2 rounded-2xl"
-                                        >
-                                            <Ban size={18} /> BLOCK
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
-                                            className="flex-1 h-16 bg-neon-green/10 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all font-black font-heading tracking-widest gap-2 rounded-2xl"
-                                        >
-                                            <CheckCircle2 size={18} /> REINSTATE
-                                        </Button>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={() => handleDeleteCreator(selectedCreator.uid)}
-                                    className="h-16 w-16 bg-zinc-950 border border-white/5 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all group/del"
-                                >
-                                    <Trash2 size={20} className="group-hover/del:scale-110 transition-transform" />
-                                </button>
                             </div>
                         </motion.div>
                     </div>

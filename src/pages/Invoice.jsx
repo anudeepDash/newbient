@@ -109,7 +109,7 @@ const Invoice = () => {
                 const canvas = await html2canvas(pageElements[i], {
                     scale: 2,
                     useCORS: true,
-                    logging: true,
+                    logging: false,
                     backgroundColor: '#F3F4F6',
                     width: 794,
                     height: 1123,
@@ -167,9 +167,35 @@ const Invoice = () => {
                         const canvas = await html2canvas(pageElements[i], {
                             scale: 2,
                             useCORS: true,
-                            allowTaint: true,
                             logging: false,
-                            backgroundColor: '#F3F4F6'
+                            backgroundColor: '#F3F4F6',
+                            width: 794,
+                            height: 1123,
+                            windowWidth: 794,
+                            windowHeight: 1123,
+                            scrollX: 0,
+                            scrollY: 0,
+                            onclone: (clonedDoc) => {
+                                const style = clonedDoc.createElement('style');
+                                style.innerHTML = `
+                                    * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                                    .invoice-page-render { 
+                                        position: absolute !important; 
+                                        top: 0 !important; 
+                                        left: 0 !important; 
+                                        margin: 0 !important; 
+                                        transform: none !important;
+                                        box-shadow: none !important;
+                                        text-rendering: optimizeLegibility !important;
+                                        -webkit-font-smoothing: antialiased !important;
+                                    }
+                                `;
+                                clonedDoc.head.appendChild(style);
+                                
+                                clonedDoc.body.style.margin = '0';
+                                clonedDoc.body.style.padding = '0';
+                                clonedDoc.body.style.overflow = 'hidden';
+                            }
                         });
                         
                         const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -296,7 +322,7 @@ const Invoice = () => {
                                 <span className="hidden sm:inline">{isAdmin ? 'ADMIN VAULT' : 'BACK TO HOME'}</span>
                             </Link>
                             <div className="h-8 w-[1px] bg-white/10" />
-                            <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" />
+                            <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" crossOrigin="anonymous" />
                             <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
                             <div className="hidden md:flex flex-col">
                                 <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1">
@@ -439,7 +465,7 @@ const Invoice = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" />
+                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Invoice #{displayInvoice.invoiceNumber} — Page {pageIdx + 1}</p>
                                                     </div>
                                                 )}

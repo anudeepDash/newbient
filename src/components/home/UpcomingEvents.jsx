@@ -1,15 +1,19 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { cn } from '../../lib/utils';
 import { useStore } from '../../lib/store';
 import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import BuyTicketModal from '../tickets/BuyTicketModal';
+import UnifiedGuestlistModal from '../community/UnifiedGuestlistModal';
 
 const UpcomingEvents = () => {
-    const { upcomingEvents, siteSettings, maintenanceState, giveaways } = useStore();
+    const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
+    const [selectedGL, setSelectedGL] = useState(null);
+    const [isGLModalOpen, setIsGLModalOpen] = useState(false);
 
     const scroll = (direction) => {
         if (carouselRef.current) {
@@ -220,18 +224,38 @@ const UpcomingEvents = () => {
                             }
                             
                             const handleCardClick = () => {
+                                // STRICT PRIORITY: If isTicketed is true, ALWAYS open checkout modal
                                 if (event.isTicketed) {
                                     if (maintenanceState.features?.tickets) {
-                                        alert("Ticketing is currently paused for maintenance. Please check back later.");
+                                        alert("Ticketing is currently paused for maintenance.");
                                     } else {
                                         setSelectedEvent(event);
                                     }
-                                } else if (event.link) {
-                                    window.open(event.link, '_blank', 'noreferrer');
-                                } else if (linkedGiveaway) {
+                                    return; // STOP execution here for ticketed events
+                                } 
+                                
+                                // GUESTLIST FLOW: Use Modal instead of redirect
+                                if (event.isGuestlistEnabled) {
+                                    if (!user) {
+                                        setAuthModal(true);
+                                        return;
+                                    }
+                                    setSelectedGL(event);
+                                    setIsGLModalOpen(true);
+                                    return;
+                                } 
+                                
+                                // LINK/GATEWAY FLOW: Fallback for generic links
+                                if (event.link || event.gatewayUrl) {
+                                    window.open(event.link || event.gatewayUrl, '_blank', 'noreferrer');
+                                    return;
+                                } 
+                                
+                                // FINAL FALLBACK: Giveaway or Alert
+                                if (linkedGiveaway) {
                                     window.location.href = `/giveaway/${linkedGiveaway.slug}`;
                                 } else {
-                                    alert("This event currently has no active ticketing or link specified.");
+                                    alert("No active protocol defined for this event.");
                                 }
                             };
 
@@ -255,87 +279,131 @@ const UpcomingEvents = () => {
                 isOpen={!!selectedEvent}
                 onClose={() => setSelectedEvent(null)}
             />
+
+            <UnifiedGuestlistModal 
+                isOpen={isGLModalOpen}
+                onClose={() => {
+                    setIsGLModalOpen(false);
+                    setSelectedGL(null);
+                }}
+                guestlist={selectedGL}
+            />
         </section>
     );
 };
 
 const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
-    const isHybrid = event.isTicketed && linkedGiveaway;
-
+    const accentColor = event.highlightColor || '#2ebfff';
+    
     return (
-        <div id={`event-card-${event.id}`} className="relative bg-black border border-white/5 rounded-3xl md:rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 hover:border-white/10 group shadow-2xl w-full">
-            {/* Visual Perforations */}
-            <div className="absolute top-[65%] -left-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
-            <div className="absolute top-[65%] -right-4 w-8 h-8 bg-black rounded-full border border-white/5 z-20" />
-            <div className="absolute top-[66.5%] left-4 right-4 h-px border-t border-dashed border-white/20 z-10" />
-
+        <div 
+            id={`event-card-${event.id}`} 
+            className="relative bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 hover:border-white/20 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full"
+            style={{ 
+                '--accent-glow': `${accentColor}33`,
+                '--accent-solid': accentColor
+            }}
+        >
             {/* Full Image Background Overlay */}
             <div className="absolute inset-0 z-0 overflow-hidden bg-black">
                 {event.image ? (
-                    <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
+                    <img
+                        src={event.image}
+                        alt=""
+                        crossOrigin="anonymous"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         style={{ 
-                            backgroundImage: `url(${event.image})`,
                             transform: `scale(${event.imageTransform?.scale || 1}) translate(${(event.imageTransform?.x || 0)}%, ${(event.imageTransform?.y || 0)}%)`,
                             transformOrigin: 'center'
                         }}
                     />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-bold uppercase tracking-widest text-xs">
-                        AESTHETIC TBA
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-black uppercase tracking-[0.3em] text-[10px]">
+                        SIGNAL_BUFFERING
                     </div>
                 )}
-                {/* Premium Gradient Overlay - Compact deep black at bottom for text legibility */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black from-[0%] via-black/90 via-[30%] to-transparent to-[55%] z-10" />
+                {/* Immersive Glass Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 z-10" />
+                <div 
+                    className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                    style={{ background: `radial-gradient(circle at bottom, ${accentColor}11 0%, transparent 70%)` }}
+                />
             </div>
-
-            {/* Floating Info Labels (Top-Left: Date Only) */}
-            <div className="absolute top-6 left-6 z-30">
-                <div className="px-5 py-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-xl">
-                    <span className="text-[11px] font-black uppercase tracking-[0.1em] text-neon-blue">
-                        {event.date ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Soon'}
+            
+            {/* Front Badge: Category/Status */}
+            <div className="absolute top-8 left-8 z-30">
+                <div className="px-5 py-2.5 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] flex items-center gap-2 group-hover:border-[var(--accent-glow)] transition-colors">
+                    <div 
+                        className="w-1.5 h-1.5 rounded-full animate-pulse" 
+                        style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }}
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                        {event.date ? (event.date === 'TBD' ? 'TBD' : new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) : 'MANIFEST'}
                     </span>
                 </div>
             </div>
 
-            {/* Floating Status Icons (Top-Right) */}
-            <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 items-end">
+            {/* Status Icons (Top-Right) */}
+            <div className="absolute top-8 right-8 flex flex-col gap-3 z-30 items-end">
                 {event.isTicketed && (
-                    <div className="w-11 h-11 rounded-2xl bg-neon-green text-black flex items-center justify-center shadow-[0_0_20px_rgba(46,255,144,0.4)] border border-neon-green/20">
-                        <Ticket size={22} />
+                    <div className="w-11 h-11 rounded-2xl bg-neon-green/90 text-black flex items-center justify-center shadow-[0_0_30px_rgba(46,255,144,0.3)] border border-neon-green/20 backdrop-blur-xl">
+                        <Ticket size={20} />
                     </div>
                 )}
                 {event.isGiveaway && (
-                    <div className="w-11 h-11 rounded-2xl bg-purple-600 backdrop-blur-md border border-purple-400/30 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                        <Gift size={20} className="text-white animate-pulse" />
+                    <div className="w-11 h-11 rounded-2xl bg-purple-600/90 backdrop-blur-xl border border-purple-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                        <Gift size={20} className="text-white" />
                     </div>
                 )}
             </div>
 
-            {/* Content Overlay */}
-            <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end z-20">
-                <div className="space-y-4">
-                    <div>
-                        <h3 className="event-title text-xl md:text-2xl font-black text-white leading-tight tracking-tight mb-2 line-clamp-2 italic uppercase">
-                            {event.title}
-                        </h3>
-                        <div className="flex items-center gap-4 text-gray-400">
-                            <div className="flex items-center gap-1">
-                                <MapPin size={12} className="text-neon-blue" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{event.location || 'Mainland India'}</span>
+            {/* Content Slab */}
+            <div className="absolute inset-0 p-10 flex flex-col justify-end z-20">
+                <div className="space-y-6">
+                    <div className="space-y-4">
+                        {event.artists && event.artists.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {event.artists.slice(0, 3).map((artist, i) => (
+                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5">
+                                        {artist}
+                                    </span>
+                                ))}
+                                {event.artists.length > 3 && <span className="text-[8px] font-black text-white/20">+{event.artists.length - 3}</span>}
                             </div>
-                            <div className="flex items-center gap-1">
-                                <Calendar size={12} className="text-neon-blue" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{event.date ? 'Confirmed' : 'Pending'}</span>
+                        )}
+                        <h3 
+                            className="event-title text-3xl md:text-4xl font-black text-white leading-none tracking-tighter uppercase italic transition-colors duration-500"
+                            style={{ '--hover-color': accentColor }}
+                        >
+                            <span className="group-hover:text-[var(--accent-solid)] transition-colors">{event.title}</span>
+                        </h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 backdrop-blur-md">
+                                <MapPin size={12} style={{ color: accentColor }} />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/60">{event.location || 'TBA'}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                         <div className="flex flex-col gap-2">
-                            {(event.isTicketed || event.buttonText?.toUpperCase().includes('TICKET')) && (
-                                <div className="text-neon-green font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                    <span className="text-[10px] uppercase">{event.buttonText || "GET TICKETS"}</span>
+                            {event.isTicketed ? (
+                                <div className="text-neon-green font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]">
+                                    {event.buttonText || "GET TICKETS"}
+                                    <ArrowRight size={16} />
+                                </div>
+                            ) : event.isGuestlistEnabled ? (
+                                <div 
+                                    className="font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]"
+                                    style={{ color: accentColor }}
+                                >
+                                    JOIN GUESTLIST
+                                    <ArrowRight size={16} />
+                                </div>
+                            ) : (
+                                <div className="text-white/40 font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]">
+                                    LEARN MORE
                                     <ArrowRight size={16} />
                                 </div>
                             )}
@@ -343,23 +411,11 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                             {linkedGiveaway && (
                                 <Link 
                                     to={`/giveaway/${linkedGiveaway.slug}`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                    }}
-                                    className="text-purple-400 font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30 group/giveaway"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-purple-400 font-black tracking-[0.2em] flex items-center gap-2 uppercase text-[9px] hover:text-white transition-colors"
                                 >
-                                    <Gift size={15} className="text-purple-400" />
-                                    <span className="text-[10px] uppercase tracking-tighter border-b border-purple-500/0 group-hover/giveaway:border-purple-500/50 transition-all">
-                                        {event.isTicketed ? 'ENTER GIVEAWAY' : 'PARTICIPATE IN GIVEAWAY'}
-                                    </span>
+                                    <Gift size={14} /> EXCLUSIVE GIVEAWAY ACTIVE
                                 </Link>
-                            )}
-
-                            {!event.isTicketed && !linkedGiveaway && (event.link || event.buttonText) && (
-                                <div className="text-neon-blue font-black tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all hover:text-white cursor-pointer z-30">
-                                    <span className="text-[10px] uppercase">{event.buttonText || "LEARN MORE"}</span>
-                                    <ArrowRight size={16} />
-                                </div>
                             )}
                         </div>
                         
@@ -369,9 +425,9 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                                 e.stopPropagation();
                                 handleShare(e, event);
                             }}
-                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all z-30"
+                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all shadow-xl backdrop-blur-xl"
                         >
-                            <Share2 size={14} />
+                            <Share2 size={16} />
                         </button>
                     </div>
                 </div>

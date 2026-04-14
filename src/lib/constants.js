@@ -1,7 +1,7 @@
 export const PREDEFINED_CITIES = [
     "Mumbai",
     "Delhi NCR",
-    "Bangalore",
+    "Bengaluru",
     "Pune",
     "Hyderabad",
     "Chennai",

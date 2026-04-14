@@ -9,6 +9,10 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import StudioDatePicker from '../../components/ui/StudioDatePicker';
+import StudioTimePicker from '../../components/ui/StudioTimePicker';
+import StudioSelect from '../../components/ui/StudioSelect';
+
 
 const UpcomingEventsManager = () => {
     const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility, portfolioCategories } = useStore();
@@ -79,7 +83,7 @@ const UpcomingEventsManager = () => {
             const uploadedImage = await res.json();
             return uploadedImage.secure_url;
         } catch (error) {
-            throw new Error("Uplink failed.");
+            throw new Error("Upload failed.");
         }
     };
 
@@ -128,23 +132,33 @@ const UpcomingEventsManager = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
+        <div className="min-h-screen bg-[#020202] text-white pb-20 overflow-x-hidden">
+            {/* Ambient Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[20%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-700" />
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                {/* Header */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
-                    <div className="space-y-4 max-w-full text-left">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
+                {/* Header Section */}
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
+                    <div className="space-y-6 max-w-full text-left">
+                        <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" />
+                            BACK TO ADMIN DASHBOARD
                         </Link>
-                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.4] md:leading-[1.6] py-6 md:py-10 pr-4 md:pr-12 pl-1 overflow-visible">
-                            Upcoming <span className="text-neon-green px-2 md:px-4">Events.</span>
-                        </h1>
+                        
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Sparkles size={16} className="text-neon-green" />
+                                <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4 leading-none">
+                                EVENT <span className="text-neon-green">MANAGEMENT.</span>
+                            </h1>
+                        </div>
                     </div>
+
                     
                     {!isAdding && (
                         <div className="flex flex-wrap gap-4 w-full md:w-auto">
@@ -159,7 +173,7 @@ const UpcomingEventsManager = () => {
                                 Public View: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
                             </button>
                             <Button onClick={() => { setIsAdding(true); setEditingId(null); }} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                                <Plus className="mr-2" size={18} /> Add Event
+                                <Plus className="mr-2" size={18} /> New Entry
                             </Button>
                         </div>
                     )}
@@ -183,7 +197,7 @@ const UpcomingEventsManager = () => {
                                             {/* Section 1: Core Identities */}
                                             <div className="space-y-8">
                                                 <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-blue/20" /> CORE IDENTITIES
+                                                    <div className="w-8 h-px bg-neon-blue/20" /> GENERAL DETAILS
                                                 </h3>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     <div className="space-y-3">
@@ -198,13 +212,24 @@ const UpcomingEventsManager = () => {
                                                     </div>
                                                     <div className="space-y-3">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Date & Time</label>
-                                                        <Input
-                                                            type="datetime-local"
-                                                            value={newEvent.date}
-                                                            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                                                            required
-                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6"
-                                                        />
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <StudioDatePicker
+                                                                value={newEvent.date ? newEvent.date.split('T')[0] : ''}
+                                                                onChange={(val) => {
+                                                                    const timePart = newEvent.date?.split('T')[1] || '20:00';
+                                                                    setNewEvent({ ...newEvent, date: `${val}T${timePart}` });
+                                                                }}
+                                                                className="h-16"
+                                                            />
+                                                            <StudioTimePicker
+                                                                value={newEvent.date ? newEvent.date.split('T')[1] : '20:00'}
+                                                                onChange={(val) => {
+                                                                    const datePart = newEvent.date?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                                                    setNewEvent({ ...newEvent, date: `${datePart}T${val}` });
+                                                                }}
+                                                                className="h-16"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -220,19 +245,17 @@ const UpcomingEventsManager = () => {
                                                     </div>
                                                     <div className="space-y-3">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Category</label>
-                                                        <div className="relative">
-                                                            <select
-                                                                className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-neon-blue/30 appearance-none cursor-pointer"
-                                                                value={newEvent.category}
-                                                                onChange={e => setNewEvent({ ...newEvent, category: e.target.value })}
-                                                            >
-                                                                <option value="" className="bg-zinc-900">SELECT CATEGORY...</option>
-                                                                {portfolioCategories.map(cat => (
-                                                                    <option key={cat.id} value={cat.id} className="bg-zinc-900">{cat.label.toUpperCase()}</option>
-                                                                ))}
-                                                            </select>
-                                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                                        </div>
+                                                        <StudioSelect
+                                                            value={newEvent.category}
+                                                            options={portfolioCategories.map(cat => ({ 
+                                                                value: cat.id, 
+                                                                label: cat.label.toUpperCase() 
+                                                            }))}
+                                                            onChange={val => setNewEvent({ ...newEvent, category: val })}
+                                                            placeholder="SELECT CATEGORY..."
+                                                            className="h-16"
+                                                            accentColor="neon-blue"
+                                                        />
                                                     </div>
                                                 </div>
 
@@ -254,7 +277,7 @@ const UpcomingEventsManager = () => {
                                             {/* Section 2: Media & CTAs */}
                                             <div className="space-y-8">
                                                 <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-green/20" /> MEDIA & COMMANDS
+                                                    <div className="w-8 h-px bg-neon-green/20" /> MEDIA & ASSETS
                                                 </h3>
                                                 <div className="space-y-6">
                                                     <div className="space-y-4">
@@ -384,7 +407,7 @@ const UpcomingEventsManager = () => {
                                                 {newEvent.isTicketed && (
                                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-8 overflow-hidden">
                                                         <div className="space-y-3">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Sector Layout</label>
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Seating Map</label>
                                                             <div className="relative group">
                                                                 <input type="file" onChange={(e) => setVenueLayoutFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                                 <div className="h-32 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:border-neon-green/30 transition-all">
@@ -492,20 +515,20 @@ const UpcomingEventsManager = () => {
                                                     >
                                                         <Mail size={18} />
                                                     </button>
-                                                    <button
+                                                     <button
                                                         onClick={async () => {
-                                                            if (window.confirm(`Transmit direct push signal for "${item.title}"?`)) {
+                                                            if (window.confirm(`Transmit broadcast update for "${item.title}"?`)) {
                                                                 await notifyAllUsers(
                                                                     item.title,
                                                                     item.description,
                                                                     `/ticket-selection?event=${item.id}`,
                                                                     item.image
                                                                 );
-                                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                                alert("BROADCAST_COMPLETE.");
                                                             }
                                                         }}
                                                         className="w-10 h-10 rounded-xl bg-neon-blue/20 backdrop-blur-md flex items-center justify-center text-neon-blue border border-neon-blue/30 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
-                                                        title="Direct Push Signal"
+                                                        title="Direct Broadcast"
                                                     >
                                                         <Sparkles size={18} />
                                                     </button>
@@ -543,7 +566,6 @@ const UpcomingEventsManager = () => {
                     )}
                 </AnimatePresence>
             </div>
-
         </div>
     );
 };

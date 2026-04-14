@@ -53,19 +53,19 @@ const MailingManager = () => {
         }
 
         const confirmMsg = alsoSendingPush 
-            ? `ESTABLISH DUAL-CHANNEL BROADCAST: Transmit email and push signal to ${recipients.length} endpoints?`
-            : `ESTABLISH BROADCAST: Transmit signal to ${recipients.length} endpoints?`;
+            ? `ESTABLISH DUAL-CHANNEL CAMPAIGN: Send email and push notification to ${recipients.length} recipients?`
+            : `INITIATE CAMPAIGN: Send broadcast to ${recipients.length} recipients?`;
 
         if (!window.confirm(confirmMsg)) return;
 
         setSending(true);
-        setStatus({ type: 'info', text: 'INITIATING MULTI-CHANNEL BROADCAST...' });
+        setStatus({ type: 'info', text: 'INITIATING MULTI-CHANNEL CAMPAIGN...' });
 
         try {
             // Optional: Send Push Notification if toggled
             if (alsoSendingPush) {
                 await notifyAllUsers(
-                    mailData.subject || "NEW_MESSAGE_RECEIVED",
+                    mailData.subject || "NEW MESSAGE RECEIVED",
                     mailData.headerText || mailData.messageBody.substring(0, 50),
                     mailData.ctaUrl || "/",
                     mailData.heroImage || null
@@ -78,7 +78,7 @@ const MailingManager = () => {
             // Simulation of delay
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            setStatus({ type: 'success', text: `BROADCAST SUCCESSFUL. ${recipients.length} SIGNALS TRANSMITTED.` });
+            setStatus({ type: 'success', text: `BROADCAST SUCCESSFUL. ${recipients.length} EMAILS SENT.` });
         } catch (error) {
             console.error("Broadcast failed:", error);
             setStatus({ type: 'error', text: 'BROADCAST INTERRUPTED. SYSTEM FAILURE.' });
@@ -97,24 +97,19 @@ const MailingManager = () => {
             </div>
 
             <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                {/* Header */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
-                        <div className="flex items-center gap-6 pt-4">
-                            <img src="/logo_full.png" alt="Newbi" className="h-10 md:h-14 object-contain" />
-                            <div className="w-px h-10 bg-white/10 hidden md:block" />
-                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-none">
-                                MAILING <span className="text-neon-green">CENTRE.</span>
-                            </h1>
+                        <div className="flex items-center gap-3">
+                            <Sparkles size={16} className="text-neon-green" />
+                            <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
                         </div>
-                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] pl-1 pt-2">Global Communication Interface</p>
+                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
+                            MAILING <span className="text-neon-green">MANAGEMENT.</span>
+                        </h1>
                     </div>
 
-                    <div className="flex items-center gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 rounded-[2rem]">
-                        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                    <div className="flex items-center gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 rounded-[2.5rem]">
+                        <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
                             {[
                                 { id: 'subscribers', label: 'Subscribers' },
                                 { id: 'registered', label: 'Users' },
@@ -126,7 +121,7 @@ const MailingManager = () => {
                                     onClick={() => setRecipientType(type.id)}
                                     className={cn(
                                         "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                        recipientType === type.id ? "bg-white text-black" : "text-gray-500 hover:text-white"
+                                        recipientType === type.id ? "bg-neon-green text-black" : "text-gray-500 hover:text-white"
                                     )}
                                 >
                                     {type.label}
@@ -152,28 +147,28 @@ const MailingManager = () => {
                         <Card className="p-8 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem] relative overflow-hidden">
                             <form onSubmit={handleBroadcast} className="space-y-8 relative z-10">
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                                <Mail size={12} /> Broadcast Subject
+                                                <Mail size={12} className="text-neon-green" /> Broadcast Subject
                                             </label>
                                             <Input 
                                                 value={mailData.subject}
                                                 onChange={(e) => setMailData({...mailData, subject: e.target.value})}
-                                                placeholder="SYSTEM_ALERT: NEW MISSION..."
-                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                                placeholder="SYSTEM ALERT: NEW UPDATE..."
+                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                                 required
                                             />
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                                <ExternalLink size={12} /> Primary Header Text
+                                                <ExternalLink size={12} className="text-neon-green" /> Primary Header Text
                                             </label>
                                             <Input 
                                                 value={mailData.headerText}
                                                 onChange={(e) => setMailData({...mailData, headerText: e.target.value})}
-                                                placeholder="INFILTRATION SUCCESSFUL. ACCESS GRANTED."
-                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                                placeholder="ACCESS GRANTED. VIEW DETAILS."
+                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                                 required
                                             />
                                         </div>
@@ -181,7 +176,7 @@ const MailingManager = () => {
 
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center px-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hero Image URL / Upload</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Hero Image Asset</label>
                                             <div className="flex items-center gap-2">
                                                 <input 
                                                     type="file" 
@@ -198,9 +193,9 @@ const MailingManager = () => {
                                                             const uploadTask = await uploadBytesResumable(storageRef, file);
                                                             const url = await getDownloadURL(uploadTask.ref);
                                                             setMailData({ ...mailData, heroImage: url });
-                                                            setStatus({ type: 'info', text: 'IMAGE_UPLINK_ESTABLISHED.' });
+                                                            setStatus({ type: 'info', text: 'IMAGE UPLOAD SUCCESSFUL.' });
                                                         } catch (err) {
-                                                            setStatus({ type: 'error', text: 'UPLINK_FAILED.' });
+                                                            setStatus({ type: 'error', text: 'UPLOAD FAILED.' });
                                                         } finally {
                                                             setUploading(false);
                                                         }
@@ -208,52 +203,52 @@ const MailingManager = () => {
                                                 />
                                                 <label 
                                                     htmlFor="hero-image-upload"
-                                                    className="text-[8px] font-black text-neon-green hover:text-white transition-colors cursor-pointer flex items-center gap-1 bg-neon-green/10 px-2 py-1 rounded-md"
+                                                    className="text-[9px] font-black text-neon-green hover:text-white transition-colors cursor-pointer flex items-center gap-2 bg-neon-green/10 px-3 py-1.5 rounded-xl border border-neon-green/20"
                                                 >
-                                                    {uploading ? <Loader size={10} className="animate-spin" /> : <Upload size={10} />} DIRECT_UPLOAD
+                                                    {uploading ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />} UPLOAD IMAGE
                                                 </label>
                                             </div>
                                         </div>
                                         <Input
-                                            placeholder="HTTPS://..."
+                                            placeholder="HTTPS://IMAGE-URL.PNG"
                                             value={mailData.heroImage}
                                             onChange={(e) => setMailData({ ...mailData, heroImage: e.target.value })}
-                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest focus:border-neon-green/30"
+                                            className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest focus:border-neon-green/30 font-mono"
                                         />
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Communication Body</label>
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Communication Content</label>
                                         <textarea 
                                             value={mailData.messageBody}
                                             onChange={(e) => setMailData({...mailData, messageBody: e.target.value})}
-                                            className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-300 focus:outline-none focus:border-neon-blue/30 transition-all resize-none min-h-[250px] custom-scrollbar"
-                                            placeholder="Draft your message to the tribe..."
+                                            className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-300 focus:outline-none focus:border-neon-green/30 transition-all resize-none min-h-[250px] custom-scrollbar"
+                                            placeholder="Draft your message to the community..."
                                             required
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                                <ImageIcon size={12} /> CTA Text
+                                                <ImageIcon size={12} className="text-neon-green" /> Button Text (CTA)
                                             </label>
                                             <Input 
                                                 value={mailData.ctaText}
                                                 onChange={(e) => setMailData({...mailData, ctaText: e.target.value})}
-                                                placeholder="PARTICIPATE NOW"
-                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                                placeholder="VIEW EVENT"
+                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                             />
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                                <LinkIcon size={12} /> CTA URL
+                                                <LinkIcon size={12} className="text-neon-green" /> Action URL
                                             </label>
                                             <Input 
                                                 value={mailData.ctaUrl}
                                                 onChange={(e) => setMailData({...mailData, ctaUrl: e.target.value})}
                                                 placeholder="https://newbi.live/..."
-                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/30"
+                                                className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                             />
                                         </div>
                                     </div>
@@ -268,8 +263,8 @@ const MailingManager = () => {
                                             <Sparkles size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-white">ALSO_SEND_PUSH_SIGNAL</p>
-                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">Simultaneous Real-time Mobile/Desktop Alert</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-white">DUAL CHANNEL BROADCAST</p>
+                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">Simultaneous Mobile & Desktop Push Notification</p>
                                         </div>
                                     </div>
                                     <button 
@@ -281,8 +276,8 @@ const MailingManager = () => {
                                         )}
                                     >
                                         <div className={cn(
-                                            "w-4 h-4 bg-white rounded-full transition-all duration-300",
-                                            alsoSendingPush ? "ml-6 shadow-[0_0_10px_white]" : "ml-0"
+                                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300",
+                                            alsoSendingPush ? "right-1 shadow-[0_0_10px_white]" : "left-1"
                                         )} />
                                     </button>
                                 </div>

@@ -58,7 +58,7 @@ const MessageManager = () => {
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            INTEL <span className="text-neon-pink">STREAM.</span>
+                            MESSAGE <span className="text-neon-pink">STREAM.</span>
                         </h1>
                     </div>
                     
@@ -185,7 +185,7 @@ const MessageManager = () => {
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-black uppercase tracking-tighter text-gray-500 italic">No signals detected.</h3>
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">
-                                        {filter !== 'all' ? `No ${filter} intel packets available.` : 'The inbox remains silent.'}
+                                        {filter !== 'all' ? `No ${filter} messages available.` : 'The inbox remains silent.'}
                                     </p>
                                 </div>
                             </div>

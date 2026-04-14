@@ -33,7 +33,7 @@ const Contact = () => {
             // Notify Admins
             await notifyAdmins(
                 'NEW INBOUND MESSAGE',
-                `RECEIVED A TRANSMISSION FROM ${formData.name.toUpperCase()}. MISSION INTEL ATTACHED.`,
+                `RECEIVED A TRANSMISSION FROM ${formData.name.toUpperCase()}. MESSAGE DETAILS ATTACHED.`,
                 '/admin/messages',
                 'message'
             );
