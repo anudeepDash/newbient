@@ -6,11 +6,29 @@ import { cn } from '../../lib/utils';
 import CommunityCard from '../community/CommunityCard';
 import CampaignCard from '../ui/CampaignCard';
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return 'TBD';
-    if (dateStr.includes('T')) {
+const formatDate = (dateValue) => {
+    if (!dateValue || dateValue === 'TBD') return 'TBD';
+    
+    // Handle array of dates
+    if (Array.isArray(dateValue)) {
+        if (dateValue.length === 0) return 'TBD';
+        const sorted = [...dateValue]
+            .map(d => new Date(d))
+            .filter(d => !isNaN(d.getTime()))
+            .sort((a, b) => a.getTime() - b.getTime());
+            
+        if (sorted.length === 0) return 'TBD';
+        const first = sorted[0];
+        return first.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase() + (sorted.length > 1 ? ` +${sorted.length - 1}` : '');
+    }
+
+    // Handle timestamps
+    let val = dateValue;
+    if (val.seconds) val = new Date(val.seconds * 1000).toISOString();
+
+    if (typeof val === 'string' && val.includes('T')) {
         try {
-            const d = new Date(dateStr);
+            const d = new Date(val);
             if (!isNaN(d.getTime())) {
                 const datePart = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
                 const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
@@ -18,9 +36,18 @@ const formatDate = (dateStr) => {
             }
         } catch (e) {}
     }
-    const [y, m, d] = dateStr.split('-');
-    const day = d ? d.split('T')[0] : '';
-    return `${day}-${m}-${y}`;
+    
+    // Fallback split logic
+    try {
+        const strVal = String(val);
+        if (strVal.includes('-')) {
+            const [y, m, d] = strVal.split('-');
+            const day = d ? d.split('T')[0] : '';
+            return `${day}-${m}-${y}`;
+        }
+    } catch (e) {}
+    
+    return String(val).toUpperCase();
 };
 
 const LivePreview = ({ type, data, categories = [], hideDecorations = false }) => {
@@ -104,7 +131,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                                         style={{ backgroundColor: data.highlightColor || '#2ebfff', boxShadow: `0 0 10px ${data.highlightColor || '#2ebfff'}` }}
                                     />
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                                        {data.date ? (data.date === 'TBD' ? 'TBD' : new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) : 'MANIFEST'}
+                                        {data.dates || data.date ? formatDate(data.dates || data.date) : 'MANIFEST'}
                                     </span>
                                 </div>
                             </div>

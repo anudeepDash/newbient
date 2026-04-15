@@ -33,6 +33,7 @@ const VolunteerGigManager = () => {
     const [formData, setFormData] = useState({
         title: '',
         dates: [],
+        tempDate: '',
         time: '',
         location: '',
         description: '',
@@ -48,7 +49,7 @@ const VolunteerGigManager = () => {
 
     const resetForm = () => {
         setFormData({ 
-            title: '', dates: [], time: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '', whatsappLink: '',
+            title: '', dates: [], tempDate: '', time: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '', whatsappLink: '',
             image: '', highlightColor: '#39FF14', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 }
         });
         setIsAdding(false);
@@ -58,9 +59,23 @@ const VolunteerGigManager = () => {
     };
 
     const handleEdit = (gig) => {
+        // Pre-process dates to ensure they are clean strings (yyyy-mm-dd)
+        const rawDates = gig.dates || (gig.date ? [gig.date] : []);
+        const cleanDates = rawDates.map(d => {
+            if (!d) return null;
+            if (typeof d === 'string') return d.split('T')[0];
+            if (d.seconds) return new Date(d.seconds * 1000).toISOString().split('T')[0];
+            try {
+                const dateObj = new Date(d);
+                if (!isNaN(dateObj.getTime())) return dateObj.toISOString().split('T')[0];
+            } catch (e) {}
+            return null;
+        }).filter(Boolean);
+
         setFormData({
             title: gig.title,
-            dates: gig.dates || (gig.date ? [gig.date] : []),
+            dates: cleanDates,
+            tempDate: '',
             time: gig.time || '',
             location: gig.location,
             description: gig.description || '',
@@ -83,7 +98,7 @@ const VolunteerGigManager = () => {
         try {
             const gigData = { ...formData };
             delete gigData.id;
-            delete gigData.tempDate; // remove helper field
+            delete gigData.tempDate; // Clean up internal UI state
 
             if (editingId) {
                 await updateVolunteerGig(editingId, gigData);
@@ -147,9 +162,27 @@ const VolunteerGigManager = () => {
     };
 
     const formatDate = (dateStr) => {
-        if (!dateStr) return '';
-        const [y, m, d] = dateStr.split('-');
-        return `${d}-${m}-${y}`;
+        if (!dateStr) return 'TBD';
+        
+        // Handle input format (likely yyyy-mm-dd from StudioDatePicker)
+        const s = String(dateStr);
+        if (s.includes('-')) {
+            const parts = s.split('-');
+            if (parts.length === 3) {
+                const [y, m, d] = parts;
+                return `${d}-${m}-${y}`;
+            }
+        }
+        
+        // Final fallback for display
+        try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString('en-GB').replace(/\//g, '-');
+            }
+        } catch (e) {}
+        
+        return s;
     };
 
     if (isAdding) {
@@ -233,13 +266,35 @@ const VolunteerGigManager = () => {
                                                 onChange={(val) => setFormData({ ...formData, tempDate: val })} 
                                                 className="flex-1 h-14"
                                             />
-                                            <Button type="button" className="bg-neon-green/10 text-neon-green border hover:bg-neon-green hover:text-black border-neon-green/30 h-14 px-6 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all" onClick={() => {
-                                                const dateVal = formData.tempDate;
-                                                if (dateVal && !formData.dates.includes(dateVal)) {
-                                                    const newDates = [...formData.dates, dateVal].sort((a, b) => new Date(a) - new Date(b));
-                                                    setFormData({ ...formData, dates: newDates, tempDate: '' });
-                                                }
-                                            }}>ADD DAY</Button>
+                                            <button 
+                                                type="button" 
+                                                className="bg-neon-green/10 text-neon-green border hover:bg-neon-green hover:text-black border-neon-green/30 h-14 px-6 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all" 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    console.log("Adding date:", formData.tempDate);
+                                                    const dateVal = formData.tempDate;
+                                                    if (dateVal && dateVal !== '') {
+                                                        const currentDates = Array.isArray(formData.dates) ? formData.dates : [];
+                                                        if (!currentDates.includes(dateVal)) {
+                                                            try {
+                                                                const newDates = [...currentDates, dateVal].sort((a, b) => {
+                                                                    const dA = new Date(a).getTime();
+                                                                    const dB = new Date(b).getTime();
+                                                                    if (isNaN(dA) || isNaN(dB)) return 0;
+                                                                    return dA - dB;
+                                                                });
+                                                                setFormData(prev => ({ ...prev, dates: newDates, tempDate: '' }));
+                                                            } catch (err) {
+                                                                console.error("Sort failed:", err);
+                                                                setFormData(prev => ({ ...prev, dates: [...currentDates, dateVal], tempDate: '' }));
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                ADD DAY
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
