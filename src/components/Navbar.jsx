@@ -4,6 +4,7 @@ import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as Image
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import NotificationBell from './NotificationBell';
+import ProfilePanel from './ProfilePanel';
 import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
 
@@ -11,6 +12,7 @@ const Navbar = () => {
     const { maintenanceState, user, siteSettings, creators, announcements } = useStore();
     const pinnedAnnouncement = announcements?.find(a => a.isPinned);
     const [isOpen, setIsOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
     const location = useLocation();
 
     const allLinks = [
@@ -143,7 +145,7 @@ const Navbar = () => {
                             {user && (
                                 <div className="flex items-center gap-2">
                                     <button 
-                                        onClick={() => setIsOpen(true)}
+                                        onClick={() => setIsProfileOpen(true)}
                                         className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all outline-none"
                                     >
                                         <UserIcon size={14} className="text-gray-400" />
@@ -175,15 +177,18 @@ const Navbar = () => {
                         )}
                         <NotificationBell />
                         {user ? (
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 pr-2">
-                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                        <span className="text-white font-black text-[11px] uppercase">
+                            <div 
+                                className="flex items-center gap-3 cursor-pointer"
+                                onClick={() => setIsProfileOpen(true)}
+                            >
+                                <div className="flex items-center gap-2 pr-2 group">
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-neon-blue transition-all">
+                                        <span className="text-white font-black text-[11px] uppercase group-hover:text-neon-blue">
                                             {user.displayName ? user.displayName.charAt(0) : 'U'}
                                         </span>
                                     </div>
                                     <div className="text-left flex flex-col justify-center">
-                                        <span className="text-[11px] font-bold text-white leading-none capitalize tracking-tight">
+                                        <span className="text-[11px] font-bold text-white leading-none capitalize tracking-tight group-hover:text-neon-blue transition-colors">
                                             {user.displayName?.split(' ')[0] || 'Member'}
                                         </span>
                                         <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
@@ -191,12 +196,6 @@ const Navbar = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => useStore.getState().logout()}
-                                    className="p-1.5 rounded-full hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all font-bold"
-                                >
-                                    <LogOut size={14} />
-                                </button>
                             </div>
                         ) : (
                             <button
@@ -353,6 +352,10 @@ const Navbar = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+            <ProfilePanel 
+                isOpen={isProfileOpen} 
+                onClose={() => setIsProfileOpen(false)} 
+            />
         </>
     );
 };

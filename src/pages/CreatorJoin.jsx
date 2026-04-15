@@ -102,9 +102,9 @@ const CreatorJoin = () => {
     }
 
     const steps = [
-        { id: 1, title: 'IDENTITY', icon: Users },
-        { id: 2, title: 'SOCIALS', icon: Instagram },
-        { id: 3, title: 'PITCH', icon: Camera }
+        { id: 1, title: 'IDENTITY PROFILE', icon: Users },
+        { id: 2, title: 'AUDIENCE ANALYTICS', icon: Instagram },
+        { id: 3, title: 'COMMERCIAL SPEC', icon: Camera }
     ];
 
     return (
@@ -128,16 +128,16 @@ const CreatorJoin = () => {
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="text-6xl md:text-[10rem] font-black font-heading mb-8 tracking-tighter leading-none uppercase italic"
+                        className="text-6xl md:text-[10rem] font-black font-heading mb-8 tracking-tighter leading-none uppercase italic text-white"
                     >
-                        JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">TRIBE.</span>
+                        STUDIO <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">CERTIFICATION.</span>
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                        className="text-gray-500 max-w-3xl mx-auto text-lg md:text-2xl font-bold leading-relaxed uppercase tracking-widest"
+                        className="text-gray-500 max-w-4xl mx-auto text-lg md:text-2xl font-bold leading-relaxed uppercase tracking-widest"
                     >
-                        Collaborate with elite brands, secure exclusive gigs, and monetize your influence. Apply for certification.
+                        Apply for professional backing. Gain access to high-tier brand missions, exclusive studio resources, and automated commercial settlements.
                     </motion.p>
                 </div>
 
@@ -197,8 +197,8 @@ const CreatorJoin = () => {
                                         <div className="flex items-center gap-5 mb-10">
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Users size={24} /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Personal Identity</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Foundational Details</p>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Identity Profile</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Legitimacy Verification</p>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,8 +223,8 @@ const CreatorJoin = () => {
                                                 </select>
                                             </div>
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Content Categories</label>
-                                                <Input required name="categories" value={formData.categories} onChange={handleChange} placeholder="e.g. Fashion, Tech, Music" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Primary Specializations</label>
+                                                <Input required name="categories" value={formData.categories} onChange={handleChange} placeholder="e.g. Fashion, Luxury, Tech" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
                                             </div>
                                         </div>
                                     </div>
@@ -271,8 +271,8 @@ const CreatorJoin = () => {
                                         <div className="flex items-center gap-5 mb-10">
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Camera size={24} /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Brand Pitch</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Creative Authority</p>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Commercial Spec</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Marketable Authority</p>
                                             </div>
                                         </div>
                                         <div className="space-y-8">

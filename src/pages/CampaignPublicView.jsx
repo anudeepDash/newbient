@@ -155,14 +155,14 @@ const CampaignPublicView = () => {
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden pt-20">
+        <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden pt-12">
             {/* Ambient Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-white/[0.02] rounded-full blur-[100px]" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-20">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
                     {/* Left Column: Mission Content */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
@@ -171,7 +171,7 @@ const CampaignPublicView = () => {
                                 <Instagram size={16} className="text-neon-blue" />
                                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Creator Opportunity</span>
                             </div>
-                            <h1 className="text-5xl md:text-7xl font-black font-heading leading-tight uppercase tracking-tight">{campaign.title}</h1>
+                            <h1 className="text-4xl md:text-6xl font-black font-heading leading-tight uppercase tracking-tight">{campaign.title}</h1>
                             <div className="flex flex-wrap gap-10 py-4 border-y border-white/5">
                                 <div className="space-y-1">
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Location</span>

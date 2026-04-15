@@ -5,7 +5,7 @@ import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, LayoutGrid, LayoutDashboard, X, Filter, Globe, Zap, Clock, ChevronRight, Share2, Copy, Image as ImageIcon, GripVertical, Calendar, Star, Link2, FileText, Video, Camera, Eye, ChevronDown, ChevronUp, AlertCircle, XCircle, ExternalLink, Instagram, Youtube, Twitter, Clipboard, ArrowUp, ArrowDown } from 'lucide-react';
+import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, LayoutGrid, LayoutDashboard, Target, X, Filter, Globe, Zap, Clock, ChevronRight, Share2, Copy, Image as ImageIcon, GripVertical, Calendar, Star, Link2, FileText, Video, Camera, Eye, ChevronDown, ChevronUp, AlertCircle, XCircle, ExternalLink, Instagram, Youtube, Twitter, Clipboard, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
@@ -498,7 +498,20 @@ const CampaignManager = () => {
         try {
             const appliedCreators = useStore.getState().creators.filter(c => (c.joinedCampaigns || []).includes(campaignId));
             const approvedUids = appliedCreators.filter(c => uploadedUids.includes(c.uid)).map(c => c.uid);
-            if (approvedUids.length > 0) await useStore.getState().bulkShortlistCreators(campaignId, approvedUids, true);
+            if (approvedUids.length > 0) {
+                await useStore.getState().bulkShortlistCreators(campaignId, approvedUids, true);
+                
+                // Notify all newly shortlisted creators
+                for (const uid of approvedUids) {
+                    await notifySpecificUser(
+                        uid,
+                        'MISSION SELECTION',
+                        `CONGRATULATIONS! YOU HAVE BEEN SELECTED FOR "${campaign.title.toUpperCase()}". VIEW YOUR TASKS IN YOUR CREATOR STUDIO.`,
+                        '/creator-dashboard',
+                        'campaign'
+                    );
+                }
+            }
             alert(`Shortlisted ${approvedUids.length} creators.`);
         } catch (error) {
             alert("Sync error.");
@@ -534,6 +547,18 @@ const CampaignManager = () => {
                 return;
             }
             await useStore.getState().reviewTaskSubmission(campaignId, taskId, creatorUid, status);
+            
+            // Notify creator of approval
+            const campaign = campaigns.find(c => c.id === campaignId);
+            const task = campaign?.tasks?.find(t => t.id === taskId);
+            
+            await notifySpecificUser(
+                creatorUid,
+                'TASK APPROVED',
+                `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" HAS BEEN VERIFIED. GREAT WORK!`,
+                '/creator-dashboard',
+                'campaign'
+            );
         } catch (error) {
             alert("Review failed.");
         }
@@ -549,6 +574,19 @@ const CampaignManager = () => {
                 'rejected',
                 rejectionReason
             );
+
+            // Notify creator of rejection
+            const campaign = campaigns.find(c => c.id === rejectionModal.campaignId);
+            const task = campaign?.tasks?.find(t => t.id === rejectionModal.taskId);
+            
+            await notifySpecificUser(
+                rejectionModal.creatorUid,
+                'TASK FEEDBACK',
+                `YOUR SUBMISSION FOR "${task?.title?.toUpperCase()}" REQUIRES ATTENTION: ${rejectionReason.toUpperCase()}`,
+                '/creator-dashboard',
+                'campaign'
+            );
+
             setRejectionModal(null);
             setRejectionReason('');
         } catch (error) {
@@ -593,26 +631,39 @@ const CampaignManager = () => {
         >
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 py-10">
                 {/* Performance Overview Cards */}
+                {/* Command Center Stats */}
                 {!isCreating && !expandedCampaignId && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2rem] flex flex-col items-center text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-5xl font-black text-white font-heading italic tracking-tighter">{totalCampaigns}</span>
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Total Campaigns</span>
+                        <div className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] flex flex-col items-center text-center relative overflow-hidden group hover:border-neon-blue/20 transition-all duration-500">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6 text-gray-500 group-hover:text-white transition-colors">
+                                <LayoutGrid size={24} />
+                            </div>
+                            <span className="text-5xl font-black text-white font-heading italic tracking-tighter truncate w-full">{totalCampaigns}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Active Deployments</span>
                         </div>
-                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2rem] flex flex-col items-center text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-neon-green/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-5xl font-black text-neon-green font-heading italic tracking-tighter">{activeCampaigns}</span>
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Active Missions</span>
+                        <div className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] flex flex-col items-center text-center relative overflow-hidden group hover:border-neon-green/20 transition-all duration-500">
+                            <div className="absolute inset-0 bg-gradient-to-br from-neon-green/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-12 h-12 rounded-2xl bg-neon-green/10 flex items-center justify-center mb-6 text-neon-green">
+                                <Zap size={24} />
+                            </div>
+                            <span className="text-5xl font-black text-neon-green font-heading italic tracking-tighter truncate w-full">{activeCampaigns}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Live Missions</span>
                         </div>
-                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2rem] flex flex-col items-center text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-5xl font-black text-white font-heading italic tracking-tighter">{totalTasksCreated}</span>
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Tasks Designed</span>
+                        <div className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] flex flex-col items-center text-center relative overflow-hidden group hover:border-neon-blue/20 transition-all duration-500">
+                            <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 flex items-center justify-center mb-6 text-neon-blue">
+                                <Target size={24} />
+                            </div>
+                            <span className="text-5xl font-black text-white font-heading italic tracking-tighter truncate w-full">{totalTasksCreated}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Global Segments</span>
                         </div>
-                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2rem] flex flex-col items-center text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-yellow-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-5xl font-black text-yellow-500 font-heading italic tracking-tighter">{totalPendingReviews}</span>
+                        <div className="p-8 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] flex flex-col items-center text-center relative overflow-hidden group hover:border-yellow-500/20 transition-all duration-500">
+                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center mb-6 text-yellow-500">
+                                <Clock size={24} className="animate-pulse" />
+                            </div>
+                            <span className="text-5xl font-black text-yellow-500 font-heading italic tracking-tighter truncate w-full">{totalPendingReviews}</span>
                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-3">Pending Verification</span>
                         </div>
                     </div>
@@ -723,8 +774,8 @@ const CampaignManager = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">INSTAGRAM LINK / CREATIVE ASSETS FOLDER</label>
-                                        <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://..." className="h-14 bg-black/50 border-white/5 rounded-2xl" />
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WHATSAPP GROUP / HUB LINK</label>
+                                        <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="h-14 bg-black/50 border-white/5 rounded-2xl" />
                                     </div>
 
                                     {/* === DYNAMIC TASKS SECTION === */}
@@ -780,9 +831,11 @@ const CampaignManager = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredCampaigns.map(campaign => {
+                        {filteredCampaigns.map((campaign, idx) => {
                             const totalTasks = campaign.tasks?.length || 0;
                             const requiredTasks = (campaign.tasks || []).filter(t => t.priority !== 'optional').length;
+                            const applicantsCount = useStore.getState().creators.filter(c => (c.joinedCampaigns || []).includes(campaign.id)).length;
+                            const shortlistedCount = useStore.getState().creators.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id)).length;
                             
                             return (
                                 <motion.div 
@@ -790,38 +843,57 @@ const CampaignManager = () => {
                                     layout
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(46,191,255,0.05)] cursor-pointer" 
+                                    transition={{ delay: idx * 0.05 }}
+                                    className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 flex flex-col h-full relative group hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] cursor-pointer overflow-hidden" 
                                     onClick={() => { setExpandedCampaignId(campaign.id); setModalTab('applicants'); }}
                                 >
-                                    <div className="flex items-start justify-between mb-8">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    
+                                    <div className="flex items-start justify-between mb-8 relative z-10">
                                         <div className={cn(
-                                            "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all",
+                                            "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
                                             campaign.status === 'Open' ? 'bg-neon-green/10 text-neon-green border-neon-green/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
                                         )}>
-                                            {campaign.status === 'Open' ? 'Active' : 'Closed'} Campaign
+                                            {campaign.status === 'Open' ? 'Active Mission' : 'Dormant'}
                                         </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={(e) => { e.stopPropagation(); handleCopyLink(campaign.id); }} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-colors" title="Copy Public Link"><Share2 size={16} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleEdit(campaign); }} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-colors"><Edit size={16} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(campaign.id); }} className="p-2.5 bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all">
+                                            <button onClick={(e) => { e.stopPropagation(); handleCopyLink(campaign.id); }} className="p-3 bg-white/5 backdrop-blur-md rounded-xl text-gray-500 hover:text-neon-blue transition-colors border border-white/5" title="Copy Public Link"><Share2 size={16} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleEdit(campaign); }} className="p-3 bg-white/5 backdrop-blur-md rounded-xl text-gray-500 hover:text-neon-blue transition-colors border border-white/5"><Edit size={16} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(campaign.id); }} className="p-3 bg-white/5 backdrop-blur-md rounded-xl text-gray-500 hover:text-red-500 transition-colors border border-white/5"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
-
-                                    <div className="flex-1">
-                                        <h3 className="text-2xl font-black font-heading mb-3 uppercase italic tracking-tight group-hover:text-neon-blue transition-colors">{campaign.title}</h3>
-                                        <div className="flex flex-wrap items-center gap-6 mb-8">
-                                            <span className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest"><MapPin size={12} className="text-neon-blue" /> {campaign.targetCity}</span>
-                                            <span className="flex items-center gap-2 text-[10px] font-black text-neon-green uppercase tracking-widest"><Zap size={12} /> {campaign.reward}</span>
+                                    
+                                    <div className="flex-1 relative z-10">
+                                        <h3 className="text-3xl font-black font-heading mb-4 uppercase italic tracking-tighter text-white group-hover:text-neon-blue transition-colors leading-none pr-10">{campaign.title}</h3>
+                                        <div className="flex flex-wrap items-center gap-4 mb-10">
+                                            <span className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"><MapPin size={12} className="text-neon-blue" /> {campaign.targetCity}</span>
+                                            <span className="flex items-center gap-2 text-[10px] font-black text-neon-green uppercase tracking-widest bg-neon-green/5 px-3 py-1.5 rounded-lg border border-neon-green/10"><Zap size={12} /> {campaign.reward}</span>
                                         </div>
                                         
-                                        <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex -space-x-2">
-                                                    {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full bg-zinc-800 border-2 border-zinc-900 group-hover:border-neon-blue/30 transition-colors" />)}
-                                                </div>
-                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{totalTasks} TASKS ({requiredTasks} REQ)</span>
+                                        <div className="grid grid-cols-2 gap-4 mb-8">
+                                            <div className="p-4 bg-black/30 rounded-2xl border border-white/5">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em] block mb-1">ROSTER</span>
+                                                <span className="text-sm font-black text-white italic">{applicantsCount} <span className="text-[10px] text-gray-600 not-italic font-bold">Creators</span></span>
                                             </div>
-                                            <ChevronRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={20} />
+                                            <div className="p-4 bg-black/30 rounded-2xl border border-white/5">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em] block mb-1">SELECTED</span>
+                                                <span className="text-sm font-black text-neon-blue italic">{shortlistedCount} <span className="text-[10px] text-gray-600 not-italic font-bold">Active</span></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-auto pt-8 border-t border-white/10 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                                                    <LayoutDashboard size={18} />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-black text-white uppercase tracking-widest block">{totalTasks} SEGMENTS</span>
+                                                    <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{requiredTasks} CRITICAL REQ</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-700 group-hover:text-neon-blue group-hover:bg-neon-blue/10 transition-all">
+                                                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -897,15 +969,18 @@ const CampaignManager = () => {
                                 {modalTab === 'applicants' ? (
                                     /* APPLICANTS TAB */
                                     <div className="space-y-10">
-                                        <div className="flex items-center justify-between pb-6 border-b border-white/5">
-                                            <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                <div className="w-8 h-px bg-neon-blue" /> APPLICANT LIST
-                                            </h3>
+                                        <div className="flex items-center justify-between pb-8 mb-8 border-b border-white/5">
+                                            <div>
+                                                <h3 className="text-xs font-black text-white uppercase tracking-[0.4em] flex items-center gap-3">
+                                                    <div className="w-8 h-px bg-neon-blue" /> APPLICANT ROSTER
+                                                </h3>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase mt-2 tracking-widest pl-11">Manage selection and campaign onboarding</p>
+                                            </div>
                                             <div className="flex gap-4">
-                                                <button onClick={() => handleDownloadApplications(expandedCampaign)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-all border border-white/5">
-                                                    <Download size={16} />
+                                                <button onClick={() => handleDownloadApplications(expandedCampaign)} className="h-12 px-5 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-all border border-white/5 gap-3">
+                                                    <Download size={16} /> <span className="text-[9px] font-black uppercase tracking-widest">Export CSV</span>
                                                 </button>
-                                                <CSVUploadButton onUpload={(data) => handleUploadShortlist(expandedCampaign.id, data)} isLoading={isProcessingCSV} className="h-10 px-5 rounded-xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 text-[9px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all" />
+                                                <CSVUploadButton onUpload={(data) => handleUploadShortlist(expandedCampaign.id, data)} isLoading={isProcessingCSV} className="h-12 px-6 rounded-xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 text-[9px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all" />
                                             </div>
                                         </div>
 
