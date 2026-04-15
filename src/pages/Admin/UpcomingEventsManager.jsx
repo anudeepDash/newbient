@@ -56,7 +56,20 @@ const UpcomingEventsManager = () => {
     const handleEdit = (item) => {
         setEditingId(item.id);
         setIsAdding(true);
-        setNewEvent({ ...item, alsoPostToAnnouncements: false });
+        
+        let dateValue = item.date;
+        // Handle Firestore Timestamp
+        if (dateValue && dateValue.seconds) {
+            dateValue = new Date(dateValue.seconds * 1000).toISOString();
+        } else if (dateValue && typeof dateValue !== 'string') {
+            try {
+                dateValue = new Date(dateValue).toISOString();
+            } catch (e) {
+                dateValue = '';
+            }
+        }
+
+        setNewEvent({ ...item, date: dateValue || '', alsoPostToAnnouncements: false });
     };
 
     const moveItem = async (index, direction) => {
@@ -214,17 +227,17 @@ const UpcomingEventsManager = () => {
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Date & Time</label>
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <StudioDatePicker
-                                                                value={newEvent.date ? newEvent.date.split('T')[0] : ''}
+                                                                value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : (typeof newEvent.date === 'string' ? newEvent.date : '')}
                                                                 onChange={(val) => {
-                                                                    const timePart = newEvent.date?.split('T')[1] || '20:00';
+                                                                    const timePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00';
                                                                     setNewEvent({ ...newEvent, date: `${val}T${timePart}` });
                                                                 }}
                                                                 className="h-16"
                                                             />
                                                             <StudioTimePicker
-                                                                value={newEvent.date ? newEvent.date.split('T')[1] : '20:00'}
+                                                                value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00'}
                                                                 onChange={(val) => {
-                                                                    const datePart = newEvent.date?.split('T')[0] || new Date().toISOString().split('T')[0];
+                                                                    const datePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : new Date().toISOString().split('T')[0];
                                                                     setNewEvent({ ...newEvent, date: `${datePart}T${val}` });
                                                                 }}
                                                                 className="h-16"
@@ -539,7 +552,9 @@ const UpcomingEventsManager = () => {
                                             
                                             <div className="translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
                                                 <div className="flex items-center gap-3 mb-4">
-                                                    <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">{item.date?.split('T')[0] || 'TBD'}</span>
+                                                    <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">
+                                                        {(typeof item.date === 'string' && item.date.includes('T')) ? item.date.split('T')[0] : (item.date && item.date.seconds ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'TBD')}
+                                                    </span>
                                                     {item.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
                                                 </div>
                                                 <div>

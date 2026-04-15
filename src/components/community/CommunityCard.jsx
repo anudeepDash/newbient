@@ -13,10 +13,43 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     const isCampaign = type === 'campaign';
     
     const formatDate = (dateValue) => {
+        // Handle array of dates (common in Volunteer Gigs)
+        if (Array.isArray(dateValue)) {
+            if (dateValue.length === 0) return 'TBD';
+            if (dateValue.length === 1) return formatDate(dateValue[0]);
+            
+            // For multiple dates, show count or range
+            try {
+                const dates = dateValue
+                    .map(d => new Date(d))
+                    .filter(d => !isNaN(d.getTime()))
+                    .sort((a, b) => a.getTime() - b.getTime());
+                
+                if (dates.length === 0) return 'TBD';
+                if (dates.length === 1) return formatDate(dates[0]);
+
+                const start = dates[0];
+                const end = dates[dates.length - 1];
+                
+                const startMonth = start.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                const endMonth = end.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                
+                if (startMonth === endMonth) {
+                    return `${start.getDate()} - ${end.getDate()} ${startMonth}, ${start.getFullYear()}`;
+                }
+                return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}, ${start.getFullYear()}`;
+            } catch (e) {
+                return `${dateValue.length} DAYS`;
+            }
+        }
+
         if (!dateValue || dateValue === 'TBD') return 'TBD';
+        
         try {
-            const d = new Date(dateValue);
-            if (isNaN(d.getTime())) return dateValue;
+            // Handle ISO strings with time or simple yyyy-mm-dd
+            const cleanDate = typeof dateValue === 'string' ? dateValue.split('T')[0] : dateValue;
+            const d = new Date(cleanDate);
+            if (isNaN(d.getTime())) return String(dateValue).toUpperCase();
             
             const day = d.getDate();
             const month = d.toLocaleDateString('en-US', { month: 'long' });
@@ -34,7 +67,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
             
             return `${day}${suffix(day)} ${month}, ${year}`.toUpperCase();
         } catch (e) {
-            return dateValue;
+            return String(dateValue).toUpperCase();
         }
     };
 
@@ -216,7 +249,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                     <div className="flex items-center gap-2.5">
                                         <Calendar size={13} style={{ color: highlightColor }} />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                                            {formatDate(item.date)}
+                                            {formatDate(item.dates || item.date)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2.5">
