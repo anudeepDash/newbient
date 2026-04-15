@@ -11,6 +11,32 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     const isForm = type === 'form';
     const isGL = type === 'gl' || type === 'gl_embed';
     const isCampaign = type === 'campaign';
+    
+    const formatDate = (dateValue) => {
+        if (!dateValue || dateValue === 'TBD') return 'TBD';
+        try {
+            const d = new Date(dateValue);
+            if (isNaN(d.getTime())) return dateValue;
+            
+            const day = d.getDate();
+            const month = d.toLocaleDateString('en-US', { month: 'long' });
+            const year = d.getFullYear();
+            
+            const suffix = (day) => {
+                if (day > 3 && day < 21) return 'TH';
+                switch (day % 10) {
+                    case 1:  return "ST";
+                    case 2:  return "ND";
+                    case 3:  return "RD";
+                    default: return "TH";
+                }
+            };
+            
+            return `${day}${suffix(day)} ${month}, ${year}`.toUpperCase();
+        } catch (e) {
+            return dateValue;
+        }
+    };
 
     const hasExternalLink = (item.link && item.link.trim() !== '' && item.link !== '#') || (item.applyLink && item.applyLink.startsWith('http'));
     const isInternalGL = isGL && item.guestlistEnabled && !hasExternalLink;
@@ -39,7 +65,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
         : (typeof item.artists === 'string' && item.artists.trim() !== '' ? item.artists.split(',').map(a => a.trim()) : []);
 
     return (
-        <div className="perspective-1000 w-full min-h-[240px] md:min-h-[220px] flex">
+        <div className="perspective-1000 w-full h-[360px] md:h-[350px] flex">
             <motion.div
                 initial={false}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -87,13 +113,13 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                              }} />
 
                         {/* Main Content Area */}
-                        <div className="flex-1 p-5 md:p-8 flex flex-col justify-between">
+                        <div className="flex-1 p-4 md:p-8 flex flex-col justify-between gap-3 md:gap-4">
                             {/* Header Module */}
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
+                                <div className="flex items-center gap-3">
+                                    <div className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
                                         <span 
-                                            className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em]"
+                                            className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em]"
                                             style={{ color: highlightColor }}
                                         >
                                             {isGig ? "GIGS" : (isCampaign ? "CAMPAIGNS" : "ACCESS")}
@@ -119,32 +145,44 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             </div>
 
                             {/* Body: Title & Desc */}
-                            <div className="space-y-4 py-4 pr-12">
+                            <div className="space-y-2 py-1 pr-6 md:pr-12">
                                 <div className="space-y-1">
-                                    <h2 className="text-3xl md:text-[2.75rem] font-black font-heading text-white tracking-tighter uppercase italic leading-[0.85] drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                                    <h2 className="text-xl md:text-[1.75rem] font-black font-heading text-white tracking-tighter uppercase italic leading-[0.85] drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                                         {item.title}
                                     </h2>
-                                    <div className="h-0.5 w-12 rounded-full" style={{ backgroundColor: highlightColor }} />
+                                    <div className="h-0.5 w-6 md:w-8 rounded-full" style={{ backgroundColor: highlightColor }} />
                                 </div>
                                 <div className="relative">
                                     {/* Glass backdrop for the spec sheet */}
                                     <div className="absolute -inset-4 bg-white/[0.02] rounded-2xl blur-md -z-10" />
-                                    <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.8] max-w-xl whitespace-pre-wrap">
-                                        {item.description ? (
-                                            item.description.split('\n').map((line, i) => {
-                                                const parts = line.split(':');
-                                                if (parts.length > 1) {
-                                                    return (
-                                                        <span key={i} className="block mb-1 last:mb-0">
-                                                            <span className="text-white opacity-80" style={{ color: highlightColor }}>{parts[0]}:</span>
-                                                            <span className="text-gray-400"> {parts.slice(1).join(':')}</span>
-                                                        </span>
-                                                    );
-                                                }
-                                                return <span key={i} className="block mb-1 last:mb-0 opacity-60 italic">{line}</span>;
-                                            })
-                                        ) : "The next frontier of lifestyle & entertainment."}
-                                    </p>
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.8] max-w-xl whitespace-pre-wrap">
+                                            {item.description ? (
+                                                item.description.split('\n').slice(0, 2).map((line, i) => {
+                                                    const parts = line.split(':');
+                                                    if (parts.length > 1) {
+                                                        return (
+                                                            <span key={i} className="block mb-1 last:mb-0">
+                                                                <span className="text-white opacity-80" style={{ color: highlightColor }}>{parts[0]}:</span>
+                                                                <span className="text-gray-400"> {parts.slice(1).join(':')}</span>
+                                                            </span>
+                                                        );
+                                                    }
+                                                    return <span key={i} className="block mb-1 last:mb-0 opacity-60 italic">{line}</span>;
+                                                })
+                                            ) : "The next frontier of lifestyle & entertainment."}
+                                        </p>
+                                        
+                                        {(item.description?.split('\n').length > 2 || item.importantNotes) && (
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsFlipped(true); }}
+                                                className="inline-flex items-center gap-2 text-[8px] font-black text-white/40 hover:text-white uppercase tracking-[0.3em] transition-all group/more"
+                                            >
+                                                READ MORE 
+                                                <div className="w-4 h-px bg-white/20 group-hover/more:w-8 transition-all" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -173,12 +211,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             )}
 
                             {/* Footer Area */}
-                            <div className="pt-4 border-t border-white/5 space-y-4 relative z-20 bg-[#020202]/80 backdrop-blur-sm -mx-8 px-8 pb-8 -mb-8 rounded-b-[3rem]">
+                            <div className="mt-auto pt-4 border-t border-white/5 space-y-3 relative z-20 bg-[#020202]/80 backdrop-blur-sm -mx-4 md:-mx-8 px-4 md:px-8 pb-4 md:pb-6 rounded-b-[2.5rem] md:rounded-b-[3rem]">
                                 <div className="flex flex-wrap items-center gap-8 text-white/50">
                                     <div className="flex items-center gap-2.5">
                                         <Calendar size={13} style={{ color: highlightColor }} />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                                            {item.date?.split('T')[0] || 'PENDING'}
+                                            {formatDate(item.date)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2.5">
@@ -202,7 +240,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                         onClick={handleButtonClick}
                                         disabled={item.status === 'Closed'}
                                         className={cn(
-                                            "h-12 w-full md:w-fit px-12 rounded-xl border font-black uppercase tracking-[0.3em] text-[10px] transition-all flex items-center justify-center gap-4 group/btn",
+                                            "h-10 md:h-12 w-full md:w-fit px-8 md:px-12 rounded-xl border font-black uppercase tracking-[0.3em] text-[9px] md:text-[10px] transition-all flex items-center justify-center gap-4 group/btn",
                                             item.status === 'Closed' 
                                                 ? "bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50" 
                                                 : "bg-white/10 border-white/10 text-white hover:bg-white hover:text-black hover:scale-[1.02]"
@@ -217,12 +255,12 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         </div>
 
                         {/* Right Interaction Sidebar */}
-                        <div className="w-12 md:w-14 bg-black/60 border-l border-white/5 flex flex-col items-center py-4 md:py-6 relative group/sidebar overflow-hidden">
+                        <div className="w-10 md:w-12 bg-black/60 border-l border-white/5 flex flex-col items-center py-3 md:py-4 relative group/sidebar overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.03] to-transparent opacity-0 group-hover/sidebar:opacity-100 transition-opacity" />
                             
                             {/* Single Pulsing Status Dot */}
                             {/* Single Pulsing Status Dot */}
-                            <div className="w-2.5 h-2.5 relative my-4">
+                            <div className="w-2 h-2 relative my-3">
                                 <div className={cn(
                                     "w-full h-full rounded-full relative z-10",
                                     item.status === 'Open' ? "bg-neon-green shadow-[0_0_10px_#10b981]" : "bg-zinc-800"
@@ -236,20 +274,20 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             <div className="flex-1 flex items-center justify-center w-full">
                                 <button 
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsFlipped(true); }}
-                                    className="flex flex-col items-center gap-3 md:gap-4 py-4 md:py-5 px-3 md:px-4 rounded-3xl transition-all z-20 active:scale-95 group/pill relative border border-white/5 hover:border-white/20 bg-white/[0.03] shadow-2xl backdrop-blur-xl pointer-events-auto"
+                                    className="flex flex-col items-center gap-2 md:gap-3 py-2 md:py-3 px-2 md:px-3 rounded-2xl transition-all z-20 active:scale-95 group/pill relative border border-white/5 hover:border-white/20 bg-white/[0.03] shadow-2xl backdrop-blur-xl pointer-events-auto"
                                     style={{ borderColor: `${highlightColor}30` }}
                                 >
                                     <span 
-                                        className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] [writing-mode:vertical-lr]"
+                                        className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] [writing-mode:vertical-lr]"
                                         style={{ color: `${highlightColor}80` }}
                                     >
                                         DETAILS
                                     </span>
-                                    <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" style={{ color: `${highlightColor}40` }} />
+                                    <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" style={{ color: `${highlightColor}40` }} />
                                     
                                     {/* Aesthetic Glow */}
                                     <div 
-                                        className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" 
+                                        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" 
                                         style={{ backgroundColor: `${highlightColor}05` }}
                                     />
                                 </button>

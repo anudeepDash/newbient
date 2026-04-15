@@ -55,6 +55,18 @@ import CampaignPublicView from './pages/CampaignPublicView'; // New Public View
 
 function App() {
   const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
+  const [showProgress, setShowProgress] = React.useState(false);
+
+  useEffect(() => {
+    // Only show loader if initialization takes more than 500ms
+    const timer = setTimeout(() => {
+        if (loading || !authInitialized) {
+            setShowProgress(true);
+        }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [loading, authInitialized]);
 
   useEffect(() => {
     const unsubscribeData = subscribeToData();
@@ -87,7 +99,7 @@ function App() {
 
     return (
     <Router>
-      <LoadingScreen isVisible={loading || !authInitialized} />
+      <LoadingScreen isVisible={showProgress && (loading || !authInitialized)} />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>

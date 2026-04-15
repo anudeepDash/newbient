@@ -67,6 +67,14 @@ export const useStore = create((set, get) => ({
     // Real-time Subscription Init
     subscribeToData: () => {
         console.log("Initializing Firebase Subscriptions...");
+        
+        // Safety timeout to prevent stuck loading screen
+        const loadingTimeout = setTimeout(() => {
+            if (get().loading) {
+                console.log("[Auto-Recovery] Forcing loading to false after timeout.");
+                set({ loading: false });
+            }
+        }, 2500);
 
         // Helper for collections
         const sub = (colName, stateKey) => {
@@ -113,12 +121,16 @@ export const useStore = create((set, get) => ({
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
-                if (stateKey === 'invoices') {
+                // Set loading false once core public data is ready
+                const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices'];
+                if (criticalKeys.includes(stateKey)) {
                     set({ loading: false });
                 }
             }, (error) => {
                 console.error(`Error fetching ${stateKey}:`, error);
-                if (stateKey === 'invoices') set({ loading: false });
+                // Fail-safe: if a critical sub fails, don't let it block the app
+                const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices'];
+                if (criticalKeys.includes(stateKey)) set({ loading: false });
             });
         };
 
@@ -203,6 +215,7 @@ export const useStore = create((set, get) => ({
 
 
         return () => {
+            clearTimeout(loadingTimeout);
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins();
         };
@@ -664,6 +677,20 @@ export const useStore = create((set, get) => ({
         await deleteDoc(doc(db, 'creators', uid));
     },
 
+    applyToCampaign: async (uid, campaignId) => {
+        const creatorRef = doc(db, 'creators', uid);
+        const snap = await getDoc(creatorRef);
+        if (snap.exists()) {
+            const data = snap.data();
+            const joined = data.joinedCampaigns || [];
+            if (!joined.includes(campaignId)) {
+                await updateDoc(creatorRef, {
+                    joinedCampaigns: [...joined, campaignId]
+                });
+            }
+        }
+    },
+
     // Campaigns / Gigs
     addCampaign: async (campaign) => {
         await addDoc(collection(db, 'campaigns'), {
@@ -936,6 +963,33 @@ export const useStore = create((set, get) => ({
         }
     },
 
+    verifyInstagramFollowers: async (uid, accessToken) => {
+        try {
+            const res = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,accounts{instagram_business_account{id,username,name,followers_count}}&access_token=${accessToken}`);
+            const data = await res.json();
+            
+            if (!data.accounts?.data?.[0]?.instagram_business_account) {
+                throw new Error("No Instagram Business Account linked to this Facebook page.");
+            }
+
+            const insta = data.accounts.data[0].instagram_business_account;
+            const followerCount = insta.followers_count;
+
+            await updateDoc(doc(db, 'creators', uid), {
+                instagramFollowers: followerCount.toString(),
+                profileStatus: 'approved',
+                instagramVerified: true,
+                socialVerifiedAt: new Date().toISOString(),
+                metaVerifiedName: insta.name || insta.username
+            });
+
+            return { success: true, followers: followerCount };
+        } catch (error) {
+            console.error("Meta Verification Error:", error);
+            throw error;
+        }
+    },
+
     // Ticket Orders (Offline System)
     addTicketOrder: async (order) => {
         await addDoc(collection(db, 'ticket_orders'), {
@@ -1107,6 +1161,28 @@ export const useStore = create((set, get) => ({
         const { auth } = await import('./firebase');
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return userCredential.user;
+    },
+
+    resetPassword: async (email) => {
+        const { sendPasswordResetEmail } = await import('firebase/auth');
+        const { auth } = await import('./firebase');
+        await sendPasswordResetEmail(auth, email);
+    },
+
+    updateDisplayName: async (displayName) => {
+        const { updateProfile } = await import('firebase/auth');
+        const { auth } = await import('./firebase');
+        if (!auth.currentUser) throw new Error("No authenticated user");
+        
+        await updateProfile(auth.currentUser, { displayName });
+        
+        // Update in Firestore users collection
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        await setDoc(userRef, { displayName }, { merge: true });
+
+        // Update local state
+        const { user } = get();
+        set({ user: { ...user, displayName } });
     },
 
     checkUserRole: async (firebaseUser) => {

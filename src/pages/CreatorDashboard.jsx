@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ArrowRight, CheckCircle2, ExternalLink, Sparkles, MessageCircle, FileText, Target, ShieldCheck, Zap, Settings, Instagram, LayoutDashboard, Clock, History, X, Upload, Link2, Camera, Video, Eye, Star, Globe, Youtube, Twitter, Calendar, Copy, ChevronRight, AlertCircle, XCircle, Image as ImageIcon, Clipboard, Loader2 } from 'lucide-react';
+import { MapPin, ArrowRight, CheckCircle2, ExternalLink, Sparkles, MessageCircle, FileText, Target, ShieldCheck, Zap, Settings, Instagram, LayoutDashboard, Clock, History, X, Upload, Link2, Camera, Video, Eye, Star, Globe, Youtube, Twitter, Calendar, Copy, ChevronRight, AlertCircle, XCircle, Image as ImageIcon, Clipboard, Loader2, Award, TrendingUp, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import CampaignCard from '../components/ui/CampaignCard';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera },
@@ -46,125 +47,7 @@ const CompletionTick = ({ visible }) => (
     </AnimatePresence>
 );
 
-// --- Campaign Card (front face) ---
-const CreatorCampaignCard = ({ campaign, profile, type, onOpenMission }) => {
-    const isJoined = type === 'joined';
-    const isShortlisted = (profile.shortlistedCampaigns || []).includes(campaign.id);
-    
-    const campaignTasks = campaign.tasks || [];
-    const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
-    const approvedRequired = requiredTasks.filter(t => getSubmissionStatus(t, profile.uid) === 'approved').length;
-    const approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, profile.uid) === 'approved').length;
-    const progress = campaignTasks.length > 0 ? (approvedTotal / campaignTasks.length) * 100 : 0;
-    const isFullyComplete = requiredTasks.length > 0 && approvedRequired === requiredTasks.length;
-    const hasNewTasks = isJoined && isShortlisted && campaignTasks.some(t => {
-        // If the task has no submission from this creator and was created recently
-        const status = getSubmissionStatus(t, profile.uid);
-        return status === 'not_started';
-    });
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 hover:border-neon-blue/40 shadow-xl rounded-[2.5rem] overflow-hidden flex flex-col group transition-all duration-500 h-full relative"
-        >
-            {/* Progress Strip */}
-            {isJoined && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden z-10">
-                    <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        className={cn("h-full transition-all duration-1000", isFullyComplete ? "bg-neon-green" : "bg-neon-blue")}
-                    />
-                </div>
-            )}
-
-            <div className="p-8 flex flex-col flex-1 relative">
-                {/* Header Row */}
-                <div className="flex items-start justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-blue">
-                            <Instagram size={18} />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{campaign.targetCity}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{Number(campaign.minInstagramFollowers || 0).toLocaleString()} Followers</span>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                        {isJoined && hasNewTasks && (
-                            <motion.span 
-                                initial={{ scale: 0.8 }} 
-                                animate={{ scale: [0.8, 1.1, 1] }} 
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[7px] font-black uppercase tracking-widest text-yellow-500"
-                            >
-                                New Tasks
-                            </motion.span>
-                        )}
-                        {isJoined && (
-                            <div className={cn(
-                                "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm",
-                                isFullyComplete ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
-                                isShortlisted ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : 
-                                "bg-zinc-800 text-gray-400 border-white/5"
-                            )}>
-                                {isFullyComplete ? 'MISSION COMPLETE' : isShortlisted ? 'IN-PROGRESS' : 'PENDING APPROVAL'}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Title */}
-                <div className="flex-1">
-                    <h3 className="text-2xl font-black font-heading mb-3 text-white tracking-tight uppercase group-hover:text-neon-blue transition-colors">
-                        {campaign.title}
-                    </h3>
-                    <p className="text-gray-400 text-[12px] line-clamp-2 leading-relaxed font-medium mb-8 pr-4">
-                        {campaign.description}
-                    </p>
-                    
-                    <div className="flex items-center gap-6 mt-auto">
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">CAMPAIGN REWARD</span>
-                            <span className="text-neon-green text-sm font-black italic">{campaign.reward}</span>
-                        </div>
-                        <div className="w-px h-8 bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">TASKS</span>
-                            <span className="text-white text-sm font-black">
-                                {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Units`}
-                            </span>
-                        </div>
-                        {isJoined && isShortlisted && (
-                            <>
-                                <div className="w-px h-8 bg-white/10" />
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">PROGRESS</span>
-                                    <span className={cn("text-sm font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>{Math.round(progress)}%</span>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onOpenMission(campaign); }}
-                        className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-white transition-colors flex items-center gap-2 group/btn"
-                    >
-                        <FileText size={14} className="group-hover/btn:text-neon-blue transition-colors" /> 
-                        {isJoined && isShortlisted ? 'Open Mission Panel' : 'View Campaign Brief'}
-                    </button>
-                    <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={18} />
-                </div>
-            </div>
-        </motion.div>
-    );
-};
+// Removed inline CreatorCampaignCard - Using shared CampaignCard component
 
 // --- TaskDetailModal (Centered Popup) ---
 const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, onSubmit }) => {
@@ -205,7 +88,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                             <TypeInfo.icon size={28} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em]">Phase II Mission</span>
+                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em]">Deliverable Segment</span>
                             <h2 className="text-3xl font-black font-heading uppercase text-white tracking-tighter leading-none mt-1">{task.title}</h2>
                         </div>
                     </div>
@@ -468,9 +351,11 @@ const CreatorSettingsModal = ({ profile, onClose }) => {
 };
 
 // --- Mission Panel (Slide-over) ---
-const MissionPanel = ({ campaign, profile, onClose, onOpenTask }) => {
+const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApplying }) => {
+    const isJoined = (profile.joinedCampaigns || []).includes(campaign.id);
     const isShortlisted = (profile.shortlistedCampaigns || []).includes(campaign.id);
     const campaignTasks = campaign.tasks || [];
+    const [isExpanded, setIsExpanded] = useState(false);
     
     // Progress calculations
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
@@ -496,15 +381,67 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask }) => {
                 className="relative w-full max-w-xl bg-[#0a0a0a] border-l border-white/10 h-full overflow-hidden flex flex-col"
             >
                 {/* Panel Header */}
-                <div className="px-8 pt-10 pb-8 border-b border-white/10 bg-gradient-to-r from-neon-blue/[0.05] to-transparent shrink-0">
-                    <div className="flex items-start justify-between mb-8">
-                        <div>
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Mission Studio</span>
-                            <h2 className="text-4xl font-black font-heading uppercase tracking-tight text-white mt-1 italic">{campaign.title}</h2>
+                <div className="px-8 pt-8 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
+                    <div className="flex items-start justify-between gap-6 mb-6">
+                        <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Creator Workspace</span>
+                            <h2 className="text-2xl font-black font-heading uppercase tracking-tight text-white mt-1 italic leading-tight">
+                                {campaign.title}
+                            </h2>
+                            <div className="mt-3">
+                                <div className={cn(
+                                    "text-[11px] font-medium uppercase tracking-wider leading-relaxed transition-all duration-300 overflow-hidden relative",
+                                    !isExpanded && "max-h-[60px]"
+                                )}>
+                                    {campaign.description ? (
+                                        campaign.description.split('\n').map((line, i) => {
+                                            const parts = line.split(':');
+                                            if (parts.length > 1) {
+                                                return (
+                                                    <span key={i} className="block mb-1">
+                                                        <span className="text-neon-blue font-black text-[10px] uppercase">{parts[0]}:</span>
+                                                        <span className="text-gray-500 opacity-80 ml-1"> {parts.slice(1).join(':')}</span>
+                                                    </span>
+                                                );
+                                            }
+                                            return <span key={i} className="block mb-1 text-gray-600 italic opacity-60">{line}</span>;
+                                        })
+                                    ) : (
+                                        <span className="text-gray-600">No tactical briefing provided for this operation.</span>
+                                    )}
+                                    
+                                    {!isExpanded && campaign.description && campaign.description.length > 100 && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
+                                    )}
+                                </div>
+                                
+                                {campaign.description && (campaign.description.split('\n').length > 3 || campaign.description.length > 100) && (
+                                    <button 
+                                        onClick={() => setIsExpanded(!isExpanded)}
+                                        className="text-[9px] font-black text-neon-blue/60 hover:text-white uppercase tracking-[0.3em] mt-2 transition-colors flex items-center gap-2 group"
+                                    >
+                                        {isExpanded ? 'MINIMIZE BRIEF' : 'VIEW FULL SPECS'}
+                                        <div className="w-4 h-px bg-neon-blue/20 group-hover:w-8 transition-all" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                        <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all shrink-0">
                             <X size={18} />
                         </button>
+                    </div>
+
+                    {/* Quick Specs Row */}
+                    <div className="flex items-center gap-6 mb-6">
+                        <div className="flex flex-col">
+                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Min. Followers</span>
+                            <span className="text-white font-bold uppercase text-[10px] tracking-tight">{Number(campaign.minInstagramFollowers || 0).toLocaleString()}+</span>
+                        </div>
+                        <div className="h-6 w-px bg-white/10" />
+                        <div className="flex flex-col">
+                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Bounty Scale</span>
+                            <span className="text-neon-green font-bold uppercase text-[10px] tracking-tight">{campaign.reward}</span>
+                        </div>
                     </div>
 
                     {/* Progress Segment */}
@@ -512,7 +449,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask }) => {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                    {approvedTotal}/{campaignTasks.length} MILESTONES SECURED
+                                    {approvedTotal}/{campaignTasks.length} DELIVERABLES SECURED
                                 </span>
                                 <span className={cn("text-[12px] font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
                                     {Math.round(progress)}%
@@ -537,13 +474,65 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask }) => {
                         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
                     `}} />
 
-                    {!isShortlisted ? (
+                    {profile.profileStatus !== 'approved' ? (
+                        <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
+                            <ShieldCheck size={40} className="text-neon-blue mx-auto animate-pulse" />
+                            <div>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Identity Review</h4>
+                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
+                                    OUR TALENT SCOUTS ARE VERIFYING YOUR PROFESSIONAL SPECS. ACCESS TO MISSIONS WILL BE UNLOCKED UPON APPROVAL.
+                                </p>
+                            </div>
+                        </div>
+                    ) : !isJoined ? (
+                        <div className="space-y-10">
+                            {/* Detailed Brief Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-[1px] w-6 bg-neon-blue/40" />
+                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em]">Tactical Specs // Full Brief</h3>
+                                </div>
+                                
+                                <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 relative overflow-hidden backdrop-blur-2xl">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-blue/20" />
+                                    <div className="text-sm md:text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap">
+                                        {campaign.description ? (
+                                            campaign.description.split('\n').map((line, i) => {
+                                                const parts = line.split(':');
+                                                if (parts.length > 1) {
+                                                    return (
+                                                        <span key={i} className="block mb-2">
+                                                            <span className="text-neon-blue font-black text-[12px] uppercase">{parts[0]}:</span>
+                                                            <span className="text-gray-400 opacity-80"> {parts.slice(1).join(':')}</span>
+                                                        </span>
+                                                    );
+                                                }
+                                                return <span key={i} className="block mb-2">{line}</span>;
+                                            })
+                                        ) : "No briefing provided for this workspace."}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : !isShortlisted ? (
                         <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
                             <Clock size={40} className="text-yellow-500 mx-auto animate-pulse" />
-                            <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter">Identity Review Phase</h4>
-                            <p className="text-[11px] text-gray-500 font-bold leading-relaxed max-w-xs mx-auto uppercase tracking-widest">
-                                Locked. Our talent scouts are reviewing your social metrics. 
-                            </p>
+                            <div>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Selection Phase</h4>
+                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
+                                    APPLICATION RECEIVED. YOU ARE CURRENTLY IN THE POOL FOR FINAL MISSION SHORTLISTING.
+                                </p>
+                            </div>
+                        </div>
+                    ) : campaignTasks.length === 0 ? (
+                        <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
+                            <Zap size={40} className="text-neon-blue mx-auto animate-pulse" />
+                            <div>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Deployment Pending</h4>
+                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
+                                    YOU ARE SELECTED! TASKS FOR THIS MISSION WILL BE UPDATED SOON. ENABLE NOTIFICATIONS TO STAY UPDATED.
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         campaignTasks.map((task, idx) => {
@@ -602,6 +591,15 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask }) => {
                 </div>
 
                 <div className="p-8 border-t border-white/10 shrink-0 bg-black">
+                    {!isJoined && profile.profileStatus === 'approved' && (
+                        <Button 
+                            onClick={() => onApply(campaign.id)}
+                            disabled={isApplying}
+                            className="w-full h-20 bg-white text-black font-black uppercase tracking-[0.3em] rounded-[2rem] shadow-[0_0_40px_rgba(255,20,147,0.3)] hover:shadow-[0_0_60px_rgba(255,20,147,0.5)] transition-all text-xs mb-4"
+                        >
+                            {isApplying ? <Loader2 className="animate-spin" /> : 'Apply to Campaign'}
+                        </Button>
+                    )}
                     {isShortlisted && campaign.whatsappLink && (
                         <a href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">
                             <Button className="w-full h-16 bg-[#25D366]/5 text-[#25D366] border border-[#25D366]/10 hover:bg-[#25D366]/10 font-black text-[10px] uppercase tracking-[0.2em] gap-3 rounded-[1.5rem] shadow-lg">
@@ -624,6 +622,7 @@ const CreatorDashboard = () => {
     const [missionCampaign, setMissionCampaign] = useState(null);
     const [selectedTask, setSelectedTask] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     useEffect(() => {
@@ -677,6 +676,19 @@ const CreatorDashboard = () => {
     };
 
 
+    const handleApply = async (campaignId) => {
+        setIsApplying(true);
+        try {
+            await useStore.getState().applyToCampaign(profile.uid, campaignId);
+            // We can keep the panel open, it will auto-update state due to Firebase subscription
+        } catch (error) {
+            alert("Application failed.");
+        } finally {
+            setIsApplying(false);
+        }
+    };
+
+
     if (!profile) return null;
 
     const availableCampaigns = campaigns.filter(c =>
@@ -698,154 +710,180 @@ const CreatorDashboard = () => {
     const shortlistedCampaignsList = joinedCampaignsList.filter(c => (profile.shortlistedCampaigns || []).includes(c.id));
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white pt-32 pb-20 relative overflow-hidden">
-            <style dangerouslySetInnerHTML={{ __html: `
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.05); border-radius: 20px; }
-            `}} />
-
-            <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.4]">
-                <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[100px]" />
-                <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-white/[0.02] rounded-full blur-[100px]" />
+        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 relative overflow-hidden">
+            {/* Cinematic Background Atmosphere */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[150px] animate-pulse delay-700" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-transparent via-black/40 to-black z-10" />
+                <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '80px 80px' }}></div>
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-                
-                {/* Profile Header */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-20 gap-10">
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <ShieldCheck size={16} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Creator Studio</span>
-                            </div>
-                            <button onClick={() => setIsSettingsOpen(true)} className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors">
-                                <Settings size={18} />
-                            </button>
+                               {/* Command Bar Header */}
+                <div className="flex flex-col lg:flex-row justify-between items-end mb-12 gap-8 relative border-b border-white/5 pb-8">
+                    <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-4"
+                    >
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter leading-none text-white italic uppercase">
+                                HELLO, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue not-italic">{profile.name.split(' ')[0]}.</span>
+                            </h1>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tight uppercase">
-                            Hello, <span className="text-neon-blue">{profile.name.split(' ')[0]}</span>
-                        </h1>
+                        
                         <div className="flex flex-wrap gap-3">
                             <span className={cn(
-                                "px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border",
+                                "px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border transition-all",
                                 profile.profileStatus === 'approved' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/10"
-                            )}>{profile.profileStatus === 'approved' ? 'Verified Account' : 'Pending Verification'}</span>
-                            <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                <MapPin size={12} className="text-neon-blue" /> {profile.city.toUpperCase()}
+                            )}>
+                                {profile.profileStatus === 'approved' ? 'Verified Partner' : 'Pending'}
                             </span>
-                            <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                <Instagram size={12} className="text-neon-blue" /> {Number(profile.instagramFollowers || 0).toLocaleString()} Followers
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 w-full lg:w-auto">
-                        <div className="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 flex flex-col items-center min-w-[130px]">
-                            <span className="text-3xl font-black text-white">{joinedCampaignsList.length}</span>
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Campaigns</span>
-                        </div>
-                        <div className="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 flex flex-col items-center min-w-[130px]">
-                            <span className="text-3xl font-black text-neon-blue">{approvedTasks}</span>
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Approved</span>
-                        </div>
-                        <div className="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 flex flex-col items-center min-w-[130px]">
-                            <span className="text-3xl font-black text-white">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Completion</span>
-                        </div>
-                        <button onClick={() => setIsSettingsOpen(true)} className="hidden lg:flex w-full mt-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-[0.2em] items-center justify-center gap-2 group">
-                            <Settings size={14} className="group-hover:rotate-90 transition-transform" /> Edit Studio Settings
-                        </button>
-                    </div>
-                </div>
-
-                {/* Priority Missions Hero */}
-                {shortlistedCampaignsList.length > 0 && (
-                    <div className="mb-16">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
-                                <Target className="text-neon-blue" size={18} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-black font-heading uppercase italic text-white tracking-tighter">Priority Missions</h3>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Campaigns requiring your execution</p>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                                <MapPin size={10} className="text-neon-blue" />
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{profile.city}</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {shortlistedCampaignsList.map(c => 
-                                <CreatorCampaignCard key={c.id} campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
-                            )}
+                    </motion.div>
+                    
+                    {/* Compact Command Stats */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex items-stretch gap-2"
+                    >
+                        <div className="bg-zinc-950/60 backdrop-blur-3xl px-6 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[140px]">
+                            <span className="text-3xl font-black text-white italic tracking-tighter leading-none">
+                                {joinedCampaignsList.length}
+                            </span>
+                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-[0.3em] mt-1">Active Missions</span>
                         </div>
-                    </div>
-                )}
-
-                {/* Sub Navigation */}
-                <div className="flex items-center gap-2 mb-12 p-1.5 bg-white/5 border border-white/5 rounded-2xl w-max">
-                    <button 
-                        onClick={() => setActiveTab('opportunities')}
-                        className={cn(
-                            "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all gap-2 flex items-center",
-                            activeTab === 'opportunities' ? "bg-white text-black font-black" : "text-gray-500 hover:text-white"
-                        )}
-                    >
-                        <Zap size={14} /> My Opportunities
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('active')}
-                        className={cn(
-                            "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all gap-2 flex items-center",
-                            activeTab === 'active' ? "bg-white text-black font-black" : "text-gray-500 hover:text-white"
-                        )}
-                    >
-                        <History size={14} /> Active Campaigns
-                    </button>
+                        
+                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-4 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
+                            <span className="text-xl font-black text-white">{approvedTasks}</span>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-1">Deliverables</span>
+                        </div>
+                        
+                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-4 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
+                            <span className="text-xl font-black text-white">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
+                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-1">Efficiency</span>
+                        </div>
+                    </motion.div>
                 </div>
 
-                {/* Main Content Grid */}
-                <AnimatePresence mode="wait">
-                    {activeTab === 'opportunities' ? (
-                        <motion.div 
-                            key="opportunities" 
-                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                {/* Main Content Area */}
+                <div className="space-y-32">
+                    {/* Priority Section */}
+                    {shortlistedCampaignsList.length > 0 && (
+                        <motion.section 
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="space-y-12"
                         >
-                            {availableCampaigns.length === 0 ? (
-                                <div className="lg:col-span-3 py-24 text-center bg-white/[0.02] rounded-[2.5rem] border border-dashed border-white/10 flex flex-col items-center gap-4">
-                                    <LayoutDashboard size={40} className="text-white/10" />
-                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">No new opportunities in {profile.city} at this time.</p>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-[2rem] bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shadow-[0_0_40px_rgba(46,191,255,0.1)]">
+                                        <Briefcase className="text-neon-blue" size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter">Priority Missions</h3>
+                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Executive fulfillment required</p>
+                                    </div>
                                 </div>
-                            ) : (
-                                availableCampaigns.map(c => <CreatorCampaignCard key={c.id} campaign={c} profile={profile} type="opportunities" onOpenMission={setMissionCampaign} />)
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="active" 
-                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                        >
-                            {joinedCampaignsList.length === 0 ? (
-                                <div className="lg:col-span-3 py-24 text-center bg-white/[0.02] rounded-[2.5rem] border border-dashed border-white/10 flex flex-col items-center gap-4">
-                                    <Clock size={40} className="text-white/10" />
-                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">You haven't joined any campaigns yet.</p>
-                                    <Button onClick={() => setActiveTab('opportunities')} className="mt-4 h-10 px-6 bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-white hover:text-black">Browse Campaigns</Button>
-                                </div>
-                            ) : (
-                                joinedCampaignsList.map(c => <CreatorCampaignCard key={c.id} campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />)
-                            )}
-                        </motion.div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                                {shortlistedCampaignsList.map(c => 
+                                    <CampaignCard key={c.id} campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
+                                )}
+                            </div>
+                        </motion.section>
                     )}
-                </AnimatePresence>
+
+                    {/* Opportunity Navigation */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="space-y-12"
+                    >
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-white/5 pb-10">
+                            <div className="flex items-center gap-12">
+                                {['opportunities', 'active'].map((tab) => (
+                                    <button 
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={cn(
+                                            "text-3xl font-black font-heading uppercase tracking-tighter transition-all relative pb-4",
+                                            activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
+                                        )}
+                                    >
+                                        {tab === 'opportunities' ? 'New Openings' : 'Performance History'}
+                                        {activeTab === tab && (
+                                            <motion.div 
+                                                layoutId="tab-underline" 
+                                                className="absolute bottom-0 left-0 w-full h-1 bg-neon-blue shadow-[0_4px_20px_rgba(46,191,255,0.4)]" 
+                                            />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                    <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
+                                    {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'MISSIONS TRACKED'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            <AnimatePresence mode="popLayout">
+                                {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).map(c => (
+                                    <motion.div
+                                        key={c.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                    >
+                                        <CampaignCard 
+                                            campaign={c} 
+                                            profile={profile} 
+                                            type={activeTab === 'opportunities' ? 'available' : 'joined'} 
+                                            onOpenMission={setMissionCampaign} 
+                                        />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+
+                        {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).length === 0 && (
+                            <div className="py-32 text-center">
+                                <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
+                                    <Sparkles size={40} />
+                                </div>
+                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600">Nothing discovered yet.</h4>
+                                <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">Keep your impact high. New opportunities are unlocked based on your specialized ranking.</p>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
             </div>
 
             {/* Overlays */}
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 {missionCampaign && (
                     <MissionPanel
                         campaign={missionCampaign}
                         profile={profile}
                         onClose={() => setMissionCampaign(null)}
                         onOpenTask={(task) => setSelectedTask(task)}
+                        onApply={handleApply}
+                        isApplying={isApplying}
                     />
                 )}
                 {selectedTask && (

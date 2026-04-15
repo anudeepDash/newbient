@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, eachDayOfInterval, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, eachDayOfInterval, isToday, isValid } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", className }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date());
+    const [currentMonth, setCurrentMonth] = useState(() => {
+        if (!value || value === 'TBD') return new Date();
+        const d = new Date(value);
+        return isValid(d) ? d : new Date();
+    });
     const containerRef = useRef(null);
 
     const handleDateClick = (day) => {
@@ -27,7 +31,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const selectedDate = value ? new Date(value) : null;
+    const selectedDate = (value && value !== 'TBD' && isValid(new Date(value))) ? new Date(value) : null;
 
     const renderHeader = () => (
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
@@ -35,7 +39,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                 <ChevronLeft size={16} />
             </button>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white italic">
-                {format(currentMonth, 'MMMM yyyy')}
+                {isValid(currentMonth) ? format(currentMonth, 'MMMM yyyy') : 'SELECT MONTH'}
             </span>
             <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
                 <ChevronRight size={16} />
@@ -98,7 +102,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                 <div className="flex items-center gap-4">
                     <CalendarIcon size={16} className={cn("transition-colors", isOpen ? "text-neon-pink" : "text-white/20 group-hover:text-white/40")} />
                     <span className={cn("text-[11px] font-black uppercase tracking-widest", !value ? "text-white/20" : "text-white italic")}>
-                        {value ? format(selectedDate, 'dd-MM-yyyy') : placeholder}
+                        {value && value !== 'TBD' && selectedDate ? format(selectedDate, 'dd-MM-yyyy') : (value === 'TBD' ? 'TBD' : placeholder)}
                     </span>
                 </div>
             </div>

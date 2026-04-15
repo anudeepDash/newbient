@@ -317,14 +317,14 @@ const CommunityJoin = () => {
                                          </div>
                                      </div>
 
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                     <div className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                                          {featuredItems.map((item) => (
                                              <motion.div 
                                                  key={`featured-${item.id}`}
                                                  initial={{ opacity: 0, y: 30 }}
                                                  whileInView={{ opacity: 1, y: 0 }}
                                                  viewport={{ once: true }}
-                                                 className="relative"
+                                                 className="relative w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
                                              >
                                                  <CommunityCard 
                                                      item={item} 
@@ -447,13 +447,14 @@ const CommunityJoin = () => {
                                     </div>
 
                                     {section.items?.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                                             {section.items.map((item) => (
                                                 <motion.div 
                                                     key={`${section.id}-${item.id}`}
                                                     initial={{ opacity: 0, y: 30 }}
                                                     whileInView={{ opacity: 1, y: 0 }}
                                                     viewport={{ once: true }}
+                                                    className="w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
                                                 >
                                                     <CommunityCard 
                                                         item={item} 

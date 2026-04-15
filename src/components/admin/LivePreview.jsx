@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Pin, Calendar, MapPin, Users, Share2, ArrowRight, ClipboardList, Sparkles, Ticket, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import CommunityCard from '../community/CommunityCard';
+import CampaignCard from '../ui/CampaignCard';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'TBD';
@@ -164,8 +165,8 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                         </div>
                     )}
 
-                    {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST, CAMPAIGN) */}
-                    {(type === 'gig' || type === 'form' || type === 'guestlist' || type === 'gl' || type === 'campaign') && (
+                    {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST) */}
+                    {(type === 'gig' || type === 'form' || type === 'guestlist' || type === 'gl') && (
                         <div className="w-full flex justify-center h-full">
                             <div className="w-full h-full flex flex-col justify-center">
                                 <CommunityCard 
@@ -176,6 +177,22 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                                     }}
                                     handleShare={() => {}}
                                     className="w-full h-full"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CAMPAIGN SPECIFIC PREVIEW */}
+                    {type === 'campaign' && (
+                        <div className="w-full h-full flex items-center justify-center p-4">
+                            <div className="w-full max-w-sm">
+                                <CampaignCard 
+                                    campaign={{
+                                        ...data,
+                                        id: 'preview',
+                                        tasks: data.tasks || []
+                                    }}
+                                    onOpenMission={() => {}}
                                 />
                             </div>
                         </div>
