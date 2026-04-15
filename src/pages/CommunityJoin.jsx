@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Users, 
@@ -32,8 +32,10 @@ const CommunityJoin = () => {
         authInitialized, 
         markFormAsSubmitted, 
         markWhatsappJoined, 
-        setAuthModal 
+        setAuthModal,
+        campaigns = []
     } = useStore();
+    const navigate = useNavigate();
     const activeGiveaway = (giveaways || []).find(g => g.status === 'Open' && (!g.endDate || new Date(g.endDate) >= new Date()));
     const location = useLocation();
     const [confirming, setConfirming] = useState(false);
@@ -48,7 +50,8 @@ const CommunityJoin = () => {
     const featuredItems = [
         ...(volunteerGigs || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gig' })),
         ...(guestlists || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gl' })),
-        ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
+        ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' })),
+        ...(campaigns || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'campaign' }))
     ];
 
     useEffect(() => {
@@ -129,6 +132,25 @@ const CommunityJoin = () => {
         }
         setSelectedGL(gl);
         setIsGLModalOpen(true);
+    };
+
+    const handleCardAction = (item) => {
+        const type = item.type || '';
+        
+        if (type === 'gl' || type === 'gl_embed') {
+            handleGLJoin(item);
+        } else if (type === 'form') {
+            navigate(`/forms/${item.id}`);
+        } else if (type === 'campaign') {
+            navigate(`/campaign/${item.id}`);
+        } else if (type === 'gig') {
+            if (item.applyType === 'whatsapp') {
+                const phone = item.applyLink?.replace(/[^0-9]/g, '');
+                window.open(`https://wa.me/${phone || item.applyLink}`, '_blank');
+            } else if (item.applyLink) {
+                window.open(item.applyLink, '_blank');
+            }
+        }
     };
 
     const handleJoinedConfirm = async () => {
@@ -308,7 +330,7 @@ const CommunityJoin = () => {
                                                      item={item} 
                                                      type={item.type} 
                                                      handleShare={handleShare} 
-                                                     onAction={item.type === 'gl' ? handleGLJoin : undefined}
+                                                     onAction={handleCardAction}
                                                  />
                                              </motion.div>
                                          ))}
@@ -437,7 +459,7 @@ const CommunityJoin = () => {
                                                         item={item} 
                                                         type={item.type || section.type} 
                                                         handleShare={handleShare} 
-                                                        onAction={item.type === 'gl' || section.type === 'gl' ? handleGLJoin : undefined}
+                                                        onAction={handleCardAction}
                                                     />
                                                 </motion.div>
                                             ))}

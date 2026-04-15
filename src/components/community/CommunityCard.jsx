@@ -12,11 +12,11 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     const isGL = type === 'gl' || type === 'gl_embed';
     const isCampaign = type === 'campaign';
 
-    const hasExternalLink = item.link && item.link.trim() !== '' && item.link !== '#';
+    const hasExternalLink = (item.link && item.link.trim() !== '' && item.link !== '#') || (item.applyLink && item.applyLink.startsWith('http'));
     const isInternalGL = isGL && item.guestlistEnabled && !hasExternalLink;
     
     const buttonLabel = item.buttonText || (hasExternalLink ? "ACCESS NOW" : (isInternalGL ? "GET GUESTLIST" : (isGig ? "APPLY GIG" : (isCampaign ? "APPLY NOW" : "TAKE FORM"))));
-    const showButton = hasExternalLink || isInternalGL || isGig || isForm;
+    const showButton = hasExternalLink || isInternalGL || isGig || isForm || isCampaign;
 
     const themeColor = isForm ? "#FF4F8B" : (isGig ? "#39FF14" : (isCampaign ? "#2ebfff" : "#2ebfff"));
     const highlightColor = item.highlightColor || themeColor;
@@ -25,7 +25,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
         e.preventDefault();
         e.stopPropagation();
         if (hasExternalLink) {
-            window.open(item.link, '_blank');
+            window.open(item.link || item.applyLink, '_blank');
         } else if (isInternalGL || isGig || isForm || isCampaign) {
             onAction?.(item);
         }
