@@ -7,6 +7,7 @@ import { Gift, Instagram, Share2, Trophy, Users, CheckCircle2, Copy, Send, Spark
 import { motion, AnimatePresence } from 'framer-motion';
 import SpinWheel from '../components/giveaway/SpinWheel';
 import { cn } from '../lib/utils';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const GiveawayPage = () => {
     const { slug } = useParams();
@@ -32,6 +33,13 @@ const GiveawayPage = () => {
     const [instaUsername, setInstaUsername] = useState('');
     const [verifyingTasks, setVerifyingTasks] = useState({});
     const [timeLeft, setTimeLeft] = useState('');
+
+    useDynamicMeta({
+        title: giveaway ? giveaway.name : "Giveaway",
+        description: giveaway ? giveaway.description : "Enter the giveaway to win amazing prizes.",
+        image: giveaway && giveaway.posterUrl ? giveaway.posterUrl : "/favicon.svg",
+        url: window.location.href
+    });
 
     useEffect(() => {
         if (!giveaway?.endDate) return;

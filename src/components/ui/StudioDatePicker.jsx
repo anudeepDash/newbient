@@ -35,13 +35,13 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
 
     const renderHeader = () => (
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-            <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+            <button type="button" onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
                 <ChevronLeft size={16} />
             </button>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white italic">
                 {isValid(currentMonth) ? format(currentMonth, 'MMMM yyyy') : 'SELECT MONTH'}
             </span>
-            <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+            <button type="button" onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
                 <ChevronRight size={16} />
             </button>
         </div>
@@ -76,6 +76,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                     
                     return (
                         <button
+                            type="button"
                             key={i}
                             onClick={() => handleDateClick(day)}
                             className={cn(
@@ -122,6 +123,7 @@ const StudioDatePicker = ({ value, onChange, placeholder = "SELECT DATE", classN
                         </div>
                         <div className="p-4 bg-white/5 flex justify-center">
                             <button 
+                                type="button"
                                 onClick={() => handleDateClick(new Date())}
                                 className="text-[8px] font-black uppercase tracking-[0.3em] text-neon-pink hover:underline"
                             >

@@ -19,6 +19,7 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
 import UnifiedGuestlistModal from '../components/community/UnifiedGuestlistModal';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const CommunityJoin = () => {
     const { 
@@ -46,6 +47,30 @@ const CommunityJoin = () => {
     const [showShareToast, setShowShareToast] = useState(false);
     const hasJoined = user && user.hasJoinedTribe;
 
+    // Resolve Direct Link Item for Meta Tags
+    const params = new URLSearchParams(location.search);
+    const gigId = params.get('gig');
+    const glId = params.get('gl');
+    const formId = params.get('form');
+    const campaignId = params.get('campaign');
+    
+    const directType = gigId ? 'gig' : (glId ? 'gl' : (formId ? 'form' : (campaignId ? 'campaign' : null)));
+    const directId = gigId || glId || formId || campaignId;
+
+    const directItem = directId ? (
+        directType === 'gig' ? (volunteerGigs || []).find(i => i.id === directId) :
+        directType === 'gl' ? (guestlists || []).find(i => i.id === directId) :
+        directType === 'form' ? (forms || []).find(i => i.id === directId) :
+        directType === 'campaign' ? (campaigns || []).find(i => i.id === directId) : null
+    ) : null;
+
+    useDynamicMeta({
+        title: directItem ? directItem.title : "Community Hub",
+        description: directItem ? (directItem.description || "Join this exclusive opportunity at Newbi Entertainment.") : "Access exclusive gigs, campaigns, and forms.",
+        image: directItem && directItem.image ? directItem.image : "/favicon.svg",
+        url: window.location.href
+    });
+
     // Extract Featured Items from all categories
     const featuredItems = [
         ...(volunteerGigs || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gig' })),
@@ -65,14 +90,8 @@ const CommunityJoin = () => {
 
     useEffect(() => {
         if (user && hasJoined) {
-            const params = new URLSearchParams(location.search);
-            const gigId = params.get('gig');
-            const glId = params.get('gl');
-            const formId = params.get('form');
-            const campaignId = params.get('campaign');
-
-            const type = gigId ? 'gig' : (glId ? 'gl' : (formId ? 'form' : (campaignId ? 'campaign' : null)));
-            const id = gigId || glId || formId || campaignId;
+            const type = directType;
+            const id = directId;
 
             if (type && id) {
                 const targetId = `${type}-${id}`;
