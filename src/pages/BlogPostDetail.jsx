@@ -19,6 +19,7 @@ import {
 import { useStore } from '../lib/store';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import BlogCard from '../components/blog/BlogCard';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const BlogPostDetail = () => {
     const { category, slug } = useParams();
@@ -37,27 +38,12 @@ const BlogPostDetail = () => {
         return posts.find(p => p.slug === slug);
     }, [posts, slug]);
 
-    // SEO & Page Title
-    useEffect(() => {
-        if (post) {
-            document.title = `${post.title} | Concert Zone`;
-            const metaDescription = document.querySelector('meta[name="description"]');
-            if (metaDescription) {
-                metaDescription.setAttribute('content', post.shortDescription || '');
-            }
-            
-            // Basic OG tags for sharing
-            const ogTitle = document.querySelector('meta[property="og:title"]');
-            if (ogTitle) ogTitle.setAttribute('content', post.title);
-            
-            const ogImage = document.querySelector('meta[property="og:image"]');
-            if (ogImage) ogImage.setAttribute('content', post.coverImage || '');
-        }
-        
-        return () => {
-            document.title = "Newbi | The Pulse of Youth";
-        };
-    }, [post]);
+    useDynamicMeta({
+        title: post ? post.title : "Newbi Article",
+        description: post ? post.shortDescription : "Read this article on Concert Zone.",
+        image: post && post.coverImage ? post.coverImage : "/favicon.svg",
+        url: window.location.href
+    });
 
     const relatedPosts = useMemo(() => {
         if (!post) return [];

@@ -8,6 +8,7 @@ import { Instagram, MapPin, Users, Zap, CheckCircle2, ArrowRight, Sparkles, Load
 import { cn } from '../lib/utils';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera, color: 'text-pink-400' },
@@ -69,6 +70,13 @@ const CampaignPublicView = () => {
             }
         }
     }, [user, authInitialized, creators]);
+
+    useDynamicMeta({
+        title: campaign ? campaign.title : "Creator Campaign",
+        description: campaign ? campaign.description : "Join this exclusive creator campaign.",
+        image: campaign && campaign.image ? campaign.image : "/favicon.svg",
+        url: window.location.href
+    });
 
     const handleInstagramVerify = async () => {
         if (!form.instagram) return alert("Enter your Instagram handle");
