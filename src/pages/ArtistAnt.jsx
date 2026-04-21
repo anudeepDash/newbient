@@ -173,7 +173,7 @@ const ArtistAnt = () => {
                         
                         <div className="relative group -mt-10 -mb-8 md:-mt-16 md:-mb-12 z-10">
                             <div className="absolute -inset-14 bg-gradient-to-r from-orange-600/30 via-purple-600/30 to-blue-600/30 rounded-full blur-[80px] opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse" />
-                            <img src={logo} alt="ArtistAnt Logo" className="w-64 md:w-80 lg:w-[28rem] object-contain relative z-10 drop-shadow-[0_20px_60px_rgba(255,87,34,0.3)] hover:scale-105 transition-transform duration-500" />
+                            <img src={logo} alt="Artistant Logo" className="w-64 md:w-80 lg:w-[28rem] object-contain relative z-10 drop-shadow-[0_20px_60px_rgba(255,87,34,0.3)] hover:scale-105 transition-transform duration-500" />
                         </div>
                     </motion.div>
 
@@ -204,7 +204,7 @@ const ArtistAnt = () => {
                         <div className="p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] shadow-2xl">
                             <Star className="w-20 h-20 text-neon-blue mx-auto mb-10 animate-pulse" />
                             <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
-                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the ArtistAnt Registry. Sign in to proceed.</p>
+                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the Artistant Registry. Sign in to proceed.</p>
                             <button onClick={() => setAuthModal(true)} className="h-20 px-16 rounded-2xl text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
                                 Sign In <ArrowRight size={20} />
                             </button>
@@ -436,7 +436,7 @@ const ArtistDashboard = ({ artist, upcomingEvents, applyArtistToGig, navigate, o
                             <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Core Talent System</span>
                         </div>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                            <img src={logo} alt="ArtistAnt" className="h-20 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(46,191,255,0.3)]" />
+                            <img src={logo} alt="Artistant" className="h-20 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(46,191,255,0.3)]" />
                             <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white">
                                 DASHBOARD.
                             </h1>
