@@ -250,7 +250,7 @@ const Dashboard = () => {
                         <ControlCard title="Creators" desc="Influencer whitelist and verification." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
                         <ControlCard title="Campaigns" desc="Social takeovers and marketing gigs." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
                         <ControlCard title="Giveaways" desc="Viral ticket giveaways and rewards." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
-                        <ControlCard title="ArtistAnt" desc="Performance talent and gig casting." icon={Mic2} color="neon-blue" link="/admin/artists" isNew />
+                        <ControlCard title="Artistant" desc="Performance talent and gig casting." icon={Mic2} color="neon-blue" link="/admin/artists" isNew />
                         <ControlCard title="Mailing" desc="Broadcast emails to all subscribers." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
                         <ControlCard title="Members" desc="Community access and admin roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
                         <ControlCard title="Inbox" desc="Client queries and gig applications." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
