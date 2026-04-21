@@ -69,14 +69,14 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                                 initial={{ scale: 0.8 }} 
                                 animate={{ scale: [0.8, 1.1, 1] }} 
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[7px] font-black uppercase tracking-widest text-yellow-500"
+                                className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[7px] font-black uppercase tracking-widest text-yellow-500 flex items-center justify-center"
                             >
                                 New Deliverables
                             </motion.span>
                         )}
                         {isJoined && (
                             <div className={cn(
-                                "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm",
+                                "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm flex items-center justify-center",
                                 isFullyComplete ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
                                 isShortlisted ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : 
                                 "bg-zinc-800 text-gray-400 border-white/5"

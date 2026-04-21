@@ -46,6 +46,7 @@ export const useStore = create((set, get) => ({
     posts: [], // Blog Posts
     subscribers: [], // Newsletter Subscribers
     allUsers: [], // All Registered Users (Admin only context)
+    artists: [], // Artist Onboarding state
     admins: [], // All Administrators
     notifications: [], // Notifications System
     unreadNotificationsCount: 0,
@@ -155,6 +156,7 @@ export const useStore = create((set, get) => ({
         const unsubPosts = sub('posts', 'posts');
         const unsubSubscribers = sub('subscribers', 'subscribers');
         const unsubAllUsers = sub('users', 'allUsers');
+        const unsubArtists = sub('artists', 'artists');
         const unsubAdmins = sub('admins', 'admins');
 
         // Site Settings Subscription (Single Doc)
@@ -217,7 +219,7 @@ export const useStore = create((set, get) => ({
         return () => {
             clearTimeout(loadingTimeout);
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
-            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins();
+            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists();
         };
     },
 
@@ -675,6 +677,56 @@ export const useStore = create((set, get) => ({
     },
     deleteCreator: async (uid) => {
         await deleteDoc(doc(db, 'creators', uid));
+    },
+
+    // Artists Management
+    addArtist: async (artist) => {
+        const id = artist.uid || Math.random().toString(36).substring(2, 10).toUpperCase();
+        await setDoc(doc(db, 'artists', id), { 
+            ...artist, 
+            id,
+            createdAt: new Date().toISOString(),
+            profileStatus: artist.profileStatus || 'pending'
+        });
+        return id;
+    },
+    updateArtist: async (id, updates) => {
+        await updateDoc(doc(db, 'artists', id), updates);
+    },
+    deleteArtist: async (id) => {
+        await deleteDoc(doc(db, 'artists', id));
+    },
+
+    castArtistToGig: async (artistId, gigId, status = 'shortlisted') => {
+        const artistRef = doc(db, 'artists', artistId);
+        const artistSnap = await getDoc(artistRef);
+        if (artistSnap.exists()) {
+            const data = artistSnap.data();
+            const gigCasting = data.gigCasting || {};
+            gigCasting[gigId] = {
+                status,
+                assignedAt: new Date().toISOString()
+            };
+            await updateDoc(artistRef, { gigCasting });
+        }
+    },
+
+    applyArtistToGig: async (artistId, gigId) => {
+        const artistRef = doc(db, 'artists', artistId);
+        const artistSnap = await getDoc(artistRef);
+        if (artistSnap.exists()) {
+            const data = artistSnap.data();
+            const gigCasting = data.gigCasting || {};
+            
+            // Only apply if not already cast or applied
+            if (!gigCasting[gigId]) {
+                gigCasting[gigId] = {
+                    status: 'applied',
+                    appliedAt: new Date().toISOString()
+                };
+                await updateDoc(artistRef, { gigCasting });
+            }
+        }
     },
 
     applyToCampaign: async (uid, campaignId) => {

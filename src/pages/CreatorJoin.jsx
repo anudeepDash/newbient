@@ -4,7 +4,7 @@ import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 

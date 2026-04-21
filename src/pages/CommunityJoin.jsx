@@ -98,7 +98,7 @@ const CommunityJoin = () => {
                 };
             }
         }
-    }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms]);
+    }, [user, hasJoined, location.search, volunteerGigs, guestlists, forms, campaigns]);
 
     const handleShare = async (type, id) => {
         const url = `${window.location.origin}/community?${type}=${id}`;
@@ -318,10 +318,11 @@ const CommunityJoin = () => {
                                      </div>
 
                                      <div className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                                         {featuredItems.map((item) => (
-                                             <motion.div 
-                                                 key={`featured-${item.id}`}
-                                                 initial={{ opacity: 0, y: 30 }}
+                                             {featuredItems.map((item) => (
+                                                 <motion.div 
+                                                     key={`featured-${item.id}`}
+                                                     id={`${item.type}-${item.id}`}
+                                                     initial={{ opacity: 0, y: 30 }}
                                                  whileInView={{ opacity: 1, y: 0 }}
                                                  viewport={{ once: true }}
                                                  className="relative w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
@@ -451,6 +452,7 @@ const CommunityJoin = () => {
                                             {section.items.map((item) => (
                                                 <motion.div 
                                                     key={`${section.id}-${item.id}`}
+                                                    id={`${item.type || section.type}-${item.id}`}
                                                     initial={{ opacity: 0, y: 30 }}
                                                     whileInView={{ opacity: 1, y: 0 }}
                                                     viewport={{ once: true }}

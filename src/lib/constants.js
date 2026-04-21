@@ -19,3 +19,18 @@ export const PREDEFINED_CITIES = [
     "Kolhapur",
     "Others"
 ];
+
+export const ARTIST_CATEGORIES = [
+    "Singer",
+    "Band",
+    "Anchor",
+    "Standup Comedian",
+    "Musician",
+    "DJ",
+    "Dancer",
+    "Magician",
+    "Speaker",
+    "Photographer",
+    "Videographer",
+    "Others"
+];
