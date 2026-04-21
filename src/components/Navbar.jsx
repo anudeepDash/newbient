@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid } from 'lucide-react';
+import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import NotificationBell from './NotificationBell';
@@ -19,6 +19,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
@@ -27,7 +28,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
+        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 

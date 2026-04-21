@@ -18,7 +18,7 @@ const BlogCard = ({ post, variant = 'standard' }) => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-12 md:p-16">
-                    <span className="inline-block px-4 py-1.5 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-full mb-6 italic">
+                    <span className="inline-block px-4 py-1.5 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-full mb-6 italic flex items-center justify-center w-fit">
                         {post.category}
                     </span>
                     <h2 className="text-4xl md:text-6xl font-black font-heading uppercase leading-[0.9] tracking-tighter italic mb-6 group-hover:text-neon-blue transition-colors">
@@ -73,7 +73,7 @@ const BlogCard = ({ post, variant = 'standard' }) => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                         <div className="absolute top-6 left-6">
-                            <span className="px-4 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white">
+                            <span className="px-4 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white flex items-center justify-center">
                                 {post.category}
                             </span>
                         </div>
@@ -124,7 +124,7 @@ const BlogCard = ({ post, variant = 'standard' }) => {
                     
                     {/* Category Overlay */}
                     <div className="absolute top-4 left-4">
-                        <span className="px-3 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white">
+                        <span className="px-3 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white flex items-center justify-center">
                             {post.category}
                         </span>
                     </div>

@@ -146,11 +146,11 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                              }} />
 
                         {/* Main Content Area */}
-                        <div className="flex-1 p-4 md:p-8 flex flex-col justify-between gap-3 md:gap-4">
+                        <div className="flex-1 p-4 md:p-6 flex flex-col justify-start gap-4 md:gap-6">
                             {/* Header Module */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
+                                    <div className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-center">
                                         <span 
                                             className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em]"
                                             style={{ color: highlightColor }}
@@ -159,7 +159,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                         </span>
                                     </div>
                                     <div className={cn(
-                                        "px-3 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-widest whitespace-nowrap",
+                                        "px-3 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-widest whitespace-nowrap flex items-center justify-center",
                                         (item.status === 'Open' || item.activeLabel === 'Live' || item.status === 'Live') ? "bg-green-500/10 border-green-500/20 text-green-400" : 
                                         (item.status === 'Filling Fast' || item.activeLabel === 'Few Slots Remain' || item.status === 'Few Slots Remain') ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" : 
                                         "bg-red-500/10 border-red-500/20 text-red-400"
@@ -170,7 +170,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                                 {item.isPinned && (
                                     <div 
-                                        className="px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
+                                        className="px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.15)] flex items-center justify-center"
                                     >
                                         FEATURED
                                     </div>
@@ -179,7 +179,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                             {/* Body: Title & Desc */}
                             <div className="space-y-2 py-1 pr-6 md:pr-12">
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     <h2 className="text-xl md:text-[1.75rem] font-black font-heading text-white tracking-tighter uppercase italic leading-[0.85] drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                                         {item.title}
                                     </h2>
@@ -188,8 +188,8 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 <div className="relative">
                                     {/* Glass backdrop for the spec sheet */}
                                     <div className="absolute -inset-4 bg-white/[0.02] rounded-2xl blur-md -z-10" />
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.8] max-w-xl whitespace-pre-wrap">
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.6] max-w-xl line-clamp-2">
                                             {item.description ? (
                                                 item.description.split('\n').slice(0, 2).map((line, i) => {
                                                     const parts = line.split(':');
@@ -221,14 +221,14 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                             {/* Artist Lineup (Only shows if present) */}
                             {artistsList.length > 0 ? (
-                                <div className="space-y-4 mb-8">
+                                <div className="space-y-2 mb-4">
                                     <div className="flex items-center gap-3">
                                         <div className="h-[1px] w-4 bg-white/20" />
                                         <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.4em]">LINEUP //</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {artistsList.map((artist, idx) => (
-                                            <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white uppercase tracking-widest backdrop-blur-md hover:bg-white/10 transition-colors cursor-default">
+                                        {artistsList.slice(0, 3).map((artist, idx) => (
+                                            <div key={idx} className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[8px] md:text-[9px] font-black text-white uppercase tracking-widest backdrop-blur-md hover:bg-white/10 transition-colors cursor-default flex items-center justify-center">
                                                 {artist}
                                             </div>
                                         ))}
@@ -244,14 +244,16 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                             )}
 
                             {/* Footer Area */}
-                            <div className="mt-auto pt-4 border-t border-white/5 space-y-3 relative z-20 bg-[#020202]/80 backdrop-blur-sm -mx-4 md:-mx-8 px-4 md:px-8 pb-4 md:pb-6 rounded-b-[2.5rem] md:rounded-b-[3rem]">
+                            <div className="pt-3 border-t border-white/5 space-y-2.5 relative z-20 bg-[#020202]/80 backdrop-blur-sm -mx-4 md:-mx-6 px-4 md:px-6 pb-3 md:pb-4 rounded-b-[2.5rem] md:rounded-b-[3rem]">
                                 <div className="flex flex-wrap items-center gap-8 text-white/50">
-                                    <div className="flex items-center gap-2.5">
-                                        <Calendar size={13} style={{ color: highlightColor }} />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                                            {formatDate(item.dates || item.date)}
-                                        </span>
-                                    </div>
+                                    {!isForm && (
+                                        <div className="flex items-center gap-2.5">
+                                            <Calendar size={13} style={{ color: highlightColor }} />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                                                {formatDate(item.dates || item.date)}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2.5">
                                         <MapPin size={13} style={{ color: highlightColor }} />
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">

@@ -100,7 +100,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                                 <PlatInfo.icon size={12} /> {PlatInfo.label}
                             </span>
                             {task.priority === 'required' && (
-                                <span className="px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg text-[9px] font-black uppercase tracking-widest text-neon-blue">★ Required</span>
+                                <span className="px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-lg text-[9px] font-black uppercase tracking-widest text-neon-blue flex items-center justify-center">★ Required</span>
                             )}
                             {task.deadline && (
                                 <span className={cn(
@@ -735,7 +735,7 @@ const CreatorDashboard = () => {
                         
                         <div className="flex flex-wrap gap-3">
                             <span className={cn(
-                                "px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border transition-all",
+                                "px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border transition-all flex items-center justify-center",
                                 profile.profileStatus === 'approved' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/10"
                             )}>
                                 {profile.profileStatus === 'approved' ? 'Verified Partner' : 'Pending'}

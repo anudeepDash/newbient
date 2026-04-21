@@ -82,7 +82,7 @@ const FormManager = () => {
                                 <div>
                                     <div className="flex items-center gap-3 mb-1">
                                         <h3 className="text-xl font-black text-white uppercase italic tracking-tight">{item.title}</h3>
-                                        <div className="px-3 py-1 bg-neon-pink/10 border border-neon-pink/20 rounded-full text-[9px] font-black uppercase tracking-widest text-neon-pink">
+                                        <div className="px-3 py-1 bg-neon-pink/10 border border-neon-pink/20 rounded-full text-[9px] font-black uppercase tracking-widest text-neon-pink flex items-center justify-center">
                                             Active
                                         </div>
                                     </div>

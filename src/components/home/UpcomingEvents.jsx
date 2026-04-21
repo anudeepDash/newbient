@@ -365,7 +365,7 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                         {event.artists && event.artists.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-2">
                                 {event.artists.slice(0, 3).map((artist, i) => (
-                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5">
+                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5 flex items-center justify-center">
                                         {artist}
                                     </span>
                                 ))}

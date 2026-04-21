@@ -62,7 +62,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                         </div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 font-heading italic">Live Preview</h3>
                     </div>
-                    <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.3em] backdrop-blur-md">
+                    <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.3em] backdrop-blur-md flex items-center justify-center">
                         <span className="text-neon-blue">{type === 'gl' ? 'GUESTLIST' : type.toUpperCase()}</span> VIEW
                     </div>
                 </div>
@@ -157,7 +157,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                                         {data.artists && data.artists.length > 0 && (
                                             <div className="flex flex-wrap gap-2 mb-2">
                                                 {data.artists.slice(0, 3).map((artist, i) => (
-                                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5">
+                                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5 flex items-center justify-center">
                                                         {artist}
                                                     </span>
                                                 ))}
