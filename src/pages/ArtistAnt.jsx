@@ -164,14 +164,8 @@ const ArtistAnt = () => {
                         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                         className="inline-flex flex-col items-center mb-0 z-10 relative"
                     >
-                        <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-neon-blue/20 bg-neon-blue/5 backdrop-blur-md relative z-20 shadow-[0_0_30px_rgba(46,191,255,0.15)] z-30">
-                            <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_rgba(46,191,255,0.8)]" />
-                            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-neon-blue">
-                                ARTIST REGISTRY
-                            </span>
-                        </div>
-                        
-                        <div className="relative group -mt-10 -mb-8 md:-mt-16 md:-mb-12 z-10">
+
+                        <div className="relative group mt-8 mb-4 md:mt-12 md:mb-8 z-10">
                             <div className="absolute -inset-14 bg-gradient-to-r from-orange-600/30 via-purple-600/30 to-blue-600/30 rounded-full blur-[80px] opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse" />
                             <img src={logo} alt="Artistant Logo" className="w-64 md:w-80 lg:w-[28rem] object-contain relative z-10 drop-shadow-[0_20px_60px_rgba(255,87,34,0.3)] hover:scale-105 transition-transform duration-500" />
                         </div>
@@ -181,7 +175,7 @@ const ArtistAnt = () => {
                         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.8 }}
                         className="relative z-20 mt-4 md:mt-8"
                     >
-                        <h1 className="text-[14vw] sm:text-[12vw] md:text-[9vw] lg:text-[7.5vw] xl:text-[8rem] font-black font-heading tracking-tighter leading-[0.85] uppercase italic select-none">
+                        <h1 className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[7.5vw] xl:text-[8rem] font-black font-heading tracking-tighter leading-[0.85] uppercase italic select-none">
                             <span className="block text-white">UNLEASH THE</span>
                             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF] filter drop-shadow-[0_0_60px_rgba(255,87,34,0.25)] pb-4">PERFORMER.</span>
                         </h1>
@@ -200,44 +194,44 @@ const ArtistAnt = () => {
                 </div>
 
                 {!user ? (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center">
-                        <div className="p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] shadow-2xl">
-                            <Star className="w-20 h-20 text-neon-blue mx-auto mb-10 animate-pulse" />
-                            <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
-                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the Artistant Registry. Sign in to proceed.</p>
-                            <button onClick={() => setAuthModal(true)} className="h-20 px-16 rounded-2xl text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center px-4">
+                        <div className="p-8 md:p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] md:rounded-[4rem] shadow-2xl">
+                            <Star className="w-16 h-16 md:w-20 md:h-20 text-neon-blue mx-auto mb-8 md:mb-10 animate-pulse" />
+                            <h3 className="text-3xl md:text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
+                            <p className="text-gray-500 mb-10 md:mb-12 font-medium text-sm md:text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the Artistant Registry. Sign in to proceed.</p>
+                            <button onClick={() => setAuthModal(true)} className="h-16 md:h-20 px-10 md:px-16 rounded-2xl text-sm md:text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
                                 Sign In <ArrowRight size={20} />
                             </button>
                         </div>
                     </motion.div>
                 ) : (
                     <div className="max-w-4xl mx-auto">
-                        <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-gray-500 mb-8">
+                        <div className="flex items-center gap-4 text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-500 mb-6 md:mb-8 flex-wrap">
                             <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse" /> ARTIST PORTAL</span>
-                            <span>//</span>
+                            <span className="hidden sm:inline-block">//</span>
                             <span>{isEditing ? 'EDIT PROFILE' : 'REGISTRATION'}</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white mb-16">
+                        <h1 className="text-4xl md:text-7xl lg:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white mb-10 md:mb-16">
                             {isEditing ? 'UPDATE ' : 'ARTIST '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-orange-500">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-orange-500 block sm:inline">
                                 PROFILE.
                             </span>
                         </h1>
 
                         {/* Step Progress */}
-                        <div className="flex items-center justify-between mb-16 px-4">
+                        <div className="flex items-center justify-between mb-10 md:mb-16 px-2 md:px-4">
                             {steps.map((s, idx) => (
                                 <React.Fragment key={s.id}>
-                                    <div className="flex flex-col items-center gap-4 group cursor-pointer" onClick={() => step > s.id && setStep(s.id)}>
+                                    <div className="flex flex-col items-center gap-2 md:gap-4 group cursor-pointer" onClick={() => step > s.id && setStep(s.id)}>
                                         <div className={cn(
-                                            "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 border",
+                                            "w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 border",
                                             step === s.id ? "bg-neon-blue text-black border-neon-blue shadow-[0_0_30px_rgba(46,191,255,0.4)]" : 
                                             step > s.id ? "bg-white/10 text-neon-blue border-white/10" : "bg-black/40 text-gray-700 border-white/5"
                                         )}>
-                                            <s.icon size={24} />
+                                            <s.icon size={20} className="md:w-6 md:h-6" />
                                         </div>
                                         <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-[0.3em] transition-colors",
+                                            "text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-colors text-center max-w-[60px] md:max-w-none",
                                             step >= s.id ? "text-white" : "text-gray-700"
                                         )}>{s.title}</span>
                                     </div>
@@ -257,18 +251,18 @@ const ArtistAnt = () => {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
                             
-                            <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
+                            <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10 relative z-10">
                                 {step === 1 && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-5 mb-10">
-                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Mic2 size={24} /></div>
+                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
+                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white shrink-0"><Mic2 size={20} className="md:w-6 md:h-6" /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Identity Profile</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Artist Registration</p>
+                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic leading-tight">Identity Profile</h3>
+                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Artist Registration</p>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -307,12 +301,12 @@ const ArtistAnt = () => {
                                 )}
 
                                 {step === 2 && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-5 mb-10">
-                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue"><Music size={24} /></div>
+                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
+                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue shrink-0"><Music size={20} className="md:w-6 md:h-6" /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic text-orange-500">Performance Spec</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Marketable Skills</p>
+                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic text-orange-500 leading-tight">Performance Spec</h3>
+                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Marketable Skills</p>
                                             </div>
                                         </div>
                                         <div className="space-y-8">
@@ -339,12 +333,12 @@ const ArtistAnt = () => {
                                 )}
 
                                 {step === 3 && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-5 mb-10">
-                                            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Video size={24} /></div>
+                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
+                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white shrink-0"><Video size={20} className="md:w-6 md:h-6" /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Media Dossier</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Visual Authority</p>
+                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic leading-tight">Media Dossier</h3>
+                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Visual Authority</p>
                                             </div>
                                         </div>
                                         <div className="space-y-8">
@@ -366,25 +360,25 @@ const ArtistAnt = () => {
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-center pt-10 border-t border-white/5">
+                                <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-8 md:pt-10 border-t border-white/5">
                                     {step > 1 ? (
-                                        <button type="button" onClick={prevStep} className="px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors flex items-center gap-2">
+                                        <button type="button" onClick={prevStep} className="w-full sm:w-auto px-6 md:px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors flex justify-center items-center gap-2 border border-white/5 sm:border-none">
                                             <ArrowRight size={16} className="rotate-180" /> BACK
                                         </button>
                                     ) : (
                                         isEditing ? (
-                                            <button type="button" onClick={() => setIsEditing(false)} className="px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">
+                                            <button type="button" onClick={() => setIsEditing(false)} className="w-full sm:w-auto px-6 md:px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors border border-white/5 sm:border-none text-center">
                                                 CANCEL
                                             </button>
-                                        ) : <div />
+                                        ) : <div className="hidden sm:block" />
                                     )}
                                     
                                     {step < 3 ? (
-                                        <Button type="button" onClick={nextStep} className="px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white text-black hover:bg-neon-blue transition-colors flex items-center gap-2">
+                                        <Button type="button" onClick={nextStep} className="w-full sm:w-auto px-6 md:px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white text-black hover:bg-neon-blue transition-colors flex justify-center items-center gap-2">
                                             CONTINUE <ArrowRight size={16} />
                                         </Button>
                                     ) : (
-                                        <Button type="submit" disabled={isSubmitting} className="px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-neon-blue text-black hover:bg-white transition-colors flex items-center gap-2 shadow-[0_0_30px_rgba(46,191,255,0.3)]">
+                                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-6 md:px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-neon-blue text-black hover:bg-white transition-colors flex justify-center items-center gap-2 shadow-[0_0_30px_rgba(46,191,255,0.3)]">
                                             {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : (isEditing ? 'SAVE CHANGES' : 'INITIALIZE PROFILE')}
                                         </Button>
                                     )}
@@ -435,36 +429,36 @@ const ArtistDashboard = ({ artist, upcomingEvents, applyArtistToGig, navigate, o
                             <Sparkles size={16} className="text-neon-blue" />
                             <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Core Talent System</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                            <img src={logo} alt="Artistant" className="h-20 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(46,191,255,0.3)]" />
-                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
+                            <img src={logo} alt="Artistant" className="h-16 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(46,191,255,0.3)]" />
+                            <h1 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white">
                                 DASHBOARD.
                             </h1>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-6 py-4 rounded-2xl flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center font-black text-xl text-neon-blue">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 md:gap-4 mt-6 lg:mt-0">
+                        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-4 md:px-6 py-3 md:py-4 rounded-2xl flex items-center gap-3 md:gap-4 flex-1 sm:flex-auto">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl flex items-center justify-center font-black text-lg md:text-xl text-neon-blue">
                                 {artist?.name?.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-black uppercase tracking-widest text-sm">{artist?.name}</p>
+                                <p className="font-black uppercase tracking-widest text-xs md:text-sm">{artist?.name}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <div className={cn("w-2 h-2 rounded-full", isApproved ? "bg-neon-green" : "bg-yellow-500")} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                        {isApproved ? 'VERIFIED TALENT' : 'PENDING REVIEW'}
+                                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                        {isApproved ? 'VERIFIED' : 'PENDING'}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button onClick={onEdit} className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 hover:bg-white/10 transition-all">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={onEdit} className="h-12 md:h-14 px-4 md:px-6 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 hover:bg-white/10 transition-all">
                                 <Edit size={16} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">EDIT</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white hidden sm:inline-block">EDIT</span>
                             </button>
-                            <button onClick={onDelete} className="h-12 w-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-red-500">
+                            <button onClick={onDelete} className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-red-500">
                                 <Trash2 size={16} />
                             </button>
                         </div>
