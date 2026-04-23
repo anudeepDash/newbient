@@ -181,21 +181,14 @@ const InvoiceManagement = () => {
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
                         </Link>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             INVOICE <span className="text-neon-blue px-4">VAULT.</span>
                         </h1>
                     </div>
                     
                     <div className="flex gap-4 w-full md:w-auto">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setShowQuickUpload(true)} 
-                            className="flex-1 md:flex-none h-14 px-8 rounded-2xl bg-white/5 border-white/5 hover:bg-white/10 text-xs font-black uppercase tracking-widest transition-all"
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> IMPORT PDF
-                        </Button>
                         <Link to="/admin/create-invoice">
-                            <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                            <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-14 px-8 rounded-2xl hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(46,191,255,0.3)]">
                                 <Plus className="mr-2 h-4 w-4" /> GENERATE NEW INVOICE
                             </Button>
                         </Link>

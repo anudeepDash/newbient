@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
@@ -127,11 +127,11 @@ const CreatorManager = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8 relative z-[100]">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Sparkles size={16} className="text-neon-pink" />
-                            <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
+                        <Link to="/admin" className="flex items-center gap-3 w-fit group cursor-pointer hover:opacity-80 transition-opacity">
+                            <ArrowLeft size={16} className="text-neon-pink group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Back to Admin Center</span>
+                        </Link>
+                        <h1 className="text-2xl md:text-3xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                             CREATOR <span className="text-neon-pink">MANAGEMENT.</span>
                         </h1>
                         <div className="flex items-center gap-3">
@@ -430,10 +430,10 @@ const CreatorManager = () => {
                             onClick={() => setSelectedCreator(null)}
                         />
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 30 }} 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
                             animate={{ scale: 1, opacity: 1, y: 0 }} 
-                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            className="relative bg-[#050505] border border-white/10 rounded-[3.5rem] p-8 md:p-14 max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar shadow-[0_50px_100px_rgba(0,0,0,0.9)] z-[101]"
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="relative bg-[#050505] border border-white/10 rounded-[2rem] p-6 md:p-10 max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.9)] z-[101]"
                         >
                             {/* DECORATIVE BACKGROUND */}
                             <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[100px] pointer-events-none" />
@@ -443,15 +443,15 @@ const CreatorManager = () => {
                                 <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                             </button>
 
-                            <div className="relative z-20">
+                            <div className="relative z-20 flex-1 overflow-y-auto custom-scrollbar pr-4 -mr-4">
                                 <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-16 px-2">
-                                    <div className="w-40 h-40 bg-white/5 border border-white/10 p-2 rounded-[3.5rem] shadow-2xl shrink-0">
+                                    <div className="w-40 h-40 bg-white/5 border border-white/10 p-2 rounded-[2rem] shadow-2xl shrink-0">
                                         <div className="w-full h-full bg-zinc-900 rounded-[2.8rem] flex items-center justify-center text-6xl font-black font-heading text-neon-pink">
                                             {selectedCreator.name.charAt(0).toUpperCase()}
                                         </div>
                                     </div>
                                     <div className="text-center md:text-left pt-4">
-                                        <h2 className="text-5xl md:text-7xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white">
+                                        <h2 className="text-3xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white">
                                             {selectedCreator.name.split(' ')[0]} <br/> <span className="text-neon-pink">{selectedCreator.name.split(' ').slice(1).join(' ') || 'PROFILE.'}</span>
                                         </h2>
                                         <div className="flex flex-wrap justify-center md:justify-start gap-6">
@@ -566,60 +566,24 @@ const CreatorManager = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="sticky bottom-0 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-12 pb-2">
-                                    <div className="bg-zinc-900 border border-white/10 p-4 rounded-[3rem] flex flex-col sm:flex-row gap-4 shadow-3xl">
-                                        <div className="px-10 py-5 flex flex-col justify-center border-r border-white/5 hidden md:flex">
-                                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Status</span>
-                                            <span className={cn(
-                                                "text-[12px] font-black uppercase tracking-widest",
-                                                selectedCreator.profileStatus === 'approved' ? 'text-neon-green' : 'text-yellow-500'
-                                            )}>{selectedCreator.profileStatus || 'PENDING'}</span>
-                                        </div>
-                                        
-                                        <div className="flex-1 flex gap-3">
-                                            {selectedCreator.profileStatus !== 'approved' && (
-                                                <Button
-                                                    onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
-                                                    className="flex-1 h-16 bg-neon-green text-black hover:scale-[1.02] active:scale-95 transition-all font-black font-heading tracking-widest gap-4 rounded-[2rem]"
-                                                >
-                                                    <CheckCircle2 size={24} /> ACTIVATE ACCOUNT
-                                                </Button>
-                                            )}
-                                            
-                                            <div className="flex flex-1 gap-3">
-                                                {selectedCreator.profileStatus !== 'rejected' && selectedCreator.profileStatus !== 'blocked' && (
-                                                    <Button
-                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'rejected')}
-                                                        className="flex-1 h-16 bg-white/5 border border-white/10 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
-                                                    >
-                                                        <XCircle size={20} /> REJECT
-                                                    </Button>
-                                                )}
-                                                {selectedCreator.profileStatus !== 'blocked' ? (
-                                                    <Button
-                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'blocked')}
-                                                        className="flex-1 h-16 bg-white/5 border border-white/10 text-red-500 hover:bg-red-500 hover:text-white transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
-                                                    >
-                                                        <Ban size={20} /> BLOCK
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        onClick={() => handleUpdateStatus(selectedCreator.uid, 'approved')}
-                                                        className="flex-1 h-16 bg-neon-green/10 border border-neon-green/30 text-neon-green hover:bg-neon-green hover:text-black transition-all font-black font-heading tracking-widest gap-3 rounded-[2rem]"
-                                                    >
-                                                        <CheckCircle2 size={20} /> REINSTATE
-                                                    </Button>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                onClick={() => handleDeleteCreator(selectedCreator.uid)}
-                                                className="h-16 w-16 bg-red-600/10 border border-red-600/20 rounded-[2rem] flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all group/del"
-                                            >
-                                                <Trash2 size={24} className="group-hover:rotate-12 transition-transform" />
-                                            </button>
-                                        </div>
+                            </div>
+                            <div className="shrink-0 pt-6 border-t border-white/10 mt-auto relative z-20">
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="flex-1 flex gap-3">
+                                        {selectedCreator.profileStatus !== 'approved' && (
+                                            <button onClick={() => updateStatus(selectedCreator.uid, 'approved')} className="flex-1 h-14 bg-neon-green text-black font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] transition-transform">Verify Creator</button>
+                                        )}
+                                        {selectedCreator.profileStatus !== 'rejected' && (
+                                            <button onClick={() => updateStatus(selectedCreator.uid, 'rejected')} className="flex-1 h-14 bg-zinc-900 border border-white/10 text-yellow-500 font-black uppercase tracking-widest rounded-xl hover:bg-white/5 transition-colors">Reject</button>
+                                        )}
+                                        <button onClick={() => {
+                                            if (window.confirm("Permanently delete this creator?")) {
+                                                deleteCreator(selectedCreator.uid);
+                                                setSelectedCreator(null);
+                                            }
+                                        }} className="h-14 w-14 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                                            <Trash2 size={20} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>

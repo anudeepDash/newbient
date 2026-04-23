@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Sparkles, Send, FileText, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Sparkles, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -10,955 +10,986 @@ import { storage } from '../../lib/firebase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
-import { motion } from 'framer-motion';
-// logo import removed to use public path directly
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateProposalContent, generateFieldRefinement } from '../../services/aiService';
+// Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
+const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'min-h-[250px]' }) => {
+    const textareaRef = useRef(null);
+    const historyRef = useRef([]);
+    const pushHistory = () => {
+        const h = historyRef.current;
+        if (h.length === 0 || h[h.length - 1] !== value) {
+            h.push(value);
+            if (h.length > 30) h.shift();
+        }
+    };
+    const handleUndo = () => {
+        const h = historyRef.current;
+        if (h.length > 0) {
+            const prev = h.pop();
+            onChange({ target: { value: prev } });
+        }
+    };
+    const insertFormat = (before, after = '') => {
+        pushHistory();
+        const ta = textareaRef.current;
+        if (!ta) return;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const scroll = ta.scrollTop;
+        const selected = value.substring(start, end);
+        const newText = value.substring(0, start) + before + (selected || 'text') + after + value.substring(end);
+        onChange({ target: { value: newText } });
+        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + before.length; ta.selectionEnd = start + before.length + (selected || 'text').length; }, 10);
+    };
+    const insertLine = (prefix) => {
+        pushHistory();
+        const ta = textareaRef.current;
+        if (!ta) return;
+        const start = ta.selectionStart;
+        const scroll = ta.scrollTop;
+        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+        const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
+        onChange({ target: { value: newText } });
+        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + prefix.length; ta.selectionEnd = start + prefix.length; }, 10);
+    };
+    const handleKeyDown = (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'b') { e.preventDefault(); insertFormat('**', '**'); }
+            else if (e.key === 'i') { e.preventDefault(); insertFormat('*', '*'); }
+            else if (e.key === 'h') { e.preventDefault(); insertLine('## '); }
+            else if (e.key === 'l') { e.preventDefault(); insertLine('• '); }
+            else if (e.key === 'z') { e.preventDefault(); handleUndo(); }
+        }
+    };
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-1 px-4">
+                <button type="button" onClick={handleUndo} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
+                <div className="w-px h-4 bg-white/10 mx-1" />
+                <button type="button" onClick={() => insertFormat('**', '**')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bold (Ctrl+B)"><span className="text-[11px] font-black">B</span></button>
+                <button type="button" onClick={() => insertFormat('*', '*')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Italic (Ctrl+I)"><span className="text-[11px] font-bold italic">I</span></button>
+                <button type="button" onClick={() => insertLine('## ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Heading (Ctrl+H)"><span className="text-[11px] font-black">H</span></button>
+                <div className="w-px h-4 bg-white/10 mx-1" />
+                <button type="button" onClick={() => insertLine('• ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bullet List (Ctrl+L)"><span className="text-[11px] font-bold">•</span></button>
+                <button type="button" onClick={() => insertLine('1. ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Numbered List"><span className="text-[11px] font-bold">1.</span></button>
+            </div>
+            <textarea ref={textareaRef} value={value} onChange={onChange} onKeyDown={handleKeyDown} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-base font-medium outline-none focus:border-neon-green/40 transition-all leading-relaxed", minH, className)} placeholder={placeholder} />
+        </div>
+    );
+};
 
 const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addProposal, updateProposal, proposals } = useStore();
-    const proposalRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
+
+    // AI & Workflow State
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
+    const savedModel = localStorage.getItem('geminiModel');
+    // Auto-migrate deprecated model names to current generation
+    const migrateModel = (m) => {
+        if (!m || m.includes('1.5') || m.includes('2.0')) return 'gemini-2.5-flash';
+        if (m === 'gemini-3.0-flash') return 'gemini-3-flash-preview';
+        return m;
+    };
+    const initialModel = migrateModel(savedModel);
+    if (savedModel && savedModel !== initialModel) localStorage.setItem('geminiModel', initialModel);
+    const [aiModel, setAiModel] = useState(initialModel);
+    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+    const [showAiSettings, setShowAiSettings] = useState(false);
+    const [activeTab, setActiveTab] = useState('1'); 
+    const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
+    const [refiningField, setRefiningField] = useState(null);
+    const [refinementPrompt, setRefinementPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiError, setAiError] = useState(null);
+
+    // Parse structured error from aiService
+    const parsedError = (() => {
+        if (!aiError) return null;
+        try { return JSON.parse(aiError); } catch { return { code: 'NB-999', title: 'Error', message: aiError }; }
+    })();
+
+    const logoOptions = [
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/logo_document.png', color: '#00D1FF' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_document.png', color: '#FF0055' }
+    ];
+
+    const [formData, setFormData] = useState({
+        clientName: '',
+        clientAddress: '',
+        campaignName: '',
+        campaignDuration: '',
+        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+        coverDescription: 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment for the success of your upcoming mission.',
+        overview: '',
+        primaryGoal: '',
+        numericTargets: '',
+        audienceAge: '',
+        audienceLocation: '',
+        audienceInterests: '',
+        selectedChannels: [],
+        contentCount: { reels: 0, posts: 0, stories: 0 },
+        deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
+        clientRequirements: [{ id: 1, description: '' }],
+        scopeOfWork: '',
+        terms: '1. 50% Advance activation fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+        paymentDetails: 'Account Name: ABHINAV ANAND\nAccount Number: 77780102222341\nIFSC: FDRL0007778\nUPI: 6207708566@jupiteraxis',
+        gstRate: 18,
+        advanceRequested: 50,
+        showGst: true,
+        senderName: 'Abhinav Anand',
+        status: 'Draft',
+        hiddenFields: [],
+        selectedLogo: 'entertainment' 
+    });
+
+    const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
+
+    const [items, setItems] = useState([
+        { id: 1, description: 'Strategic Project Initialization', qty: 1, unit: 'Project', price: 0 }
+    ]);
+
+    useEffect(() => {
+        if (id && proposals.length > 0) {
+            const proposal = proposals.find(p => p.id === id);
+            if (proposal) {
+                setFormData({ ...proposal, hiddenFields: proposal.hiddenFields || [], selectedLogo: proposal.selectedLogo || 'entertainment' });
+                setItems(proposal.items || []);
+            }
+        }
+    }, [id, proposals]);
 
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
                 const containerHeight = previewContainerRef.current.clientHeight;
-                
-                // A4 dimensions at 96dpi are roughly 794x1123
-                const scaleWidth = (containerWidth - 80) / 794;
-                const scaleHeight = (containerHeight - 80) / 1123;
-                
-                const newScale = Math.min(1, scaleWidth, scaleHeight);
-                setPreviewScale(Math.max(0.4, newScale));
+                const scaleWidth = (containerWidth - 60) / 794;
+                const scaleHeight = (containerHeight - 60) / 1123;
+                setPreviewScale(Math.max(0.3, Math.min(1, scaleWidth, scaleHeight)));
             }
         };
-
         handleResize();
         window.addEventListener('resize', handleResize);
-        
-        let observer;
-        if (window.ResizeObserver) {
-            observer = new ResizeObserver(handleResize);
-            if (previewContainerRef.current) {
-                observer.observe(previewContainerRef.current);
-            }
-        }
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (observer) observer.disconnect();
-        };
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    const [formData, setFormData] = useState({
-        senderName: 'Newbi Entertainment & Marketing LLP',
-        senderContact: '+91 93043 72773',
-        senderEmail: 'partnership@newbi.live',
-        clientName: '',
-        clientEmail: '',
-        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0')}`,
-        date: new Date().toISOString().split('T')[0],
-        validUntil: '',
-        subject: '',
-        overview: '',
-        scopeOfWork: '',
-        terms: '1. Advance payment of 50% is required to initiate the project.\n2. Balance payment on completion of deliverables.\n3. Taxes as applicable.\n4. Proposal valid for 15 days.',
-        status: 'Draft',
-        currency: 'INR',
-        showGst: true,
-        gstRate: 18,
-        advanceRequested: 50,
-        advancePaid: 0,
-        showSignatory: 'none',
-        signatoryImage: '',
-        showNotes: true,
-        showPaymentDetails: true,
-        showUPI: false,
-        upiId: '6207708566@jupiteraxis',
-        qrType: 'auto',
-        customQrImage: '',
-        showFooter: true,
-        showAdvance: true,
-        showSignatureBlock: true,
-        signatureScale: 1,
-        notes: '',
-        layoutOrder: [
-            { id: 'terms_totals', x: 0, y: 0, scale: 1 },
-            { id: 'payment_qr', x: 0, y: 0, scale: 1 },
-            { id: 'signatory', x: 0, y: 0, scale: 1 }
-        ],
-        paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis`
-    });
-
-    const [items, setItems] = useState([
-        { id: 1, description: 'Influencer Marketing Campaign', qty: 1, unit: 'Campaign', price: 0 }
-    ]);
-
-    const [generating, setGenerating] = useState(false);
-
-    useEffect(() => {
-        if (id && proposals.length > 0) {
-            const proposal = proposals.find(p => p.id === id);
-            if (proposal) {
-                setFormData({
-                    ...proposal,
-                    showNotes: proposal.showNotes !== undefined ? proposal.showNotes : true,
-                    showPaymentDetails: proposal.showPaymentDetails !== undefined ? proposal.showPaymentDetails : true,
-                    showUPI: proposal.showUPI || false,
-                    upiId: proposal.upiId || '6207708566@jupiteraxis',
-                    qrType: proposal.qrType || 'auto',
-                    customQrImage: proposal.customQrImage || '',
-                    showFooter: proposal.showFooter !== undefined ? proposal.showFooter : true,
-                    showAdvance: proposal.showAdvance !== undefined ? proposal.showAdvance : true,
-                    advancePaid: Number(proposal.advancePaid) || 0,
-                    layoutOrder: proposal.layoutOrder?.map(item => {
-                        const parsed = typeof item === 'string' ? { id: item, x: 0, y: 0, scale: 1 } : item;
-                        if (parsed.id === 'terms_totals') return [{ id: 'terms', x: 0, y: 0, scale: 1 }, { id: 'totals', x: 0, y: 0, scale: 1 }];
-                        if (parsed.id === 'payment_qr') return [{ id: 'payment_details', x: 0, y: 0, scale: 1 }, { id: 'payment_qr', x: 0, y: 0, scale: 1 }];
-                        return parsed;
-                    }).flat() || [
-                        { id: 'terms', x: 0, y: 0, scale: 1 },
-                        { id: 'totals', x: 0, y: 0, scale: 1 },
-                        { id: 'payment_details', x: 0, y: 0, scale: 1 },
-                        { id: 'payment_qr', x: 0, y: 0, scale: 1 },
-                        { id: 'signatory', x: 0, y: 0, scale: 1 },
-                        { id: 'footer', x: 0, y: 0, scale: 1 }
-                    ]
-                });
-                setItems(proposal.items || []);
-            }
-        }
-    }, [id, proposals]);
 
     const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
     const gstAmount = formData.showGst ? (subtotal * formData.gstRate) / 100 : 0;
     const totalAmount = subtotal + gstAmount;
 
-    // Pagination Logic
-    const ROWS_PER_PAGE_P1 = 6; // Less on P1 because of Overview
-    const ROWS_PER_PAGE_NEXT = 10;
-    
+    const toggleFieldVisibility = (field) => {
+        setFormData(prev => {
+            const current = prev.hiddenFields || [];
+            const updated = current.includes(field) ? current.filter(f => f !== field) : [...current, field];
+            return { ...prev, hiddenFields: updated };
+        });
+    };
+
+    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
+
     const getPaginatedPages = () => {
         const pages = [];
-        let itemsRemaining = [...items];
-        
-        // Page 1
-        pages.push(itemsRemaining.splice(0, ROWS_PER_PAGE_P1));
-        
-        // Subsequent pages
-        while (itemsRemaining.length > 0) {
-            pages.push(itemsRemaining.splice(0, ROWS_PER_PAGE_NEXT));
+        pages.push({ type: 'cover', items: [] });
+        if (!isHidden('roadmap') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
+            pages.push({ type: 'strategy', items: [] });
         }
-        
+        if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
+            const scopeLines = formData.scopeOfWork.split('\n');
+            const linesPerPage = 28;
+            if (scopeLines.length <= linesPerPage) {
+                pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
+            } else {
+                for (let s = 0; s < scopeLines.length; s += linesPerPage) {
+                    pages.push({ type: 'scope', items: [], scopeText: scopeLines.slice(s, s + linesPerPage).join('\n'), scopePage: Math.floor(s / linesPerPage) + 1 });
+                }
+            }
+        }
+        if (!isHidden('proposal')) {
+            pages.push({ type: 'proposal', items: [] });
+        }
+        if (!isHidden('inventory')) {
+            let itemsRemaining = [...items];
+            if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
+            else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
+        }
+        if (!isHidden('commercials') && (!isHidden('terms') || !isHidden('paymentDetails'))) {
+            pages.push({ type: 'commercials', items: [] });
+        }
         return pages;
     };
 
-    const paginatedPages = getPaginatedPages();
-
-    const handleAddItem = () => {
-        setItems([...items, { id: Date.now(), description: '', qty: 1, unit: '', price: 0 }]);
-    };
-
-    const handleRemoveItem = (id) => {
-        setItems(items.filter(item => item.id !== id));
-    };
-
-    const handleItemChange = (id, field, value) => {
-        setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
-    };
-
-    const handleSignatoryUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setGenerating(true);
-        try {
-            const storageRef = ref(storage, `signatories/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            setFormData(prev => ({ ...prev, signatoryImage: url }));
-        } catch (error) {
-            console.error("Signatory Upload Error:", error);
-            alert("Failed to upload signature.");
-        } finally {
-            setGenerating(false);
-        }
-    };
-
-    const moveLayoutItem = (index, direction) => {
-        const newOrder = [...formData.layoutOrder];
-        const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < newOrder.length) {
-            [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
-            setFormData({ ...formData, layoutOrder: newOrder });
-        }
-    };
-
-    const updateLayoutPosition = (index, field, value) => {
-        const newOrder = [...formData.layoutOrder];
-        newOrder[index] = { ...newOrder[index], [field]: parseInt(value) || 0 };
-        setFormData({ ...formData, layoutOrder: newOrder });
-    };
-
     const handleSave = async () => {
-        setGenerating(true);
+        setIsGenerating(true);
         try {
-            const data = {
-                ...formData,
-                items,
-                totalAmount,
-                subtotal,
-                gstAmount,
-                createdAt: new Date().toISOString(),
-                layoutOrder: formData.layoutOrder
-            };
-
-            if (id) {
-                await updateProposal(id, data);
-            } else {
-                await addProposal(data);
-            }
-            alert("Proposal Saved!");
+            const proposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
+            if (id) await updateProposal(id, proposalData);
+            else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
             navigate('/admin/proposals');
         } catch (error) {
-            alert("Save Failed!");
+            alert("Save Error: " + error.message);
         } finally {
-            setGenerating(false);
+            setIsGenerating(false);
+        }
+    };
+
+    const handleGenerateAI = async () => {
+        if (!aiPrompt) return;
+        setIsGeneratingAi(true);
+        setAiError(null);
+        try {
+            const detailedPrompt = `Generate a high-fidelity strategic quotation for: ${aiPrompt}. 
+            IMPORTANT FORMATTING RULES:
+            - For scopeOfWork: Use bullet points (• ) with single-line explanations. Group under ## headings. Keep each point concise (one line max).
+            - For overview: Write 2-3 concise sentences. No bullet points.
+            - For primaryGoal: One powerful sentence.
+            - Avoid long paragraphs everywhere. Prefer structured, scannable content.
+            Use terminology like 'Execution Roadmap' and 'Strategic Summary'. Avoid words like 'Formal'.`;
+            const result = await generateProposalContent(aiApiKey, detailedPrompt, formData, aiModel);
+            setFormData(prev => ({ ...prev, ...result }));
+            if (result.items) setItems(result.items.map((it, idx) => ({ ...it, id: idx + 1 })));
+            setActiveTab('1');
+        } catch (error) {
+            setAiError(error.message);
+        } finally {
+            setIsGeneratingAi(false);
+        }
+    };
+
+    const handleTabClick = (tabId) => {
+        setActiveTab(tabId);
+        const pages = getPaginatedPages();
+        const mapping = { '1': 'cover', '2': 'strategy', '3': 'scope', '4': 'proposal', '5': 'table', '6': 'commercials' };
+        const targetType = mapping[tabId];
+        const pageIndex = pages.findIndex(p => p.type === targetType);
+        if (pageIndex !== -1) setCurrentPreviewPage(pageIndex);
+    };
+
+    const handleRefineField = async (fieldName, fieldLabel) => {
+        setRefiningField({ name: fieldName, label: fieldLabel });
+    };
+
+    const executeRefinement = async () => {
+        if (!refinementPrompt || !refiningField) return;
+        setIsGeneratingAi(true);
+        setAiError(null);
+        try {
+            const refinedText = await generateFieldRefinement(aiApiKey, refiningField.name, refiningField.label, formData[refiningField.name], refinementPrompt, aiModel);
+            setFormData(prev => ({ ...prev, [refiningField.name]: refinedText }));
+            setRefiningField(null);
+            setRefinementPrompt('');
+        } catch (error) {
+            setAiError(error.message);
+        } finally {
+            setIsGeneratingAi(false);
         }
     };
 
     const generatePDF = async () => {
-        if (!proposalRef.current) return;
-        setGenerating(true);
-
+        setIsGenerating(true);
         const originalScale = previewScale;
         setPreviewScale(1);
-        await new Promise(resolve => setTimeout(resolve, 500));
-
+        await new Promise(r => setTimeout(r, 800));
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageElements = document.querySelectorAll('.proposal-page-render');
-            
-            for (let i = 0; i < pageElements.length; i++) {
-                const canvas = await html2canvas(pageElements[i], {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#F3F4F6',
-                    width: 794,
-                    height: 1123,
-                    windowWidth: 794,
-                    windowHeight: 1123,
-                    scrollX: 0,
-                    scrollY: 0,
-                    onclone: (clonedDoc) => {
-                        const style = clonedDoc.createElement('style');
-                        style.innerHTML = `
-                            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
-                            .proposal-page-render { 
-                                position: absolute !important; 
-                                top: 0 !important; 
-                                left: 0 !important; 
-                                margin: 0 !important; 
-                                transform: none !important;
-                                box-shadow: none !important;
-                                text-rendering: optimizeLegibility !important;
-                                -webkit-font-smoothing: antialiased !important;
-                            }
-                        `;
-                        clonedDoc.head.appendChild(style);
-                        
-                        clonedDoc.body.style.margin = '0';
-                        clonedDoc.body.style.padding = '0';
-                        clonedDoc.body.style.overflow = 'hidden';
-                    }
-                });
-                
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const pages = document.querySelectorAll('.proposal-page-render');
+            for (let i = 0; i < pages.length; i++) {
+                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
-            
-            // Sanitize filename to prevent "random file type" issues
-            const safeProposalNumber = (formData.proposalNumber || 'PROP').toString().replace(/[/\\?%*:|"<>]/g, '-');
-            const fileName = `Proposal_${safeProposalNumber}.pdf`;
-            
-            // Force manual download with explicit fileName and MIME type
-            try {
-                const blob = pdf.output('blob');
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                
-                // Cleanup
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-            } catch (err) {
-                console.error("Manual Download Error:", err);
-                // Last ditch effort
-                pdf.save(fileName);
-            }
+            pdf.save(`Newbi-Quotation-${formData.clientName || 'Draft'}.pdf`);
         } catch (error) {
-            console.error("PDF Gen Error:", error);
-            alert("PDF Generation Failed!");
+            console.error(error);
         } finally {
             setPreviewScale(originalScale);
-            setGenerating(false);
+            setIsGenerating(false);
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
+    const paginatedPages = getPaginatedPages();
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div className="space-y-2">
-                        <Link to="/admin/proposals" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] mb-4 group">
-                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Proposals
-                        </Link>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            QUOTATION <span className="text-neon-green px-4">ENGINE.</span>
-                        </h1>
+    const tabs = [
+        { id: '1', label: 'Identity', icon: FileText, desc: 'Project Configuration', visibilityKey: null },
+        { id: '2', label: 'Roadmap', icon: Target, desc: 'Execution Strategy', visibilityKey: 'roadmap' },
+        { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Scope of Work', visibilityKey: 'scopeOfWork' },
+        { id: '4', label: 'Proposal', icon: Layers, desc: 'Deliverables & Requirements', visibilityKey: 'proposal' },
+        { id: '5', label: 'Inventory', icon: Briefcase, desc: 'Service & Resource Inventory', visibilityKey: 'inventory' },
+        { id: '6', label: 'Commercials', icon: CreditCard, desc: 'Financial Projections', visibilityKey: 'commercials' }
+    ];
+
+    const VisibilityToggle = ({ field, label }) => (
+        <button 
+            onClick={() => toggleFieldVisibility(field)} 
+            className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-[9px] font-black uppercase tracking-widest",
+                isHidden(field) ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-neon-green/10 border-neon-green/20 text-neon-green"
+            )}
+        >
+            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
+            {label || (isHidden(field) ? 'Hidden' : 'Visible')}
+        </button>
+    );
+
+    // Render markdown-formatted text into styled JSX for the document preview
+    const renderFormatted = (text, baseClass = 'text-[13px] font-medium text-black leading-[1.9]') => {
+        if (!text) return null;
+        const lines = text.split('\n');
+        const elements = [];
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i];
+            // Heading
+            if (line.startsWith('## ')) {
+                elements.push(<p key={i} className="text-[13px] font-black text-black uppercase tracking-wider mt-4 mb-1">{line.slice(3)}</p>);
+            // Bullet
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <div key={`ul-${i}`} className="pl-4 space-y-1 my-2">
+                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
                     </div>
-                    
-                    <div className="flex gap-4">
-                        <Button onClick={handleSave} className="bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold uppercase tracking-widest text-xs h-12 px-8 rounded-xl transition-all">
-                            <Save className="mr-2 h-4 w-4" /> Save Draft
-                        </Button>
-                        <Button onClick={generatePDF} className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                            <Download className="mr-2 h-4 w-4" /> Export PDF
-                        </Button>
+                );
+                continue;
+            // Numbered
+            } else if (line.match(/^\d+\.\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+                    items.push(lines[i].replace(/^\d+\.\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <div key={`ol-${i}`} className="pl-4 space-y-1 my-2">
+                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-[10px] font-black text-gray-400 mt-0.5 w-5 shrink-0">{j + 1}.</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                    </div>
+                );
+                continue;
+            // Empty line
+            } else if (line.trim() === '') {
+                elements.push(<div key={i} className="h-2" />);
+            // Regular paragraph
+            } else {
+                elements.push(<p key={i} className={cn(baseClass, 'text-justify')} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+            }
+            i++;
+        }
+        return <div>{elements}</div>;
+    };
+
+    // Inline bold/italic formatting
+    const inlineFmt = (text) => {
+        return text
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    };
+
+    const currentTab = tabs.find(t => t.id === activeTab);
+
+    return (
+        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-hidden flex flex-col">
+            <style dangerouslySetInnerHTML={{ __html: `
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+                .font-signature { font-family: 'Alex Brush', cursive; }
+            `}} />
+
+            {/* Top Bar */}
+            <header className="h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-8 shrink-0 relative z-50">
+                <div className="flex items-center gap-8">
+                    <Link to="/admin/proposals" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={18} /></Link>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tighter uppercase italic text-white">Quotation <span className="text-neon-green">Engine.</span></h1>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mt-1">Strategic Command</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 items-start">
-                    {/* Editor Panel */}
-                    <div className="space-y-8 h-[calc(100vh-100px)] overflow-y-auto pr-4 scrollbar-hide order-last xl:order-last">
-                        <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
-                            <h3 className="text-xs font-black text-gray-400 tracking-widest uppercase mb-8 flex items-center gap-2 italic">
-                                <FileText size={14} className="text-gray-500" /> Proposal Details
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Proposal ID</label>
-                                    <Input value={formData.proposalNumber} onChange={e => setFormData({...formData, proposalNumber: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold tracking-tight" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Creation Date</label>
-                                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" />
-                                </div>
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Client Business Name</label>
-                                    <Input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. RedBull Global" />
-                                </div>
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Project Subject</label>
-                                    <Input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="bg-black/60 border-white/10 rounded-xl h-12 font-bold" placeholder="e.g. Campus Activation Q4" />
-                                </div>
-                                <div className="md:col-span-2 space-y-2 mt-4">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Strategic Notes / Scope</label>
-                                    <textarea 
-                                        value={formData.notes} 
-                                        onChange={e => setFormData({...formData, notes: e.target.value})}
-                                        className="w-full bg-black/60 border border-white/10 rounded-xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none text-white scrollbar-hide"
-                                        placeholder="Outline the scope, specific terms, or campaign objectives..."
-                                    />
-                                </div>
-                            </div>
-                        </Card>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setShowAiSettings(true)} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Settings size={18} /></button>
+                    <button onClick={handleSave} className="h-12 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all">Save Quotation</button>
+                    <button onClick={generatePDF} className="h-12 px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)]">Export PDF</button>
+                </div>
+            </header>
 
-                        <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
-                            <h3 className="text-sm font-black text-neon-blue tracking-widest uppercase mb-8 flex items-center gap-2">
-                                <FileSpreadsheet size={16} /> Deliverables & Pricing
-                            </h3>
-                            <div className="space-y-4">
-                                {items.map((item, i) => (
-                                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-black/30 p-4 rounded-2xl border border-white/5 items-end">
-                                        <div className="md:col-span-5 space-y-2">
-                                            <label className="text-[10px] font-black text-gray-600 uppercase">Service Detail</label>
-                                            <Input value={item.description} onChange={e => handleItemChange(item.id, 'description', e.target.value)} className="bg-black border-white/10 h-10 text-xs" />
-                                        </div>
-                                        <div className="md:col-span-2 space-y-2">
-                                            <label className="text-[10px] font-black text-gray-600 uppercase">Qty</label>
-                                            <Input type="number" value={item.qty} onChange={e => handleItemChange(item.id, 'qty', parseInt(e.target.value) || 0)} className="bg-black border-white/10 h-10 text-xs" />
-                                        </div>
-                                        <div className="md:col-span-3 space-y-2">
-                                            <label className="text-[10px] font-black text-gray-600 uppercase">Unit Price</label>
-                                            <Input type="number" value={item.price} onChange={e => handleItemChange(item.id, 'price', parseInt(e.target.value) || 0)} className="bg-black border-white/10 h-10 text-xs" />
-                                        </div>
-                                        <div className="md:col-span-2 flex justify-end">
-                                            <button onClick={() => handleRemoveItem(item.id)} className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                <Button onClick={handleAddItem} variant="outline" className="w-full border-dashed border-white/10 py-6 rounded-2xl text-gray-500 hover:text-white hover:bg-white/5">
-                                    <Plus className="mr-2" size={16} /> Add Service Row
-                                </Button>
+            <main className="flex-1 flex overflow-hidden">
+                {/* Sidebar Navigation */}
+                <aside className="w-24 border-r border-white/5 bg-zinc-900/20 flex flex-col p-4 overflow-y-auto scrollbar-hide items-center">
+                    <nav className="space-y-4">
+                        {tabs.map(tab => (
+                            <div key={tab.id} className="relative group">
+                                <button onClick={() => handleTabClick(tab.id)} className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group relative", activeTab === tab.id ? "bg-neon-green text-black shadow-[0_0_30_rgba(57,255,20,0.3)] scale-110" : "bg-white/5 text-gray-500 hover:text-white hover:bg-white/10")}>
+                                    <tab.icon size={24} />
+                                    <div className="absolute left-20 bg-black border border-white/10 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-2 group-hover:translate-x-0 z-[100] whitespace-nowrap">{tab.label}</div>
+                                </button>
+                                {tab.visibilityKey && (
+                                    <button onClick={(e) => { e.stopPropagation(); toggleFieldVisibility(tab.visibilityKey); }} className={cn("absolute -top-1 -right-1 p-1 rounded-full border-2 border-[#020202] transition-all", isHidden(tab.visibilityKey) ? "bg-red-500 text-white" : "bg-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black")}>{isHidden(tab.visibilityKey) ? <EyeOff size={10} /> : <Eye size={10} />}</button>
+                                )}
                             </div>
+                        ))}
+                    </nav>
+                </aside>
 
-                            <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-                                <div className="flex justify-between items-center text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">
-                                    <span>Subtotal</span>
-                                    <span className="text-white text-lg">₹{subtotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">GST (18%)</span>
-                                        <input type="checkbox" checked={formData.showGst} onChange={e => setFormData({...formData, showGst: e.target.checked})} className="accent-neon-blue" />
-                                    </div>
-                                    <span className="text-white text-lg">₹{gstAmount.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                                    <span className="text-neon-blue font-black uppercase text-xs tracking-[0.3em]">Total Investment</span>
-                                    <span className="text-white text-3xl font-black font-heading tracking-tighter italic">₹{totalAmount.toLocaleString()}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/5">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Advance Paid</label>
-                                        <Input type="number" value={formData.advancePaid} onChange={e => setFormData({ ...formData, advancePaid: parseFloat(e.target.value) || 0 })} className="bg-black/40 border-white/5 h-8 text-[10px] font-bold" />
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest pr-1">Balance Due</p>
-                                        <p className="text-lg font-black text-neon-green italic leading-none mt-1">₹{(totalAmount - (Number(formData.advancePaid) || 0)).toLocaleString()}</p>
-                                    </div>
-                                </div>
+                {/* Editor Area */}
+                <section className="flex-1 overflow-y-auto p-12 scrollbar-hide bg-[#050505]">
+                    <div className="max-w-3xl mx-auto pb-32">
+                        {/* Compact AI strategist block */}
+                        <div className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2rem] relative overflow-hidden mb-12 group">
+                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Sparkles size={60} className="text-neon-green" /></div>
+                             <div className="flex items-center gap-3 mb-4">
+                                <Sparkles size={14} className="text-neon-green" />
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">AI Strategic Orchestrator</p>
+                             </div>
+                             <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="w-full bg-black/40 border border-white/10 focus:border-neon-green/40 rounded-2xl p-4 text-xs font-medium min-h-[80px] outline-none text-white scrollbar-hide mb-4 transition-all" placeholder="Describe project brief (Events, Production, Activations, Volunteers, etc)..." />
+                             <button onClick={handleGenerateAI} disabled={isGeneratingAi || !aiPrompt} className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50">{isGeneratingAi ? <RefreshCw className="animate-spin" size={14} /> : <Sparkles size={14} />} Execute Strategic Generation</button>
+                        </div>
+
+                        <div className="mb-8 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic mb-1">{currentTab?.label}.</h2>
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
+                                <div className="w-16 h-1.5 bg-neon-green" />
                             </div>
-                        </Card>
+                            {currentTab?.visibilityKey && (
+                                <VisibilityToggle field={currentTab.visibilityKey} label={`Page ${isHidden(currentTab.visibilityKey) ? 'Disabled' : 'Enabled'}`} />
+                            )}
+                        </div>
 
-                        <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] space-y-6">
-                            <h3 className="text-sm font-black text-neon-blue tracking-widest uppercase mb-4 flex items-center gap-2">
-                                <Sparkles size={16} /> Branding & Controls
-                            </h3>
-                            <div className="space-y-6">
-                                <div className="space-y-4">
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Signatory Style</label>
-                                    <div className="flex gap-4">
-                                        <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
-                                            className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'none' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
-                                        >
-                                            Default
-                                        </button>
-                                        <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'none' })}
-                                            className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'text' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
-                                        >
-                                            Plain Text
-                                        </button>
-                                        <button 
-                                            onClick={() => setFormData({ ...formData, showSignatory: 'image' })}
-                                            className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === 'image' ? "bg-white text-black border-white" : "bg-black/50 text-gray-500 border-white/5")}
-                                        >
-                                            Digital Signature
-                                        </button>
-                                    </div>
-                                    {formData.showSignatory === 'image' && (
+                        <AnimatePresence mode="wait">
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
+                                {activeTab === '1' && (
+                                    <div className="space-y-12">
                                         <div className="space-y-4">
-                                            {formData.signatoryImage ? (
-                                                <div className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black/50 flex items-center justify-center">
-                                                    <img src={formData.signatoryImage} alt="Signature" className="max-h-full p-4" />
-                                                    <button onClick={() => setFormData({ ...formData, signatoryImage: '' })} className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Trash2 size={12} />
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Division Branding</label>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                {logoOptions.map(logo => (
+                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
+                                                        <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
+                                                            <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
+                                                            <div className="absolute inset-0 bg-black/5" />
+                                                        </div>
+                                                        <span className="relative z-10">{logo.label}</span>
+                                                        {formData.selectedLogo === logo.id && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-black animate-pulse" />}
                                                     </button>
-                                                </div>
-                                            ) : (
-                                                <div className="relative">
-                                                    <input type="file" onChange={handleSignatoryUpload} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
-                                                    <div className="h-24 bg-black/50 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-white hover:border-white/30 transition-all">
-                                                        <Plus size={20} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">Upload Signature</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-4 border-t border-white/5 pt-6">
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Strategic Config</label>
-                                    <div className="flex flex-wrap gap-4">
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showNotes} onChange={e => setFormData({ ...formData, showNotes: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Notes</span>
-                                        </div>
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showPaymentDetails} onChange={e => setFormData({ ...formData, showPaymentDetails: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Banking</span>
-                                        </div>
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showUPI} onChange={e => setFormData({ ...formData, showUPI: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">UPI QR</span>
-                                        </div>
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showFooter} onChange={e => setFormData({ ...formData, showFooter: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Footer Pill</span>
-                                        </div>
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showAdvance} onChange={e => setFormData({ ...formData, showAdvance: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Advance Row</span>
-                                        </div>
-                                        <div className="flex-1 min-w-[140px] flex items-center gap-3 bg-black/30 p-4 rounded-xl border border-white/5">
-                                            <input type="checkbox" checked={formData.showSignatureBlock} onChange={e => setFormData({ ...formData, showSignatureBlock: e.target.checked })} className="w-4 h-4 accent-neon-blue rounded" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Sign Block</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {formData.showUPI && (
-                                    <div className="p-6 bg-black/30 rounded-2xl border border-white/5 space-y-4">
-                                        <div className="flex gap-4">
-                                            <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'auto' })}
-                                                className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'auto' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
-                                            >
-                                                Dynamic UPI
-                                            </button>
-                                            <button 
-                                                onClick={() => setFormData({ ...formData, qrType: 'custom' })}
-                                                className={cn("flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.qrType === 'custom' ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}
-                                            >
-                                                Custom QR
-                                            </button>
-                                        </div>
-                                        {formData.qrType === 'auto' ? (
-                                            <Input value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value })} placeholder="Enter UPI ID" className="bg-black border-white/10 h-10 text-[10px]" />
-                                        ) : (
-                                            <div className="relative">
-                                                <input type="file" onChange={async (e) => {
-                                                    const file = e.target.files[0];
-                                                    if (!file) return;
-                                                    setGenerating(true);
-                                                    try {
-                                                        const storageRef = ref(storage, `qr_codes/${Date.now()}_${file.name}`);
-                                                        await uploadBytes(storageRef, file);
-                                                        const url = await getDownloadURL(storageRef);
-                                                        setFormData(prev => ({ ...prev, customQrImage: url }));
-                                                    } finally {
-                                                        setGenerating(false);
-                                                    }
-                                                }} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
-                                                <div className="h-14 bg-black/50 border border-dashed border-white/10 rounded-xl flex items-center justify-center gap-2 text-gray-500 overflow-hidden">
-                                                    {formData.customQrImage ? <img src={formData.customQrImage} className="h-full object-contain" /> : <><Plus size={14} /><span className="text-[10px] font-black">Upload QR Image</span></>}
-                                                </div>
+                                                ))}
                                             </div>
-                                        )}
-                                    </div>
-                                 )}
-
-                                <div className="space-y-4 border-t border-white/5 pt-6">
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase pl-1">Document Layout Priority & Position</label>
-                                    <div className="space-y-4">
-                                        {formData.layoutOrder.map((item, idx) => (
-                                            <div key={item.id} className="bg-black/30 p-4 rounded-2xl border border-white/5 group hover:border-white/10 transition-all space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-[10px] font-black text-white/40 group-hover:text-white/60 transition-colors bg-white/5 w-6 h-6 rounded-lg flex items-center justify-center italic">{idx + 1}</span>
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
-                                                        {item.id === 'terms_totals' ? 'Terms & Totals' : item.id === 'payment_qr' ? 'Payment & QR' : item.id === 'signatory' ? 'Signatory & Seal' : 'Footer Pill'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex gap-1">
-                                                        <button 
-                                                            onClick={() => moveLayoutItem(idx, -1)} 
-                                                            disabled={idx === 0}
-                                                            className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white disabled:opacity-20 transition-all font-bold"
-                                                        >
-                                                            <svg className="w-3 h-3 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => moveLayoutItem(idx, 1)} 
-                                                            disabled={idx === formData.layoutOrder.length - 1}
-                                                            className="p-1.5 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white disabled:opacity-20 transition-all font-bold"
-                                                        >
-                                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="space-y-4 pt-2 border-t border-white/5">
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X Offset</span>
-                                                            <span className="text-[10px] font-black text-neon-blue">{item.x}px</span>
-                                                        </div>
-                                                        <div className="flex gap-3">
-                                                            <input 
-                                                                type="range" 
-                                                                min="-200" 
-                                                                max="200" 
-                                                                value={item.x} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'x', e.target.value)}
-                                                                className="flex-1 accent-neon-blue h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
-                                                            />
-                                                            <input 
-                                                                type="number" 
-                                                                value={item.x} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'x', e.target.value)}
-                                                                className="w-12 bg-black/40 border border-white/5 rounded-lg h-6 text-[10px] font-bold text-center text-neon-blue outline-none"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y Offset</span>
-                                                            <span className="text-[10px] font-black text-neon-green">{item.y}px</span>
-                                                        </div>
-                                                        <div className="flex gap-3">
-                                                            <input 
-                                                                type="range" 
-                                                                min="-500" 
-                                                                max="500" 
-                                                                value={item.y} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'y', e.target.value)}
-                                                                className="flex-1 accent-neon-green h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
-                                                            />
-                                                            <input 
-                                                                type="number" 
-                                                                value={item.y} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'y', e.target.value)}
-                                                                className="w-12 bg-black/40 border border-white/5 rounded-lg h-6 text-[10px] font-bold text-center text-neon-green outline-none"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
-                                                            <span className="text-[10px] font-black text-neon-pink">{(item.scale || 1).toFixed(2)}x</span>
-                                                        </div>
-                                                        <div className="flex gap-3">
-                                                            <input 
-                                                                type="range" 
-                                                                min="0.5" 
-                                                                max="1.5" 
-                                                                step="0.05"
-                                                                value={item.scale || 1} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'scale', e.target.value)}
-                                                                className="flex-1 accent-neon-pink h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer"
-                                                            />
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.1"
-                                                                value={item.scale || 1} 
-                                                                onChange={(e) => updateLayoutPosition(idx, 'scale', e.target.value)}
-                                                                className="w-12 bg-black/40 border border-white/5 rounded-lg h-6 text-[10px] font-bold text-center text-neon-pink outline-none"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-10">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Client Entity</label>
+                                                <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
                                             </div>
-                                        ))}
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Project Title</label>
+                                                <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Engagement Name" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-10">
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Address</label>
+                                                    <VisibilityToggle field="clientAddress" />
+                                                </div>
+                                                <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
+                                            </div>
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Deployment Period</label>
+                                                <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Duration or Dates" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-6 pt-4">
+                                            <div className="flex justify-between items-center px-2">
+                                                <div className="flex items-center gap-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
+                                                    <VisibilityToggle field="coverDescription" />
+                                                </div>
+                                                <button onClick={() => handleRefineField('coverDescription', 'Cover Description')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                            </div>
+                                            <FormattedTextArea value={formData.coverDescription} onChange={e => setFormData({...formData, coverDescription: e.target.value})} className={isHidden('coverDescription') ? 'opacity-30' : ''} placeholder="Cover page description for this proposal..." minH="min-h-[180px]" />
+                                        </div>
                                     </div>
-                                    <p className="text-[8px] font-bold text-gray-600 uppercase italic pl-1 text-center mt-4">Drag limits do not apply; use offsets for pixel-perfect alignment</p>
-                                </div>
-                            </div>
-                        </Card>
+                                )}
+                                {activeTab === '2' && (
+                                    <div className="space-y-12">
+                                        <div className="space-y-6 pt-4">
+                                            <div className="flex justify-between items-center px-2">
+                                                <div className="flex items-center gap-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
+                                                    <VisibilityToggle field="overview" />
+                                                </div>
+                                                <button onClick={() => handleRefineField('overview', 'Overview')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                            </div>
+                                            <FormattedTextArea value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className={isHidden('overview') ? 'opacity-30' : ''} placeholder="Strategic vision..." minH="min-h-[200px]" />
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="flex justify-between items-center px-2">
+                                                <div className="flex items-center gap-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective</label>
+                                                    <VisibilityToggle field="primaryGoal" />
+                                                </div>
+                                                <button onClick={() => handleRefineField('primaryGoal', 'Primary Goal')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                            </div>
+                                            <FormattedTextArea value={formData.primaryGoal} onChange={e => setFormData({...formData, primaryGoal: e.target.value})} className={isHidden('primaryGoal') ? 'opacity-30' : ''} placeholder="Strategic / Tactical Goal" minH="min-h-[120px]" />
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === '3' && (
+                                    <div className="space-y-12">
+                                        <div className="space-y-6">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scope of Work</label>
+                                                <button onClick={() => handleRefineField('scopeOfWork', 'Scope of Work')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                            </div>
+                                            <FormattedTextArea value={formData.scopeOfWork} onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} className={isHidden('scopeOfWork') ? 'opacity-30' : ''} placeholder="Use bullet points (• ) for each scope item. Group under ## headings." minH="min-h-[400px]" />
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === '4' && (
+                                    <div className="space-y-16">
+                                        {/* Deliverables Section */}
+                                        <div className="space-y-8">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">What We Deliver</label>
+                                                <button onClick={() => setFormData({...formData, deliverables: [...(formData.deliverables || []), { id: Date.now(), item: '', qty: '', timeline: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {(formData.deliverables || []).map((d, idx) => (
+                                                    <div key={d.id} className="flex items-start gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
+                                                        <span className="text-[10px] font-black text-gray-600 mt-4 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                                                        <div className="flex-1 space-y-3">
+                                                            <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-white/10 pb-2 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
+                                                            <div className="flex gap-4">
+                                                                <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
+                                                                <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => setFormData({...formData, deliverables: formData.deliverables.filter(x => x.id !== d.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg mt-3"><Trash2 size={14} /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
 
-                        <Card className="p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem]">
-                            <h3 className="text-sm font-black text-neon-blue tracking-widest uppercase mb-8">Strategic Content</h3>
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Executive Overview</label>
-                                    <textarea 
-                                        value={formData.overview} 
-                                        onChange={e => setFormData({...formData, overview: e.target.value})}
-                                        className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[120px] focus:border-neon-blue/50 outline-none"
-                                        placeholder="Summarize the project goals and Newbi's role..."
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Scope & Deliverables</label>
-                                    <textarea 
-                                        value={formData.scopeOfWork} 
-                                        onChange={e => setFormData({...formData, scopeOfWork: e.target.value})}
-                                        className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 text-xs font-medium leading-relaxed min-h-[150px] focus:border-neon-blue/50 outline-none"
-                                        placeholder="List specific services, dates, and student outreach targets..."
-                                    />
-                                </div>
-                            </div>
-                        </Card>
+                                        {/* Client Requirements Section */}
+                                        <div className="space-y-8 pt-10 border-t border-white/5">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Requirements From Client</label>
+                                                <button onClick={() => setFormData({...formData, clientRequirements: [...(formData.clientRequirements || []), { id: Date.now(), description: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {(formData.clientRequirements || []).map((r, idx) => (
+                                                    <div key={r.id} className="flex items-center gap-4 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
+                                                        <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                                                        <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="flex-1 bg-transparent border-none text-sm font-bold outline-none text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
+                                                        <button onClick={() => setFormData({...formData, clientRequirements: formData.clientRequirements.filter(x => x.id !== r.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={14} /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === '5' && (
+                                    <div className="space-y-8">
+                                        <div className="flex items-center gap-4 px-4">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resource Inventory</label>
+                                            <VisibilityToggle field="inventory" />
+                                        </div>
+                                        <div className={cn("space-y-12 transition-opacity", isHidden('inventory') && "opacity-30")}>
+                                            <div className="flex justify-between items-center px-4"><h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Table</h4><button disabled={isHidden('inventory')} onClick={() => setItems([...items, { id: Date.now(), description: '', qty: 1, price: 0 }])} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl disabled:opacity-30"><Plus size={16} /></button></div>
+                                            <div className="space-y-4">{items.map((item, idx) => (
+                                                <div key={item.id} className="flex items-center gap-6 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
+                                                    <div className="flex-1"><textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." /></div>
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50" /></div>
+                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
+                                                        <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
+                                                    </div>
+                                                </div>
+                                            ))}</div>
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === '6' && (
+                                    <div className="space-y-12">
+                                        <div className="grid grid-cols-2 gap-10">
+                                            <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">GST Percentage</label><input type="number" value={formData.gstRate} onChange={e => setFormData({...formData, gstRate: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
+                                            <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Security Deposit (%)</label><input type="number" value={formData.advanceRequested} onChange={e => setFormData({...formData, advanceRequested: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-4 px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strategic Terms</label>
+                                                <VisibilityToggle field="terms" />
+                                            </div>
+                                            <textarea value={formData.terms} onChange={e => setFormData({...formData, terms: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-[13px] font-medium min-h-[200px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('terms') && "opacity-30")} />
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-4 px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bank Settlement Details</label>
+                                                <VisibilityToggle field="paymentDetails" />
+                                            </div>
+                                            <textarea value={formData.paymentDetails} onChange={e => setFormData({...formData, paymentDetails: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-[13px] font-black font-mono min-h-[150px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('paymentDetails') && "opacity-30")} />
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
+                </section>
 
-                    {/* Live Preview */}
-                    <div ref={previewContainerRef} className="bg-[#050505] rounded-[2.5rem] p-8 overflow-y-auto relative flex flex-col items-center h-[calc(100vh-100px)] sticky top-8 border border-white/5 custom-scrollbar order-first xl:order-first">
-                        <div className="absolute top-6 right-6 z-20 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[8px] font-black uppercase tracking-widest">Strategic Twin</div>
-                        
-                        <div className="flex flex-col gap-8 py-8 origin-top" style={{ transform: `scale(${previewScale})` }}>
-                            {paginatedPages.map((pageItems, pageIdx) => {
-                                const isLastPage = pageIdx === paginatedPages.length - 1;
-                                const isFirstPage = pageIdx === 0;
-                                
-                                return (
-                                    <div 
-                                        key={pageIdx}
-                                        className="proposal-page-render w-[794px] h-[1123px] bg-[#E5E7EB] text-black p-[12mm] relative overflow-hidden flex flex-col justify-between shrink-0 shadow-2xl"
-                                        style={{ fontFamily: 'Inter, sans-serif' }}
-                                    >
-                                        <div className="pb-32 relative z-10">
-                                            {/* Header - Only on Page 1 */}
-                                            {isFirstPage ? (
-                                                <div className="flex justify-between items-start mb-10 relative z-10">
-                                                    <div className="flex items-center gap-4">
-                                                        <img src="/logo_document.png" alt="Newbi Logo" className="w-[180px] object-contain" crossOrigin="anonymous" />
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <h2 className="text-4xl font-black text-gray-500 tracking-tighter uppercase mb-0">#{formData.proposalNumber}</h2>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">PROPOSAL ID</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex justify-between items-center mb-6 border-b border-gray-300 pb-4">
-                                                    <img src="/logo_document.png" alt="Newbi Logo" className="w-[100px] object-contain opacity-50" crossOrigin="anonymous" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Proposal #{formData.proposalNumber} — Page {pageIdx + 1}</p>
-                                                </div>
-                                            )}
-
-                                            {/* Info Blocks - Only on Page 1 */}
-                                            {isFirstPage && (
-                                                <div className="grid grid-cols-2 gap-8 mb-8 relative z-10">
-                                                    <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                        <div className="bg-[#39FF14]/40 px-6 py-2">
-                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">PREPARED BY</h4>
-                                                        </div>
-                                                        <div className="p-6 space-y-2">
-                                                            <p className="text-xl font-bold">{formData.senderName}</p>
-                                                            <div className="text-xs text-gray-600 font-medium space-y-1">
-                                                                <p>Cluster: {formData.senderContact}</p>
-                                                                <p>Email: {formData.senderEmail}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                        <div className="bg-[#39FF14]/40 px-6 py-2">
-                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">PREPARED FOR</h4>
-                                                        </div>
-                                                        <div className="p-6 space-y-2">
-                                                            <p className="text-xl font-bold uppercase">{formData.clientName || 'CLIENT NAME'}</p>
-                                                            <div className="text-xs text-gray-600 font-medium space-y-1">
-                                                                <p>Date: {new Date(formData.date).toLocaleDateString('en-GB')}</p>
-                                                                <p className="italic">{formData.subject || 'Strategic Marketing Solution'}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Strategy Section - Only on Page 1 */}
-                                            {isFirstPage && (
-                                                <div className="mb-8 relative z-10">
-                                                    <div className="bg-white/30 rounded-2xl border border-gray-200 overflow-hidden">
-                                                        <div className="bg-[#39FF14]/40 px-6 py-2">
-                                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-black">EXECUTIVE OVERVIEW</h3>
-                                                        </div>
-                                                        <div className="p-6">
-                                                            <p className="text-xs font-medium leading-relaxed text-gray-700 whitespace-pre-line text-justify">
-                                                                {formData.overview || 'Strategic value proposition and high-impact outreach plan...'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Table */}
-                                            <div className={cn("mb-8 relative z-10", !isFirstPage && "mt-4")}>
-                                                <table className="w-full text-left">
-                                                    <thead>
-                                                        <tr className="bg-[#39FF14]/40 text-black">
-                                                            <th className="py-3 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">DELIVERABLE DESCRIPTION</th>
-                                                            <th className="py-3 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">QTY</th>
-                                                            <th className="py-3 px-6 text-right text-[10px] font-black uppercase tracking-widest">INVESTMENT</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-300 border-b border-gray-300">
-                                                        {pageItems.map((item, idx) => (
-                                                            <tr key={idx} className="bg-white/20">
-                                                                <td className="py-4 px-6 text-xs font-bold uppercase border-r border-dashed border-gray-400">{item.description || "CAMPAIGN ACTIVATION"}</td>
-                                                                <td className="py-4 px-4 text-center text-xs font-black border-r border-dashed border-gray-400">{item.qty}</td>
-                                                                <td className="py-4 px-6 text-right text-xs font-black">₹{item.price.toLocaleString()}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                             {/* Totals Section & Left Details - Only on Last Page */}
-                                             {isLastPage && (
-                                                <div className="mt-8 grid grid-cols-2 gap-y-8 gap-x-12 relative z-10 w-full items-start">
-                                                    {formData.layoutOrder.map((item) => {
-                                                        const sectionId = typeof item === 'string' ? item : item.id;
-                                                        const x = item.x || 0;
-                                                        const y = item.y || 0;
-                                                        const s = item.scale || 1;
-                                                        const style = { transform: `translate(${x}px, ${y}px) scale(${s})`, transformOrigin: 'top left' };
-
-                                                        if (sectionId === 'terms') {
-                                                            return formData.showNotes !== false && (
-                                                                <div key="terms" style={style} className="col-start-1 row-start-1 w-full relative">
-                                                                    <div className="bg-white/20 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                                        <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
-                                                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black">TERMS & CONDITIONS</h4>
-                                                                        </div>
-                                                                        <div className="p-4">
-                                                                            <p className="text-[9px] font-bold leading-relaxed text-gray-500 whitespace-pre-line tracking-wide">
-                                                                                {formData.terms || "Standard terms apply."}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        if (sectionId === 'totals') {
-                                                            return (
-                                                                <div key="totals" style={style} className="col-start-2 row-start-1 w-full relative">
-                                                                    <div className="w-full space-y-3">
-                                                                        <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                            <span>SUBTOTAL</span>
-                                                                            <span className="text-black text-xs font-bold font-heading italic">₹{subtotal.toLocaleString()}</span>
-                                                                        </div>
-                                                                        {formData.showGst && (
-                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
-                                                                                <span>GST ({formData.gstRate}%)</span>
-                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{gstAmount.toLocaleString()}</span>
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl">
-                                                                            <span className="text-[10px] font-black uppercase italic">TOTAL INVESTMENT</span>
-                                                                            <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                                        </div>
-                                                                        {formData.showAdvance !== false && (
-                                                                            <div className="flex justify-between py-2.5 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                                <span>ADVANCE PAID</span>
-                                                                                <span className="text-black text-xs font-bold font-heading italic">₹{formData.advancePaid.toLocaleString()}</span>
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
-                                                                            <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                            <span className="text-3xl font-black italic tracking-tighter">₹{(totalAmount - formData.advancePaid).toLocaleString()}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        if (sectionId === 'payment_details') {
-                                                            return formData.showPaymentDetails && (
-                                                                <div key="payment_details" style={style} className="col-start-1 row-start-2 w-full pt-4 border-t border-gray-300/50 relative">
-                                                                    <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                                        <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
-                                                                        <div className="whitespace-pre-line tracking-wide">
-                                                                            {formData.paymentDetails}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        if (sectionId === 'payment_qr') {
-                                                            return formData.showUPI && (
-                                                                <div key="payment_qr" style={style} className="col-start-2 row-start-2 w-full flex justify-end shrink-0 pt-4 border-t border-gray-300/50 relative">
-                                                                    <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4">
-                                                                        {formData.qrType === 'auto' ? (
-                                                                            <img
-                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${totalAmount}&cu=INR`)}`}
-                                                                                alt="Payment QR"
-                                                                                crossOrigin="anonymous"
-                                                                                className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
-                                                                            />
-                                                                        ) : formData.customQrImage ? (
-                                                                            <img
-                                                                                src={formData.customQrImage}
-                                                                                alt="Custom QR"
-                                                                                crossOrigin="anonymous"
-                                                                                className="w-[100px] h-[100px] object-contain grayscale contrast-125 mx-auto"
-                                                                            />
-                                                                        ) : (
-                                                                            <div className="w-[100px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg text-[6px] font-black text-gray-400 mx-auto uppercase">No QR</div>
-                                                                        )}
-                                                                        <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">SCAN TO PAY</p>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        if (sectionId === 'signatory') {
-                                                            return formData.showSignatureBlock !== false && (
-                                                                <div key="signatory" style={style} className="col-start-2 row-start-3 w-full flex justify-end mt-4 relative">
-                                                                    <div className="flex flex-col items-end text-right w-[200px]">
-                                                                        {formData.showNotes && formData.notes && (
-                                                                            <div className="text-[8px] font-bold text-gray-400 uppercase italic max-w-[250px] leading-relaxed mb-4 text-left mr-auto">
-                                                                                * {formData.notes.substring(0, 100)}...
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="flex flex-col items-end">
-                                                                            {formData.showSignatory === 'image' && formData.signatoryImage ? (
-                                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                            ) : formData.showSignatory === 'text' ? (
-                                                                                <div className="h-16 flex items-end justify-center">
-                                                                                    <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{formData.senderName || 'Authorized Signatory'}</p>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="h-16" />
-                                                                            )}
-                                                                            {formData.showSignatory !== 'none' && (
-                                                                                <div className="w-48 pt-4 border-t border-gray-400 text-center">
-                                                                                    <p className="text-[8px] font-black uppercase tracking-widest text-gray-700">Authorized Signature</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        return null;
-                                                      })}
-                                                  </div>
-                                             )}
-
-                                        </div>
-                                        {/* Footer Pill - Simplified for PDF capture */}
-                                        {formData.showFooter && (
-                                            <footer
-                                                className="absolute bottom-6 left-10 right-10 h-10 flex items-center justify-between px-10 rounded-full border border-black/10 shadow-lg z-50 bg-[#39FF14]/40"
-                                                style={{
-                                                    transform: `translate(${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).x || 0}px, ${(formData.layoutOrder.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).y || 0}px)`
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between w-full text-black">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
-                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">+91 93043 72773</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 border-x border-black/10 px-10 h-10">
-                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">partnership@newbi.live</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                                        <p className="text-[10px] font-black tracking-widest uppercase font-bold">newbi.live</p>
-                                                    </div>
-                                                </div>
-                                            </footer>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                {/* Doc Preview */}
+                <section className="w-[500px] 2xl:w-[750px] border-l border-white/5 bg-zinc-900/10 flex flex-col overflow-hidden shrink-0">
+                    <div className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
+                            <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
+                            <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
                         </div>
                     </div>
-                </div>
-            </div>
+
+                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex items-center justify-center p-8 overflow-hidden relative">
+                        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'center center' }} className="transition-transform duration-500">
+                            <AnimatePresence mode="wait">
+                                <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px]">
+                                    <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
+                                        <div className="flex flex-col gap-6 items-start">
+                                            <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
+                                        </div>
+                                        <div className="text-right space-y-3">
+                                            <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
+                                            {currentPreviewPage === 0 && (
+                                                <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-hidden">
+                                        {paginatedPages[currentPreviewPage]?.type === 'cover' && (
+                                            <div className="h-full flex flex-col justify-start space-y-20 py-8">
+                                                <div className="grid grid-cols-2 gap-10">
+                                                    <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
+                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Engagement Mission</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Mission Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
+                                                </div>
+                                                <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p></div>{!isHidden('coverDescription') && <p className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{formData.coverDescription || 'Cover description pending...'}</p>}</div>
+                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
+                                            <div className="space-y-16 py-8">
+                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Execution Roadmap.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                                {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(formData.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                                {!isHidden('primaryGoal') && (
+                                                    <div className="pt-12">
+                                                        <div className="p-12 border-2 border-black space-y-6">
+                                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                            <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(formData.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'scope' && (
+                                            <div className="h-full flex flex-col py-8">
+                                                <div className="space-y-4 mb-12">
+                                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                                    <div className="w-16 h-1 bg-black" />
+                                                </div>
+                                                <div className="flex-1 relative overflow-hidden">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                                    <div className="pl-10">
+                                                        {!paginatedPages[currentPreviewPage]?.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                        {paginatedPages[currentPreviewPage]?.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                        {renderFormatted(paginatedPages[currentPreviewPage]?.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
+                                                    <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Prepared By</p>
+                                                        <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
+                                            <div className="space-y-16 py-8">
+                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+
+                                                {/* Deliverables Table */}
+                                                {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && (
+                                                    <div className="space-y-6">
+                                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
+                                                        <table className="w-full text-left border-collapse border-2 border-black">
+                                                            <thead>
+                                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                    <th className="p-5 w-10">#</th>
+                                                                    <th className="p-5">Deliverable</th>
+                                                                    <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
+                                                                    <th className="p-5 text-right w-40">Timeline</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-200">
+                                                                {formData.deliverables.filter(d => d.item).map((d, i) => (
+                                                                    <tr key={d.id} className="hover:bg-gray-50">
+                                                                        <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
+                                                                        <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
+                                                                        <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
+                                                                        <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+
+                                                {/* Client Requirements */}
+                                                {(formData.clientRequirements?.length > 0 && formData.clientRequirements.some(r => r.description)) && (
+                                                    <div className="space-y-6 pt-4">
+                                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
+                                                        <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                            {formData.clientRequirements.filter(r => r.description).map((r, i) => (
+                                                                <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                                    <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                                    <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'table' && (
+                                            <div className="space-y-12 py-8">
+                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
+                                                <table className="w-full text-left border-collapse border-2 border-black"><thead><tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black"><th className="p-6">Resource Inventory</th><th className="p-6 text-center w-24 border-x border-white/20">Qty</th><th className="p-6 text-right w-48">Amount (INR)</th></tr></thead><tbody className="divide-y divide-gray-200">{paginatedPages[currentPreviewPage].items.map((item, i) => (<tr key={i} className="hover:bg-gray-50"><td className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td><td className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td><td className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td></tr>))}</tbody></table>
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
+                                            <div className="space-y-16 py-8">
+                                                <div className="grid grid-cols-2 gap-16 items-start">
+                                                    <div className="space-y-12">
+                                                        {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">Strategic Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
+                                                        {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Settlement Repository</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
+                                                    </div>
+                                                    <div className="space-y-6">
+                                                        <div className="p-8 border-2 border-black flex justify-between items-center bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest whitespace-nowrap">Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
+                                                        {formData.showGst && (<div className="p-8 border border-gray-200 flex justify-between items-center text-gray-500"><span className="text-[10px] font-black uppercase whitespace-nowrap">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
+                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Payable</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
+                                                        <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex justify-between items-center"><span className="text-[11px] font-black text-black uppercase tracking-widest whitespace-nowrap">Advance Required</span><span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]"><p>Newbi Entertainment © 2026</p><p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p></div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* AI Settings Modal */}
+            <AnimatePresence>
+                {showAiSettings && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAiSettings(false)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
+                            <div className="absolute top-0 right-0 p-8 opacity-5"><Settings size={80} className="text-neon-green" /></div>
+                            <h3 className="text-2xl font-black uppercase italic text-white mb-2">AI <span className="text-neon-green">Settings.</span></h3>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8">Orchestrator Configuration</p>
+                            
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Gemini API Key</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="password" 
+                                            value={aiApiKey} 
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setAiApiKey(val);
+                                                if (val) localStorage.setItem('geminiApiKey', val);
+                                                else localStorage.removeItem('geminiApiKey');
+                                            }} 
+                                            className="w-full bg-black border border-white/10 h-14 px-6 rounded-xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all text-neon-green" 
+                                            placeholder="Paste your API key here..." 
+                                        />
+                                        <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-neon-green/20" size={18} />
+                                    </div>
+                                    <div className="flex justify-between px-2">
+                                        <p className="text-[9px] font-medium text-gray-500 leading-relaxed">
+                                            Using {localStorage.getItem('geminiApiKey') ? 'Custom Browser Key' : 'System Default Key'}
+                                        </p>
+                                        <button onClick={() => { setAiApiKey(''); localStorage.removeItem('geminiApiKey'); }} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Reset to Default</button>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-neon-green/5 border border-neon-green/10 rounded-2xl">
+                                    <div className="flex items-start gap-3">
+                                        <Zap size={14} className="text-neon-green mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Model Info</p>
+                                            <p className="text-[9px] font-medium text-gray-400 leading-relaxed">3.0 Flash is the latest model. 2.5 Flash is the stable workhorse. Use 2.5 Pro for complex reasoning.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Deployment Model</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[
+                                            { id: 'gemini-3-flash-preview', label: '3 Flash', desc: 'Latest' },
+                                            { id: 'gemini-2.5-flash', label: '2.5 Flash', desc: 'Stable' },
+                                            { id: 'gemini-2.5-pro', label: '2.5 Pro', desc: 'Advanced' }
+                                        ].map(m => (
+                                            <button 
+                                                key={m.id} 
+                                                onClick={() => {
+                                                    setAiModel(m.id);
+                                                    localStorage.setItem('geminiModel', m.id);
+                                                }}
+                                                className={cn(
+                                                    "p-4 rounded-xl border text-left transition-all",
+                                                    aiModel === m.id ? "bg-neon-green border-neon-green text-black" : "bg-black border-white/10 text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <p className="text-[10px] font-black uppercase tracking-widest mb-1">{m.label}</p>
+                                                <p className={cn("text-[8px] font-bold uppercase opacity-60", aiModel === m.id ? "text-black" : "text-gray-600")}>{m.desc}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="relative mt-2">
+                                        <input 
+                                            type="text" 
+                                            value={aiModel} 
+                                            onChange={e => {
+                                                setAiModel(e.target.value);
+                                                localStorage.setItem('geminiModel', e.target.value);
+                                            }} 
+                                            className="w-full bg-black/50 border border-white/5 h-10 px-4 rounded-lg font-bold text-[9px] outline-none focus:border-neon-green/20 transition-all text-gray-400" 
+                                            placeholder="Manual Model ID (e.g. gemini-pro)" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/5">
+                                    <button 
+                                        onClick={() => { 
+                                            localStorage.removeItem('geminiApiKey'); 
+                                            localStorage.removeItem('geminiModel');
+                                            window.location.reload(); 
+                                        }} 
+                                        className="text-[9px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-500 transition-colors text-center"
+                                    >
+                                        Hard Reset AI Cache
+                                    </button>
+                                </div>
+
+                                <button onClick={() => setShowAiSettings(false)} className="w-full h-14 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-[1.02] transition-all mt-2">Save & Close</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Field Refinement Modal */}
+            <AnimatePresence>
+                {refiningField && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setRefiningField(null)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
+                            <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles size={80} className="text-neon-green" /></div>
+                            <h3 className="text-2xl font-black uppercase italic text-white mb-2">Refine <span className="text-neon-green">{refiningField.label}.</span></h3>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8">AI Content Optimization</p>
+                            
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Refinement Instruction</label>
+                                    <textarea 
+                                        autoFocus
+                                        value={refinementPrompt} 
+                                        onChange={e => setRefinementPrompt(e.target.value)} 
+                                        className="w-full bg-black border border-white/10 min-h-[120px] p-6 rounded-2xl font-medium text-sm outline-none focus:border-neon-green/40 transition-all text-white scrollbar-hide" 
+                                        placeholder="Make it more aggressive / focus on luxury / add technical details about the production team..." 
+                                    />
+                                </div>
+
+                                {parsedError && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+                                        <div className="px-2 py-1 bg-red-500/20 rounded-md shrink-0 mt-0.5"><span className="text-[9px] font-black text-red-400 font-mono">{parsedError.code}</span></div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-red-400 uppercase tracking-tight">{parsedError.title}</p>
+                                            <p className="text-[10px] font-medium text-red-400/70 leading-relaxed mt-0.5">{parsedError.message}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-4">
+                                    <button onClick={() => setRefiningField(null)} className="flex-1 h-14 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white/10 transition-all">Cancel</button>
+                                    <button 
+                                        onClick={executeRefinement} 
+                                        disabled={isGeneratingAi || !refinementPrompt}
+                                        className="flex-[2] h-14 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isGeneratingAi ? <RefreshCw className="animate-spin" size={14} /> : <Sparkles size={14} />} 
+                                        Optimize Section
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Global AI Status Notification */}
+            <AnimatePresence>
+                {parsedError && !refiningField && (
+                    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[300] w-full max-w-md">
+                        <div className="bg-zinc-900 border border-white/10 p-1.5 rounded-3xl shadow-2xl">
+                            <div className="bg-red-500/5 border border-red-500/10 p-5 rounded-2xl">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl shrink-0">
+                                        <X size={16} className="text-red-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <span className="px-2 py-0.5 bg-red-500/15 rounded text-[9px] font-black text-red-400 font-mono tracking-wider">{parsedError.code}</span>
+                                            <span className="text-[10px] font-black text-red-400 uppercase tracking-wider">{parsedError.title}</span>
+                                        </div>
+                                        <p className="text-[11px] font-medium text-gray-400 leading-relaxed">{parsedError.message}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button 
+                                            onClick={() => {
+                                                if (aiPrompt) handleGenerateAI();
+                                                else setAiError(null);
+                                            }} 
+                                            className="h-9 px-4 bg-white text-black font-black uppercase tracking-widest text-[8px] rounded-lg hover:scale-105 transition-all"
+                                        >
+                                            Retry
+                                        </button>
+                                        <button onClick={() => setAiError(null)} className="p-2 text-gray-600 hover:text-white transition-colors rounded-lg hover:bg-white/5"><X size={14} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

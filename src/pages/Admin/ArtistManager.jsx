@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES, ARTIST_CATEGORIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
@@ -93,15 +94,13 @@ const ArtistManager = () => {
                 {/* Dashboard Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-16">
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                            <Sparkles size={16} className="text-neon-blue animate-pulse" />
-                            <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Studio Workspace</span>
-                        </div>
-                        <h1 className="text-5xl md:text-7xl lg:text-[6rem] font-black font-heading tracking-tighter uppercase italic leading-[0.85]">
-                            TALENT <br/>
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF]">OPERATIONS.</span>
+                        <Link to="/admin" className="flex items-center gap-3 w-fit group cursor-pointer hover:opacity-80 transition-opacity">
+                            <ArrowLeft size={16} className="text-neon-blue group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Back to Admin Center</span>
+                        </Link>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
+                            TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF]">OPERATIONS.</span>
                         </h1>
-                        <p className="text-gray-400 font-medium tracking-widest text-sm uppercase">Command Center &middot; v2.0</p>
                     </div>
 
                     <div className="flex flex-wrap gap-4 w-full xl:w-auto">
@@ -112,7 +111,7 @@ const ArtistManager = () => {
                 </div>
 
                 {/* Control Panel (Filters & Actions) */}
-                <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-6 mb-12 shadow-2xl flex flex-col lg:flex-row items-center gap-6">
+                <div className="relative z-50 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-6 mb-12 shadow-2xl flex flex-col lg:flex-row items-center gap-6">
                     {/* Search */}
                     <div className="relative flex-1 w-full">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
@@ -353,8 +352,8 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 pt-20 pb-20">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 backdrop-blur-xl" onClick={onClose} />
         <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }}
-            className="relative bg-[#050505] border border-white/10 rounded-[3.5rem] p-8 md:p-14 max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.9)] z-[101]"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="relative bg-[#050505] border border-white/10 rounded-[2rem] p-6 md:p-10 max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.9)] z-[101]"
         >
             <button onClick={onClose} className="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50">
                 <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
@@ -373,7 +372,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => (
                         )}
                     </div>
                     <div className="text-center md:text-left pt-4">
-                        <h2 className="text-5xl md:text-7xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white">
+                        <h2 className="text-3xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white">
                             {artist.name}
                         </h2>
                         <div className="flex flex-wrap justify-center md:justify-start gap-6 items-center mb-6">
@@ -471,16 +470,16 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => (
                 </div>
             </div>
 
-            <div className="shrink-0 pt-8 border-t border-white/10 mt-auto relative z-20">
-                <div className="bg-black border border-white/10 p-4 rounded-[2.5rem] flex flex-col sm:flex-row gap-4 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            <div className="shrink-0 pt-6 border-t border-white/10 mt-auto relative z-20">
+                <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 flex gap-3">
                         {artist.profileStatus !== 'approved' && (
-                            <Button onClick={() => onUpdateStatus(artist.id, 'approved')} className="flex-1 h-16 bg-neon-green text-black font-black tracking-widest rounded-2xl shadow-[0_0_30px_rgba(57,255,20,0.2)]">VERIFY TALENT</Button>
+                            <Button onClick={() => onUpdateStatus(artist.id, 'approved')} className="flex-1 h-14 bg-neon-green text-black font-black tracking-widest rounded-xl shadow-[0_0_30px_rgba(57,255,20,0.2)] hover:scale-[1.02] transition-transform">VERIFY TALENT</Button>
                         )}
                         {artist.profileStatus !== 'rejected' && (
-                            <Button onClick={() => onUpdateStatus(artist.id, 'rejected')} className="flex-1 h-16 bg-zinc-900 border border-white/10 text-yellow-500 rounded-2xl hover:bg-white/5">REJECT</Button>
+                            <Button onClick={() => onUpdateStatus(artist.id, 'rejected')} className="flex-1 h-14 bg-zinc-900 border border-white/10 text-yellow-500 rounded-xl hover:bg-white/5 transition-colors">REJECT</Button>
                         )}
-                        <button onClick={() => onDelete(artist.id)} className="h-16 w-16 bg-red-600/10 border border-red-600/20 rounded-2xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all"><Trash2 size={24} /></button>
+                        <button onClick={() => onDelete(artist.id)} className="h-14 w-14 bg-red-600/10 border border-red-600/20 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all"><Trash2 size={20} /></button>
                     </div>
                 </div>
             </div>

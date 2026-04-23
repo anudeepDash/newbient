@@ -46,7 +46,7 @@ const SiteSettings = () => {
                         <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
                             <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
                         </Link>
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] pb-4 pr-12 pl-1 overflow-visible">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] pb-4 pr-12 pl-1 overflow-visible">
                             SYSTEM <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">COMMAND.</span>
                         </h1>
                     </div>

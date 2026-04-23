@@ -75,7 +75,8 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     const isInternalGL = isGL && item.guestlistEnabled && !hasExternalLink;
     
     const buttonLabel = item.buttonText || (hasExternalLink ? "ACCESS NOW" : (isInternalGL ? "GET GUESTLIST" : (isGig ? "APPLY GIG" : (isCampaign ? "APPLY NOW" : "TAKE FORM"))));
-    const showButton = hasExternalLink || isInternalGL || isGig || isForm || isCampaign;
+    const isClosed = item.status && item.status.toLowerCase() === 'closed';
+    const showButton = (hasExternalLink || isInternalGL || isGig || isForm || isCampaign) && !(isForm && isClosed);
 
     const themeColor = isForm ? "#FF4F8B" : (isGig ? "#39FF14" : (isCampaign ? "#2ebfff" : "#2ebfff"));
     const highlightColor = item.highlightColor || themeColor;
