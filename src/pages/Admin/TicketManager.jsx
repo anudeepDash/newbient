@@ -741,7 +741,10 @@ const TicketManager = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-32">
+                            <motion.div 
+                                layout
+                                className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
+                            >
                                 {displayEvents
                                     .filter(e => e.title.toLowerCase().includes(searchTerm.toLowerCase()))
                                     .map((event, idx) => (
@@ -750,13 +753,14 @@ const TicketManager = () => {
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: idx * 0.05 }}
+                                        className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
                                         onClick={() => setSelectedEventId(event.id)}
-                                        className={cn(
+                                    >
+                                        <div className={cn(
                                             "relative group cursor-pointer border rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500",
                                             managerMode === 'ticketing' ? "border-white/5 hover:border-neon-green/40 shadow-[0_0_40px_rgba(57,255,20,0.02)]" : "border-white/5 hover:border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.02)]"
-                                        )}
-                                    >
-                                        <div className="absolute inset-0">
+                                        )}>
+                                            <div className="absolute inset-0">
                                             <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-30 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-1000" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
                                         </div>

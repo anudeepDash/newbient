@@ -558,6 +558,19 @@ export const useStore = create((set, get) => ({
     deleteProposal: async (id) => {
         await deleteDoc(doc(db, 'proposals', id));
     },
+    duplicateProposal: async (id) => {
+        const { proposals, addProposal } = get();
+        const original = proposals.find(p => p.id === id);
+        if (!original) throw new Error("Proposal not found");
+
+        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, rejectionMetadata: _____, ...duplicateData } = original;
+        return await addProposal({
+            ...duplicateData,
+            clientName: `${original.clientName} (REVISED)`,
+            status: 'Draft',
+            createdAt: new Date().toISOString()
+        });
+    },
 
     // Forms
     addForm: async (form) => {

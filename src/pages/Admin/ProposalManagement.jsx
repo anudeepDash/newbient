@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, FileSpreadsheet, ExternalLink, Calendar, Search, FileText, DollarSign, Send } from 'lucide-react';
+import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, FileSpreadsheet, ExternalLink, Calendar, Search, FileText, DollarSign, Send, MessageCircle, Share2, Activity, History, X, Smartphone, Globe, ShieldCheck } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { sendProposalEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
@@ -11,10 +11,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const ProposalManagement = () => {
     const navigate = useNavigate();
-    const { proposals, deleteProposal, updateProposalStatus } = useStore();
+    const { proposals, deleteProposal, updateProposalStatus, duplicateProposal } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [viewMode, setViewMode] = useState('grid');
+    const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+    const [sharingProposal, setSharingProposal] = useState(null);
 
     const filteredProposals = proposals.filter(p => {
         const matchesSearch = p.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -45,12 +47,72 @@ const ProposalManagement = () => {
             const res = await sendProposalEmail(email, proposal.title || "Strategic Proposal", url);
             if (res.success) {
                 alert("Proposal link sent successfully!");
+                updateProposalStatus(proposal.id, 'Sent');
             } else {
                 alert("Failed to send email. Check console for details.");
             }
         } catch (err) {
             console.error(err);
             alert("An error occurred while sending.");
+        }
+    };
+
+    const handleWhatsAppShare = (proposal) => {
+        const url = `${window.location.origin}/proposal/${proposal.id}`;
+        const text = `Greetings from Newbi Entertainment. Here is your Strategic Proposal: ${url}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank');
+        updateProposalStatus(proposal.id, 'Sent');
+    };
+
+    const handleNativeShare = async (proposal) => {
+        const url = `${window.location.origin}/proposal/${proposal.id}`;
+        
+        // If native share is available and it's a mobile device, use it directly
+        if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            try {
+                await navigator.share({
+                    title: `Strategic Proposal - ${proposal.clientName}`,
+                    text: `View your Strategic Memorandum from Newbi Entertainment.`,
+                    url: url
+                });
+                updateProposalStatus(proposal.id, 'Sent');
+                return;
+            } catch (err) {
+                console.error("Share failed:", err);
+            }
+        }
+
+        // Open our custom high-fidelity share modal
+        setSharingProposal(proposal);
+    };
+
+    const handleDuplicate = async (id) => {
+        if (window.confirm('Duplicate this proposal for a revision?')) {
+            try {
+                const newId = await duplicateProposal(id);
+                alert('Proposal duplicated as Draft.');
+            } catch (err) {
+                console.error(err);
+                alert('Failed to duplicate.');
+            }
+        }
+    };
+
+    const handleRevokeSignature = async (proposalId) => {
+        if (window.confirm('CRITICAL: Are you sure you want to revoke this signature? This will unlock the document and void the current authorization.')) {
+            try {
+                await useStore.getState().updateProposal(proposalId, {
+                    status: 'Sent',
+                    approvalMetadata: null,
+                    rejectionMetadata: null
+                });
+                alert('Signature revoked successfully. Document is now active.');
+                setSelectedAnalytics(null);
+            } catch (err) {
+                console.error(err);
+                alert('Failed to revoke signature.');
+            }
         }
     };
 
@@ -65,70 +127,72 @@ const ProposalManagement = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div className="space-y-2">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
+                    <div className="space-y-2 max-w-full">
+                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] mb-4 group">
+                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Dashboard
                         </Link>
-                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            PROPOSAL <span className="text-neon-green px-4">VAULT.</span>
+                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
+                            PROPOSAL <span className="text-neon-green px-2 sm:px-4">VAULT.</span>
                         </h1>
                     </div>
                     
-                    <Link to="/admin/create-proposal">
-                        <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                            <Plus className="mr-2 h-4 w-4" /> Generate New Quote
+                    <Link to="/admin/create-proposal" className="w-full md:w-auto">
+                        <Button className="w-full md:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] sm:text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                            <Plus className="mr-2 h-4 w-4" /> New Quote
                         </Button>
                     </Link>
                 </div>
 
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
+                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} md={20} />
                         <input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by client or proposal ID..."
-                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                            placeholder="Search client or ID..."
+                            className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 md:pr-8 rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                         />
                     </div>
-                    <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                        <div className="flex min-w-max md:min-w-0">
-                            {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setStatusFilter(s)}
-                                    className={cn(
-                                        "px-6 md:px-10 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[100px] md:min-w-[120px]",
-                                        statusFilter === s 
-                                            ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
-                                            : "text-gray-500 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    {s}
-                                </button>
-                            ))}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
+                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex min-w-max md:min-w-0">
+                                {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setStatusFilter(s)}
+                                        className={cn(
+                                            "px-4 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] sm:min-w-[100px] md:min-w-[120px]",
+                                            statusFilter === s 
+                                                ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 mr-1 shrink-0">
+                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
-                                    "p-3.5 rounded-xl transition-all duration-300",
+                                    "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
                                     viewMode === 'grid' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <LayoutGrid size={18} />
+                                <LayoutGrid size={16} md={18} />
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={cn(
-                                    "p-3.5 rounded-xl transition-all duration-300",
+                                    "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
                                     viewMode === 'table' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <FileText size={18} />
+                                <FileText size={16} md={18} />
                             </button>
                         </div>
                     </div>
@@ -142,7 +206,7 @@ const ProposalManagement = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                            className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
                         >
                             {filteredProposals.map((proposal, i) => (
                                 <motion.div
@@ -151,6 +215,7 @@ const ProposalManagement = () => {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
+                                    className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
                                 >
                                     <Card className="group relative p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
                                         <div className="absolute top-0 right-0 p-6 md:p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
@@ -159,14 +224,40 @@ const ProposalManagement = () => {
 
                                         <div>
                                             <div className="flex justify-between items-start mb-6">
-                                                <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
-                                                    {proposal.proposalNumber || 'ID: ' + proposal.id.slice(0, 8)}
-                                                </span>
-                                                <div className={cn(
-                                                    "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]",
-                                                    proposal.status === 'Accepted' ? 'text-neon-green bg-neon-green' : 
-                                                    (proposal.status === 'Sent' ? 'text-neon-blue bg-neon-blue' : 'text-gray-600 bg-gray-600')
-                                                )} />
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
+                                                        {proposal.proposalNumber || 'ID: ' + proposal.id.slice(0, 8)}
+                                                    </span>
+                                                    <div className={cn(
+                                                        "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]",
+                                                        proposal.status === 'Accepted' ? 'text-neon-green bg-neon-green' : 
+                                                        (proposal.status === 'Rejected' ? 'text-red-500 bg-red-500' : 
+                                                        (proposal.status === 'Sent' ? 'text-neon-blue bg-neon-blue' : 'text-gray-600 bg-gray-600'))
+                                                    )} />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        onClick={() => handleDuplicate(proposal.id)}
+                                                        className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                        title="Duplicate Proposal"
+                                                    >
+                                                        <History size={14} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setSelectedAnalytics(proposal)}
+                                                        className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
+                                                        title="View Analytics"
+                                                    >
+                                                        <Activity size={14} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(proposal.id)}
+                                                        className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                        title="Delete Proposal"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <h3 className="text-xl md:text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
@@ -184,17 +275,10 @@ const ProposalManagement = () => {
                                                 </button>
                                             </Link>
                                             <button 
-                                                onClick={() => handleCopyLink(proposal.id)}
-                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                                onClick={() => handleNativeShare(proposal)}
+                                                className="flex-1 min-w-[30%] py-3 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neon-green/10 flex items-center justify-center gap-2"
                                             >
-                                                <Copy size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleSendEmail(proposal)}
-                                                className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
-                                                title="Send to Client"
-                                            >
-                                                <Send size={16} />
+                                                <Share2 size={12} /> Share
                                             </button>
                                             <a 
                                                 href={`/proposal/${proposal.id}`} 
@@ -204,12 +288,6 @@ const ProposalManagement = () => {
                                             >
                                                 <Eye size={16} />
                                             </a>
-                                            <button 
-                                                onClick={() => handleDelete(proposal.id)}
-                                                className="p-3 bg-white/5 hover:bg-neon-pink/20 hover:text-neon-pink text-gray-500 rounded-xl transition-all border border-white/5"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
                                         </div>
                                     </Card>
                                 </motion.div>
@@ -228,8 +306,9 @@ const ProposalManagement = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
+                            className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
                         >
-                            <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] p-0 border">
+                            <Card className="min-w-[800px] md:min-w-0 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-3xl md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -266,7 +345,8 @@ const ProposalManagement = () => {
                                                     <div className={cn(
                                                         "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
                                                         proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
-                                                        (proposal.status === 'Sent' ? 'bg-neon-blue/10 text-neon-blue' : 'bg-gray-600/10 text-gray-600')
+                                                        (proposal.status === 'Rejected' ? 'bg-red-500/10 text-red-500' : 
+                                                        (proposal.status === 'Sent' ? 'bg-neon-blue/10 text-neon-blue' : 'bg-gray-600/10 text-gray-600'))
                                                     )}>
                                                         {proposal.status}
                                                     </div>
@@ -274,7 +354,9 @@ const ProposalManagement = () => {
                                                 <td className="p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <a href={`/proposal/${proposal.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
-                                                        <button onClick={() => handleCopyLink(proposal.id)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Copy size={18} /></button>
+                                                        <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
+                                                        <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
+                                                        <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
                                                         <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                                                     </div>
@@ -291,6 +373,145 @@ const ProposalManagement = () => {
                                 )}
                             </Card>
                         </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Analytics Modal */}
+                <AnimatePresence>
+                    {selectedAnalytics && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden">
+                                <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Access Logs for {selectedAnalytics.clientName}</p>
+                                    </div>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-white/5 rounded-full transition-colors"><X size={20} /></button>
+                                </div>
+                                <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6 scrollbar-hide">
+                                    {selectedAnalytics.status === 'Accepted' && selectedAnalytics.approvalMetadata && (
+                                        <div className="space-y-4">
+                                            <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-start gap-4">
+                                                <ShieldCheck className="text-neon-green shrink-0" size={24} />
+                                                <div>
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
+                                                    <p className="text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
+                                                        <span className="flex items-center gap-1"><Smartphone size={10} /> {selectedAnalytics.approvalMetadata.device?.platform || 'Unknown Device'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
+                                                className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-red-500/10 transition-all"
+                                            >
+                                                Revoke Authorization
+                                            </button>
+                                        </div>
+                                    )}
+                                    {selectedAnalytics.status === 'Rejected' && selectedAnalytics.rejectionMetadata && (
+                                        <div className="space-y-4">
+                                            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-4">
+                                                <X className="text-red-500 shrink-0" size={24} />
+                                                <div>
+                                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Refusal Context</p>
+                                                    <p className="text-sm font-bold text-white mb-2">{selectedAnalytics.rejectionMetadata.reason}</p>
+                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
+                                                        <Calendar size={10} /> {new Date(selectedAnalytics.rejectionMetadata.rejectedAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
+                                                className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/5 transition-all"
+                                            >
+                                                Reset to Active
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-4">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recent Access Events</p>
+                                        {(selectedAnalytics.accessLogs || []).length > 0 ? (
+                                            <div className="space-y-3">
+                                                {[...(selectedAnalytics.accessLogs || [])].reverse().map((log, i) => (
+                                                    <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between group hover:bg-white/[0.05] transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="p-2 bg-white/5 rounded-lg text-gray-400"><Globe size={14} /></div>
+                                                            <div>
+                                                                <p className="text-[11px] font-bold text-white">{log.platform || 'Browser Session'}</p>
+                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{log.screen || 'Desktop View'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                                                <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No access logs recorded yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                {/* Unified Share Modal */}
+                <AnimatePresence>
+                    {sharingProposal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSharingProposal(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-sm bg-zinc-900 border border-white/10 rounded-[3rem] overflow-hidden">
+                                <div className="p-8 text-center space-y-1 border-b border-white/5">
+                                    <h3 className="text-2xl font-black uppercase tracking-[0.2em] italic">SHARE</h3>
+                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{sharingProposal.clientName}</p>
+                                </div>
+
+                                <div className="p-8 grid grid-cols-1 gap-3">
+                                    <button 
+                                        onClick={() => { handleCopyLink(sharingProposal.id); setSharingProposal(null); }}
+                                        className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><Copy size={16} /></div>
+                                        <div className="text-left">
+                                            <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
+                                        </div>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => { handleWhatsAppShare(sharingProposal); setSharingProposal(null); }}
+                                        className="p-4 bg-white/5 hover:bg-[#25D366]/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
+                                        <div className="text-left">
+                                            <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
+                                        </div>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => { handleSendEmail(sharingProposal); setSharingProposal(null); }}
+                                        className="p-4 bg-white/5 hover:bg-neon-blue/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><Send size={16} /></div>
+                                        <div className="text-left">
+                                            <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <button onClick={() => setSharingProposal(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-white transition-colors bg-white/[0.02]">
+                                    Cancel
+                                </button>
+                            </motion.div>
+                        </div>
                     )}
                 </AnimatePresence>
             </div>

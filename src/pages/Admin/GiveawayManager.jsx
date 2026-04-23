@@ -310,14 +310,14 @@ const GiveawayManager = () => {
                     </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="flex overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-3 gap-8 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
                     {filteredGiveaways.map(giveaway => (
                         <motion.div 
                             key={giveaway.id} 
                             layout
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(168,85,247,0.05)]" 
+                            className="min-w-[85vw] md:min-w-0 snap-center bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col h-full relative group hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(168,85,247,0.05)]" 
                         >
                             <div className="flex items-start justify-between mb-8">
                                 <div className={cn(
@@ -561,13 +561,16 @@ const GiveawayManager = () => {
                                             ))}
                                         </div>
                                         
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <motion.div 
+                                            layout
+                                            className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
+                                        >
                                             {(formData.tasks || []).map((task, index) => (
                                                 <motion.div 
                                                     key={task.id} 
                                                     initial={{ opacity: 0, x: -10 }}
                                                     animate={{ opacity: 1, x: 0 }}
-                                                    className="p-6 bg-black/40 border border-white/5 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative overflow-hidden group"
+                                                    className="p-6 bg-black/40 border border-white/5 rounded-3xl grid grid-cols-1 md:grid-cols-12 gap-6 items-center relative overflow-hidden group min-w-[85vw] md:min-w-0 snap-center"
                                                 >
                                                     <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/20 group-hover:bg-purple-500 transition-colors" />
                                                     
