@@ -165,7 +165,7 @@ const ArtistAnt = () => {
                         className="inline-flex flex-col items-center mb-0 z-10 relative"
                     >
 
-                        <div className="relative group mt-8 mb-4 md:mt-12 md:mb-8 z-10">
+                        <div className="relative group z-10">
                             <div className="absolute -inset-14 bg-gradient-to-r from-orange-600/30 via-purple-600/30 to-blue-600/30 rounded-full blur-[80px] opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse" />
                             <img src={logo} alt="Artistant Logo" className="w-64 md:w-80 lg:w-[28rem] object-contain relative z-10 drop-shadow-[0_20px_60px_rgba(255,87,34,0.3)] hover:scale-105 transition-transform duration-500" />
                         </div>
@@ -173,7 +173,7 @@ const ArtistAnt = () => {
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.8 }}
-                        className="relative z-20 mt-4 md:mt-8"
+                        className="relative z-20 -mt-4 md:-mt-8"
                     >
                         <h1 className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[7.5vw] xl:text-[8rem] font-black font-heading tracking-tighter leading-[0.85] uppercase italic select-none">
                             <span className="block text-white">UNLEASH THE</span>
@@ -195,8 +195,9 @@ const ArtistAnt = () => {
 
                 {!user ? (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center px-4">
-                        <div className="p-8 md:p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] md:rounded-[4rem] shadow-2xl">
-                            <Star className="w-16 h-16 md:w-20 md:h-20 text-neon-blue mx-auto mb-8 md:mb-10 animate-pulse" />
+                        <div className="p-8 md:p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] md:rounded-[4rem] shadow-2xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay pointer-events-none" />
+                            <img src={logo} alt="Artistant" className="h-16 md:h-20 mx-auto mb-8 md:mb-10 object-contain drop-shadow-[0_0_20px_rgba(46,191,255,0.3)] relative z-10" />
                             <h3 className="text-3xl md:text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
                             <p className="text-gray-500 mb-10 md:mb-12 font-medium text-sm md:text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the Artistant Registry. Sign in to proceed.</p>
                             <button onClick={() => setAuthModal(true)} className="h-16 md:h-20 px-10 md:px-16 rounded-2xl text-sm md:text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
@@ -207,7 +208,9 @@ const ArtistAnt = () => {
                 ) : (
                     <div className="max-w-4xl mx-auto">
                         <div className="flex items-center gap-4 text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-500 mb-6 md:mb-8 flex-wrap">
-                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse" /> ARTIST PORTAL</span>
+                            <span className="flex items-center gap-3">
+                                <img src={logo} alt="Artistant" className="h-4 md:h-5 object-contain" />
+                            </span>
                             <span className="hidden sm:inline-block">//</span>
                             <span>{isEditing ? 'EDIT PROFILE' : 'REGISTRATION'}</span>
                         </div>
@@ -251,9 +254,12 @@ const ArtistAnt = () => {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden"
+                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden group"
                         >
                             <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
+                            <div className="absolute -bottom-20 -right-20 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity duration-1000">
+                                <img src={logo} alt="Artistant Watermark" className="w-[500px] object-contain rotate-[-10deg]" />
+                            </div>
                             
                             <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10 relative z-10">
                                 {step === 1 && (

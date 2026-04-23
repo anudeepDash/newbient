@@ -128,7 +128,7 @@ const CreatorJoin = () => {
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="text-6xl md:text-[10rem] font-black font-heading mb-8 tracking-tighter leading-none uppercase italic text-white"
+                        className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white"
                     >
                         STUDIO <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">CERTIFICATION.</span>
                     </motion.h1>
