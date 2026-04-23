@@ -791,7 +791,8 @@ const TicketManager = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    </motion.div>
+                                    </div>
+                                </motion.div>
                                 ))}
                                 {displayEvents.length === 0 && (
                                     <div className="col-span-full py-40 bg-zinc-900/10 border border-dashed border-white/5 rounded-[4rem] flex flex-col items-center justify-center gap-6">
@@ -810,7 +811,7 @@ const TicketManager = () => {
                                         </Link>
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
 
                         </motion.div>
                     ) : (

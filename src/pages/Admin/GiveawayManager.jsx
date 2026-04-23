@@ -651,7 +651,7 @@ const GiveawayManager = () => {
                                                     <p className="text-[10px] font-black uppercase tracking-widest">No Tasks Configured</p>
                                                 </div>
                                             )}
-                                        </div>
+                                        </motion.div>
                                     </div>
                                 </div>
                             </form>
