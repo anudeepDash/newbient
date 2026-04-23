@@ -22,6 +22,7 @@ import {
 import html2canvas from 'html2canvas';
 import { useStore } from '../../lib/store';
 import { Button } from '../ui/Button';
+import LoadingSpinner from '../ui/LoadingSpinner';
 import { cn } from '../../lib/utils';
 
 const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
@@ -174,14 +175,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                 exit={{ opacity: 0 }} 
                                 className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6"
                             >
-                                <div className="relative">
-                                    <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
-                                    <motion.div 
-                                        animate={{ rotate: 360 }} 
-                                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                        className="absolute inset-0 border-t-2 border-neon-green rounded-full shadow-[0_0_15px_rgba(57,255,20,0.5)]" 
-                                    />
-                                </div>
+                                <LoadingSpinner size="md" color="#2bd93e" className="mb-4" />
                                 <div className="text-center space-y-2">
                                     <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">STABILIZING ASSETS</p>
                                     <p className="text-[12px] font-black text-white uppercase italic tracking-tighter">GENERATING YOUR ACCESS PASS...</p>
@@ -375,11 +369,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                     {step === 'loading' && (
                                         <motion.div key="loading" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-8 py-10">
-                                            <div className="relative w-32 h-32">
-                                                <div className="absolute inset-0 border-[6px] border-white/5 rounded-full" />
-                                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="absolute inset-0 border-[6px] border-neon-blue border-t-transparent rounded-full" />
-                                                <ShieldCheck size={40} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-neon-blue animate-pulse" />
-                                            </div>
+                                            <LoadingSpinner size="lg" color="#2ebfff" />
                                             <div className="space-y-2">
                                                 <h3 className="text-3xl font-black font-heading text-white italic tracking-tighter uppercase">PROCESSING...</h3>
                                                 <p className="text-[9px] font-black text-gray-700 uppercase tracking-[0.4em]">Securing your entry</p>

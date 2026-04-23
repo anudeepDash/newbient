@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
-import { Zap, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
+import LoadingSpinner from './ui/LoadingSpinner';
 
 const AdminGuard = ({ children }) => {
     const { user, authInitialized, setAuthModal } = useStore();
@@ -17,19 +18,8 @@ const AdminGuard = ({ children }) => {
     if (!authInitialized) {
         return (
             <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
-                <motion.div 
-                    animate={{ 
-                        rotate: 360,
-                        scale: [1, 1.2, 1],
-                    }} 
-                    transition={{ 
-                        rotate: { duration: 2, repeat: Infinity, ease: "linear" },
-                        scale: { duration: 1, repeat: Infinity, ease: "easeInOut" }
-                    }}
-                >
-                    <Zap className="text-neon-green" size={64} />
-                </motion.div>
-                <p className="text-gray-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Authenticating Authority...</p>
+                <LoadingSpinner size="lg" color="#2bd93e" />
+                <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Authenticating Authority...</p>
             </div>
         );
     }

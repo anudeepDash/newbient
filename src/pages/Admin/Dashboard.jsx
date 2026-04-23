@@ -41,10 +41,11 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
 import { cn } from '../../lib/utils';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const Dashboard = () => {
     const { 
-        invoices, proposals, concerts, announcements, user, 
+        invoices, proposals, concerts, portfolio, announcements, user, 
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.cards || {};
@@ -117,15 +118,13 @@ const Dashboard = () => {
     const stats = [
         { label: 'Settlements', value: invoices.length, icon: FileText, color: 'neon-green', detail: 'Total Invoices', link: '/admin/invoices' },
         { label: 'Proposals', value: proposals?.length || 0, icon: FileSpreadsheet, color: 'neon-blue', detail: 'Quotation Pipeline', link: '/admin/proposals' },
-        { label: 'Portfolio', value: concerts.length, icon: Music, color: 'neon-pink', detail: 'Live Concerts', link: '/admin/concertzone' },
+        { label: 'Portfolio', value: portfolio.length, icon: Music, color: 'neon-pink', detail: 'Past Productions', link: '/admin/concertzone' },
         { label: 'Updates', value: announcements.length, icon: Radio, color: 'yellow-400', detail: 'Public Announcements', link: '/admin/announcements' },
     ];
 
     if (authLoading) return (
         <div className="min-h-screen bg-black flex items-center justify-center">
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-                <Zap className="text-neon-green" size={48} />
-            </motion.div>
+            <LoadingSpinner size="lg" color="#2bd93e" />
         </div>
     );
 
