@@ -148,12 +148,12 @@ const Dashboard = () => {
                     <motion.div 
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="space-y-6 max-w-full"
+                        className="space-y-4 md:space-y-6 max-w-full"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="p-4 rounded-[1.8rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl relative group">
+                            <div className="p-3 md:p-4 rounded-2xl md:rounded-[1.8rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl relative group">
                                 <div className="absolute inset-0 bg-neon-green/20 rounded-[1.8rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <LayoutDashboard className="text-neon-green relative z-10" size={32} />
+                                <LayoutDashboard className="text-neon-green relative z-10 w-6 h-6 md:w-8 md:h-8" />
                             </div>
                             <div className="h-10 w-px bg-white/10 mx-2 hidden sm:block" />
                             <div className="flex flex-col">
@@ -165,16 +165,16 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
                             OPERATIONS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-white to-neon-blue">DASHBOARD.</span>
                         </h1>
 
-                        <p className="text-gray-500 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] flex flex-wrap items-center gap-3">
-                            Internal Management Interface <span className="text-white/20">|</span> 
+                        <p className="text-gray-500 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] flex flex-wrap items-center gap-2 md:gap-3">
+                            Internal Management Interface <span className="text-white/20 hidden sm:inline">|</span> 
                             <span className="text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{user.role?.replace('_', ' ')} CLEARANCE</span>
                             {maintenanceState.global && (
                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">
-                                    <Shield size={12} /> GLOBAL OVERRIDE ACTIVE
+                                    <Shield size={12} /> GLOBAL OVERRIDE
                                 </span>
                             )}
                         </p>
@@ -214,15 +214,15 @@ const Dashboard = () => {
 
                 {isFirstRun && <BootstrapAlert onClaim={handleClaimOwnership} />}
 
-                {/* Metrics Hub Readouts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+                {/* Metrics Hub Readouts - Optimized for Mobile Horizontal Scroll */}
+                <div className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-16 md:mb-24 pb-6 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
                     {stats.map((stat, i) => (
                         <motion.div
                             key={stat.label}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            className="group relative"
+                            className="group relative min-w-[85vw] md:min-w-0 snap-center"
                         >
                             <Link to={stat.link}>
                                 <div className={cn("absolute -inset-px rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-opacity blur-xl bg-gradient-to-br", 
@@ -307,12 +307,12 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 pb-12 md:pb-0">
+        <div className="flex overflow-x-auto lg:overflow-x-visible lg:grid lg:grid-cols-4 gap-4 md:gap-8 pb-12 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
             {React.Children.map(children, (child) => (
                 <motion.div 
                     whileHover={{ y: -5 }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    className="h-full w-full"
+                    className="h-full w-full min-w-[280px] lg:min-w-0 snap-center"
                 >
                     {child}
                 </motion.div>
@@ -330,7 +330,7 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
         )} />
         
         <Card className={cn(
-            "relative p-6 md:p-10 h-full border-white/5 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden border backdrop-blur-3xl",
+            "relative p-6 sm:p-8 md:p-10 h-full border-white/5 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden border backdrop-blur-3xl",
             isHidden 
                 ? "bg-[#0a0a0a] opacity-40 grayscale" 
                 : "bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/10 shadow-2xl"
@@ -347,15 +347,15 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
             )}
 
             <div className={cn(
-                "w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
+                "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
                 color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
             )}>
                 <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-10 rounded-3xl blur-md transition-opacity" />
-                <Icon className="w-8 h-8 md:w-10 md:h-10 relative z-10" />
+                <Icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 relative z-10" />
             </div>
 
-            <h3 className="text-lg md:text-2xl font-black font-heading text-white mb-3 tracking-tighter uppercase italic group-hover:text-neon-green transition-colors">{title}</h3>
-            <p className="text-gray-500 text-[10px] md:text-[11px] font-bold leading-relaxed px-2 uppercase tracking-wide opacity-80 group-hover:opacity-100 transition-opacity">{desc}</p>
+            <h3 className="text-base sm:text-lg md:text-2xl font-black font-heading text-white mb-2 md:mb-3 tracking-tighter uppercase italic group-hover:text-neon-green transition-colors">{title}</h3>
+            <p className="text-gray-500 text-[9px] md:text-[11px] font-bold leading-relaxed px-2 uppercase tracking-wide opacity-80 group-hover:opacity-100 transition-opacity">{desc}</p>
             
             {count !== undefined && (
                 <div className="mt-8 px-5 py-2 rounded-2xl bg-white/5 border border-white/5 text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] group-hover:border-white/10 group-hover:bg-white/10 transition-all">
@@ -383,30 +383,30 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-pink/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-neon-blue/5 blur-[120px] rounded-full animate-pulse delay-1000" />
         
-        <Card className="p-12 w-full max-w-lg border-white/10 bg-zinc-900/40 backdrop-blur-3xl rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+        <Card className="p-8 sm:p-12 w-full max-w-lg border-white/10 bg-zinc-900/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
             
-            <div className="text-center mb-12">
-                <div className="w-20 h-20 bg-neon-pink/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-neon-pink/20 relative group">
+            <div className="text-center mb-8 sm:mb-12">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-neon-pink/10 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 border border-neon-pink/20 relative group">
                     <div className="absolute inset-0 bg-neon-pink/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Shield size={40} className="text-neon-pink relative z-10" />
+                    <Shield size={32} className="text-neon-pink relative z-10 sm:w-10 sm:h-10" />
                 </div>
-                <h1 className="text-4xl lg:text-5xl font-black font-heading text-white uppercase tracking-tighter italic leading-none">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-heading text-white uppercase tracking-tighter italic leading-none">
                     {isResetting ? 'RESTORE ACCESS' : (isRegistering ? 'NEW CLEARANCE' : 'SECURE LOGIN')}
                 </h1>
-                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] mt-4">Command Staff Authorization Required</p>
+                <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em] mt-3 sm:mt-4">Command Staff Authorization Required</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-8">
+            <form onSubmit={handleLogin} className="space-y-6 sm:space-y-8">
                 <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Identity Endpoint</label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-2xl text-sm font-medium transition-all" required />
+                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Identity Endpoint</label>
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-14 sm:h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
                 </div>
                 <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Security Key</label>
-                    <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-2xl text-sm font-medium transition-all" required />
+                    <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Security Key</label>
+                    <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-14 sm:h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
                 </div>
-                <Button type="submit" className="w-full h-16 bg-neon-pink text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl hover:scale-[1.02] active:scale-98 transition-all shadow-[0_15px_40px_rgba(255,79,139,0.3)]">
+                <Button type="submit" className="w-full h-14 sm:h-16 bg-neon-pink text-black font-black font-heading uppercase tracking-[0.2em] text-[10px] sm:text-xs rounded-xl sm:rounded-2xl hover:scale-[1.02] active:scale-98 transition-all shadow-[0_15px_40px_rgba(255,79,139,0.3)]">
                     {isRegistering ? 'INITIALIZE' : 'AUTHENTICATE'}
                 </Button>
             </form>

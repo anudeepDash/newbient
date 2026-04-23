@@ -74,7 +74,7 @@ const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'mi
                 <button type="button" onClick={() => insertLine('• ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bullet List (Ctrl+L)"><span className="text-[11px] font-bold">•</span></button>
                 <button type="button" onClick={() => insertLine('1. ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Numbered List"><span className="text-[11px] font-bold">1.</span></button>
             </div>
-            <textarea ref={textareaRef} value={value} onChange={onChange} onKeyDown={handleKeyDown} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-base font-medium outline-none focus:border-neon-green/40 transition-all leading-relaxed", minH, className)} placeholder={placeholder} />
+            <textarea ref={textareaRef} value={value} onChange={onChange} onKeyDown={handleKeyDown} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-base font-medium outline-none focus:border-neon-green/40 transition-all leading-relaxed", minH, className)} placeholder={placeholder} />
         </div>
     );
 };
@@ -107,6 +107,7 @@ const ProposalGenerator = () => {
     const [refinementPrompt, setRefinementPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAiError] = useState(null);
+    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
 
     // Parse structured error from aiService
     const parsedError = (() => {
@@ -152,7 +153,7 @@ const ProposalGenerator = () => {
     const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
 
     const [items, setItems] = useState([
-        { id: 1, description: 'Strategic Project Initialization', qty: 1, unit: 'Project', price: 0 }
+        { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
     ]);
 
     useEffect(() => {
@@ -298,13 +299,23 @@ const ProposalGenerator = () => {
         await new Promise(r => setTimeout(r, 800));
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pages = document.querySelectorAll('.proposal-page-render');
-            for (let i = 0; i < pages.length; i++) {
-                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
-                if (i > 0) pdf.addPage();
-                pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
+            // Use a separate container that has all pages rendered
+            const pages = document.querySelectorAll('.pdf-export-only .proposal-page-render');
+            if (pages.length === 0) {
+                // Fallback to preview if export-only not found (shouldn't happen)
+                const singlePage = document.querySelector('.proposal-page-render');
+                if (singlePage) {
+                    const canvas = await html2canvas(singlePage, { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                }
+            } else {
+                for (let i = 0; i < pages.length; i++) {
+                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                }
             }
-            pdf.save(`Newbi-Quotation-${formData.clientName || 'Draft'}.pdf`);
+            pdf.save(`Newbi-Quotation-${formData.clientName || 'Proposal'}.pdf`);
         } catch (error) {
             console.error(error);
         } finally {
@@ -416,16 +427,17 @@ const ProposalGenerator = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
+                    <button onClick={() => setShowPreviewMobile(!showPreviewMobile)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Eye size={18} /></button>
                     <button onClick={() => setShowAiSettings(true)} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Settings size={18} /></button>
-                    <button onClick={handleSave} className="h-12 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all">Save Quotation</button>
-                    <button onClick={generatePDF} className="h-12 px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)]">Export PDF</button>
+                    <button onClick={handleSave} className="hidden sm:block h-12 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all">Save</button>
+                    <button onClick={generatePDF} className="h-10 sm:h-12 px-4 sm:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)]">Export</button>
                 </div>
             </header>
 
             <main className="flex-1 flex overflow-hidden">
-                {/* Sidebar Navigation */}
-                <aside className="w-24 border-r border-white/5 bg-zinc-900/20 flex flex-col p-4 overflow-y-auto scrollbar-hide items-center">
+                {/* Sidebar Navigation - Desktop Only */}
+                <aside className="hidden lg:flex w-24 border-r border-white/5 bg-zinc-900/20 flex-col p-4 overflow-y-auto scrollbar-hide items-center">
                     <nav className="space-y-4">
                         {tabs.map(tab => (
                             <div key={tab.id} className="relative group">
@@ -441,9 +453,20 @@ const ProposalGenerator = () => {
                     </nav>
                 </aside>
 
+                {/* Bottom Navigation - Mobile Only */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
+                    {tabs.map(tab => (
+                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
+                            <tab.icon size={20} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1" />}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Editor Area */}
-                <section className="flex-1 overflow-y-auto p-12 scrollbar-hide bg-[#050505]">
-                    <div className="max-w-3xl mx-auto pb-32">
+                <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
+                    <div className="max-w-3xl mx-auto">
                         {/* Compact AI strategist block */}
                         <div className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2rem] relative overflow-hidden mb-12 group">
                              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Sparkles size={60} className="text-neon-green" /></div>
@@ -474,7 +497,7 @@ const ProposalGenerator = () => {
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Division Branding</label>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 {logoOptions.map(logo => (
                                                     <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
                                                         <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
@@ -487,7 +510,7 @@ const ProposalGenerator = () => {
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-10">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Client Entity</label>
                                                 <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
@@ -623,7 +646,7 @@ const ProposalGenerator = () => {
                                 )}
                                 {activeTab === '6' && (
                                     <div className="space-y-12">
-                                        <div className="grid grid-cols-2 gap-10">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                             <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">GST Percentage</label><input type="number" value={formData.gstRate} onChange={e => setFormData({...formData, gstRate: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
                                             <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Security Deposit (%)</label><input type="number" value={formData.advanceRequested} onChange={e => setFormData({...formData, advanceRequested: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
                                         </div>
@@ -632,14 +655,14 @@ const ProposalGenerator = () => {
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strategic Terms</label>
                                                 <VisibilityToggle field="terms" />
                                             </div>
-                                            <textarea value={formData.terms} onChange={e => setFormData({...formData, terms: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-[13px] font-medium min-h-[200px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('terms') && "opacity-30")} />
+                                            <textarea value={formData.terms} onChange={e => setFormData({...formData, terms: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-[13px] font-medium min-h-[200px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('terms') && "opacity-30")} />
                                         </div>
                                         <div className="space-y-6">
                                             <div className="flex items-center gap-4 px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bank Settlement Details</label>
                                                 <VisibilityToggle field="paymentDetails" />
                                             </div>
-                                            <textarea value={formData.paymentDetails} onChange={e => setFormData({...formData, paymentDetails: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-[13px] font-black font-mono min-h-[150px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('paymentDetails') && "opacity-30")} />
+                                            <textarea value={formData.paymentDetails} onChange={e => setFormData({...formData, paymentDetails: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-[13px] font-black font-mono min-h-[150px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('paymentDetails') && "opacity-30")} />
                                         </div>
                                     </div>
                                 )}
@@ -649,9 +672,16 @@ const ProposalGenerator = () => {
                 </section>
 
                 {/* Doc Preview */}
-                <section className="w-[500px] 2xl:w-[750px] border-l border-white/5 bg-zinc-900/10 flex flex-col overflow-hidden shrink-0">
-                    <div className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
+                <section className={cn(
+                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
+                    "w-full lg:w-[500px] 2xl:w-[750px] border-l border-white/5",
+                    showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+                )}>
+                    <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5"><ArrowLeft size={18} /></button>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
+                        </div>
                         <div className="flex items-center gap-3">
                             <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
                             <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
@@ -714,13 +744,6 @@ const ProposalGenerator = () => {
                                                         {renderFormatted(paginatedPages[currentPreviewPage]?.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
                                                     </div>
                                                 </div>
-                                                <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                                    <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Prepared By</p>
-                                                        <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
-                                                    </div>
-                                                </div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
@@ -780,14 +803,19 @@ const ProposalGenerator = () => {
                                             <div className="space-y-16 py-8">
                                                 <div className="grid grid-cols-2 gap-16 items-start">
                                                     <div className="space-y-12">
-                                                        {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">Strategic Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
-                                                        {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Settlement Repository</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
+                                                        {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
+                                                        {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
                                                     </div>
                                                     <div className="space-y-6">
-                                                        <div className="p-8 border-2 border-black flex justify-between items-center bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest whitespace-nowrap">Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
-                                                        {formData.showGst && (<div className="p-8 border border-gray-200 flex justify-between items-center text-gray-500"><span className="text-[10px] font-black uppercase whitespace-nowrap">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
-                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Payable</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
-                                                        <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex justify-between items-center"><span className="text-[11px] font-black text-black uppercase tracking-widest whitespace-nowrap">Advance Required</span><span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span></div>
+                                                        <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
+                                                        {formData.showGst && (<div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500"><span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
+                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
+                                                        {(formData.advanceRequested > 0) && (
+                                                            <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex flex-col items-start gap-2">
+                                                                <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Payment Required</span>
+                                                                <span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -990,6 +1018,144 @@ const ProposalGenerator = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+            {/* Hidden container for PDF export — renders all pages for html2canvas */}
+            <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
+                {paginatedPages.map((page, idx) => (
+                    <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
+                        <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
+                            <div className="flex flex-col gap-6 items-start">
+                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                            </div>
+                            <div className="text-right space-y-3">
+                                <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{formData.proposalNumber}</p></div>
+                                {idx === 0 && (
+                                    <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden">
+                            {page.type === 'cover' && (
+                                <div className="h-full flex flex-col justify-start space-y-20 py-8">
+                                    <div className="grid grid-cols-2 gap-10">
+                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
+                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {formData.campaignDuration || 'TBD'}</p></div></div>
+                                    </div>
+                                    <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p></div>{!isHidden('coverDescription') && <p className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{formData.coverDescription || 'Cover description pending...'}</p>}</div>
+                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                </div>
+                            )}
+                            {page.type === 'strategy' && (
+                                <div className="space-y-16 py-8">
+                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Project Timeline.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(formData.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                    {!isHidden('primaryGoal') && (
+                                        <div className="pt-12">
+                                            <div className="p-12 border-2 border-black space-y-6">
+                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(formData.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {page.type === 'scope' && (
+                                <div className="h-full flex flex-col py-8">
+                                    <div className="space-y-4 mb-12">
+                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                        <div className="w-16 h-1 bg-black" />
+                                    </div>
+                                    <div className="flex-1 relative overflow-hidden">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                        <div className="pl-10">
+                                            {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                            {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                            {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                        </div>
+                                    </div>
+                                    <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
+                                        <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {page.type === 'proposal' && (
+                                <div className="space-y-16 py-8">
+                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && (
+                                        <div className="space-y-6">
+                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
+                                            <table className="w-full text-left border-collapse border-2 border-black">
+                                                <thead>
+                                                    <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                        <th className="p-5 w-10">#</th>
+                                                        <th className="p-5">Deliverable</th>
+                                                        <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
+                                                        <th className="p-5 text-right w-40">Timeline</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {formData.deliverables.filter(d => d.item).map((d, i) => (
+                                                        <tr key={d.id} className="hover:bg-gray-50">
+                                                            <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
+                                                            <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
+                                                            <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
+                                                            <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                    {(formData.clientRequirements?.length > 0 && formData.clientRequirements.some(r => r.description)) && (
+                                        <div className="space-y-6 pt-4">
+                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
+                                            <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                {formData.clientRequirements.filter(r => r.description).map((r, i) => (
+                                                    <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                        <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                        <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {page.type === 'table' && (
+                                <div className="space-y-12 py-8">
+                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
+                                    <table className="w-full text-left border-collapse border-2 border-black"><thead><tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black"><th className="p-6">Resource Inventory</th><th className="p-6 text-center w-24 border-x border-white/20">Qty</th><th className="p-6 text-right w-48">Amount (INR)</th></tr></thead><tbody className="divide-y divide-gray-200">{page.items.map((item, i) => (<tr key={i} className="hover:bg-gray-50"><td className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td><td className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td><td className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td></tr>))}</tbody></table>
+                                </div>
+                            )}
+                            {page.type === 'commercials' && (
+                                <div className="space-y-16 py-8">
+                                    <div className="grid grid-cols-2 gap-16 items-start">
+                                        <div className="space-y-12">
+                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
+                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
+                                            {formData.showGst && (<div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500"><span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
+                                            <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
+                                            {(formData.advanceRequested > 0) && (
+                                                <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex flex-col items-start gap-2">
+                                                    <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Payment Required</span>
+                                                    <span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]"><p>Newbi Entertainment © 2026</p><p className="text-black">Page {idx + 1} of {paginatedPages.length}</p></div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

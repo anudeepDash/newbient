@@ -242,17 +242,16 @@ const CreatorManager = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                                className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
                             >
-                                {filteredCreators.map(creator => (
+                                {filteredCreators.map((creator, i) => (
                                     <motion.div
                                         key={creator.uid}
-                                        onClick={() => setSelectedCreator(creator)}
-                                        className="snap-center shrink-0 group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 hover:border-neon-pink/40 cursor-pointer transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,46,144,0.08)] overflow-hidden flex flex-col min-h-[400px]"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
                                     >
-                                        {/* GLOW DECOR */}
-                                        <div className="absolute -top-20 -right-20 w-40 h-40 bg-neon-pink/5 rounded-full blur-[60px] group-hover:bg-neon-pink/10 transition-all duration-700" />
-                                        
                                         {/* Status indicator line */}
                                         <div className={cn(
                                             "absolute top-0 left-0 w-full h-1 transition-all duration-500",

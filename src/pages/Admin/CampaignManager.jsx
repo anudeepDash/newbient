@@ -830,7 +830,7 @@ const CampaignManager = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
                         {filteredCampaigns.map((campaign, idx) => {
                             const totalTasks = campaign.tasks?.length || 0;
                             const requiredTasks = (campaign.tasks || []).filter(t => t.priority !== 'optional').length;
