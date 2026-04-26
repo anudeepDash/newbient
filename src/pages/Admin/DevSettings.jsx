@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Shield, Power, Monitor, Package, Layout as LayoutIcon, Globe } from 'lucide-react';
+import { ArrowLeft, Shield, Power, Monitor, Package, Layout as LayoutIcon, Globe, LayoutGrid } from 'lucide-react';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -76,9 +77,7 @@ const DevSettings = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div className="flex items-center gap-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink className="mb-4" />
                         <div>
                             <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                                 DEV <span className="text-neon-pink">SETTINGS.</span>

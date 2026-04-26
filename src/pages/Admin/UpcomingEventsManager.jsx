@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail } from 'lucide-react';
+import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -9,18 +9,20 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioTimePicker from '../../components/ui/StudioTimePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
 
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+
 const UpcomingEventsManager = () => {
-    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility, portfolioCategories } = useStore();
+    const { upcomingEvents, addUpcomingEvent, updateUpcomingEvent, deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, toggleUpcomingSectionVisibility, portfolioCategories, addNotification } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-
 
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -40,6 +42,13 @@ const UpcomingEventsManager = () => {
     });
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
 
+    const coreContentTabs = [
+        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
+        { name: 'Announcements', path: '/admin/announcements', icon: Radio },
+        { name: 'Blog', path: '/admin/blog', icon: FileText },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
+    ];
+
     const resetForm = () => {
         setNewEvent({
             title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false,
@@ -51,7 +60,6 @@ const UpcomingEventsManager = () => {
         setVenueLayoutFile(null);
         setUploading(false);
     };
-
 
     const handleEdit = (item) => {
         setEditingId(item.id);
@@ -138,59 +146,45 @@ const UpcomingEventsManager = () => {
             }
             resetForm();
         } catch (error) {
-            alert("Database Error.");
+            addNotification({
+                title: "Database Error",
+                content: "The system was unable to save your changes.",
+                type: 'error'
+            });
         } finally {
             setUploading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20 overflow-x-hidden">
-            {/* Ambient Atmosphere */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-700" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                {/* Header Section */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
-                    <div className="space-y-6 max-w-full text-left">
-                        <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" />
-                            BACK TO ADMIN DASHBOARD
-                        </Link>
-                        
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Sparkles size={16} className="text-neon-green" />
-                                <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
-                            </div>
-                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4 leading-none">
-                                EVENT <span className="text-neon-green">MANAGEMENT.</span>
-                            </h1>
-                        </div>
-                    </div>
-
-                    
-                    {!isAdding && (
-                        <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                            <button
-                                onClick={() => toggleUpcomingSectionVisibility(siteSettings?.showUpcomingEvents)}
-                                className={cn(
-                                    "h-14 px-8 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest border transition-all",
-                                    siteSettings?.showUpcomingEvents ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                                )}
-                            >
-                                {siteSettings?.showUpcomingEvents ? <Eye size={16} /> : <EyeOff size={16} />}
-                                Public View: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
-                            </button>
-                            <Button onClick={() => { setIsAdding(true); setEditingId(null); }} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                                <Plus className="mr-2" size={18} /> New Entry
-                            </Button>
-                        </div>
-                    )}
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'EVENT',
+                subtitle: 'MANAGEMENT',
+                accentClass: 'text-neon-pink',
+                icon: Calendar
+            }}
+            tabs={coreContentTabs}
+            accentColor="neon-pink"
+            action={!isAdding && (
+                <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                    <button
+                        onClick={() => toggleUpcomingSectionVisibility(siteSettings?.showUpcomingEvents)}
+                        className={cn(
+                            "h-14 px-8 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest border transition-all",
+                            siteSettings?.showUpcomingEvents ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
+                        )}
+                    >
+                        {siteSettings?.showUpcomingEvents ? <Eye size={16} /> : <EyeOff size={16} />}
+                        Public View: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
+                    </button>
+                    <Button onClick={() => { setIsAdding(true); setEditingId(null); }} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                        <Plus className="mr-2" size={18} /> New Entry
+                    </Button>
                 </div>
+            )}
+        >
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10">
 
                 <AnimatePresence mode="wait">
                     {isAdding ? (
@@ -210,7 +204,7 @@ const UpcomingEventsManager = () => {
                                             {/* Section 1: Core Identities */}
                                             <div className="space-y-8">
                                                 <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-blue/20" /> GENERAL DETAILS
+                                                    <div className="w-8 h-px bg-neon-blue/20" /> BASIC INFO
                                                 </h3>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     <div className="space-y-3">
@@ -290,7 +284,7 @@ const UpcomingEventsManager = () => {
                                             {/* Section 2: Media & CTAs */}
                                             <div className="space-y-8">
                                                 <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-green/20" /> MEDIA & ASSETS
+                                                    <div className="w-8 h-px bg-neon-green/20" /> IMAGES & LINKS
                                                 </h3>
                                                 <div className="space-y-6">
                                                     <div className="space-y-4">
@@ -310,7 +304,7 @@ const UpcomingEventsManager = () => {
 
                                                         {/* Visual Calibration */}
                                                         <div className="bg-white/5 p-8 rounded-3xl border border-white/5 space-y-6">
-                                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-blue mb-4">Visual Calibration</h4>
+                                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-blue mb-4">Image Adjustment</h4>
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                                 <div className="space-y-3">
                                                                     <div className="flex justify-between">
@@ -392,7 +386,7 @@ const UpcomingEventsManager = () => {
                                             {/* Section 3: Ticketing High Tech */}
                                             <div className="space-y-8">
                                                 <h3 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-yellow-500/20" /> TICKETING & BROADCAST
+                                                    <div className="w-8 h-px bg-yellow-500/20" /> TICKETS & NOTIFICATIONS
                                                 </h3>
                                             <button 
                                                 type="button"
@@ -476,10 +470,10 @@ const UpcomingEventsManager = () => {
                                         )}
 
                                         <div className="flex gap-4 pt-10 border-t border-white/10">
-                                            <Button type="button" variant="outline" onClick={resetForm} className="h-16 px-10 flex-1 rounded-2xl border-white/10 text-gray-400 font-black uppercase tracking-widest text-[11px]">Abort</Button>
-                                            <Button type="submit" disabled={uploading} className="h-16 px-10 flex-[2] bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[11px] hover:scale-105 active:scale-95 transition-all">
-                                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'UPDATE EVENT' : 'SAVE EVENT')}
-                                            </Button>
+                                            <Button type="button" variant="outline" onClick={resetForm} className="h-16 px-10 flex-1 rounded-2xl border-white/10 text-gray-400 font-black uppercase tracking-widest text-[11px]">Cancel</Button>
+                            <Button type="submit" disabled={uploading} className="h-16 px-10 flex-[2] bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[11px] hover:scale-105 active:scale-95 transition-all">
+                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'UPDATE EVENT' : 'SAVE EVENT')}
+                            </Button>
                                         </div>
                                     </form>
                                 </Card>
@@ -530,14 +524,18 @@ const UpcomingEventsManager = () => {
                                                     </button>
                                                      <button
                                                         onClick={async () => {
-                                                            if (window.confirm(`Transmit broadcast update for "${item.title}"?`)) {
+                                                            if (window.confirm(`Send announcement for "${item.title}" to all users?`)) {
                                                                 await notifyAllUsers(
                                                                     item.title,
                                                                     item.description,
                                                                     `/ticket-selection?event=${item.id}`,
                                                                     item.image
                                                                 );
-                                                                alert("BROADCAST_COMPLETE.");
+                                                                addNotification({
+                                                                    title: "Announcement Sent Successfully",
+                                                                    content: `Users have been notified about "${item.title}".`,
+                                                                    type: 'message'
+                                                                });
                                                             }
                                                         }}
                                                         className="w-10 h-10 rounded-xl bg-neon-blue/20 backdrop-blur-md flex items-center justify-center text-neon-blue border border-neon-blue/30 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
@@ -581,7 +579,7 @@ const UpcomingEventsManager = () => {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

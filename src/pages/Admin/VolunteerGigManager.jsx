@@ -9,6 +9,7 @@ import LivePreview from '../../components/admin/LivePreview';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioTimePicker from '../../components/ui/StudioTimePicker';
@@ -187,7 +188,7 @@ const VolunteerGigManager = () => {
 
     if (isAdding) {
         return (
-            <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-20 relative overflow-hidden">
+            <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-20 relative overflow-x-hidden">
                 <div className="fixed inset-0 z-0 pointer-events-none">
                     <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
                 </div>
@@ -195,9 +196,12 @@ const VolunteerGigManager = () => {
                 <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Sparkles size={16} className="text-neon-green" />
-                                <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                            <div className="space-y-2">
+                                <AdminDashboardLink />
+                                <div className="flex items-center gap-3">
+                                    <Sparkles size={16} className="text-neon-green" />
+                                    <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                                </div>
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                                 GIG <span className="text-neon-green">MANAGEMENT.</span>

@@ -23,13 +23,22 @@ import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Calendar, Radio, Music, FileText } from 'lucide-react';
 
 const BlogManager = () => {
     const { posts, deletePost, updatePost, subscribers } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [selectedStatus, setSelectedStatus] = useState('All');
     const navigate = useNavigate();
+
+    const coreContentTabs = [
+        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
+        { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
+        { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-pink' },
+    ];
 
     const categories = ['All', 'Live Events', 'Artists', 'Guides', 'Buzz'];
 
@@ -64,31 +73,27 @@ const BlogManager = () => {
 
 
     return (
-        <div className="min-h-screen bg-black text-white pt-24 pb-32">
-            <div className="max-w-[1400px] mx-auto px-6">
-                
-                {/* Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div>
-                        <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors mb-6">
-                            <ArrowLeft size={16} /> Back to Dashboard
-                        </Link>
-                        <h1 className="text-4xl md:text-5xl font-black font-heading uppercase tracking-tighter italic">
-                            BLOG <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">MANAGEMENT.</span>
-                        </h1>
-                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2">
-                            Concert Zone Content System • <span className="text-neon-blue">{subscribers.length} Subscribers</span>
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin/blog/create">
-                            <Button className="h-14 px-8 bg-neon-blue text-black font-black font-heading uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(0,255,255,0.2)] hover:scale-105 active:scale-95 transition-all">
-                                <Plus size={20} className="mr-2" /> New Post
-                            </Button>
-                        </Link>
-                    </div>
-                </header>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'BLOG',
+                subtitle: 'MANAGEMENT',
+                accentClass: 'text-neon-blue',
+                icon: Newspaper
+            }}
+            tabs={coreContentTabs}
+            accentColor="neon-blue"
+            action={
+                <Link to="/admin/blog/create">
+                    <Button className="h-14 px-8 bg-neon-blue text-black font-black font-heading uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(0,255,255,0.2)] hover:scale-105 active:scale-95 transition-all">
+                        <Plus size={20} className="mr-2" /> New Post
+                    </Button>
+                </Link>
+            }
+        >
+            <div className="relative z-10">
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-12 -mt-8">
+                    Concert Zone Content System • <span className="text-neon-blue">{subscribers.length} Subscribers</span>
+                </p>
 
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
@@ -107,8 +112,6 @@ const BlogManager = () => {
                         </Card>
                     ))}
                 </div>
-
-                {/* Toolbar */}
                 <div className="flex flex-col xl:flex-row gap-6 mb-8 items-stretch xl:items-center">
                     <div className="relative flex-grow group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
@@ -274,7 +277,7 @@ const BlogManager = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

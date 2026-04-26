@@ -26,6 +26,7 @@ import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const BlogPostEditor = () => {
     const { id } = useParams();
@@ -183,9 +184,12 @@ const BlogPostEditor = () => {
                 {/* Fixed Top Bar */}
                 <div className="flex flex-wrap justify-between items-center mb-12 gap-6 pb-8 border-b border-white/10">
                     <div className="flex items-center gap-6">
-                        <button onClick={() => navigate('/admin/blog')} className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
-                            <ChevronLeft size={20} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => navigate('/admin/blog')} className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
+                                <ChevronLeft size={20} />
+                            </button>
+                            <AdminDashboardLink className="hidden md:flex" />
+                        </div>
                         <div>
                             <h1 className="text-3xl font-black font-heading uppercase tracking-tighter italic">
                                 {id ? 'EDIT' : 'CREATE'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ARTICLE.</span>

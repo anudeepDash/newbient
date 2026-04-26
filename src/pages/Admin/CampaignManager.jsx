@@ -5,11 +5,11 @@ import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, LayoutGrid, LayoutDashboard, Target, X, Filter, Globe, Zap, Clock, ChevronRight, Share2, Copy, Image as ImageIcon, GripVertical, Calendar, Star, Link2, FileText, Video, Camera, Eye, ChevronDown, ChevronUp, AlertCircle, XCircle, ExternalLink, Instagram, Youtube, Twitter, Clipboard, ArrowUp, ArrowDown } from 'lucide-react';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import { Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, IndianRupee, Download, Upload, CheckCircle2, Sparkles, LayoutGrid, LayoutDashboard, Target, X, Filter, Globe, Zap, Clock, ChevronRight, Share2, Copy, Image as ImageIcon, GripVertical, Calendar, Star, Link2, FileText, Video, Camera, Eye, ChevronDown, ChevronUp, AlertCircle, XCircle, ExternalLink, Instagram, Youtube, Twitter, Clipboard, ArrowUp, ArrowDown, Mic2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
-import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
@@ -265,6 +265,13 @@ const CampaignManager = () => {
     const [modalTab, setModalTab] = useState('applicants'); // applicants | tasks
     const [rejectionModal, setRejectionModal] = useState(null); // { campaignId, taskId, creatorUid }
     const [rejectionReason, setRejectionReason] = useState('');
+
+    const personnelTabs = [
+        { name: 'Community', path: '/admin/volunteer-gigs', icon: Users },
+        { name: 'Creators', path: '/admin/creators', icon: Star },
+        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
+        { name: 'Artistant', path: '/admin/artists', icon: Mic2 },
+    ];
 
     const [formData, setFormData] = useState({
         title: '',
@@ -612,15 +619,14 @@ const CampaignManager = () => {
 
     return (
         <AdminCommunityHubLayout 
-            title="Campaign Management" 
-            description="Manage your creator partnerships, campaign metrics, and deliverable approvals."
-            hideTabs={true}
             studioHeader={{
                 title: "CAMPAIGN",
                 subtitle: "WORKSPACE",
                 accentClass: "text-neon-blue",
                 icon: LayoutDashboard
             }}
+            tabs={personnelTabs}
+            accentColor="neon-blue"
             action={
                 <div className="flex items-center gap-3 px-4 py-2 bg-neon-blue/10 border border-neon-blue/20 rounded-xl relative group overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -901,9 +907,7 @@ const CampaignManager = () => {
                         })}
                     </div>
                 )}
-                </div>
-            </div>
-
+            
             {/* === EXPANDED CAMPAIGN ANALYTICS MODAL === */}
             <AnimatePresence>
                 {expandedCampaign && (
@@ -1210,6 +1214,8 @@ const CampaignManager = () => {
                     </div>
                 )}
             </AnimatePresence>
+                </div>
+            </div>
         </AdminCommunityHubLayout>
     );
 };

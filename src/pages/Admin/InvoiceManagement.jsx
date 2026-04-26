@@ -8,6 +8,8 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const InvoiceManagement = () => {
     const navigate = useNavigate();
@@ -16,6 +18,12 @@ const InvoiceManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [openMenuId, setOpenMenuId] = useState(null);
+
+    const vaultTabs = [
+        { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
+        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
+        { name: 'Agreements', path: '#', icon: ShieldCheck, color: 'text-gray-500', comingSoon: true },
+    ];
 
     React.useEffect(() => {
         const handleClickOutside = () => setOpenMenuId(null);
@@ -167,34 +175,29 @@ const InvoiceManagement = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Background Atmosphere */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
-                {/* Header Section */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8">
-                    <div className="space-y-4 max-w-full">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Admin Dashboard
-                        </Link>
-                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            INVOICE <span className="text-neon-blue px-4">VAULT.</span>
-                        </h1>
-                    </div>
-                    
-                    <div className="flex gap-4 w-full md:w-auto">
-                        <Link to="/admin/create-invoice">
-                            <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-xs h-14 px-8 rounded-2xl hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(46,191,255,0.3)]">
-                                <Plus className="mr-2 h-4 w-4" /> GENERATE NEW INVOICE
-                            </Button>
-                        </Link>
-                    </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'INVOICE',
+                subtitle: 'VAULT',
+                accentClass: 'text-neon-blue',
+                icon: FileText
+            }}
+            tabs={vaultTabs}
+            accentColor="neon-blue"
+            action={
+                <div className="flex gap-4">
+                    <Button onClick={() => setShowQuickUpload(true)} variant="outline" className="h-14 px-8 rounded-2xl bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
+                        <Upload className="mr-3 text-neon-blue" size={16} /> Quick Upload
+                    </Button>
+                    <Link to="/admin/create-invoice">
+                        <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(46,191,255,0.3)]">
+                            <Plus className="mr-2 h-4 w-4" /> Generate New
+                        </Button>
+                    </Link>
                 </div>
-
+            }
+        >
+            <div className="relative z-10">
                 {/* Combined Search & Filters Bar & Actions */}
                 <div className="flex flex-col xl:flex-row gap-4 mb-12">
                     <div className="flex-1 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
@@ -245,13 +248,6 @@ const InvoiceManagement = () => {
                                 <FileText size={18} />
                             </button>
                         </div>
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 shrink-0 h-20 xl:h-auto">
-                        <Button onClick={() => setShowQuickUpload(true)} variant="outline" className="flex-1 xl:flex-none h-full xl:min-h-[4rem] px-8 rounded-[2rem] bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
-                            <Upload className="mr-3 text-neon-blue" size={16} /> Quick Upload
-                        </Button>
                     </div>
                 </div>
 
@@ -471,7 +467,7 @@ const InvoiceManagement = () => {
                 </AnimatePresence>
             </div>
 
-            {/* Modals */}
+            {/* Modals moved outside the content div but inside the Layout */}
             <AnimatePresence>
                 {showQuickUpload && (
                     <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto">
@@ -529,7 +525,7 @@ const InvoiceManagement = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

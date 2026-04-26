@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import MailPreview from '../../components/admin/MailPreview';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { storage } from '../../lib/firebase';
@@ -99,6 +100,7 @@ const MailingManager = () => {
             <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
                     <div className="space-y-4">
+                        <AdminDashboardLink className="mb-2" />
                         <div className="flex items-center gap-3">
                             <Sparkles size={16} className="text-neon-green" />
                             <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>

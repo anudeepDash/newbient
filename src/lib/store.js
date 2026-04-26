@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion } from 'firebase/firestore';
 import { sendBookingConfirmation } from './email';
 
 export const useStore = create((set, get) => ({
@@ -38,6 +38,7 @@ export const useStore = create((set, get) => ({
     volunteerGigs: [], // New state
     ticketOrders: [], // New state
     proposals: [], // New Proposal Generator state
+    agreements: [], // New Agreement Generator state
     creators: [], // Influencer Marketing
     campaigns: [], // Influencer Marketing
     ticketVault: [], // Bulk ticket storage
@@ -115,7 +116,7 @@ export const useStore = create((set, get) => ({
                 }
 
                 // Sort proposals by createdAt (descending)
-                if (colName === 'proposals') {
+                if (colName === 'proposals' || colName === 'agreements') {
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 }
 
@@ -150,6 +151,7 @@ export const useStore = create((set, get) => ({
         const unsubCreators = sub('creators', 'creators');
         const unsubCampaigns = sub('campaigns', 'campaigns');
         const unsubProposals = sub('proposals', 'proposals');
+        const unsubAgreements = sub('agreements', 'agreements');
         const unsubTicketVault = sub('ticket_vault', 'ticketVault');
         const unsubGiveaways = sub('giveaways', 'giveaways');
         const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
@@ -219,7 +221,7 @@ export const useStore = create((set, get) => ({
         return () => {
             clearTimeout(loadingTimeout);
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
-            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists();
+            unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
         };
     },
 
@@ -547,7 +549,22 @@ export const useStore = create((set, get) => ({
 
     // Proposals
     addProposal: async (proposal) => {
-        return await addDoc(collection(db, 'proposals'), proposal);
+        return await addDoc(collection(db, 'proposals'), {
+            ...proposal,
+            accessLogs: [],
+            createdAt: new Date().toISOString()
+        });
+    },
+    logDocumentAccess: async (type, id, metadata) => {
+        const col = type === 'proposal' ? 'proposals' : 'agreements';
+        const docRef = doc(db, col, id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            const logs = snap.data().accessLogs || [];
+            // Keep only last 50 logs to prevent doc bloat
+            const updatedLogs = [{ ...metadata, timestamp: new Date().toISOString() }, ...logs].slice(0, 50);
+            await updateDoc(docRef, { accessLogs: updatedLogs });
+        }
     },
     updateProposal: async (id, updates) => {
         await updateDoc(doc(db, 'proposals', id), updates);
@@ -568,6 +585,40 @@ export const useStore = create((set, get) => ({
             ...duplicateData,
             clientName: `${original.clientName} (REVISED)`,
             status: 'Draft',
+            createdAt: new Date().toISOString()
+        });
+    },
+
+    // Agreements
+    addAgreement: async (agreement) => {
+        return await addDoc(collection(db, 'agreements'), {
+            ...agreement,
+            accessLogs: [],
+            versions: agreement.versions || [], // Redline history
+            negotiationHistory: agreement.negotiationHistory || [], // Negotiation history
+            createdAt: new Date().toISOString()
+        });
+    },
+    updateAgreement: async (id, updates) => {
+        await updateDoc(doc(db, 'agreements', id), updates);
+    },
+    updateAgreementStatus: async (id, status) => {
+        await updateDoc(doc(db, 'agreements', id), { status });
+    },
+    deleteAgreement: async (id) => {
+        await deleteDoc(doc(db, 'agreements', id));
+    },
+    duplicateAgreement: async (id) => {
+        const { agreements, addAgreement } = get();
+        const original = agreements.find(a => a.id === id);
+        if (!original) throw new Error("Agreement not found");
+
+        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, ...duplicateData } = original;
+        return await addAgreement({
+            ...duplicateData,
+            agreementNumber: `${original.agreementNumber}-REV`,
+            status: 'Draft',
+            parentAgreementId: id, // Track revisions
             createdAt: new Date().toISOString()
         });
     },
@@ -1596,5 +1647,23 @@ export const useStore = create((set, get) => ({
             await setDoc(doc(db, 'users', user.uid), { fcmToken: token }, { merge: true });
         }
         set({ fcmToken: token });
+    },
+    logDocumentAccess: async (type, docId, metadata) => {
+        const col = type === 'proposal' ? 'proposals' : 'agreements';
+        const docRef = doc(db, col, docId);
+        const logEntry = {
+            ...metadata,
+            timestamp: new Date().toISOString()
+        };
+        
+        try {
+            // Use arrayUnion for efficiency
+            await updateDoc(docRef, {
+                lastOpened: new Date().toISOString(),
+                accessLogs: arrayUnion(logEntry)
+            });
+        } catch (err) {
+            console.error("Log access failed:", err);
+        }
     },
 }));

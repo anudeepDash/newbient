@@ -13,6 +13,7 @@ import {
     Check, Instagram, SlidersHorizontal, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import StudioSelect from '../../components/ui/StudioSelect';
 
@@ -94,10 +95,7 @@ const ArtistManager = () => {
                 {/* Dashboard Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-16">
                     <div className="space-y-6">
-                        <Link to="/admin" className="flex items-center gap-3 w-fit group cursor-pointer hover:opacity-80 transition-opacity">
-                            <ArrowLeft size={16} className="text-neon-blue group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Back to Admin Center</span>
-                        </Link>
+                        <AdminDashboardLink className="mb-2" />
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
                             TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF]">OPERATIONS.</span>
                         </h1>

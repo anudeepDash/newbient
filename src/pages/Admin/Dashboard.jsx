@@ -29,7 +29,8 @@ import {
     TrendingUp, 
     Gift,
     ClipboardList,
-    ListChecks
+    ListChecks,
+    Scale
 } from 'lucide-react';
 
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
@@ -267,6 +268,7 @@ const Dashboard = () => {
                     <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
                         <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
                         <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
+                        <ControlCard title="Agreements" desc="AI-assisted legal MOU and contract generator." icon={Scale} color="neon-blue" link="/admin/agreements" comingSoon />
                         <ControlCard title="Ticketing" desc="Access control and order management." icon={Ticket} color="neon-pink" link="/admin/tickets" isHidden={cards.tickets} />
                     </DashboardSection>
 
@@ -320,8 +322,8 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
     </section>
 );
 
-const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHidden }) => (
-    <Link to={isHidden ? '#' : (link || '#')} className={cn("group relative block h-full", isHidden && "pointer-events-none")}>
+const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHidden, comingSoon }) => (
+    <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative block h-full", (isHidden || comingSoon) && "pointer-events-none")}>
         {/* Glow Effect */}
         <div className={cn(
             "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-all duration-700 blur-2xl",
@@ -332,16 +334,22 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
             "relative p-6 sm:p-8 md:p-10 h-full border-white/5 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden border backdrop-blur-3xl",
             isHidden 
                 ? "bg-[#0a0a0a] opacity-40 grayscale" 
-                : "bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/10 shadow-2xl"
+                : (comingSoon ? "bg-zinc-900/60 opacity-60 grayscale border-white/5" : "bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/10 shadow-2xl")
         )}>
             {/* New Signal */}
-            {isNew && !isHidden && (
+            {isNew && !isHidden && !comingSoon && (
                 <span className="absolute top-6 right-6 flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-blue opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-blue"></span>
                     </span>
                     <span className="text-[7px] font-black uppercase tracking-[0.3em] text-neon-blue">Advanced</span>
+                </span>
+            )}
+
+            {comingSoon && !isHidden && (
+                <span className="absolute top-6 right-6 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[7px] font-black uppercase tracking-[0.3em] text-gray-500">
+                    Coming Soon
                 </span>
             )}
 

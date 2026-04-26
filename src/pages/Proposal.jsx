@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, FileText, Check, PenTool, Settings, LogOut, LayoutGrid, Zap, ShieldCheck, Layers, Globe, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -46,6 +47,17 @@ const Proposal = () => {
     const proposal = proposals.find(p => p.id === id);
     const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
 
+    const displayProposal = proposal || {
+        id: "DEMO-PROP-001",
+        proposalNumber: 'QUOTATION',
+        clientName: "Demo Client",
+        status: "Demo Mode",
+        items: [],
+        overview: "Strategic project vision document.",
+        hiddenFields: [],
+        selectedLogo: 'entertainment'
+    };
+
     useEffect(() => {
         if (proposal && !isAdmin) {
             const logAccess = async () => {
@@ -59,7 +71,6 @@ const Proposal = () => {
                 
                 try {
                     const currentLogs = proposal.accessLogs || [];
-                    // Only log if last log was more than 10 mins ago to avoid spam
                     const lastLog = currentLogs[currentLogs.length - 1];
                     const tenMins = 10 * 60 * 1000;
                     if (!lastLog || (new Date() - new Date(lastLog.timestamp) > tenMins)) {
@@ -76,6 +87,27 @@ const Proposal = () => {
         }
     }, [id, isAdmin, proposal]);
 
+    useEffect(() => {
+        const fetchIp = async () => {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                setIpAddress(data.ip);
+                
+                if (id && displayProposal) {
+                    useStore.getState().logDocumentAccess('proposal', id, {
+                        ip: data.ip,
+                        userAgent: navigator.userAgent,
+                        userEmail: useStore.getState().user?.email || 'Guest'
+                    });
+                }
+            } catch (e) {
+                console.error("IP detection failed", e);
+            }
+        };
+        if (displayProposal) fetchIp();
+    }, [id, displayProposal]);
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#020202] text-white">
@@ -83,17 +115,6 @@ const Proposal = () => {
             </div>
         );
     }
-
-    const displayProposal = proposal || {
-        id: "DEMO-PROP-001",
-        proposalNumber: 'QUOTATION',
-        clientName: "Demo Client",
-        status: "Demo Mode",
-        items: [],
-        overview: "Strategic project vision document.",
-        hiddenFields: [],
-        selectedLogo: 'entertainment'
-    };
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png' },
@@ -142,6 +163,7 @@ const Proposal = () => {
             setIsExporting(false);
         }
     };
+
 
     const handleApproveProposal = async () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
@@ -331,9 +353,9 @@ const Proposal = () => {
         <div className="min-h-screen bg-[#050505] text-white selection:bg-neon-green selection:text-black font-['Outfit']">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
                 body { font-family: 'Outfit', sans-serif; }
-                .font-signature { font-family: 'Alex Brush', cursive; }
+                .font-signature { font-family: 'Caveat', cursive; }
                 @media print {
                     .no-print { display: none !important; }
                     body { background: white !important; }
@@ -382,8 +404,9 @@ const Proposal = () => {
                                 </div>
                             </div>
 
-                            <div className="flex-1">
-                                {page.type === 'cover' && (
+                            <div className="flex-1 overflow-y-auto scrollbar-hide relative">
+                                <div className="absolute inset-0 flex flex-col px-1">
+                                    {page.type === 'cover' && (
                                     <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                         <div className="grid grid-cols-2 gap-10">
                                             <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{displayProposal.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{displayProposal.clientAddress || 'Client Address'}</p>}</div></div>
@@ -423,46 +446,50 @@ const Proposal = () => {
                                                 {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
                                             </div>
                                         </div>
-                                        <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                            <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
-                                            <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Official Authorization</label>
-                                            <div className="relative group">
-                                                <input 
-                                                    value={signatureName} 
-                                                    onChange={e => setSignatureName(e.target.value)} 
-                                                    disabled={displayProposal.status === 'Accepted'}
-                                                    className={cn(
-                                                        "w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 sm:h-32 px-8 sm:px-12 rounded-2xl text-2xl sm:text-4xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-gray-200 placeholder:italic",
-                                                        displayProposal.status === 'Accepted' && "border-neon-green/20 bg-neon-green/[0.02]"
-                                                    )} 
-                                                    placeholder="Enter Full Name..." 
-                                                />
-                                                {displayProposal.status === 'Accepted' && (
-                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                        <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-neon-green/30 rounded-full flex items-center justify-center -rotate-12">
-                                                            <span className="text-[8px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest">AUTHORIZED</span>
+                                        {idx === paginatedPages.length - 1 && (
+                                            <>
+                                                <div className="mt-auto pt-12 flex flex-col gap-8 border-t border-gray-100">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Official Authorization</label>
+                                                            <div className="relative group">
+                                                                <input 
+                                                                    value={signatureName} 
+                                                                    onChange={e => setSignatureName(e.target.value)} 
+                                                                    disabled={displayProposal.status === 'Accepted'}
+                                                                    className={cn(
+                                                                        "w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 sm:h-32 px-8 sm:px-12 rounded-2xl text-2xl sm:text-4xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-gray-200 placeholder:italic",
+                                                                        displayProposal.status === 'Accepted' && "border-neon-green/20 bg-neon-green/[0.02]"
+                                                                    )} 
+                                                                    placeholder="Enter Full Name..." 
+                                                                />
+                                                            </div>
                                                         </div>
+                                                        <div className="flex justify-center py-6">
+                                                            {displayProposal.status === 'Accepted' && (
+                                                                <DocumentSeal type="proposal" date={displayProposal.approvalMetadata?.signedAt} />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center mt-4">By signing, you confirm that you have read and agreed to the terms of engagement.</p>
                                                     </div>
-                                                )}
-                                            </div>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center mt-4">By signing, you confirm that you have read and agreed to the terms of engagement.</p>
-                                        </div>
-                                        <Button 
-                                            onClick={handleApproveProposal} 
-                                            disabled={isSubmitting || !signatureName.trim() || displayProposal.status === 'Accepted'} 
-                                            className="w-full h-16 sm:h-20 bg-black text-white font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-hidden relative shadow-2xl disabled:opacity-50"
-                                        >
-                                            {displayProposal.status === 'Accepted' ? (
-                                                <span className="flex items-center gap-3"><ShieldCheck className="text-neon-green" /> Document Locked & Authorized</span>
-                                            ) : (
-                                                <>
-                                                    <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Authorize Strategic Memorandum</span>
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-neon-green/20 via-transparent to-neon-green/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                                </>
-                                            )}
-                                        </Button>
-                                        </div>
+                                                    <Button 
+                                                        onClick={handleApproveProposal} 
+                                                        disabled={isSubmitting || !signatureName.trim() || displayProposal.status === 'Accepted'} 
+                                                        className="w-full h-16 sm:h-20 bg-black text-white font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-visible relative shadow-2xl disabled:opacity-50 px-8"
+                                                    >
+                                                        {displayProposal.status === 'Accepted' ? (
+                                                            <span className="flex items-center gap-3"><ShieldCheck className="text-neon-green" /> Document Locked & Authorized</span>
+                                                        ) : (
+                                                            <>
+                                                                <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Authorize Strategic Memorandum</span>
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-neon-green/20 via-transparent to-neon-green/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-2xl" />
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
@@ -475,19 +502,19 @@ const Proposal = () => {
                                                 <table className="w-full text-left border-collapse border-2 border-black">
                                                     <thead>
                                                         <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                            <th className="p-5 w-10">#</th>
-                                                            <th className="p-5">Deliverable</th>
-                                                            <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
-                                                            <th className="p-5 text-right w-40">Timeline</th>
+                                                            <th className="p-4 w-10">#</th>
+                                                            <th className="p-4">Deliverable</th>
+                                                            <th className="p-4 text-center w-28 border-x border-white/20">Qty / Unit</th>
+                                                            <th className="p-4 text-right w-40">Timeline</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-200">
                                                         {displayProposal.deliverables.filter(d => d.item).map((d, i) => (
                                                             <tr key={d.id} className="hover:bg-gray-50">
-                                                                <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                                <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
-                                                                <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
-                                                                <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                                <td className="p-4 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
+                                                                <td className="p-4 text-[12px] font-bold text-black">{d.item}</td>
+                                                                <td className="p-4 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
+                                                                <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -497,9 +524,9 @@ const Proposal = () => {
                                         {(displayProposal.clientRequirements?.length > 0 && displayProposal.clientRequirements.some(r => r.description)) && (
                                             <div className="space-y-6 pt-4">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
-                                                <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                <div className="p-6 border-2 border-gray-200 space-y-0">
                                                     {displayProposal.clientRequirements.filter(r => r.description).map((r, i) => (
-                                                        <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                        <div key={r.id} className={cn("flex items-start gap-4 py-3", i > 0 && "border-t border-gray-100")}>
                                                             <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                             <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                         </div>
@@ -524,39 +551,44 @@ const Proposal = () => {
                                                 {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{displayProposal.terms}</p></div>}
                                                 {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{displayProposal.paymentDetails}</p></div>}
                                                 
-                                                <div className="pt-10 space-y-10 border-t border-gray-100">
-                                                    {!displayProposal.approvalMetadata ? (
-                                                        <div className="space-y-6 no-print">
-                                                            <div className="space-y-2">
-                                                                <p className="text-[10px] font-black text-black uppercase tracking-widest">Digital Authorization</p>
-                                                                <p className="text-[9px] font-medium text-gray-400">By typing your name, you agree to authorize this official project quotation and its associated commercial terms.</p>
+                                                {idx === paginatedPages.length - 1 && (
+                                                    <div className="pt-10 space-y-10 border-t border-gray-100">
+                                                        {!displayProposal.approvalMetadata ? (
+                                                            <div className="space-y-6 no-print">
+                                                                <div className="space-y-2">
+                                                                    <p className="text-[10px] font-black text-black uppercase tracking-widest">Official Authorization</p>
+                                                                    <p className="text-[9px] font-medium text-gray-400">By typing your name, you agree to authorize this official project quotation and its associated commercial terms.</p>
+                                                                </div>
+                                                                <div className="relative group">
+                                                                    <input 
+                                                                        value={signatureName} 
+                                                                        onChange={e => setSignatureName(e.target.value)} 
+                                                                        placeholder="Enter Full Name to Authorize..." 
+                                                                        className="w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 px-8 rounded-2xl text-2xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-sm placeholder:font-bold placeholder:tracking-widest" 
+                                                                    />
+                                                                </div>
+                                                                <Button 
+                                                                    onClick={handleApproveProposal} 
+                                                                    disabled={isSubmitting || !signatureName.trim()} 
+                                                                    className="w-full h-16 bg-black text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-hidden relative shadow-2xl disabled:opacity-30"
+                                                                >
+                                                                    <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Authorize Strategic Memorandum</span>
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-neon-green/20 via-transparent to-neon-green/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                                                </Button>
                                                             </div>
-                                                            <input 
-                                                                value={signatureName} 
-                                                                onChange={e => setSignatureName(e.target.value)} 
-                                                                placeholder="Type full name to authorize" 
-                                                                className="w-full bg-gray-50 border-b-2 border-black p-4 text-2xl font-black font-mono uppercase text-black outline-none focus:bg-white transition-all placeholder:text-sm placeholder:font-bold placeholder:tracking-widest" 
-                                                            />
-                                                            <button 
-                                                                onClick={handleApproveProposal} 
-                                                                disabled={isSubmitting || !signatureName.trim()} 
-                                                                className="w-full h-16 bg-black text-white font-black uppercase tracking-widest text-[11px] hover:bg-neon-green hover:text-black transition-all disabled:opacity-30"
-                                                            >
-                                                                Authorize & Accept Proposal
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-10 border-2 border-neon-green/30 bg-neon-green/5 relative overflow-hidden group">
-                                                            <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={80} className="text-neon-green" /></div>
-                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-2"><ShieldCheck size={14} /> Digitally Authorized</p>
-                                                            <div className="space-y-2">
-                                                                <p className="text-6xl font-black font-mono uppercase tracking-tighter text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
-                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
-                                                                <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Ref: {displayProposal.id}</p>
+                                                        ) : (
+                                                            <div className="p-10 border-2 border-neon-green/30 bg-neon-green/5 relative overflow-hidden group">
+                                                                <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={80} className="text-neon-green" /></div>
+                                                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-2"><ShieldCheck size={14} /> Digitally Authorized</p>
+                                                                <div className="space-y-2">
+                                                                    <p className="text-5xl font-black font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
+                                                                    <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Ref: {displayProposal.id}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-6">
                                                 <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
@@ -572,8 +604,12 @@ const Proposal = () => {
                                         </div>
                                     </div>
                                 )}
+                                </div>
                             </div>
-                            <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]"><p>Newbi Entertainment © 2026</p><p className="text-black">Page {idx + 1} of {paginatedPages.length}</p></div>
+                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                                <p>Newbi Entertainment © 2024</p>
+                                <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -595,7 +631,8 @@ const Proposal = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-hidden">
+                        <div className="flex-1 overflow-hidden relative">
+                            <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
                             {page.type === 'cover' && (
                                 <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                     <div className="grid grid-cols-2 gap-10">
@@ -637,9 +674,18 @@ const Proposal = () => {
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                        <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
-                                        <div>
-                                            <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
+                                        <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                        <div className="flex-1">
+                                            {idx === paginatedPages.length - 1 ? (
+                                                <div className="space-y-4">
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Official Authorization</p>
+                                                    <div className="h-20 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center">
+                                                        <span className="text-2xl font-signature text-gray-300">{signatureName || 'Signature Required'}</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -734,7 +780,7 @@ const Proposal = () => {
                                                     {displayProposal.status !== 'Accepted' && displayProposal.status !== 'Rejected' ? (
                                                 <div className="pt-8 space-y-6">
                                                     <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Authorize Quotation</label>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Official Authorization</label>
                                                         <input 
                                                             value={signatureName} 
                                                             onChange={e => setSignatureName(e.target.value)} 
@@ -751,11 +797,11 @@ const Proposal = () => {
                                                             Refuse Quote
                                                         </Button>
                                                         <Button 
-                                                            onClick={() => setIsVerifying(true)} 
+                                                            onClick={handleApproveProposal} 
                                                             disabled={isSubmitting || !signatureName.trim()} 
                                                             className="h-16 bg-black text-white font-black uppercase tracking-widest text-[9px] rounded-2xl hover:bg-neon-green hover:text-black transition-all shadow-xl"
                                                         >
-                                                            Authorize
+                                                            Authorize Strategic Memorandum
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -800,10 +846,11 @@ const Proposal = () => {
                                     )}
                                 </div>
                             )}
+                            </div>
                         </div>
-                        <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                             <div className="flex items-center gap-4">
-                                <p>Newbi Entertainment © 2026</p>
+                                <p>Newbi Entertainment © 2024</p>
                                 {idx !== paginatedPages.length - 1 && (
                                     <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
                                         <div className="w-4 h-4 bg-black flex items-center justify-center"><span className="text-[6px] font-black text-neon-green">NB</span></div>

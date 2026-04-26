@@ -24,11 +24,15 @@ const Navbar = () => {
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
 
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer';
+
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
+        isAdmin 
+            ? { name: 'ADMIN', path: '/admin', icon: LayoutGrid }
+            : { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 

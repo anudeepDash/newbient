@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const SiteContentManager = () => {
     const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings } = useStore();
@@ -42,9 +43,7 @@ const SiteContentManager = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-2">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             SITE <span className="text-neon-green">CONFIG.</span>
                         </h1>
