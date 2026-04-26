@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown, DollarSign, Info, Users, UserCheck } from 'lucide-react';
+import { LayoutGrid, CheckCircle, XCircle, Upload, QrCode, Search, FileText, Download, Trash2, Sparkles, Filter, ShieldCheck, Clock, Ticket, Mail, Copy, Plus, X, ArrowRight, Eye, ChevronDown, DollarSign, Info, Users, UserCheck, ClipboardList } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { notifySpecificUser, notifyAdmins } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import EntryTerminal from '../../components/admin/EntryTerminal';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, query, orderBy, where, limit } from 'firebase/firestore';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GuestlistRegistryTab = ({ eventId, guestlists, markGuestlistAttendance }) => {
     const [entries, setEntries] = React.useState([]);
@@ -376,6 +378,13 @@ const TicketManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isUploading, setIsUploading] = useState(false);
 
+    const financeTabs = [
+        { name: 'Invoices', path: '/admin/invoices', icon: FileText },
+        { name: 'Proposals', path: '/admin/proposals', icon: ClipboardList },
+        { name: 'Agreements', path: '#', icon: ShieldCheck, comingSoon: true },
+        { name: 'Ticketing', path: '/admin/tickets', icon: Ticket },
+    ];
+
     // Missing State Definitions
     const [customPrice, setCustomPrice] = useState('');
     const [generatedLink, setGeneratedLink] = useState('');
@@ -607,28 +616,86 @@ const TicketManager = () => {
     const ticketedEvents = upcomingEvents; // Showing all events for management accessibility
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-32">
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-green/5 rounded-full blur-[180px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse delay-1000" />
-            </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: managerMode === 'ticketing' ? 'TICKETING' : 'GUESTLIST',
+                subtitle: 'HUB',
+                accentClass: managerMode === 'ticketing' ? 'text-neon-green' : 'text-neon-blue',
+                icon: managerMode === 'ticketing' ? Ticket : Users
+            }}
+            tabs={financeTabs}
+            accentColor={managerMode === 'ticketing' ? 'neon-green' : 'neon-blue'}
+            action={selectedEventId && (
+                <div className="flex flex-col sm:flex-row items-stretch gap-6 w-full xl:w-auto">
+                    {/* Mode Switcher */}
+                    <div className="bg-zinc-900/40 border border-white/10 p-1.5 rounded-[2rem] flex items-center gap-1 shadow-2xl">
+                        <button
+                            onClick={() => setManagerMode('ticketing')}
+                            className={cn(
+                                "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
+                                managerMode === 'ticketing' 
+                                    ? "bg-neon-green text-black" 
+                                    : "text-gray-500 hover:text-white"
+                            )}
+                        >
+                            <Ticket size={16} /> TICKETING
+                        </button>
+                        <button
+                            onClick={() => setManagerMode('guestlist')}
+                            className={cn(
+                                "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
+                                managerMode === 'guestlist' 
+                                    ? "bg-neon-blue text-black" 
+                                    : "text-gray-500 hover:text-white"
+                            )}
+                        >
+                            <Users size={16} /> GUESTLISTS
+                        </button>
+                    </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+                    <div className="flex flex-col sm:flex-row items-stretch gap-4">
+                        {managerMode === 'ticketing' && (
+                            <Button
+                                onClick={() => setIsManualModalOpen(true)}
+                                className="h-16 px-8 rounded-2xl bg-neon-blue text-black font-black uppercase italic tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-4 group"
+                            >
+                                <Plus size={18} className="group-hover:rotate-90 transition-transform" /> 
+                                <span>Manual Entrance</span>
+                            </Button>
+                        )}
+                        <div className="bg-white/5 border border-white/10 p-2 rounded-[2rem] backdrop-blur-3xl flex items-center gap-2 overflow-x-auto custom-scrollbar no-scrollbar">
+                            {currentTabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "px-6 py-4 rounded-[1.5rem] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap",
+                                        activeTab === tab.id 
+                                            ? "bg-white text-black shadow-xl scale-105" 
+                                            : "text-gray-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    <tab.icon size={14} />
+                                    <span className="hidden sm:inline">
+                                        {tab.id === 'pending' ? `${tab.label} (${pendingOrders.filter(o => o.eventId === selectedEventId).length})` : tab.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        >
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-10">
                     <div className="space-y-4 max-w-full">
                         <div className="flex flex-wrap items-center gap-4">
-                            <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-neon-green transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                                <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Dashboard
-                            </Link>
                             {selectedEventId && (
                                 <button onClick={() => setSelectedEventId(null)} className="relative z-[60] inline-flex items-center gap-2 text-neon-blue hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
                                     <ArrowRight size={14} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Event Selection
                                 </button>
                             )}
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            {managerMode === 'ticketing' ? 'TICKETING' : 'GUESTLIST'} <span className={cn("px-4", managerMode === 'ticketing' ? "text-neon-green" : "text-neon-blue")}>HUB.</span>
-                        </h1>
                         <p className="text-gray-500 text-[10px] md:text-xs font-bold uppercase tracking-[0.4em] pl-1 flex items-center gap-3">
                             {selectedEventId ? selectedEvent?.title : `${managerMode === 'ticketing' ? 'Ticket' : 'Registry'} Management System`} 
                             <span className={cn("w-1 h-1 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)]", managerMode === 'ticketing' ? "bg-neon-green" : "bg-neon-blue")} /> 
@@ -636,69 +703,32 @@ const TicketManager = () => {
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch gap-6 w-full xl:w-auto">
-                        {/* Mode Switcher */}
-                        {!selectedEventId && (
-                            <div className="bg-zinc-900/40 border border-white/10 p-1.5 rounded-[2rem] flex items-center gap-1 shadow-2xl">
-                                <button
-                                    onClick={() => setManagerMode('ticketing')}
-                                    className={cn(
-                                        "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                                        managerMode === 'ticketing' 
-                                            ? "bg-neon-green text-black" 
-                                            : "text-gray-500 hover:text-white"
-                                    )}
-                                >
-                                    <Ticket size={16} /> TICKETING
-                                </button>
-                                <button
-                                    onClick={() => setManagerMode('guestlist')}
-                                    className={cn(
-                                        "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                                        managerMode === 'guestlist' 
-                                            ? "bg-neon-blue text-black" 
-                                            : "text-gray-500 hover:text-white"
-                                    )}
-                                >
-                                    <Users size={16} /> GUESTLISTS
-                                </button>
-                            </div>
-                        )}
-
-                        {selectedEventId && (
-                            <div className="flex flex-col sm:flex-row items-stretch gap-4">
-                                {managerMode === 'ticketing' && (
-                                    <Button
-                                        onClick={() => setIsManualModalOpen(true)}
-                                        className="h-16 px-8 rounded-2xl bg-neon-blue text-black font-black uppercase italic tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-4 group"
-                                    >
-                                        <Plus size={18} className="group-hover:rotate-90 transition-transform" /> 
-                                        <span>Manual Entrance</span>
-                                    </Button>
+                    {!selectedEventId && (
+                        <div className="bg-zinc-900/40 border border-white/10 p-1.5 rounded-[2rem] flex items-center gap-1 shadow-2xl">
+                            <button
+                                onClick={() => setManagerMode('ticketing')}
+                                className={cn(
+                                    "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
+                                    managerMode === 'ticketing' 
+                                        ? "bg-neon-green text-black" 
+                                        : "text-gray-500 hover:text-white"
                                 )}
-                                <div className="bg-white/5 border border-white/10 p-2 rounded-[2rem] backdrop-blur-3xl flex items-center gap-2 overflow-x-auto custom-scrollbar no-scrollbar">
-                                    {currentTabs.map((tab) => (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={cn(
-                                                "px-6 py-4 rounded-[1.5rem] text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap",
-                                                activeTab === tab.id 
-                                                    ? "bg-white text-black shadow-xl scale-105" 
-                                                    : "text-gray-500 hover:text-white hover:bg-white/5"
-                                            )}
-                                        >
-                                            <tab.icon size={14} />
-                                            <span className="hidden sm:inline">
-                                                {tab.id === 'pending' ? `${tab.label} (${pendingOrders.filter(o => o.eventId === selectedEventId).length})` : tab.label}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
+                            >
+                                <Ticket size={16} /> TICKETING
+                            </button>
+                            <button
+                                onClick={() => setManagerMode('guestlist')}
+                                className={cn(
+                                    "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
+                                    managerMode === 'guestlist' 
+                                        ? "bg-neon-blue text-black" 
+                                        : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                <Users size={16} /> GUESTLISTS
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -1059,7 +1089,7 @@ const TicketManager = () => {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

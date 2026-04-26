@@ -11,6 +11,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
+import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { Loader } from 'lucide-react';
 
 const InvoiceGenerator = () => {
@@ -454,7 +456,7 @@ const InvoiceGenerator = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-20">
+        <div className="min-h-screen bg-[#020202] text-white relative overflow-x-hidden pb-20">
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
@@ -463,9 +465,12 @@ const InvoiceGenerator = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
                     <div className="space-y-2">
-                        <Link to="/admin/invoices" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] mb-4 group">
-                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Invoices
-                        </Link>
+                        <div className="flex items-center gap-4 mb-4">
+                            <Link to="/admin/invoices" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] group">
+                                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Invoices
+                            </Link>
+                            <AdminDashboardLink />
+                        </div>
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             INVOICE <span className="text-neon-blue px-4">GENERATOR.</span>
                         </h1>

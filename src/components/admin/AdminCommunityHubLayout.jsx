@@ -3,18 +3,21 @@ import { Link, useLocation } from 'react-router-dom';
 import { Users, ClipboardList, ListChecks, Sparkles, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from './AdminDashboardLink';
 
-const AdminCommunityHubLayout = ({ children, title, description, action, studioHeader, hideTabs = false }) => {
+const AdminCommunityHubLayout = ({ children, title, description, action, studioHeader, hideTabs = false, tabs: customTabs, accentColor = 'neon-green' }) => {
     const location = useLocation();
 
-    const tabs = [
+    const defaultTabs = [
         { name: 'Volunteer Gigs', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
         { name: 'Community Forms', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
         { name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
     ];
 
+    const tabs = customTabs || defaultTabs;
+
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-32 relative overflow-hidden">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[120px] animate-pulse" />
@@ -25,10 +28,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
                     <div className="space-y-6">
-                        <Link to="/admin" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" />
-                            BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink className="mb-6" />
                         
                         {studioHeader ? (
                             <div className="space-y-4">
@@ -50,25 +50,29 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                         )}
                     </div>
 
-                    {/* Navigation Tabs */}
+                    {/* Navigation Tabs (Header - Responsive) */}
                     {!hideTabs && (
-                        <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shrink-0">
+                        <div className="flex items-center gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shrink-0 overflow-x-auto no-scrollbar max-w-full">
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = location.pathname === tab.path;
                                 return (
                                     <Link
-                                        key={tab.path}
-                                        to={tab.path}
+                                        key={tab.name}
+                                        to={tab.comingSoon ? '#' : tab.path}
                                         className={cn(
-                                            "flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-500 group relative",
+                                            "flex items-center gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-500 group relative shrink-0",
                                             isActive 
                                                 ? "bg-white text-black font-black" 
-                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                : "text-gray-400 hover:text-white hover:bg-white/5",
+                                            tab.comingSoon && "opacity-40 cursor-not-allowed pointer-events-none"
                                         )}
                                     >
-                                        <Icon size={18} className={cn(isActive ? "text-black" : tab.color)} />
-                                        <span className="text-[10px] uppercase tracking-widest hidden sm:inline">{tab.name}</span>
+                                        <Icon size={16} className={cn(isActive ? "text-black" : tab.color || `text-${accentColor}`)} />
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] md:text-[10px] uppercase tracking-widest leading-none">{tab.name}</span>
+                                            {tab.comingSoon && <span className="text-[7px] font-black text-gray-500 uppercase tracking-tighter mt-0.5">Coming Soon</span>}
+                                        </div>
                                         {isActive && (
                                             <motion.div
                                                 layoutId="admin-hub-active-tab"
@@ -85,7 +89,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container */}
-                <div className="bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-8 md:p-12 backdrop-blur-3xl min-h-[60vh] shadow-2xl relative overflow-hidden">
+                <div className="bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-6 md:p-12 backdrop-blur-3xl min-h-[60vh] shadow-2xl relative">
                     {/* Decorative radial gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                     
@@ -110,3 +114,4 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
 };
 
 export default AdminCommunityHubLayout;
+

@@ -11,6 +11,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { generateProposalContent, generateFieldRefinement } from '../../services/aiService';
 // Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
 const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'min-h-[250px]' }) => {
@@ -92,8 +93,7 @@ const ProposalGenerator = () => {
     const savedModel = localStorage.getItem('geminiModel');
     // Auto-migrate deprecated model names to current generation
     const migrateModel = (m) => {
-        if (!m || m.includes('1.5') || m.includes('2.0')) return 'gemini-2.5-flash';
-        if (m === 'gemini-3.0-flash') return 'gemini-3-flash-preview';
+        if (!m || m.includes('1.5') || m.includes('2.0') || m.includes('2.5')) return 'gemini-3.0-flash';
         return m;
     };
     const initialModel = migrateModel(savedModel);
@@ -410,17 +410,20 @@ const ProposalGenerator = () => {
         <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-hidden flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-                @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
                 .scrollbar-hide::-webkit-scrollbar { display: none; }
                 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
                 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-                .font-signature { font-family: 'Alex Brush', cursive; }
+                .font-signature { font-family: 'Caveat', cursive; }
             `}} />
 
             {/* Top Bar */}
             <header className="h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-8">
-                    <Link to="/admin/proposals" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={18} /></Link>
+                    <div className="flex items-center gap-3">
+                        <Link to="/admin/proposals" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={18} /></Link>
+                        <AdminDashboardLink className="hidden md:flex" />
+                    </div>
                     <div>
                         <h1 className="text-xl font-black tracking-tighter uppercase italic text-white">Quotation <span className="text-neon-green">Engine.</span></h1>
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mt-1">Strategic Command</p>
@@ -705,7 +708,8 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto scrollbar-hide relative">
+                                        <div className="absolute inset-0 flex flex-col px-1">
                                         {paginatedPages[currentPreviewPage]?.type === 'cover' && (
                                             <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                                 <div className="grid grid-cols-2 gap-10">
@@ -757,19 +761,19 @@ const ProposalGenerator = () => {
                                                         <table className="w-full text-left border-collapse border-2 border-black">
                                                             <thead>
                                                                 <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                                    <th className="p-5 w-10">#</th>
-                                                                    <th className="p-5">Deliverable</th>
-                                                                    <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
-                                                                    <th className="p-5 text-right w-40">Timeline</th>
+                                                                    <th className="p-4 w-10">#</th>
+                                                                    <th className="p-4">Deliverable</th>
+                                                                    <th className="p-4 text-center w-28 border-x border-white/20">Qty / Unit</th>
+                                                                    <th className="p-4 text-right w-40">Timeline</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-200">
                                                                 {formData.deliverables.filter(d => d.item).map((d, i) => (
                                                                     <tr key={d.id} className="hover:bg-gray-50">
-                                                                        <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                                        <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
-                                                                        <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
-                                                                        <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                                        <td className="p-4 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
+                                                                        <td className="p-4 text-[12px] font-bold text-black">{d.item}</td>
+                                                                        <td className="p-4 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
+                                                                        <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -781,9 +785,9 @@ const ProposalGenerator = () => {
                                                 {(formData.clientRequirements?.length > 0 && formData.clientRequirements.some(r => r.description)) && (
                                                     <div className="space-y-6 pt-4">
                                                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
-                                                        <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                        <div className="p-6 border-2 border-gray-200 space-y-0">
                                                             {formData.clientRequirements.filter(r => r.description).map((r, i) => (
-                                                                <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                                <div key={r.id} className={cn("flex items-start gap-4 py-3", i > 0 && "border-t border-gray-100")}>
                                                                     <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                                     <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
                                                                 </div>
@@ -820,8 +824,12 @@ const ProposalGenerator = () => {
                                                 </div>
                                             </div>
                                         )}
+                                            </div>
+                                        </div>
+                                    <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                                        <p>Newbi Entertainment © 2024</p>
+                                        <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                     </div>
-                                    <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]"><p>Newbi Entertainment © 2026</p><p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p></div>
                                 </motion.div>
                             </AnimatePresence>
                         </div>
@@ -870,7 +878,7 @@ const ProposalGenerator = () => {
                                         <Zap size={14} className="text-neon-green mt-0.5" />
                                         <div>
                                             <p className="text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Model Info</p>
-                                            <p className="text-[9px] font-medium text-gray-400 leading-relaxed">3.0 Flash is the latest model. 2.5 Flash is the stable workhorse. Use 2.5 Pro for complex reasoning.</p>
+                                            <p className="text-[9px] font-medium text-gray-400 leading-relaxed">Gemini 3.0 Flash is the production standard. Use 3.0 Pro for complex strategic logic.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -879,9 +887,9 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Deployment Model</label>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
-                                            { id: 'gemini-3-flash-preview', label: '3 Flash', desc: 'Latest' },
-                                            { id: 'gemini-2.5-flash', label: '2.5 Flash', desc: 'Stable' },
-                                            { id: 'gemini-2.5-pro', label: '2.5 Pro', desc: 'Advanced' }
+                                            { id: 'gemini-3.0-flash', label: '3.0 Flash', desc: 'Standard' },
+                                            { id: 'gemini-3.0-pro', label: '3.0 Pro', desc: 'Precision' },
+                                            { id: 'gemini-2.0-flash', label: '2.0 Flash', desc: 'Legacy' }
                                         ].map(m => (
                                             <button 
                                                 key={m.id} 
@@ -1034,7 +1042,8 @@ const ProposalGenerator = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-hidden">
+                        <div className="flex-1 overflow-hidden relative">
+                            <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
                             {page.type === 'cover' && (
                                 <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                     <div className="grid grid-cols-2 gap-10">
@@ -1151,8 +1160,12 @@ const ProposalGenerator = () => {
                                     </div>
                                 </div>
                             )}
+                                </div>
+                            </div>
+                        <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                            <p>Newbi Entertainment © 2024</p>
+                            <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
-                        <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]"><p>Newbi Entertainment © 2026</p><p className="text-black">Page {idx + 1} of {paginatedPages.length}</p></div>
                     </div>
                 ))}
             </div>

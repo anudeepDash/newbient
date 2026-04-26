@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const ConcertManager = () => {
     const { portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, updatePortfolioOrder, portfolioCategories, addCategory, deleteCategory } = useStore();
@@ -120,9 +121,7 @@ const ConcertManager = () => {
                 {/* Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8">
                     <div className="space-y-4 max-w-full">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] group">
-                            <LayoutGrid size={14} className="group-hover:rotate-10 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
                             CONCERT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">CATALOGUE.</span>
                         </h1>

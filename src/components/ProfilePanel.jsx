@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { loginWithMeta } from '../lib/metaSDK';
 
 const ProfilePanel = ({ isOpen, onClose }) => {
-    const { user, logout, creators, addNotification, resetPassword, updateDisplayName, verifyInstagramFollowers, ticketOrders } = useStore();
+    const { user, logout, creators, addNotification, resetPassword, updateDisplayName, verifyInstagramFollowers, ticketOrders, notifications } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
     const [isUpdating, setIsUpdating] = useState(false);
@@ -137,7 +137,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                 onClick={onClose}
                                 className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
 
@@ -160,7 +160,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-1">
                                         <h3 className="text-xl font-black font-heading text-white italic tracking-tighter capitalize leading-none">
-                                            {user.displayName || 'Tribe Member'}
+                                            {user.displayName || 'Member'}
                                         </h3>
                                         {isApprovedCreator && <ShieldCheck size={16} className="text-neon-blue" />}
                                     </div>
@@ -202,7 +202,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                         {isActive && (
                                             <motion.div 
                                                 layoutId="activeTab"
-                                                className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-neon-blue to-neon-pink shadow-[0_-4px_10px_rgba(56,182,255,0.3)]"
+                                                className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-neon-blue to-neon-pink"
                                             />
                                         )}
                                     </button>
@@ -233,7 +233,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                         <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
                                                     </div>
                                                     <p className="text-2xl font-black text-white italic">{userTickets.length}</p>
-                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Active Passes</p>
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Tickets</p>
                                                 </div>
                                                 <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-neon-pink/30 transition-all">
                                                     <div className="flex items-center justify-between mb-4">
@@ -259,7 +259,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                         </div>
                                                         <div className="text-left">
                                                             <p className="text-sm font-black text-white uppercase tracking-widest italic">Studio Workspace</p>
-                                                            <p className="text-[10px] text-neon-blue/60 font-bold uppercase tracking-tighter mt-0.5">Manage your professional impact</p>
+                                                            <p className="text-[10px] text-neon-blue/60 font-bold uppercase tracking-tighter mt-0.5">Access your dashboard</p>
                                                         </div>
                                                     </div>
                                                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-neon-blue group-hover:text-black transition-all">
@@ -291,22 +291,38 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <History size={14} className="text-gray-500" />
-                                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Latest Updates</h4>
+                                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Recent Activity</h4>
                                                     </div>
-                                                    <button className="text-[8px] font-black text-neon-blue uppercase tracking-widest hover:underline">View Log</button>
+                                                    <button className="text-[8px] font-black text-neon-blue uppercase tracking-widest hover:underline">View All</button>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    {[1, 2].map((_, i) => (
-                                                        <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                                                                <Info size={14} className="text-gray-600" />
+                                                    {notifications?.length > 0 ? (
+                                                        notifications.slice(0, 3).map((notif, i) => (
+                                                            <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+                                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 group-hover:text-neon-blue transition-colors">
+                                                                    {notif.type === 'ticket' ? <Ticket size={14} /> : 
+                                                                     notif.type === 'security' ? <Shield size={14} /> : 
+                                                                     <Info size={14} />}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <p className="text-[10px] font-bold text-gray-300 uppercase leading-tight">{notif.title}</p>
+                                                                    <p className="text-[8px] text-gray-600 font-bold uppercase mt-1">
+                                                                        {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'Just now'} • {notif.type === 'message' ? 'Update' : 'System'}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <p className="text-[10px] font-bold text-gray-300 uppercase leading-tight">Security check completed successfully</p>
-                                                                <p className="text-[8px] text-gray-600 font-bold uppercase mt-1">2 hours ago • System Protocol</p>
+                                                        ))
+                                                    ) : (
+                                                        <div className="flex items-center gap-4 p-6 rounded-2xl bg-white/[0.01] border border-dashed border-white/5">
+                                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                                                                <History size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">No recent actions</p>
+                                                                <p className="text-[8px] text-gray-700 font-bold uppercase mt-1">Your activity will appear here</p>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -316,7 +332,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
-                                                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Digital Vault</h3>
+                                                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">My Tickets</h3>
                                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Your secured entry passes</p>
                                                 </div>
                                                 <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2">
@@ -377,7 +393,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                             <div className="space-y-6">
                                                 {/* Display Name Edit */}
                                                 <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Professional Identity</label>
+                                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Professional Identity</label>
                                                     <div className="relative group">
                                                         <div className={cn(
                                                             "absolute -inset-0.5 bg-gradient-to-r from-neon-blue to-neon-purple rounded-2xl blur opacity-0 transition duration-500",
@@ -416,7 +432,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
 
                                                 {/* Email View */}
                                                 <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Primary Communications</label>
+                                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
                                                     <div className="w-full h-16 bg-white/[0.02] border border-white/5 rounded-2xl px-6 flex items-center justify-between group">
                                                         <span className="text-sm font-bold text-gray-500">{user.email}</span>
                                                         <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-700">
@@ -436,7 +452,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                             <div className="w-10 h-10 rounded-xl bg-neon-blue/20 flex items-center justify-center text-neon-blue">
                                                                 <Sparkles size={18} />
                                                             </div>
-                                                            <h4 className="text-[11px] font-black text-white uppercase tracking-widest italic">Creator Specification</h4>
+                                                            <h4 className="text-[11px] font-black text-white uppercase tracking-widest italic">Creator Profile</h4>
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-6 relative z-10">
@@ -502,7 +518,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     <Key size={36} />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Security Infrastructure</h3>
+                                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Account Security</h3>
                                                     <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest leading-relaxed mt-2 max-w-xs mx-auto">
                                                         Manage your access credentials and protect your personal hub from unauthorized entry.
                                                     </p>
@@ -511,7 +527,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
 
                                             <div className="space-y-4">
                                                 <div className="space-y-4">
-                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Access Management</h4>
+                                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Access Management</h4>
                                                     <button 
                                                         onClick={handleResetPassword}
                                                         disabled={isUpdating}
@@ -529,7 +545,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 </div>
 
                                                 <div className="pt-8 space-y-4 border-t border-white/5">
-                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] pl-1">Privacy Governance</h4>
+                                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Privacy & Data</h4>
                                                     <button className="w-full h-16 rounded-2xl bg-white/[0.02] border border-white/5 text-gray-600 hover:text-white hover:bg-white/5 transition-all flex items-center justify-between px-6 text-left">
                                                         <div className="flex items-center gap-4">
                                                             <Info size={18} />
@@ -540,7 +556,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     <button className="w-full h-16 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500/40 hover:bg-red-500 hover:text-white transition-all flex items-center justify-between px-6 text-left group">
                                                         <div className="flex items-center gap-4">
                                                             <AlertCircle size={18} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Terminate Personal Space</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Delete Account</span>
                                                         </div>
                                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform opacity-40 group-hover:opacity-100" />
                                                     </button>

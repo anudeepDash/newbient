@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const GalleryManager = () => {
     const { galleryImages, addGalleryImage, deleteGalleryImage } = useStore();
@@ -54,9 +55,7 @@ const GalleryManager = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
                     <div className="space-y-4">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             VISUAL <span className="text-neon-blue">ARCHIVE.</span>
                         </h1>

@@ -4,6 +4,7 @@ import { Construction, Sparkles, AlertTriangle, ArrowLeft, LayoutGrid } from 'lu
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 import { useStore } from '../../lib/store';
 
@@ -110,9 +111,7 @@ const Maintenance = () => {
                         transition={{ delay: 0.3 }}
                         className="w-full pt-4"
                     >
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center justify-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-[0.3em] mb-4 group w-full">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> BACK TO ADMIN DASHBOARD
-                        </Link>
+                        <AdminDashboardLink />
                     </motion.div>
                 </div>
             </Card>

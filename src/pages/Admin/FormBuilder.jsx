@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const FormBuilder = () => {
     const colorPresets = [
@@ -128,9 +129,12 @@ const FormBuilder = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Sparkles size={16} className="text-neon-pink" />
-                            <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                        <div className="space-y-2">
+                            <AdminDashboardLink />
+                            <div className="flex items-center gap-3">
+                                <Sparkles size={16} className="text-neon-pink" />
+                                <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+                            </div>
                         </div>
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                             FORM <span className="text-neon-pink">MANAGEMENT.</span>

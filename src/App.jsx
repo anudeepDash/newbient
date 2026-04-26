@@ -21,6 +21,7 @@ import ArtistManager from './pages/Admin/ArtistManager';
 import ProposalManagement from './pages/Admin/ProposalManagement';
 import ProposalGenerator from './pages/Admin/ProposalGenerator';
 import Proposal from './pages/Proposal';
+import Agreement from './pages/Agreement';
 import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
@@ -54,6 +55,9 @@ import BlogManager from './pages/Admin/BlogManager'; // New Admin Blog
 import BlogPostEditor from './pages/Admin/BlogPostEditor'; // New Editor
 import CampaignPublicView from './pages/CampaignPublicView'; // New Public View
 import ArtistAnt from './pages/ArtistAnt';
+import AgreementManagement from './pages/Admin/AgreementManagement';
+import AgreementGenerator from './pages/Admin/AgreementGenerator';
+
 
 function App() {
   const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
@@ -111,6 +115,7 @@ function App() {
           <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
           <Route path="invoice/:id" element={<Invoice />} />
           <Route path="proposal/:id" element={<Proposal />} />
+          <Route path="agreement/:id" element={<Agreement />} />
           <Route path="community" element={<MaintenanceGuard isPage featureId="community"><CommunityJoin /></MaintenanceGuard>} />
           <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
@@ -140,6 +145,10 @@ function App() {
           <Route path="admin/proposals" element={<AdminGuard><ProposalManagement /></AdminGuard>} />
           <Route path="admin/create-proposal" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
           <Route path="admin/edit-proposal/:id" element={<AdminGuard><ProposalGenerator /></AdminGuard>} />
+          <Route path="admin/agreements" element={<AdminGuard><AgreementManagement /></AdminGuard>} />
+          <Route path="admin/agreements/new" element={<AdminGuard><AgreementGenerator /></AdminGuard>} />
+          <Route path="admin/agreements/edit/:id" element={<AdminGuard><AgreementGenerator /></AdminGuard>} />
+
 
           <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/guestlists" element={<AdminGuard><GuestlistManager /></AdminGuard>} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone } from 'lucide-react';
+import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone, Calendar, Radio, FileText, Music } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -29,6 +29,13 @@ const AnnouncementsManager = () => {
         link: '',
         isPinned: false
     });
+
+    const coreContentTabs = [
+        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
+        { name: 'Announcements', path: '/admin/announcements', icon: Radio },
+        { name: 'Blog', path: '/admin/blog', icon: FileText },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
+    ];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -93,17 +100,16 @@ const AnnouncementsManager = () => {
 
     return (
         <AdminCommunityHubLayout
-            title="Broadcast Control"
-            description="Manage and distribute announcements to the entire community."
-            hideTabs={true}
             studioHeader={{
                 title: "BROADCAST",
                 subtitle: "MANAGER",
                 accentClass: "text-neon-pink",
                 icon: Megaphone
             }}
+            tabs={coreContentTabs}
+            accentColor="neon-pink"
         >
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 py-10">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10">
 
                 {/* Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8 relative z-[100]">

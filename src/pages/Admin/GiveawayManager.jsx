@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Gift, LayoutGrid, Plus, Search, Edit, Trash2, Users, Calendar, X, ChevronRight, Globe, Info, Clock, ArrowLeft, Download, Trophy, BarChart3, Instagram, Send, Youtube, MessageCircle, Music, Ghost, Link as LinkIcon, Camera, Twitter, XCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { downloadCSV } from '../../components/admin/CSVHandler';
 
 const GiveawayManager = () => {
@@ -214,8 +215,9 @@ const GiveawayManager = () => {
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
+                        <div className="space-y-4">
+                            <AdminDashboardLink className="mb-2" />
+                            <div className="flex items-center gap-3">
                             <Sparkles size={16} className="text-purple-500" />
                             <span className="text-purple-500 text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
                         </div>

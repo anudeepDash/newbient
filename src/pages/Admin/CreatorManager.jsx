@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, Ban, Sparkles, Filter, Globe, Youtube, Zap, X, Clock, LayoutGrid, FileSpreadsheet, Download, FileText, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import StudioSelect from '../../components/ui/StudioSelect';
@@ -127,10 +128,7 @@ const CreatorManager = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8 relative z-[100]">
                     <div className="space-y-4">
-                        <Link to="/admin" className="flex items-center gap-3 w-fit group cursor-pointer hover:opacity-80 transition-opacity">
-                            <ArrowLeft size={16} className="text-neon-pink group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Back to Admin Center</span>
-                        </Link>
+                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-2xl md:text-3xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                             CREATOR <span className="text-neon-pink">MANAGEMENT.</span>
                         </h1>

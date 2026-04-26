@@ -8,6 +8,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const ProposalManagement = () => {
     const navigate = useNavigate();
@@ -17,6 +19,12 @@ const ProposalManagement = () => {
     const [viewMode, setViewMode] = useState('grid');
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
     const [sharingProposal, setSharingProposal] = useState(null);
+
+    const vaultTabs = [
+        { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
+        { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
+        { name: 'Agreements', path: '#', icon: ShieldCheck, color: 'text-gray-500', comingSoon: true },
+    ];
 
     const filteredProposals = proposals.filter(p => {
         const matchesSearch = p.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -117,32 +125,24 @@ const ProposalManagement = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Background Elements */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-green/5 rounded-full blur-[120px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div className="space-y-2 max-w-full">
-                        <Link to="/admin" className="relative z-[60] inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] mb-4 group">
-                            <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform" /> Back to Dashboard
-                        </Link>
-                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            PROPOSAL <span className="text-neon-green px-2 sm:px-4">VAULT.</span>
-                        </h1>
-                    </div>
-                    
-                    <Link to="/admin/create-proposal" className="w-full md:w-auto">
-                        <Button className="w-full md:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] sm:text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
-                            <Plus className="mr-2 h-4 w-4" /> New Quote
-                        </Button>
-                    </Link>
-                </div>
-
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'PROPOSAL',
+                subtitle: 'VAULT',
+                accentClass: 'text-neon-green',
+                icon: FileSpreadsheet
+            }}
+            tabs={vaultTabs}
+            accentColor="neon-green"
+            action={
+                <Link to="/admin/create-proposal">
+                    <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] sm:text-xs h-14 px-10 rounded-2xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                        <Plus className="mr-2 h-4 w-4" /> New Quote
+                    </Button>
+                </Link>
+            }
+        >
+            <div className="relative z-10">
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
                 <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
@@ -515,7 +515,7 @@ const ProposalManagement = () => {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 
