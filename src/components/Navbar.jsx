@@ -258,6 +258,7 @@ const Navbar = () => {
                         })}
                     </div>
                 </div>
+            </div>
             )}
 
             {/* Full-screen Mobile Menu */}
