@@ -1078,7 +1078,6 @@ const InvoiceGenerator = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                )}
 
                                 {isLastPage && (
                                     <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200">
