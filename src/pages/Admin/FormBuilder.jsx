@@ -130,7 +130,6 @@ const FormBuilder = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <AdminDashboardLink />
                             <div className="flex items-center gap-3">
                                 <Sparkles size={16} className="text-neon-pink" />
                                 <span className="text-neon-pink text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>

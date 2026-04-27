@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; // Import store
+import { auth } from './lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -79,22 +81,14 @@ function App() {
     const unsubscribeNotifications = subscribeToNotifications();
     initForegroundMessaging();
     
-    let unsubAuth;
-    const initAuth = async () => {
-      const { auth } = await import('./lib/firebase');
-      const { onAuthStateChanged } = await import('firebase/auth');
-
-      unsubAuth = onAuthStateChanged(auth, (user) => {
-        const { checkUserRole } = useStore.getState();
-        checkUserRole(user).then(() => {
-            if (user) {
-                requestNotificationPermission();
-            }
-        });
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      const { checkUserRole } = useStore.getState();
+      checkUserRole(user).then(() => {
+          if (user) {
+              requestNotificationPermission();
+          }
       });
-    };
-
-    initAuth();
+    });
 
     return () => {
       if (unsubscribeData) unsubscribeData();

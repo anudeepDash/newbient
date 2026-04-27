@@ -3,6 +3,22 @@ import { db } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion } from 'firebase/firestore';
 import { sendBookingConfirmation } from './email';
 
+const AUTH_CACHE_KEY = 'nb_auth_session';
+const getCachedSession = () => {
+    try {
+        const session = localStorage.getItem(AUTH_CACHE_KEY);
+        if (!session) return null;
+        const parsed = JSON.parse(session);
+        // Expire cache after 7 days
+        const isExpired = Date.now() - parsed.timestamp > 7 * 24 * 60 * 60 * 1000;
+        return isExpired ? null : parsed.user;
+    } catch (e) {
+        return null;
+    }
+};
+
+const initialUser = getCachedSession();
+
 export const useStore = create((set, get) => ({
     // ... existing state ...
     
@@ -64,7 +80,8 @@ export const useStore = create((set, get) => ({
     siteSettings: { showUpcomingEvents: true, hideMaintenancePages: false },
     siteDetails: { instagram: '#', linkedin: '#', whatsappCommunity: '', phone: '', address: '', email: '' },
     loading: true,
-    authInitialized: false,
+    authInitialized: initialUser !== null,
+    user: initialUser,
 
     // Real-time Subscription Init
     subscribeToData: () => {
@@ -1303,6 +1320,7 @@ export const useStore = create((set, get) => ({
 
     checkUserRole: async (firebaseUser) => {
         if (!firebaseUser) {
+            localStorage.removeItem(AUTH_CACHE_KEY);
             set({ user: null, authInitialized: true });
             return;
         }
@@ -1313,9 +1331,11 @@ export const useStore = create((set, get) => ({
         let displayName = firebaseUser.displayName || '';
 
         try {
-            // 1. Check if Admin (still by email as admins are added by email)
-            const adminQ = query(collection(db, 'admins'), where('email', '==', firebaseUser.email));
-            const adminSnapshot = await getDocs(adminQ);
+            // Parallelize Firestore lookups to reduce auto-login delay
+            const [adminSnapshot, userDoc] = await Promise.all([
+                getDocs(query(collection(db, 'admins'), where('email', '==', firebaseUser.email))),
+                getDoc(doc(db, 'users', firebaseUser.uid))
+            ]);
 
             if (!adminSnapshot.empty) {
                 const adminData = adminSnapshot.docs[0].data();
@@ -1323,10 +1343,7 @@ export const useStore = create((set, get) => ({
                 displayName = adminData.displayName || displayName;
             }
 
-            // 2. Load User Profile by UID (Direct lookup is much more efficient and reliable)
             const userRef = doc(db, 'users', firebaseUser.uid);
-            const userDoc = await getDoc(userRef);
-
             if (userDoc.exists()) {
                 const userData = userDoc.data();
 
@@ -1363,15 +1380,23 @@ export const useStore = create((set, get) => ({
             console.error("Error fetching role/profile:", error);
         }
 
+        const finalUser = {
+            email: firebaseUser.email,
+            uid: firebaseUser.uid,
+            role: role,
+            displayName: displayName,
+            hasJoinedTribe: hasJoinedTribe,
+            hasJoinedWhatsapp: hasJoinedWhatsapp
+        };
+
+        // Cache the session for instant retrieval on refresh
+        localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({
+            user: finalUser,
+            timestamp: Date.now()
+        }));
+
         set({
-            user: {
-                email: firebaseUser.email,
-                uid: firebaseUser.uid,
-                role: role,
-                displayName: displayName,
-                hasJoinedTribe: hasJoinedTribe,
-                hasJoinedWhatsapp: hasJoinedWhatsapp
-            },
+            user: finalUser,
             authInitialized: true
         });
     },
@@ -1502,6 +1527,7 @@ export const useStore = create((set, get) => ({
         const { getAuth } = await import('firebase/auth');
         const auth = getAuth();
         await auth.signOut();
+        localStorage.removeItem(AUTH_CACHE_KEY);
         set({ user: null });
     },
 

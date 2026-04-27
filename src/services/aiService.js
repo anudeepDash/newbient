@@ -78,7 +78,7 @@ const withRetry = async (fn, maxRetries = 2) => {
 // PROPOSAL FUNCTIONS (existing)
 // =====================================================
 
-export const generateProposalContent = async (apiKey, prompt, context = {}, modelName = 'gemini-3.0-flash') => {
+export const generateProposalContent = async (apiKey, prompt, context = {}, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -100,13 +100,53 @@ export const generateProposalContent = async (apiKey, prompt, context = {}, mode
     }
 };
 
-export const generateFieldRefinement = async (apiKey, fieldName, fieldLabel, currentContent, userPrompt, modelName = 'gemini-3.0-flash') => {
+// =====================================================
+// INVOICE FUNCTIONS
+// =====================================================
+
+export const generateInvoiceContent = async (apiKey, prompt, context = {}, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1beta' });
 
-    const fullPrompt = `SYSTEM INSTRUCTION: Refine the "${fieldLabel}" section of a Newbi proposal.
+    const fullPrompt = `SYSTEM INSTRUCTION: You are an expert financial billing assistant for Newbi Entertainment.
+    CONTEXT: ${JSON.stringify(context)}
+    TASK: Generate a structured invoice based on this brief: ${prompt}
+    
+    GUIDELINES:
+    1. Identify logical line items (service name, quantity, unit price).
+    2. Draft concise payment terms and strategic notes.
+    3. Use a professional, high-fidelity tone.
+    
+    FORMAT: Return ONLY a valid JSON object:
+    {
+      "clientName": "Organization Name",
+      "items": [
+        { "description": "Service Title", "qty": 1, "price": 50000 }
+      ],
+      "note": "Payment terms or project-specific notes",
+      "paymentDetails": "Bank details placeholder if not provided"
+    }`;
+
+    try {
+        return await withRetry(async () => {
+            const result = await model.generateContent(fullPrompt);
+            const response = await result.response;
+            return parseAiJson(response.text());
+        });
+    } catch (error) {
+        return handleAiError(error);
+    }
+};
+
+export const generateFieldRefinement = async (apiKey, fieldName, fieldLabel, currentContent, userPrompt, modelName = 'gemini-1.5-flash') => {
+    if (!apiKey) throw new Error("API Key required.");
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1beta' });
+
+    const fullPrompt = `SYSTEM INSTRUCTION: Refine the "${fieldLabel}" section of a professional document for Newbi.
     CURRENT CONTENT: "${currentContent}"
     INSTRUCTION: "${userPrompt}"
     FORMAT: Return ONLY the refined text as a plain string. No JSON.`;
@@ -122,11 +162,13 @@ export const generateFieldRefinement = async (apiKey, fieldName, fieldLabel, cur
     }
 };
 
+export const generateInvoiceFieldRefinement = generateFieldRefinement;
+
 // =====================================================
 // AGREEMENT FUNCTIONS (existing — kept for backwards compat)
 // =====================================================
 
-export const generateAgreementContent = async (apiKey, prompt, type, parties, details, commercials, modelName = 'gemini-3.0-flash') => {
+export const generateAgreementContent = async (apiKey, prompt, type, parties, details, commercials, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -159,7 +201,7 @@ export const generateAgreementContent = async (apiKey, prompt, type, parties, de
     }
 };
 
-export const generateClauseAction = async (apiKey, action, clauseContent, context = {}, modelName = 'gemini-3.0-flash') => {
+export const generateClauseAction = async (apiKey, action, clauseContent, context = {}, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -199,7 +241,7 @@ export const generateClauseAction = async (apiKey, action, clauseContent, contex
  * FEATURE 0 — AI Requirement Box
  * Converts a natural language requirement into structured contract data.
  */
-export const generateContractFromRequirement = async (apiKey, prompt, modelName = 'gemini-3.0-flash') => {
+export const generateContractFromRequirement = async (apiKey, prompt, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -276,7 +318,7 @@ IMPORTANT:
  * FEATURE 2 — AI Negotiation Mode
  * Analyzes requested changes against an existing contract and provides response options.
  */
-export const negotiateContract = async (apiKey, existingContract, requestedChanges, modelName = 'gemini-3.0-flash') => {
+export const negotiateContract = async (apiKey, existingContract, requestedChanges, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -347,7 +389,7 @@ RETURN FORMAT: Return ONLY a valid JSON object:
  * FEATURE 3 — Redline Comparison
  * Compares two versions of a contract and generates a diff summary.
  */
-export const compareContractVersions = async (apiKey, versionA, versionB, modelName = 'gemini-3.0-flash') => {
+export const compareContractVersions = async (apiKey, versionA, versionB, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -399,7 +441,7 @@ RETURN FORMAT: Return ONLY a valid JSON object:
  * FEATURE 4 — Revenue Contract Builder
  * Generates revenue-based contract clauses from parameters.
  */
-export const generateRevenueContract = async (apiKey, revenueParams, context = {}, modelName = 'gemini-3.0-flash') => {
+export const generateRevenueContract = async (apiKey, revenueParams, context = {}, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -459,7 +501,7 @@ RETURN FORMAT: Return ONLY a valid JSON object:
  * FEATURE 7 — Risk Engine
  * Analyzes a contract and auto-detects risk factors.
  */
-export const analyzeContractRisk = async (apiKey, contractData, modelName = 'gemini-3.0-flash') => {
+export const analyzeContractRisk = async (apiKey, contractData, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -531,7 +573,7 @@ RETURN FORMAT: Return ONLY a valid JSON object:
  * SMART BEHAVIOR — Clause Suggestions
  * Suggests missing clauses based on contract type and existing clauses.
  */
-export const suggestMissingClauses = async (apiKey, contractType, existingClauses, modelName = 'gemini-3.0-flash') => {
+export const suggestMissingClauses = async (apiKey, contractType, existingClauses, modelName = 'gemini-1.5-flash') => {
     if (!apiKey) throw new Error("API Key required.");
 
     const genAI = new GoogleGenerativeAI(apiKey);

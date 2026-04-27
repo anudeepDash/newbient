@@ -624,6 +624,7 @@ const TicketManager = () => {
                 icon: managerMode === 'ticketing' ? Ticket : Users
             }}
             tabs={financeTabs}
+            hideTabs={true}
             accentColor={managerMode === 'ticketing' ? 'neon-green' : 'neon-blue'}
             action={selectedEventId && (
                 <div className="flex flex-col sm:flex-row items-stretch gap-6 w-full xl:w-auto">

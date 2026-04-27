@@ -77,15 +77,10 @@ const Dashboard = () => {
         checkInit();
     }, [user]);
 
-    // Auth Listener
+    // Auth handling is now centralized in App.jsx and the store.
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) checkUserRole(currentUser);
-            else checkUserRole(null);
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, [checkUserRole]);
+        setAuthLoading(false);
+    }, []);
 
     // Message Count Listener
     useEffect(() => {

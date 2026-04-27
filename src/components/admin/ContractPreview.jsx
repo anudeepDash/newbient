@@ -35,16 +35,22 @@ const ContractPreview = ({ formData, paginatedPages, currentPage, previewScale }
   return (
     <div
       className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-2xl origin-top transition-transform duration-300 overflow-hidden flex flex-col p-[25mm] rounded-[2px] font-formal border-[1px] border-black/10"
-      style={{ transform: `scale(${previewScale})` }}
+      style={{ transform: `scale(${previewScale})`, height: `${1123 * previewScale}px` }}
     >
       <div className="absolute inset-[5mm] border border-black/5 pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex justify-between items-start mb-8 pb-6 border-b-[2px] border-black relative z-10">
+    <div className="flex justify-between items-start mb-8 pb-6 border-b-[2px] border-black relative z-10">
         <div className="flex flex-col gap-4 items-start">
-          <img src="/logo_document.png" alt="Logo" className="h-12 w-auto object-contain grayscale" crossOrigin="anonymous" />
+          <img 
+            src={formData.selectedLogo === 'media' ? '/logo_media.png' : formData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} 
+            alt="Logo" 
+            className="h-12 w-auto object-contain grayscale" 
+            crossOrigin="anonymous" 
+          />
           <div className="space-y-0.5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-black">Newbi Entertainment</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-black">
+              {formData.selectedLogo === 'media' ? 'Newbi Media' : formData.selectedLogo === 'marketing' ? 'Newbi Marketing' : 'Newbi Entertainment'}
+            </p>
             <p className="text-[7px] font-bold text-gray-500 uppercase">Strategic Legal Division</p>
           </div>
         </div>

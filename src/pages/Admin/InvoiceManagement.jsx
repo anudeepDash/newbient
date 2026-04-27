@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload, DollarSign, Mail, Send, CopyPlus, MoreVertical } from 'lucide-react';
+import { Edit, Trash2, Copy, LayoutGrid, Plus, Eye, CheckCircle, FileText, Filter, Download, X, Search, Sparkles, Upload, DollarSign, Mail, Send, CopyPlus, MoreVertical, FileSpreadsheet, ShieldCheck, Activity, Calendar, Smartphone, Globe, MessageCircle } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { sendInvoiceEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
@@ -8,7 +8,6 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const InvoiceManagement = () => {
@@ -17,7 +16,7 @@ const InvoiceManagement = () => {
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
-    const [openMenuId, setOpenMenuId] = useState(null);
+    const [selectedAnalytics, setSelectedAnalytics] = useState(null);
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -25,59 +24,26 @@ const InvoiceManagement = () => {
         { name: 'Agreements', path: '#', icon: ShieldCheck, color: 'text-gray-500', comingSoon: true },
     ];
 
-    React.useEffect(() => {
-        const handleClickOutside = () => setOpenMenuId(null);
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
-
     // Quick Upload State
     const [showQuickUpload, setShowQuickUpload] = useState(false);
     const [quickClientName, setQuickClientName] = useState('');
     const [quickFile, setQuickFile] = useState(null);
     const [uploading, setUploading] = useState(false);
 
-    // Edit State (for metadata/quick uploads)
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [editingInvoice, setEditingInvoice] = useState(null);
-    const [editName, setEditName] = useState('');
-
     const filteredInvoices = invoices
         .filter(inv => filter === 'All' ? true : inv.status === filter)
         .filter(inv => {
             if (!searchTerm) return true;
-            return inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                   (inv.invoiceNumber && inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+            const clientName = inv.clientName || '';
+            const invoiceNumber = inv.invoiceNumber || '';
+            return clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                   invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
         });
 
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/invoice/${id}`;
         navigator.clipboard.writeText(link);
         alert(`Invoice link copied!`);
-    };
-
-    const handleEdit = (invoice) => {
-        if (invoice.items && invoice.items.length > 0) {
-            navigate(`/admin/edit-invoice/${invoice.id}`);
-        } else {
-            setEditingInvoice(invoice);
-            setEditName(invoice.clientName);
-            setShowEditModal(true);
-        }
-    };
-
-    const handleSaveEdit = async (e) => {
-        e.preventDefault();
-        if (!editName) return;
-        setUploading(true);
-        try {
-            await updateInvoice(editingInvoice.id, { clientName: editName });
-            setShowEditModal(false);
-        } catch (error) {
-            alert("Failed to update invoice.");
-        } finally {
-            setUploading(false);
-        }
     };
 
     const handleDelete = (id) => {
@@ -87,19 +53,21 @@ const InvoiceManagement = () => {
     };
 
     const handleDuplicate = async (invoice) => {
-        try {
-            const { id, ...restOptions } = invoice;
-            const newInvoice = {
-                ...restOptions,
-                invoiceNumber: `NB-${Math.floor(100000 + Math.random() * 900000)}`,
-                status: 'Pending',
-                createdAt: new Date().toISOString(),
-                issueDate: new Date().toISOString().split('T')[0],
-                lastOpened: null
-            };
-            await addInvoice(newInvoice);
-        } catch (error) {
-            alert("Failed to duplicate invoice.");
+        if (window.confirm('Duplicate this invoice?')) {
+            try {
+                const { id, ...restOptions } = invoice;
+                const newInvoice = {
+                    ...restOptions,
+                    invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+                    status: 'Pending',
+                    createdAt: new Date().toISOString(),
+                    issueDate: new Date().toISOString().split('T')[0]
+                };
+                await addInvoice(newInvoice);
+                alert('Invoice duplicated.');
+            } catch (error) {
+                alert("Failed to duplicate invoice.");
+            }
         }
     };
 
@@ -107,7 +75,7 @@ const InvoiceManagement = () => {
         const email = prompt("Enter client's email address:", invoice.clientEmail || "");
         if (!email) return;
 
-        const amount = `₹${invoice.total?.toLocaleString() || invoice.amount?.toLocaleString()}`;
+        const amount = `₹${(invoice.total || invoice.amount || 0).toLocaleString()}`;
         const url = `${window.location.origin}/invoice/${invoice.id}`;
         
         try {
@@ -115,11 +83,11 @@ const InvoiceManagement = () => {
             if (res.success) {
                 alert("Invoice link sent successfully!");
             } else {
-                alert("Failed to send email. Check console for details.");
+                alert("Failed to send email.");
             }
         } catch (err) {
             console.error(err);
-            alert("An error occurred while sending.");
+            alert("An error occurred.");
         }
     };
 
@@ -136,12 +104,6 @@ const InvoiceManagement = () => {
     const handleQuickUpload = async (e) => {
         e.preventDefault();
         if (!quickClientName || !quickFile) return;
-
-        if (quickFile.size > 750 * 1024) {
-            alert("Limit: PDF should be under 750KB.");
-            return;
-        }
-
         setUploading(true);
         try {
             const toBase64 = (file) => new Promise((resolve, reject) => {
@@ -150,11 +112,9 @@ const InvoiceManagement = () => {
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = error => reject(error);
             });
-
             const base64Data = await toBase64(quickFile);
-
             const newInvoice = {
-                invoiceNumber: `NB-${Math.floor(100000 + Math.random() * 900000)}`,
+                invoiceNumber: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
                 clientName: quickClientName,
                 issueDate: new Date().toISOString().split('T')[0],
                 status: 'Pending',
@@ -162,7 +122,6 @@ const InvoiceManagement = () => {
                 pdfUrl: base64Data,
                 type: 'upload'
             };
-
             await addInvoice(newInvoice);
             setShowQuickUpload(false);
             setQuickClientName('');
@@ -185,38 +144,42 @@ const InvoiceManagement = () => {
             tabs={vaultTabs}
             accentColor="neon-blue"
             action={
-                <div className="flex gap-4">
-                    <Button onClick={() => setShowQuickUpload(true)} variant="outline" className="h-14 px-8 rounded-2xl bg-zinc-900/30 border-white/5 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all">
-                        <Upload className="mr-3 text-neon-blue" size={16} /> Quick Upload
-                    </Button>
-                    <Link to="/admin/create-invoice">
-                        <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(46,191,255,0.3)]">
-                            <Plus className="mr-2 h-4 w-4" /> Generate New
-                        </Button>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+                    <button
+                        onClick={() => setShowQuickUpload(true)}
+                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-6 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[8px] md:text-[9px] rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Upload size={14} /> Quick Upload
+                    </button>
+                    <Link
+                        to="/admin/create-invoice"
+                        className="flex-1 md:flex-none h-11 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_4px_12px_rgba(0,209,255,0.2)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-2 md:gap-3 active:scale-95"
+                    >
+                        <Plus size={16} /> New Invoice
                     </Link>
                 </div>
             }
         >
             <div className="relative z-10">
-                {/* Combined Search & Filters Bar & Actions */}
-                <div className="flex flex-col xl:flex-row gap-4 mb-12">
-                    <div className="flex-1 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
-                        <div className="relative flex-1 w-full group">
-                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
-                            <input 
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search by client or invoice #..."
-                                className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
-                            />
-                        </div>
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto mr-1 shrink-0">
+                {/* Filters Bar */}
+                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-4">
+                    <div className="relative flex-1 w-full group">
+                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <input 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search client or invoice #..."
+                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                        />
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
+                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
                             {['All', 'Pending', 'Paid'].map((s) => (
                                 <button
                                     key={s}
                                     onClick={() => setFilter(s)}
                                     className={cn(
-                                        "px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[120px]",
+                                        "flex-1 md:flex-none px-6 md:px-10 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] md:min-w-[120px]",
                                         filter === s 
                                             ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
@@ -226,186 +189,87 @@ const InvoiceManagement = () => {
                                 </button>
                             ))}
                         </div>
-
-                        {/* View Mode Toggle */}
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 mr-1 shrink-0">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={cn(
-                                    "p-3.5 rounded-xl transition-all duration-300",
-                                    viewMode === 'grid' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
-                                )}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={cn(
-                                    "p-3.5 rounded-xl transition-all duration-300",
-                                    viewMode === 'table' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
-                                )}
-                            >
-                                <FileText size={18} />
-                            </button>
+                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5">
+                            <button onClick={() => setViewMode('grid')} className={cn("p-3.5 rounded-xl transition-all", viewMode === 'grid' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}><LayoutGrid size={18} /></button>
+                            <button onClick={() => setViewMode('table')} className={cn("p-3.5 rounded-xl transition-all", viewMode === 'table' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}><FileText size={18} /></button>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Content Area: Grid or Table */}
                 <AnimatePresence mode="wait">
                     {viewMode === 'grid' ? (
-                        <motion.div
-                            key="grid"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0"
-                        >
+                        <motion.div key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory pb-8 md:pb-0">
                             {filteredInvoices.map((inv, i) => (
-                                <motion.div
-                                    key={inv.id}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col"
-                                >
+                                <motion.div key={inv.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} className="min-w-[85vw] md:min-w-0 snap-center h-full flex flex-col">
                                     <Card className="group relative p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] h-full flex flex-col justify-between overflow-hidden border">
-                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-                                            <FileText size={100} />
-                                        </div>
-
+                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none"><DollarSign size={100} /></div>
                                         <div>
-                                            <div className="flex justify-between items-start mb-6 w-full relative z-20">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
-                                                        {inv.invoiceNumber || 'NEWBI-INV'}
-                                                    </span>
-                                                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-1">
-                                                        {inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}
-                                                    </span>
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{inv.invoiceNumber || 'NEWBI-INV'}</span>
+                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]", inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500')} />
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn(
-                                                        "w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_15px_currentColor]",
-                                                        inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500'
-                                                    )} />
-                                                    
-                                                    <div className="relative">
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === inv.id ? null : inv.id); }}
-                                                            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-gray-400 hover:text-white transition-all shadow-xl"
-                                                        >
-                                                            <MoreVertical size={16} />
-                                                        </button>
-                                                        <AnimatePresence>
-                                                            {openMenuId === inv.id && (
-                                                                <motion.div 
-                                                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                                    className="absolute top-12 right-0 min-w-[160px] bg-zinc-900 rounded-2xl border border-white/10 p-2 shadow-2xl z-30 overflow-hidden"
-                                                                >
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleDuplicate(inv); setOpenMenuId(null); }}
-                                                                        className="w-full text-left px-4 py-3 bg-transparent hover:bg-neon-blue/10 text-gray-300 hover:text-neon-blue rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between"
-                                                                    >
-                                                                        Duplicate <CopyPlus size={14} />
-                                                                    </button>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => handleDuplicate(inv)} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"><CopyPlus size={14} /></button>
+                                                    <button onClick={() => setSelectedAnalytics(inv)} className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"><Activity size={14} /></button>
+                                                    <button onClick={() => handleDelete(inv.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"><Trash2 size={14} /></button>
                                                 </div>
                                             </div>
-
-                                            <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">
-                                                {inv.clientName}
-                                            </h3>
-                                            <div className="flex items-center gap-4 mb-8">
-                                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                                    <Sparkles size={12} className="text-neon-blue" /> {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}
-                                                </p>
-                                                {inv.status === 'Paid' && (
-                                                    <span className="text-neon-green text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                                                        <CheckCircle size={12} /> PAID
-                                                    </span>
-                                                )}
+                                            <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">{inv.clientName}</h3>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Calendar size={12} /> {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}</p>
+                                                <p className="text-neon-blue text-[10px] font-black uppercase tracking-widest">₹{(inv.total || inv.amount || 0).toLocaleString()}</p>
                                             </div>
                                         </div>
-
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
-                                            <button 
-                                                onClick={() => handleEdit(inv)}
-                                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button 
-                                                onClick={() => handleCopyLink(inv.id)}
-                                                className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
-                                                title="Copy Link"
-                                            >
-                                                <Copy size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleSendEmail(inv)}
-                                                className="p-3 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
-                                                title="Send Link"
-                                            >
-                                                <Send size={16} />
-                                            </button>
-                                            <a 
-                                                href={`/invoice/${inv.id}`} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
-                                                title="View Online"
-                                            >
-                                                <Eye size={16} />
-                                            </a>
-                                            {inv.status !== 'Paid' && (
-                                                <button 
-                                                    onClick={() => handleMarkAsPaid(inv)}
-                                                    className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
-                                                    title="Mark as Paid"
+                                            <div className="flex items-center gap-2 w-full">
+                                                <Link 
+                                                    to={`/admin/edit-invoice/${inv.id}`}
+                                                    className="flex-1 h-12 bg-neon-blue text-black rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-[0_5px_15px_rgba(0,209,255,0.2)] hover:scale-[1.02]"
                                                 >
-                                                    <DollarSign size={16} />
-                                                </button>
-                                            )}
-                                            <button 
-                                                onClick={() => handleDelete(inv.id)}
-                                                className="p-3 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                                    <Edit size={14} /> Edit
+                                                </Link>
+                                                <div className="flex bg-white/5 border border-white/5 rounded-xl overflow-hidden p-1">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const text = `Invoice from Newbi: ${window.location.origin}/invoice/${inv.id}`;
+                                                            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                                        }}
+                                                        className="h-10 w-10 hover:bg-green-500/20 text-green-500 rounded-lg transition-all flex items-center justify-center"
+                                                        title="WhatsApp"
+                                                    >
+                                                        <MessageCircle size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleCopyLink(inv.id)}
+                                                        className="h-10 w-10 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-all flex items-center justify-center border-l border-white/5"
+                                                        title="Copy Link"
+                                                    >
+                                                        <Copy size={16} />
+                                                    </button>
+                                                </div>
+                                                <Link 
+                                                    to={`/invoice/${inv.id}`}
+                                                    className="h-12 w-12 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                                >
+                                                    <Eye size={16} />
+                                                </Link>
+                                            </div>
                                         </div>
                                     </Card>
                                 </motion.div>
                             ))}
-                            {filteredInvoices.length === 0 && (
-                                <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[3.5rem]">
-                                    <Sparkles className="mx-auto text-gray-800 mb-6" size={64} />
-                                    <h3 className="text-xl font-black font-heading text-gray-600 uppercase italic">No Invoices Found</h3>
-                                    <p className="text-gray-700 text-xs font-bold uppercase tracking-widest mt-2">Start by generating or importing your first document.</p>
-                                </div>
-                            )}
                         </motion.div>
                     ) : (
-                        <motion.div 
-                            key="table"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                        >
-                            <Card className="overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] p-0 border">
+                        <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                            <Card className="min-w-[800px] md:min-w-0 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-3xl md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                                             <th className="p-8">Document</th>
                                             <th className="p-8">Client</th>
-                                            <th className="p-8">Created</th>
-                                            <th className="p-8">Status</th>
+                                            <th className="p-8 text-right">Value</th>
+                                            <th className="p-8 text-center">Status</th>
                                             <th className="p-8 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -414,113 +278,190 @@ const InvoiceManagement = () => {
                                             <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors">
                                                 <td className="p-8">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
-                                                            <FileText size={20} />
-                                                        </div>
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><DollarSign size={20} /></div>
                                                         <div>
                                                             <div className="text-xs font-black uppercase tracking-widest text-white">{inv.invoiceNumber || 'NEWBI-INV'}</div>
-                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">{inv.type === 'upload' ? 'IMPORTED PDF' : 'SYSTEM GEN'}</div>
+                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">{new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}</div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-8">
-                                                    <div className="text-sm font-black uppercase tracking-tight text-white">{inv.clientName}</div>
-                                                </td>
-                                                <td className="p-8">
-                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                                        {new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}
-                                                    </div>
-                                                </td>
-                                                <td className="p-8">
-                                                    <div className={cn(
-                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
-                                                        inv.status === 'Paid' ? "bg-neon-green/10 text-neon-green" : "bg-yellow-500/10 text-yellow-500"
-                                                    )}>
-                                                        {inv.status}
-                                                    </div>
+                                                <td className="p-8"><div className="text-sm font-black uppercase tracking-tight text-white">{inv.clientName}</div></td>
+                                                <td className="p-8 text-right"><div className="text-xs font-black text-neon-blue font-mono">₹{(inv.total || inv.amount || 0).toLocaleString()}</div></td>
+                                                <td className="p-8 text-center">
+                                                    <div className={cn("inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]", inv.status === 'Paid' ? 'bg-neon-green/10 text-neon-green' : 'bg-yellow-500/10 text-yellow-500')}>{inv.status}</div>
                                                 </td>
                                                 <td className="p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <a href={`/invoice/${inv.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
-                                                        <button onClick={() => handleCopyLink(inv.id)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Copy size={18} /></button>
-                                                        {inv.status !== 'Paid' && (
-                                                            <button onClick={() => handleMarkAsPaid(inv)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><CheckCircle size={18} /></button>
-                                                        )}
-                                                        <button onClick={() => handleEdit(inv)} className="p-2 text-gray-500 hover:text-white transition-colors" title="Edit"><Edit size={18} /></button>
-                                                        <button onClick={() => handleDuplicate(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors" title="Duplicate"><CopyPlus size={18} /></button>
-                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
+                                                        <button onClick={() => setSelectedAnalytics(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
+                                                        <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
-                                {filteredInvoices.length === 0 && (
-                                    <div className="py-20 text-center flex flex-col items-center gap-4">
-                                        <Sparkles className="text-gray-700" size={40} />
-                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600">No invoices found.</p>
-                                    </div>
-                                )}
                             </Card>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* Modals moved outside the content div but inside the Layout */}
+            {/* Quick Import Modal */}
             <AnimatePresence>
                 {showQuickUpload && (
-                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="fixed inset-0 bg-black/90 backdrop-blur-sm" />
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickUpload(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
-                            <Card className="p-8 md:p-10 border-neon-blue/30 bg-zinc-900 rounded-[3rem] max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar">
+                            <Card className="p-10 bg-zinc-900 border-white/10 rounded-[3rem] shadow-2xl">
                                 <button onClick={() => setShowQuickUpload(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
                                 <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic text-white mb-2">IMPORT <span className="text-neon-blue">INVOICE.</span></h2>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">UPLOAD EXTERNAL PDF INVOICES</p>
-                                
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-10">Sync external billing documents</p>
                                 <form onSubmit={handleQuickUpload} className="space-y-8">
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Business Name</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Client Entity</label>
                                         <Input value={quickClientName} onChange={(e) => setQuickClientName(e.target.value)} placeholder="e.g. RedBull Global" className="h-14 bg-black/50 border-white/5 rounded-2xl" required />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Document File (PDF)</label>
-                                        <div className="relative group cursor-pointer">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">PDF Document</label>
+                                        <div className="relative group cursor-pointer h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:border-neon-blue/40 transition-all">
                                             <input type="file" accept="application/pdf" onChange={(e) => setQuickFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" required />
-                                            <div className="h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:border-neon-blue/40 transition-all">
-                                                <Plus className="text-gray-500 group-hover:text-neon-blue" size={24} />
-                                                <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">
-                                                    {quickFile ? quickFile.name : 'Select or drop PDF'}
-                                                </span>
-                                            </div>
+                                            <Upload className="text-gray-500 group-hover:text-neon-blue" size={24} />
+                                            <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{quickFile ? quickFile.name : 'Select PDF File'}</span>
                                         </div>
                                     </div>
-                                    <Button type="submit" className="w-full h-16 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl shadow-[0_20px_40px_rgba(0,255,255,0.2)]" disabled={uploading}>
-                                        {uploading ? 'PROCESSING...' : 'IMPORT INVOICE'}
-                                    </Button>
+                                    <Button type="submit" className="w-full h-16 bg-neon-blue text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl" disabled={uploading}>{uploading ? 'PROCESSING...' : 'IMPORT INVOICE'}</Button>
                                 </form>
                             </Card>
                         </motion.div>
                     </div>
                 )}
+            </AnimatePresence>
 
-                {showEditModal && (
-                    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 pt-20 pb-20 overflow-y-auto">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)} className="fixed inset-0 bg-black/90 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-lg shrink-0">
-                            <Card className="p-8 md:p-10 border-white/10 bg-zinc-900 rounded-[3rem] max-h-[85vh] md:max-h-[95vh] overflow-y-auto custom-scrollbar">
-                                <button onClick={() => setShowEditModal(false)} className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all z-10"><X size={20} /></button>
-                                <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic text-white mb-8">EDIT <span className="text-gray-500">DETAILS.</span></h2>
-                                <form onSubmit={handleSaveEdit} className="space-y-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Update Client Name</label>
-                                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-14 bg-black/50 border-white/5 rounded-2xl" required />
+            {/* Analytics Side Panel */}
+            <AnimatePresence>
+                {selectedAnalytics && (
+                    <div className="fixed inset-0 z-[100] flex justify-end">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setSelectedAnalytics(null)} 
+                            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                        />
+                        <motion.div 
+                            initial={{ x: '100%' }} 
+                            animate={{ x: 0 }} 
+                            exit={{ x: '100%' }} 
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
+                            className="relative w-full max-w-xl bg-zinc-950 border-l border-white/10 h-full shadow-[-20px_0_60px_rgba(0,0,0,0.8)] flex flex-col"
+                        >
+                            <div className="p-8 border-b border-white/5 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-neon-blue">Billing Intel.</h3>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Activity Log for {selectedAnalytics.clientName}</p>
+                                </div>
+                                <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-white/5 rounded-full transition-colors text-gray-400 hover:text-white"><X size={20} /></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Timeline</p>
+                                        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Live Tracking Active</span>
+                                        </div>
                                     </div>
-                                    <Button type="submit" className="w-full h-16 bg-white text-black font-black font-heading uppercase tracking-[0.2em] text-xs rounded-2xl" disabled={uploading}>
-                                        {uploading ? 'SAVING...' : 'SAVE CHANGES'}
-                                    </Button>
-                                </form>
-                            </Card>
+                                    {(selectedAnalytics.accessLogs || []).length > 0 ? (
+                                        <div className="space-y-3">
+                                            {[...(selectedAnalytics.accessLogs || [])].reverse().map((log, i) => (
+                                                <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between group hover:bg-white/[0.05] hover:border-neon-blue/20 transition-all duration-500">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-400 group-hover:text-neon-blue transition-colors"><Globe size={16} /></div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-white group-hover:text-neon-blue transition-colors">{log.platform || 'Browser Session'}</p>
+                                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">{log.screen || 'Desktop View'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[11px] font-black text-white uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="py-20 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
+                                            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                                                <Activity size={24} />
+                                            </div>
+                                            <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No access history recorded.</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Payment Ledger */}
+                                <div className="space-y-4 pt-8 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment Ledger</p>
+                                        {selectedAnalytics.status === 'Pending' && (
+                                            <button 
+                                                onClick={async () => {
+                                                    if(window.confirm('Manually verify and mark this invoice as PAID?')) {
+                                                        const logs = selectedAnalytics.paymentLogs || [];
+                                                        await updateInvoice(selectedAnalytics.id, { 
+                                                            status: 'Paid',
+                                                            paymentLogs: [...logs, {
+                                                                type: 'Manual Verification',
+                                                                timestamp: new Date().toISOString(),
+                                                                amount: selectedAnalytics.total || selectedAnalytics.amount
+                                                            }]
+                                                        });
+                                                        setSelectedAnalytics({...selectedAnalytics, status: 'Paid'});
+                                                    }
+                                                }}
+                                                className="text-[9px] font-black text-neon-blue uppercase tracking-widest hover:underline"
+                                            >
+                                                Verify Manually
+                                            </button>
+                                        )}
+                                    </div>
+                                    {(selectedAnalytics.paymentLogs || []).length > 0 ? (
+                                        <div className="space-y-3">
+                                            {selectedAnalytics.paymentLogs.map((log, i) => (
+                                                <div key={i} className="p-5 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-neon-green/20 rounded-xl flex items-center justify-center text-neon-green"><CheckCircle size={16} /></div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-white">{log.type}</p>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ID: {log.transactionId || 'INTERNAL'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">SUCCESS</p>
+                                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 bg-white/5 border border-white/5 rounded-2xl">
+                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center">No transaction records found.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-8 border-t border-white/5 bg-black/40 shrink-0">
+                                <div className="p-6 rounded-2xl bg-neon-blue/5 border border-neon-blue/10 flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue">
+                                        <ShieldCheck size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-white uppercase tracking-widest">Real-time Security</p>
+                                        <p className="text-[9px] font-medium text-gray-500 mt-1">All access attempts are logged with IP & browser fingerprints.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}

@@ -8,7 +8,7 @@ import {
     Layers, Image as ImageIcon, ClipboardList, Undo2, Scale,
     ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Wand2,
     Stamp, Gavel, ShieldAlert, Lock, History, MessageCircle, Share2,
-    Shield, TrendingUp
+    Shield, TrendingUp, Upload
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -134,7 +134,12 @@ const AgreementGenerator = () => {
 
     // AI Config from localStorage
     const aiApiKey = localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '';
-    const aiModel = localStorage.getItem('geminiModel') || 'gemini-3.0-flash';
+    const aiModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
+
+    const logoOptions = [
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
+    ];
 
     // Hook logic
     const existingData = id ? agreements.find(a => a.id === id) : null;
@@ -212,7 +217,7 @@ const AgreementGenerator = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white flex flex-col font-['Outfit']">
+        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-hidden">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -224,29 +229,31 @@ const AgreementGenerator = () => {
             `}} />
 
             {/* Top Navigation */}
-            <nav className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
-                <div className="flex items-center gap-6">
-                    <Link to="/admin/agreements" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><ArrowLeft size={18} /></Link>
-                    <div>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none mb-1">Contract Operating System</p>
-                        <h1 className="text-xl font-black uppercase tracking-tighter italic">Contract <span className="text-neon-blue">Vault.</span></h1>
+            <nav className="h-16 md:h-20 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
+                <div className="flex items-center gap-2 md:gap-6 min-w-0">
+                    <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
+                    <div className="min-w-0">
+                        <p className="text-[7px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none mb-1 truncate">Contract Operating System</p>
+                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate">Contract <span className="text-neon-blue">Vault.</span></h1>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setShowAiSettings(!showAiSettings)} className={cn("p-3 rounded-2xl border transition-all", showAiSettings ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" : "bg-white/5 border-white/5 text-gray-400")}><Settings size={18} /></button>
-                    <button onClick={handleSave} disabled={isSaving} className="h-12 px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
-                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} Save Draft
+                <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
+                    <button onClick={() => setShowAiSettings(!showAiSettings)} className={cn("p-2.5 md:p-3 rounded-2xl border transition-all", showAiSettings ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" : "bg-white/5 border-white/5 text-gray-400")}><Settings size={16} /></button>
+                    <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
+                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
+                        <span className="hidden sm:inline">Save Draft</span>
                     </button>
-                    <button onClick={generatePDF} className="h-12 px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_10px_30px_rgba(0,209,255,0.3)] hover:scale-105 transition-all flex items-center gap-2">
-                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} Export Instrument
+                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(0,209,255,0.3)] hover:scale-105 transition-all flex items-center gap-2">
+                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
+                        <span className="hidden sm:inline">Export</span>
                     </button>
                 </div>
             </nav>
 
             <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar */}
-                <aside className="w-80 border-r border-white/5 bg-zinc-900/20 flex flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                {/* Sidebar - Desktop Only */}
+                <aside className="hidden lg:flex w-80 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-4">
                         <ContractAIBox onGenerate={(p) => handleAIGenerate(p, aiApiKey, aiModel)} isLoading={aiLoading} />
                     </div>
@@ -264,6 +271,17 @@ const AgreementGenerator = () => {
                     </div>
                 </aside>
 
+                {/* Mobile Tab Navigation */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
+                    {tabs.map(tab => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[70px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
+                            <tab.icon size={18} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-blue mt-1 shadow-[0_0_8px_#00D1FF]" />}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Editor */}
                 <main className="flex-1 overflow-y-auto p-12 scrollbar-hide bg-[#050505]">
                     <div className="max-w-4xl mx-auto space-y-12">
@@ -271,6 +289,29 @@ const AgreementGenerator = () => {
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
                                 {activeTab === '1' && (
                                     <div className="space-y-10">
+                                        <div className="space-y-6">
+                                            <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> Identity & Branding</h3>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                {logoOptions.map(logo => (
+                                                    <button 
+                                                        key={logo.id} 
+                                                        onClick={() => updateField('selectedLogo', logo.id)} 
+                                                        className={cn(
+                                                            "p-4 rounded-3xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", 
+                                                            (formData.selectedLogo || 'entertainment') === logo.id 
+                                                                ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" 
+                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white"
+                                                        )}
+                                                    >
+                                                        <div className="w-full aspect-[4/3] rounded-2xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
+                                                            <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
+                                                            <div className="absolute inset-0 bg-black/5" />
+                                                        </div>
+                                                        <span className="relative z-10">{logo.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="space-y-6">
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> First Party</h3>
@@ -408,6 +449,37 @@ const AgreementGenerator = () => {
                                 )}
                             </motion.div>
                         </AnimatePresence>
+
+                        {/* Section Navigation Footer */}
+                        <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                            <button 
+                                onClick={() => {
+                                    const idx = tabs.findIndex(t => t.id === activeTab);
+                                    if (idx > 0) setActiveTab(tabs[idx - 1].id);
+                                }}
+                                disabled={activeTab === tabs[0].id}
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                            >
+                                <ChevronLeft size={16} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
+                            </button>
+
+                            <button 
+                                onClick={() => {
+                                    const idx = tabs.findIndex(t => t.id === activeTab);
+                                    if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1].id);
+                                }}
+                                className={cn(
+                                    "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+                                    activeTab === tabs[tabs.length - 1].id 
+                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                        : "bg-neon-blue text-black hover:scale-105 shadow-[0_0_20px_rgba(0,209,255,0.2)]"
+                                )}
+                            >
+                                <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
+                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
+                            </button>
+                        </div>
                     </div>
                 </main>
 
@@ -424,8 +496,9 @@ const AgreementGenerator = () => {
                             <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-2 bg-white/5 rounded-lg text-gray-500"><ChevronRight size={14} /></button>
                         </div>
                     </div>
-                    <div ref={previewContainerRef} className="flex-1 overflow-auto p-12 bg-[#050505] flex flex-col items-center scrollbar-hide">
+                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-8 overflow-y-auto relative">
                         <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} previewScale={previewScale} />
+                        <div className="h-20 shrink-0" />
                     </div>
                 </aside>
             </div>

@@ -438,12 +438,14 @@ const Proposal = () => {
                                             <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
                                             <div className="w-16 h-1 bg-black" />
                                         </div>
-                                        <div className="flex-1 relative overflow-hidden">
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
-                                            <div className="pl-10">
-                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                        <div className="flex-1 flex flex-col">
+                                            <div className="relative">
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                                <div className="pl-10">
+                                                    {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                    {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                    {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                </div>
                                             </div>
                                         </div>
                                         {idx === paginatedPages.length - 1 && (
@@ -665,12 +667,14 @@ const Proposal = () => {
                                         <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
                                         <div className="w-16 h-1 bg-black" />
                                     </div>
-                                    <div className="flex-1 relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
-                                        <div className="pl-10">
-                                            {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                            {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                            {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="relative">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                            <div className="pl-10">
+                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
