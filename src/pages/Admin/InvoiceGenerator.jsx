@@ -322,18 +322,24 @@ const InvoiceGenerator = () => {
         const pages = [];
         let itemsRemaining = [...items];
         
-        // Target 5 items for a single page with totals
-        const firstPageLimit = 5; 
-        const standardLimit = 8;
-        const lastPageWithTotalsLimit = 5; 
+        const functionalBlocksCount = [
+            formData.showGst,
+            formData.showAdvance && (formData.advancePaid > 0),
+            formData.paymentLink,
+            formData.upiId && formData.showUPI !== false
+        ].filter(Boolean).length;
+
+        const lastPageWithTotalsLimit = functionalBlocksCount >= 3 ? 4 : 7;
+        const firstPageLimit = 7; 
+        const standardLimit = 15; 
 
         let isFirstPage = true;
         while (itemsRemaining.length > 0) {
-            const limit = standardLimit;
+            const limit = isFirstPage ? firstPageLimit : standardLimit;
             const pageItems = itemsRemaining.splice(0, limit);
             pages.push(pageItems);
 
-            const totalsLimit = isFirstPage ? firstPageLimit : lastPageWithTotalsLimit;
+            const totalsLimit = lastPageWithTotalsLimit;
             if (itemsRemaining.length === 0 && pageItems.length > totalsLimit) {
                 pages.push([]);
             }
@@ -828,7 +834,7 @@ const InvoiceGenerator = () => {
                                         </div>
                                     )}
 
-                                    <div className={cn("relative z-10 flex flex-col", currentPreviewPage === paginatedPages.length - 1 ? "pb-20" : "h-full pb-48")}>
+                                    <div className={cn("relative z-10 flex flex-col flex-1", currentPreviewPage === paginatedPages.length - 1 ? "pb-56" : "pb-48")}>
                                         {/* Info Boxes - Page 1 */}
                                         {currentPreviewPage === 0 && (
                                             <div className="grid grid-cols-2 gap-8 mb-8">
@@ -897,56 +903,73 @@ const InvoiceGenerator = () => {
 
                                         {/* Totals Section - Only on Last Page */}
                                         {currentPreviewPage === paginatedPages.length - 1 && (
-                                            <div className="mt-4 grid grid-cols-2 gap-x-8 items-start relative z-10">
-                                                <div className="space-y-6">
+                                            <div className="mt-4 flex gap-x-8 items-start pt-4 border-t border-gray-200 relative z-10 w-full">
+                                                {/* Left Column: Payment Details & Notes */}
+                                                <div className="flex-1 space-y-2">
+                                                    {/* Payment Details */}
                                                     {formData.showPaymentDetails && formData.paymentDetails && (
-                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-[1.5rem] text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                            <p className="text-[10px] font-black text-black mb-2 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                        <div className="p-2 border-2 border-dashed border-gray-300 rounded-2xl text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                            <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
                                                             <div className="whitespace-pre-line tracking-wide">
                                                                 {formData.paymentDetails}
                                                             </div>
                                                         </div>
                                                     )}
+                                                    {/* Additional Notes */}
                                                     {formData.showNotes && (
-                                                        <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10"><h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4></div>
-                                                            <div className="p-4">
-                                                                <p className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p>
+                                                        <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
+                                                            <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
+                                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                            </div>
+                                                            <div className="p-2">
+                                                                <p className="text-[9px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p>
                                                             </div>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                        <span>SUBTOTAL</span>
-                                                        <span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span>
-                                                    </div>
-                                                    {formData.showGst && (
-                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                            <span>GST ({formData.gstPercentage}%)</span>
-                                                            <span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl">
-                                                        <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
-                                                        <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-                                                    </div>
-                                                    {formData.showAdvance && formData.advancePaid > 0 && (
-                                                        <>
-                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
-                                                                <span>ADVANCE PAID</span>
-                                                                <span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
-                                                                <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
-                                                                <span className="text-3xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
-                                                            </div>
-                                                        </>
-                                                    )}
 
-                                                    {formData.showUPI && (
-                                                        <div className="flex justify-end pt-6">
-                                                            <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0">
+                                                {/* Right Column: Totals, QR & Signature */}
+                                                <div className="flex-1 flex flex-col items-end space-y-1">
+                                                    {/* Totals Section */}
+                                                    <div className="w-full space-y-1.5">
+                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                            <span>SUBTOTAL</span>
+                                                            <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
+                                                        </div>
+                                                        {formData.showGst && (
+                                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                                <span>GST ({formData.gstPercentage}%)</span>
+                                                                <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
+                                                            <span className="text-[9px] font-black uppercase italic">TOTAL</span>
+                                                            <span className="text-lg font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                                        </div>
+                                                        {formData.showAdvance && formData.advancePaid > 0 && (
+                                                            <>
+                                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                                                    <span>ADVANCE PAID</span>
+                                                                    <span className="text-black text-[11px] font-bold italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
+                                                                    <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
+                                                                    <span className="text-2xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {formData.paymentLink && (
+                                                            <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                                                                <Zap size={14} className="text-neon-blue" />
+                                                                Pay Now Online
+                                                            </a>
+                                                        )}
+                                                    </div>
+
+                                                    {/* QR Code Section */}
+                                                    {formData.showUPI && formData.upiId && (
+                                                        <div className="flex flex-col items-end gap-2 w-full pt-3 border-t border-gray-300/50">
+                                                            <div className="bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm shrink-0">
                                                                 <img 
                                                                     src={formData.qrType === 'custom' && formData.customQrImage 
                                                                         ? formData.customQrImage 
@@ -955,13 +978,21 @@ const InvoiceGenerator = () => {
                                                                     className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                                     crossOrigin="anonymous"
                                                                 />
-                                                                <p className="text-[7px] font-black text-center mt-1.5 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                <p className="text-[6px] font-black text-center mt-1 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                             </div>
+                                                            <a 
+                                                                href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
+                                                                className="flex items-center justify-center gap-2 w-full h-10 bg-black text-white rounded-lg text-[9px] font-black uppercase tracking-widest"
+                                                                data-html2canvas-ignore="true"
+                                                            >
+                                                                Pay via UPI App
+                                                            </a>
                                                         </div>
                                                     )}
-                                                    
+
+                                                    {/* Signature Block */}
                                                     {formData.showSignatory !== 'none' && (
-                                                        <div className="pt-8 flex flex-col items-end">
+                                                        <div className="w-full flex flex-col items-end mt-4">
                                                             {formData.showSignatory === 'image' && formData.signatoryImage ? (
                                                                 <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                             ) : formData.showSignatory === 'text' ? (
@@ -1076,38 +1107,74 @@ const InvoiceGenerator = () => {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
-
-                                {isLastPage && (
-                                    <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200">
-                                        <div className="space-y-6">
+                                        {isLastPage && (
+                                    <div className="mt-4 flex gap-x-8 items-start pt-4 border-t border-gray-200 relative z-10 w-full">
+                                        {/* Left Column: Payment Details & Notes */}
+                                        <div className="flex-1 space-y-2">
+                                            {/* Payment Details */}
                                             {formData.showPaymentDetails && formData.paymentDetails && (
-                                                <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                    <p className="text-xs font-black text-black mb-3 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                    <div className="whitespace-pre-line tracking-wide">{formData.paymentDetails}</div>
+                                                <div className="p-2 border-2 border-dashed border-gray-300 rounded-2xl text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                    <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
+                                                    <div className="whitespace-pre-line tracking-wide">
+                                                        {formData.paymentDetails}
+                                                    </div>
                                                 </div>
                                             )}
+                                            {/* Additional Notes */}
                                             {formData.showNotes && (
-                                                <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                    <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}><h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4></div>
-                                                    <div className="p-4"><p className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p></div>
+                                                <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
+                                                    <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                    </div>
+                                                    <div className="p-2">
+                                                        <p className="text-[9px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest"><span>SUBTOTAL</span><span className="text-black text-xs font-bold italic">₹{subtotal.toLocaleString()}</span></div>
-                                            {formData.showGst && <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest"><span>GST ({formData.gstPercentage}%)</span><span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span></div>}
-                                            <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl"><span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span><span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span></div>
-                                            {formData.showAdvance && formData.advancePaid > 0 && (
-                                                <>
-                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2"><span>ADVANCE PAID</span><span className="text-black text-xs font-bold italic">₹{formData.advancePaid.toLocaleString()}</span></div>
-                                                    <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4"><span className="text-[12px] font-black uppercase italic">BALANCE DUE</span><span className="text-3xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span></div>
-                                                </>
-                                            )}
-                                            
-                                            {formData.showUPI && (
-                                                <div className="flex justify-end pt-6">
-                                                    <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0">
+
+                                        {/* Right Column: Totals, QR & Signature */}
+                                        <div className="flex-1 flex flex-col items-end space-y-2">
+                                            {/* Totals Section */}
+                                            <div className="w-full space-y-1.5">
+                                                <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    <span>SUBTOTAL</span>
+                                                    <span className="text-black text-[11px] font-bold italic">₹{subtotal.toLocaleString()}</span>
+                                                </div>
+                                                {formData.showGst && (
+                                                    <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest text-black">
+                                                        <span>GST ({formData.gstPercentage}%)</span>
+                                                        <span className="text-black text-[11px] font-bold italic">₹{gstAmount.toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center py-2 px-3 text-black border border-black/5 mt-1 rounded-lg" style={{ backgroundColor: `${brandColor}66` }}>
+                                                    <span className="text-[9px] font-black uppercase italic">TOTAL</span>
+                                                    <span className="text-lg font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+                                                </div>
+                                                {formData.showAdvance && formData.advancePaid > 0 && (
+                                                    <>
+                                                        <div className="flex justify-between py-2 border-b border-dashed border-gray-300 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                                            <span>ADVANCE PAID</span>
+                                                            <span className="text-black text-[11px] font-bold italic">₹{formData.advancePaid.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-2 px-4 text-black border border-black/10 rounded-xl shadow-lg mt-1" style={{ backgroundColor: `${brandColor}66` }}>
+                                                            <span className="text-[10px] font-black uppercase italic">BALANCE DUE</span>
+                                                            <span className="text-2xl font-black italic tracking-tighter">₹{balanceDue.toLocaleString()}</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {formData.paymentLink && (
+                                                    <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-2 w-full h-11 bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] text-[9px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
+                                                        <Zap size={14} className="text-neon-blue" />
+                                                        Pay Now Online
+                                                    </a>
+                                                )}
+                                            </div>
+
+                                            {/* QR Code Section */}
+                                            {formData.showUPI && formData.upiId && (
+                                                <div className="flex flex-col items-end gap-3 w-full pt-4 border-t border-gray-300/50">
+                                                    <div className="bg-white p-2 rounded-xl border border-gray-200 inline-block shadow-sm shrink-0">
                                                         <img 
                                                             src={formData.qrType === 'custom' && formData.customQrImage 
                                                                 ? formData.customQrImage 
@@ -1116,32 +1183,21 @@ const InvoiceGenerator = () => {
                                                             className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
                                                             crossOrigin="anonymous"
                                                         />
-                                                        <p className="text-[7px] font-black text-center mt-1.5 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                        <p className="text-[6px] font-black text-center mt-1 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {formData.showPaymentButton && formData.paymentLink && (
-                                                <div className="pt-6 flex justify-end">
                                                     <a 
-                                                        href={formData.paymentLink} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="w-full py-4 bg-black text-white rounded-2xl flex items-center justify-center gap-3 shadow-xl hover:scale-[1.02] transition-all no-underline"
+                                                        href={`upi://pay?pa=${formData.upiId}&pn=NEWBI&am=${balanceDue}&cu=INR`} 
+                                                        className="flex items-center justify-center gap-2 w-full h-10 bg-black text-white rounded-lg text-[9px] font-black uppercase tracking-widest"
+                                                        data-html2canvas-ignore="true"
                                                     >
-                                                        <div className="w-8 h-8 rounded-full bg-[#39FF14] flex items-center justify-center text-black">
-                                                            <Zap size={14} fill="currentColor" />
-                                                        </div>
-                                                        <div className="text-left">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">PROCEED TO CHECKOUT</p>
-                                                            <p className="text-[8px] font-bold opacity-60 uppercase tracking-widest leading-none">Instant Settlement via PayU</p>
-                                                        </div>
+                                                        Pay via UPI App
                                                     </a>
                                                 </div>
                                             )}
 
+                                            {/* Signature Block */}
                                             {formData.showSignatory !== 'none' && (
-                                                <div className="pt-8 flex flex-col items-end">
+                                                <div className="w-full flex flex-col items-end mt-4">
                                                     {formData.showSignatory === 'image' && formData.signatoryImage ? (
                                                         <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                     ) : formData.showSignatory === 'text' ? (
@@ -1159,6 +1215,8 @@ const InvoiceGenerator = () => {
                                         </div>
                                     </div>
                                 )}
+</div>
+                                )}
                             </div>
 
                             {/* Fixed Footer */}
@@ -1171,7 +1229,7 @@ const InvoiceGenerator = () => {
                                         </div>
                                         <div className="flex items-center gap-2 justify-center col-span-2 border-x border-black/5 px-4">
                                             <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                            <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap text-xs">partnership@newbi.live</p>
+                                            <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">partnership@newbi.live</p>
                                         </div>
                                         <div className="flex items-center gap-2 justify-center col-span-1 border-r border-black/5 pr-4">
                                             <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">WEB</span>
@@ -1214,7 +1272,7 @@ const InvoiceGenerator = () => {
                             </div>
                         )}
 
-                        <div className={cn("relative z-10 flex flex-col", pageIdx === paginatedPages.length - 1 ? "pb-20" : "h-full pb-48")}>
+                        <div className={cn("relative z-10 flex flex-col flex-1", pageIdx === paginatedPages.length - 1 ? "pb-56" : "pb-48")}>
                             {/* Page 1 Details */}
                             {pageIdx === 0 && (
                                 <div className="grid grid-cols-2 gap-8 mb-8">
@@ -1353,7 +1411,7 @@ const InvoiceGenerator = () => {
                                     </div>
                                     <div className="flex items-center gap-2 justify-center col-span-2 border-x border-black/5 px-4">
                                         <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap text-xs">partnership@newbi.live</p>
+                                        <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">partnership@newbi.live</p>
                                     </div>
                                     <div className="flex items-center gap-2 justify-center col-span-1 border-r border-black/5 pr-4">
                                         <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">WEB</span>
