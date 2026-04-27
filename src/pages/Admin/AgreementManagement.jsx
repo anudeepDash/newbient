@@ -53,7 +53,8 @@ const AgreementManagement = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div className="space-y-2"><AdminDashboardLink className="mb-4" />
+                    <div className="space-y-4">
+                        <AdminDashboardLink />
                         <h1 className="text-2xl sm:text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">CONTRACT <span className="text-neon-blue px-2 sm:px-4">VAULT.</span></h1>
                     </div>
                     <Link to="/admin/agreements/new" className="w-full md:w-auto">

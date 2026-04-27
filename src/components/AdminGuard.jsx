@@ -9,11 +9,9 @@ const AdminGuard = ({ children }) => {
     const { user, authInitialized, setAuthModal } = useStore();
     const location = useLocation();
 
-    useEffect(() => {
-        if (authInitialized && !user) {
-            setAuthModal(true);
-        }
-    }, [authInitialized, user, setAuthModal]);
+    // Remove automatic modal trigger to prevent it from "keeping on coming" 
+    // especially with fast state retrieval where user might be null for a split second
+    // or when the user explicitly closed it.
 
     if (!authInitialized) {
         return (
@@ -51,7 +49,14 @@ const AdminGuard = ({ children }) => {
                     </div>
 
                     <div className="pt-8 space-y-4">
-                        {(!user || user.role === 'unauthorized') ? (
+                        {!user ? (
+                            <button 
+                                onClick={() => setAuthModal(true)}
+                                className="px-8 h-14 bg-neon-blue text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-105 active:scale-95 transition-all w-full shadow-[0_10px_30px_rgba(0,180,255,0.2)]"
+                            >
+                                AUTHENTICATE ACCESS
+                            </button>
+                        ) : (user.role === 'unauthorized') ? (
                             <button 
                                 onClick={async () => {
                                     try {

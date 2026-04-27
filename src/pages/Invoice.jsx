@@ -51,7 +51,33 @@ const Invoice = () => {
             };
             updateLastOpened();
         }
-    }, [id, isAdmin]);
+
+        // Automatic Payment Verification Logic
+        const searchParams = new URLSearchParams(window.location.search);
+        const paymentStatus = searchParams.get('status');
+        const txid = searchParams.get('txid');
+
+        if (paymentStatus === 'success' && invoice && invoice.status !== 'Paid') {
+            const verifyAndMarkPaid = async () => {
+                try {
+                    await updateInvoiceStatus(id, 'Paid');
+                    // Add a payment log
+                    const logs = invoice.paymentLogs || [];
+                    await useStore.getState().updateInvoice(id, {
+                        paymentLogs: [...logs, {
+                            type: 'PayU',
+                            transactionId: txid || 'AUTO-VERIFIED',
+                            timestamp: new Date().toISOString(),
+                            amount: invoice.total || invoice.amount
+                        }]
+                    });
+                } catch (err) {
+                    console.error("Verification update failed:", err);
+                }
+            };
+            verifyAndMarkPaid();
+        }
+    }, [id, isAdmin, invoice, updateInvoiceStatus]);
 
     if (loading) {
         return (
@@ -263,6 +289,14 @@ const Invoice = () => {
     const advancePaid = Number(displayInvoice.advancePaid) || 0;
     const toBePaid = totalAmount - advancePaid;
 
+    const logoOptions = [
+        { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
+        { id: 'media', label: 'Newbi Media', path: '/logo_media.png', color: '#00D1FF' },
+        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
+    ];
+    const currentBrand = logoOptions.find(l => l.id === displayInvoice.selectedLogo) || logoOptions[0];
+    const brandColor = currentBrand.color;
+
     // Pagination Logic
     // Reserve space for totals/notes if they are on the last page.
     const ROWS_PER_PAGE_P1 = 12;
@@ -273,19 +307,25 @@ const Invoice = () => {
         const pages = [];
         let itemsRemaining = [...items];
         
-        // Page 1
-        const p1Items = itemsRemaining.splice(0, ROWS_PER_PAGE_P1);
-        pages.push(p1Items);
-        
-        // Subsequent pages
+        // Dynamic limits for A4 space management
+        const firstPageLimit = 5; 
+        const standardLimit = 8;
+        const lastPageWithTotalsLimit = 5; 
+
+        let isFirstPage = true;
         while (itemsRemaining.length > 0) {
-            pages.push(itemsRemaining.splice(0, ROWS_PER_PAGE_NEXT));
+            const limit = standardLimit;
+            const pageItems = itemsRemaining.splice(0, limit);
+            pages.push(pageItems);
+
+            const totalsLimit = isFirstPage ? firstPageLimit : lastPageWithTotalsLimit;
+            if (itemsRemaining.length === 0 && pageItems.length > totalsLimit) {
+                pages.push([]);
+            }
+            isFirstPage = false;
         }
         
-        // If no items, still need one page
-        if (pages.length === 0) pages.push([]);
-        
-        return pages;
+        return pages.length > 0 ? pages : [[]];
     };
 
     const paginatedPages = getPaginatedPages();
@@ -302,6 +342,8 @@ const Invoice = () => {
                         page-break-after: always !important;
                     }
                     main { padding: 0 !important; margin: 0 !important; }
+                    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                    input[type=number] { -moz-appearance: textfield; }
                 }
             `}} />
             {/* Hidden Iframe for Printing */}
@@ -456,7 +498,7 @@ const Invoice = () => {
                                                 {isFirstPage ? (
                                                     <div className="flex justify-between items-start mb-12">
                                                         <div>
-                                                            <img src="/logo_document.png" alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
+                                                            <img src={currentBrand.path} alt="Company Logo" className="h-20 object-contain" crossOrigin="anonymous" />
                                                         </div>
                                                         <div className="text-right">
                                                             <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase mb-0">#{displayInvoice.invoiceNumber}</h2>
@@ -474,7 +516,7 @@ const Invoice = () => {
                                                 {isFirstPage && (
                                                     <div className="grid grid-cols-2 gap-8 mb-8">
                                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="bg-[#39FF14]/40 px-6 py-2">
+                                                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE BY</h4>
                                                             </div>
                                                             <div className="p-6">
@@ -482,19 +524,19 @@ const Invoice = () => {
                                                                 <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
                                                                     <p>Contact: {displayInvoice.senderContact}</p>
                                                                     <p>Email: {displayInvoice.senderEmail}</p>
-                                                                    {displayInvoice.senderPan && <p>PAN: {displayInvoice.senderPan}</p>}
+                                                                    {displayInvoice.senderPan && <p>GSTIN: {displayInvoice.senderPan}</p>}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div className="bg-white/50 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                            <div className="bg-[#39FF14]/40 px-6 py-2">
+                                                            <div className="px-6 py-2" style={{ backgroundColor: `${brandColor}66` }}>
                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">INVOICE TO</h4>
                                                             </div>
                                                             <div className="p-6">
                                                                 <p className="text-xl font-bold uppercase mb-3 leading-none">{displayInvoice.clientName || 'CLIENT NAME'}</p>
                                                                 <div className="text-[11px] text-gray-600 font-semibold space-y-1.5 leading-normal">
-                                                                    <p>Date: {new Date(displayInvoice.issueDate || displayInvoice.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
-                                                                    {displayInvoice.dueDate && <p className="text-[#39FF14] font-black">Due Date: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
+                                                                    <p>Date: {new Date(displayInvoice.invoiceDate || displayInvoice.issueDate || displayInvoice.createdAt || Date.now()).toLocaleDateString('en-GB')}</p>
+                                                                    {displayInvoice.dueDate && <p className="font-black italic" style={{ color: brandColor }}>Due Date: {new Date(displayInvoice.dueDate).toLocaleDateString('en-GB')}</p>}
                                                                     {displayInvoice.clientAddress && <p className="whitespace-pre-line">{displayInvoice.clientAddress}</p>}
                                                                     {displayInvoice.clientGst && <p className="mt-1 pt-1 border-t border-gray-200 inline-block">GST: {displayInvoice.clientGst}</p>}
                                                                 </div>
@@ -504,11 +546,11 @@ const Invoice = () => {
                                                 )}
 
                                                 {/* Items Table */}
-                                                {true && (
+                                                {pageItems.length > 0 && (
                                                     <div className={cn("mb-8 overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white/20", !isFirstPage && "mt-4")}>
                                                         <table className="w-full">
                                                             <thead>
-                                                                <tr className="bg-[#39FF14]/40 text-black">
+                                                                <tr className="text-black" style={{ backgroundColor: `${brandColor}66` }}>
                                                                     <th className="py-4 px-6 text-left text-[10px] font-black uppercase tracking-widest border-r border-black/5">SERVICE DESCRIPTION</th>
                                                                     {(displayInvoice.customColumns || []).map(col => (
                                                                         <th key={col.id} className="py-4 px-4 text-center text-[10px] font-black uppercase tracking-widest border-r border-black/5">{col.label}</th>
@@ -537,13 +579,13 @@ const Invoice = () => {
 
                                                 {/* Totals Section & Left Details - Only on Last Page */}
                                                 {isLastPage && (
-                                                    <div className="mt-4 grid grid-cols-2 gap-y-8 gap-x-12 relative z-10 w-full items-start min-h-[400px]">
+                                                    <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200 relative z-10 w-full min-h-[300px]">
                                                         {[
-                                                            { id: 'notes', col: 'col-start-1 row-start-1' },
-                                                            { id: 'totals', col: 'col-start-2 row-start-1' },
-                                                            { id: 'payment_details', col: 'col-start-1 row-start-2' },
-                                                            { id: 'payment_qr', col: 'col-start-2 row-start-2' },
-                                                            { id: 'signatory', col: 'col-start-2 row-start-3' }
+                                                            { id: 'payment_details', col: 'col-start-1 row-start-1' },
+                                                            { id: 'notes', col: 'col-start-1 row-start-2' },
+                                                            { id: 'totals', col: 'col-start-2 row-span-2' },
+                                                            { id: 'payment_qr', col: 'col-start-2 row-start-3' },
+                                                            { id: 'signatory', col: 'col-span-2 mt-4' }
                                                         ].map((blockDef) => {
                                                             const sectionId = blockDef.id;
                                                             const savedItem = (displayInvoice.layoutOrder || []).find(i => (typeof i === 'object' ? i.id : i) === sectionId);
@@ -557,15 +599,15 @@ const Invoice = () => {
                                                             };
 
                                                             if (sectionId === 'notes') {
-                                                                if (invoice?.showNotes === false || !displayInvoice.note) return null;
+                                                                if (invoice?.showNotes === false) return null;
                                                                 return (
-                                                                    <div key="notes" style={style} className={cn(blockDef.col, "w-full relative")}>
+                                                                    <div key="notes" style={style} className={cn(blockDef.col, "w-full relative pt-4")}>
                                                                         <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                                            <div className="bg-[#39FF14]/40 px-4 py-1.5 border-b border-black/10">
+                                                                            <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
                                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
                                                                             </div>
                                                                             <div className="p-4">
-                                                                                <p className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{displayInvoice.note}</p>
+                                                                                <p className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{displayInvoice.note || 'No additional notes.'}</p>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -586,7 +628,7 @@ const Invoice = () => {
                                                                                     <span className="text-black text-xs font-bold italic">₹{gstAmount.toLocaleString()}</span>
                                                                                 </div>
                                                                             )}
-                                                                            <div className="flex justify-between items-center py-3 bg-[#39FF14]/40 px-4 text-black border border-black/5 mt-2 rounded-xl">
+                                                                            <div className="flex justify-between items-center py-3 px-4 text-black border border-black/5 mt-2 rounded-xl" style={{ backgroundColor: `${brandColor}66` }}>
                                                                                 <span className="text-[10px] font-black uppercase italic">TOTAL AMOUNT</span>
                                                                                 <span className="text-xl font-black italic tracking-tighter">₹{totalAmount.toLocaleString()}</span>
                                                                             </div>
@@ -596,11 +638,17 @@ const Invoice = () => {
                                                                                         <span>ADVANCE PAID</span>
                                                                                         <span className="text-black text-xs font-bold italic">₹{advancePaid.toLocaleString()}</span>
                                                                                     </div>
-                                                                                    <div className="flex justify-between items-center py-4 bg-[#39FF14]/40 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4">
+                                                                                    <div className="flex justify-between items-center py-4 px-6 text-black border border-black/10 rounded-2xl shadow-xl mt-4" style={{ backgroundColor: `${brandColor}66` }}>
                                                                                         <span className="text-[12px] font-black uppercase italic">BALANCE DUE</span>
                                                                                         <span className="text-3xl font-black italic tracking-tighter">₹{toBePaid.toLocaleString()}</span>
                                                                                     </div>
                                                                                 </>
+                                                                            )}
+                                                                            {displayInvoice.showPaymentButton && displayInvoice.paymentLink && (
+                                                                                <a href={displayInvoice.paymentLink} target="_blank" rel="noopener noreferrer" className="mt-6 flex items-center justify-center gap-3 w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl">
+                                                                                    <DollarSign size={18} className="text-neon-blue" />
+                                                                                    Pay Now Online
+                                                                                </a>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -610,9 +658,9 @@ const Invoice = () => {
                                                             if (sectionId === 'payment_details') {
                                                                 if (invoice?.showPaymentDetails === false || !displayInvoice.paymentDetails) return null;
                                                                 return (
-                                                                    <div key="payment_details" style={style} className={cn(blockDef.col, "w-full pt-4 border-t border-gray-300/50 relative")}>
-                                                                        <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                                            <p className="text-xs font-black text-black mb-3 border-b-2 border-[#39FF14] pb-1.5 inline-block">PAYMENT DETAILS</p>
+                                                                    <div key="payment_details" style={style} className={cn(blockDef.col, "w-full relative")}>
+                                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-[1.5rem] text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
+                                                                            <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
                                                                             <div className="whitespace-pre-line tracking-wide">
                                                                                 {displayInvoice.paymentDetails}
                                                                             </div>
@@ -624,22 +672,33 @@ const Invoice = () => {
                                                             if (sectionId === 'payment_qr') {
                                                                 if (!displayInvoice.showUPI) return null;
                                                                 return (
-                                                                    <div key="payment_qr" style={style} className={cn(blockDef.col, "w-full flex justify-end shrink-0 pt-4 border-t border-gray-300/50 relative")}>
-                                                                        <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0 mb-4">
-                                                                            <img 
-                                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
-                                                                                alt="Payment QR" 
-                                                                                className="w-[100px] h-[100px] grayscale contrast-125 mx-auto"
-                                                                                crossOrigin="anonymous"
-                                                                            />
-                                                                            <p className="text-[8px] font-black text-center mt-2 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                    <div key="payment_qr" style={style} className={cn(blockDef.col, "w-full flex flex-col items-end shrink-0 pt-4 border-t border-gray-300/50 relative")}>
+                                                                        <div className="flex flex-col items-end gap-4 w-full">
+                                                                            <div className="bg-white p-3 rounded-2xl border border-gray-200 inline-block shadow-sm shrink-0">
+                                                                                <img 
+                                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`)}`} 
+                                                                                    alt="Payment QR" 
+                                                                                    className="w-[70px] h-[70px] grayscale contrast-125 mx-auto"
+                                                                                    crossOrigin="anonymous"
+                                                                                />
+                                                                                <p className="text-[7px] font-black text-center mt-1.5 text-gray-400 tracking-widest uppercase italic font-bold">Scan to pay</p>
+                                                                            </div>
+                                                                            
+                                                                            {/* UPI App Button (Mobile Only) */}
+                                                                            <a 
+                                                                                href={`upi://pay?pa=${displayInvoice.upiId}&pn=NEWBI&am=${toBePaid}&cu=INR`} 
+                                                                                className="md:hidden flex items-center justify-center gap-2 w-full h-10 bg-black text-white rounded-xl text-[8px] font-black uppercase tracking-widest"
+                                                                            >
+                                                                                Pay via UPI App
+                                                                            </a>
+
                                                                         </div>
                                                                     </div>
                                                                 );
                                                             }
 
                                                             if (sectionId === 'signatory') {
-                                                                if (!displayInvoice.showSignatureBlock) return null;
+                                                                if (!displayInvoice.showSignatureBlock || displayInvoice.showSignatory === 'none') return null;
                                                                 return (
                                                                     <div key="signatory" style={style} className={cn(blockDef.col, "w-full flex justify-end mt-4 relative")}>
                                                                         <div className="flex flex-col items-end text-right">
@@ -668,25 +727,22 @@ const Invoice = () => {
                                             </div>
 
                                                 {displayInvoice.showFooter !== false && (
-                                                    <footer 
-                                                        className="absolute bottom-4 left-10 right-10 h-10 flex items-center justify-between px-10 rounded-full border border-black/10 shadow-lg z-50 bg-[#39FF14]/40"
-                                                        style={{
-                                                            transform: `translate(${(displayInvoice.layoutOrder?.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).x || 0}px, ${(displayInvoice.layoutOrder?.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).y || 0}px) scale(${(displayInvoice.layoutOrder?.find(i => (typeof i === 'object' ? i.id : i) === 'footer') || {}).scale || 0.85})`,
-                                                            transformOrigin: 'bottom center'
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center justify-between w-full text-black">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">CALL</span>
-                                                                <p className="text-[10px] font-black tracking-widest uppercase font-bold">+91 93043 72773</p>
+                                                    <footer className="absolute bottom-[12mm] left-[12mm] right-[12mm] h-12 flex items-center px-8 rounded-full text-black shadow-sm" style={{ backgroundColor: `${brandColor}66` }}>
+                                                        <div className="grid grid-cols-5 w-full items-center">
+                                                            <div className="flex items-center gap-2 col-span-1">
+                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">CALL</span>
+                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">+91 93043 72773</p>
                                                             </div>
-                                                            <div className="flex items-center gap-3 border-x border-black/10 px-10 h-10">
-                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
-                                                                <p className="text-[10px] font-black tracking-widest uppercase font-bold">partnership@newbi.live</p>
+                                                            <div className="flex items-center gap-2 justify-center col-span-2 border-x border-black/5 px-4">
+                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">EMAIL</span>
+                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap text-xs">partnership@newbi.live</p>
                                                             </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-[8px] font-black text-black/50 tracking-[0.2em]">WEB</span>
-                                                                <p className="text-[10px] font-black tracking-widest uppercase font-bold">newbi.live</p>
+                                                            <div className="flex items-center gap-2 justify-center col-span-1 border-r border-black/5 pr-4">
+                                                                <span className="text-[7px] font-black text-black/50 tracking-[0.2em]">WEB</span>
+                                                                <p className="text-[9px] font-black tracking-widest uppercase font-bold whitespace-nowrap">newbi.live</p>
+                                                            </div>
+                                                            <div className="flex justify-end col-span-1 pl-4">
+                                                                <p className="text-[9px] font-black tracking-[0.1em] uppercase whitespace-nowrap text-black/80 font-bold italic">PAGE {pageIdx + 1} OF {paginatedPages.length}</p>
                                                             </div>
                                                         </div>
                                                     </footer>

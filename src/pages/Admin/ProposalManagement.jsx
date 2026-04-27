@@ -135,10 +135,10 @@ const ProposalManagement = () => {
             tabs={vaultTabs}
             accentColor="neon-green"
             action={
-                <Link to="/admin/create-proposal">
-                    <Button className="bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[10px] sm:text-xs h-14 px-10 rounded-2xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                <Link to="/admin/create-proposal" className="w-full md:w-auto">
+                    <button className="w-full md:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,209,255,0.2)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] flex items-center justify-center">
                         <Plus className="mr-2 h-4 w-4" /> New Quote
-                    </Button>
+                    </button>
                 </Link>
             }
         >

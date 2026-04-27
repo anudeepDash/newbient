@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Sparkles, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2 } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Sparkles, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -90,15 +90,13 @@ const ProposalGenerator = () => {
     // AI & Workflow State
     const [aiPrompt, setAiPrompt] = useState('');
     const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
-    const savedModel = localStorage.getItem('geminiModel');
+    
     // Auto-migrate deprecated model names to current generation
     const migrateModel = (m) => {
-        if (!m || m.includes('1.5') || m.includes('2.0') || m.includes('2.5')) return 'gemini-3.0-flash';
+        if (!m || !m.startsWith('gemini')) return 'gemini-1.5-flash';
         return m;
     };
-    const initialModel = migrateModel(savedModel);
-    if (savedModel && savedModel !== initialModel) localStorage.setItem('geminiModel', initialModel);
-    const [aiModel, setAiModel] = useState(initialModel);
+    const [aiModel, setAiModel] = useState(migrateModel(localStorage.getItem('geminiModel')));
     const [isGeneratingAi, setIsGeneratingAi] = useState(false);
     const [showAiSettings, setShowAiSettings] = useState(false);
     const [activeTab, setActiveTab] = useState('1'); 
@@ -117,8 +115,7 @@ const ProposalGenerator = () => {
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
-        { id: 'media', label: 'Newbi Media', path: '/logo_document.png', color: '#00D1FF' },
-        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_document.png', color: '#FF0055' }
+        { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
     ];
 
     const [formData, setFormData] = useState({
@@ -418,28 +415,39 @@ const ProposalGenerator = () => {
             `}} />
 
             {/* Top Bar */}
-            <header className="h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-8 shrink-0 relative z-50">
-                <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-3">
-                        <Link to="/admin/proposals" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={18} /></Link>
-                        <AdminDashboardLink className="hidden md:flex" />
+            <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
+                <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                    <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={16} md={18} /></Link>
+                        <AdminDashboardLink className="hidden sm:inline-flex ml-2" />
                     </div>
-                    <div>
-                        <h1 className="text-xl font-black tracking-tighter uppercase italic text-white">Quotation <span className="text-neon-green">Engine.</span></h1>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none mt-1">Strategic Command</p>
+                    <div className="min-w-0 flex flex-col justify-center">
+                        <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
+                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Strategic Command</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-4">
-                    <button onClick={() => setShowPreviewMobile(!showPreviewMobile)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Eye size={18} /></button>
-                    <button onClick={() => setShowAiSettings(true)} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Settings size={18} /></button>
-                    <button onClick={handleSave} className="hidden sm:block h-12 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl transition-all">Save</button>
-                    <button onClick={generatePDF} className="h-10 sm:h-12 px-4 sm:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)]">Export</button>
+                <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
+                    <button 
+                        onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
+                        className="lg:hidden h-10 px-3 bg-neon-green/10 rounded-xl border border-neon-green/20 text-neon-green flex items-center gap-2 active:scale-95 transition-all"
+                    >
+                        <Eye size={14} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
+                    </button>
+                    <button onClick={() => setShowAiSettings(true)} className="p-2.5 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Settings size={16} /></button>
+                    <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
+                        <Save size={14} className="sm:hidden" />
+                        <span className="hidden sm:inline">Save</span>
+                    </button>
+                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)] flex items-center gap-2">
+                        <Download size={14} className="sm:hidden" />
+                        <span className="hidden sm:inline">Export</span>
+                    </button>
                 </div>
             </header>
 
             <main className="flex-1 flex overflow-hidden">
-                {/* Sidebar Navigation - Desktop Only */}
                 <aside className="hidden lg:flex w-24 border-r border-white/5 bg-zinc-900/20 flex-col p-4 overflow-y-auto scrollbar-hide items-center">
                     <nav className="space-y-4">
                         {tabs.map(tab => (
@@ -456,16 +464,17 @@ const ProposalGenerator = () => {
                     </nav>
                 </aside>
 
-                {/* Bottom Navigation - Mobile Only */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
+                {/* Mobile Bottom Navigation */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
                             <tab.icon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1" />}
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1 shadow-[0_0_8px_#39FF14]" />}
                         </button>
                     ))}
                 </div>
+
 
                 {/* Editor Area */}
                 <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
@@ -500,14 +509,14 @@ const ProposalGenerator = () => {
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Division Branding</label>
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                                 {logoOptions.map(logo => (
-                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
+                                                    <button key={logo.id} onClick={() => setFormData({...formData, selectedLogo: logo.id})} className={cn("p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-2 overflow-hidden relative group/btn", formData.selectedLogo === logo.id ? "bg-neon-green border-neon-green text-black scale-105 shadow-xl" : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white")}>
                                                         <div className="w-full aspect-[4/3] rounded-xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
                                                             <img src={logo.path} alt={logo.label} className="w-full h-full object-contain" />
                                                             <div className="absolute inset-0 bg-black/5" />
                                                         </div>
-                                                        <span className="relative z-10">{logo.label}</span>
+                                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest relative z-10 leading-tight">{logo.label}</span>
                                                         {formData.selectedLogo === logo.id && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-black animate-pulse" />}
                                                     </button>
                                                 ))}
@@ -671,6 +680,37 @@ const ProposalGenerator = () => {
                                 )}
                             </motion.div>
                         </AnimatePresence>
+
+                        {/* Section Navigation Footer */}
+                        <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                            <button 
+                                onClick={() => {
+                                    const idx = tabs.findIndex(t => t.id === activeTab);
+                                    if (idx > 0) handleTabClick(tabs[idx - 1].id);
+                                }}
+                                disabled={activeTab === tabs[0].id}
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                            >
+                                <ChevronLeft size={16} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
+                            </button>
+
+                            <button 
+                                onClick={() => {
+                                    const idx = tabs.findIndex(t => t.id === activeTab);
+                                    if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
+                                }}
+                                className={cn(
+                                    "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+                                    activeTab === tabs[tabs.length - 1].id 
+                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                        : "bg-neon-green text-black hover:scale-105 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
+                                )}
+                            >
+                                <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
+                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -692,8 +732,8 @@ const ProposalGenerator = () => {
                         </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex items-center justify-center p-8 overflow-hidden relative">
-                        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'center center' }} className="transition-transform duration-500">
+                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-8 overflow-y-auto relative">
+                        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center', height: `${1123 * previewScale}px` }} className="transition-transform duration-500 mb-20">
                             <AnimatePresence mode="wait">
                                 <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px]">
                                     <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
@@ -887,8 +927,8 @@ const ProposalGenerator = () => {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Deployment Model</label>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
-                                            { id: 'gemini-3.0-flash', label: '3.0 Flash', desc: 'Standard' },
-                                            { id: 'gemini-3.0-pro', label: '3.0 Pro', desc: 'Precision' },
+                                            { id: 'gemini-1.5-flash', label: 'Flash 1.5', desc: 'Speed' },
+                                            { id: 'gemini-2.0-flash-exp', label: 'Flash 2.0', desc: 'Reasoning' },
                                             { id: 'gemini-2.0-flash', label: '2.0 Flash', desc: 'Legacy' }
                                         ].map(m => (
                                             <button 
@@ -1074,12 +1114,14 @@ const ProposalGenerator = () => {
                                         <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
                                         <div className="w-16 h-1 bg-black" />
                                     </div>
-                                    <div className="flex-1 relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
-                                        <div className="pl-10">
-                                            {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                            {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                            {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="relative">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                            <div className="pl-10">
+                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">

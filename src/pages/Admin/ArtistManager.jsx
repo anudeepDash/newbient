@@ -95,7 +95,6 @@ const ArtistManager = () => {
                 {/* Dashboard Header */}
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-16">
                     <div className="space-y-6">
-                        <AdminDashboardLink className="mb-2" />
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
                             TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF]">OPERATIONS.</span>
                         </h1>
@@ -390,7 +389,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => (
                     <div className="space-y-12">
                         <div>
                             <h3 className="text-[11px] font-black text-neon-blue uppercase tracking-[0.5em] mb-8 flex items-center gap-4">
-                                <div className="w-12 h-px bg-neon-blue/30" /> ARTIST BIO
+                                <div className="w-12 h-px bg-neon-blue/30" /> ARTIST STORY
                             </h3>
                             <p className="text-gray-300 leading-relaxed italic text-lg bg-white/5 p-8 rounded-3xl border border-white/5 shadow-inner">"{artist.bio}"</p>
                         </div>
@@ -418,7 +417,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => (
                             <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em] mb-8 flex items-center gap-4">
                                 <div className="w-12 h-px bg-white/10" /> SECURE CONTACT
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                                 <div className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center border border-white/10"><Mail className="text-gray-400" size={16} /></div>

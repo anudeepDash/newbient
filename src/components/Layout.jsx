@@ -11,17 +11,25 @@ const Layout = () => {
     const location = useLocation();
     const isBypassing = maintenanceState.global && user?.role === 'developer';
     
-    // Hide global navigation on document viewer pages to prevent header overlap
-    const isDocumentPage = location.pathname.startsWith('/invoice/') || location.pathname.startsWith('/proposal/');
+    // Identify document editors and viewers to hide global navigation
+    const isSpecialPage = 
+        location.pathname.startsWith('/invoice/') || 
+        location.pathname.startsWith('/proposal/') ||
+        location.pathname.includes('/admin/create-') ||
+        location.pathname.includes('/admin/edit-') ||
+        location.pathname.includes('/admin/agreements/');
 
     return (
         <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden">
-            {!isDocumentPage && <Navbar />}
+            {!isSpecialPage && <Navbar />}
             <NotificationToast />
-            <main className={cn("flex-grow transition-all duration-300 pb-24 md:pb-12", isBypassing ? "pt-0" : "pt-0")}>
+            <main className={cn(
+                "flex-grow transition-all duration-300", 
+                isSpecialPage ? "pb-0" : "pb-24 md:pb-12"
+            )}>
                 <Outlet />
             </main>
-            {!isDocumentPage && <Footer />}
+            {!isSpecialPage && <Footer />}
 
             {/* Background Glow Effects - Enhanced */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">

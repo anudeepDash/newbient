@@ -30,9 +30,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        isAdmin 
-            ? { name: 'ADMIN', path: '/admin', icon: LayoutGrid }
-            : { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
+        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 
@@ -92,9 +90,10 @@ const Navbar = () => {
                 </motion.div>
             )}
 
-            {/* Top Navbar */}
-            <nav className={cn(
-                "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
+            {/* Top Navbar - Hidden on Document Engines */}
+            {!location.pathname.includes('/admin/create-') && !location.pathname.includes('/admin/edit-') && !location.pathname.includes('/admin/agreements/') && (
+                <nav className={cn(
+                    "fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 w-full max-w-[1800px] px-4 md:px-6 flex items-center justify-center",
                 (maintenanceState.global && user?.role === 'developer') 
                     ? "top-14 md:top-14" 
                     : pinnedAnnouncement 
@@ -213,10 +212,12 @@ const Navbar = () => {
                     </div>
                 </div>
             </nav>
+            )}
 
-            {/* Bottom Navigation (Mobile Only) */}
-            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
-                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
+            {/* Bottom Navigation (Mobile Only) - Hidden on Document Engines */}
+            {!location.pathname.includes('/admin/create-') && !location.pathname.includes('/admin/edit-') && !location.pathname.includes('/admin/agreements/') && (
+                <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
+                    <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-around">
                         {mobilePrimaryLinks.map((link) => {
                             const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
@@ -257,7 +258,7 @@ const Navbar = () => {
                         })}
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Full-screen Mobile Menu */}
             <AnimatePresence>
