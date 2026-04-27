@@ -374,7 +374,6 @@ const InvoiceGenerator = () => {
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
                         <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5"><ArrowLeft size={16} md={18} /></Link>
-                        <AdminDashboardLink className="hidden sm:inline-flex ml-2" />
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
