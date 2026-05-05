@@ -93,7 +93,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                         {campaign.title}
                     </h3>
                     <p className="text-gray-400 text-[12px] line-clamp-2 leading-relaxed font-medium mb-8 pr-4">
-                        {campaign.description}
+                        {(campaign.description || '').replace(/<[^>]*>/g, ' ')}
                     </p>
                     
                     <div className="flex items-center gap-6 mt-auto">

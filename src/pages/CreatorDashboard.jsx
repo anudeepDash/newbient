@@ -115,7 +115,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                         {/* Brief */}
                         <div className="space-y-3">
                             <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Mission Brief</h4>
-                            <p className="text-[14px] text-gray-400 font-medium leading-relaxed">{task.description}</p>
+                            <div className="article-content text-[14px] text-gray-400 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />
                         </div>
 
                         {/* Creative Assets */}
@@ -145,7 +145,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                                     </button>
                                 </div>
                                 <div className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl relative group">
-                                    <p className="text-[12px] text-gray-400 font-medium leading-relaxed whitespace-pre-wrap">{task.captionScript}</p>
+                                    <div className="article-content text-[12px] text-gray-400 font-medium leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: task.captionScript }} />
                                 </div>
                             </div>
                         )}
@@ -394,18 +394,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                     !isExpanded && "max-h-[60px]"
                                 )}>
                                     {campaign.description ? (
-                                        campaign.description.split('\n').map((line, i) => {
-                                            const parts = line.split(':');
-                                            if (parts.length > 1) {
-                                                return (
-                                                    <span key={i} className="block mb-1">
-                                                        <span className="text-neon-blue font-black text-[10px] uppercase">{parts[0]}:</span>
-                                                        <span className="text-gray-500 opacity-80 ml-1"> {parts.slice(1).join(':')}</span>
-                                                    </span>
-                                                );
-                                            }
-                                            return <span key={i} className="block mb-1 text-gray-600 italic opacity-60">{line}</span>;
-                                        })
+                                        <div className="article-content" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                                     ) : (
                                         <span className="text-gray-600">No tactical briefing provided for this operation.</span>
                                     )}
@@ -495,20 +484,9 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                 
                                 <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 relative overflow-hidden backdrop-blur-2xl">
                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-blue/20" />
-                                    <div className="text-sm md:text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap">
+                                    <div className="article-content text-sm md:text-base font-medium text-gray-400 leading-relaxed italic">
                                         {campaign.description ? (
-                                            campaign.description.split('\n').map((line, i) => {
-                                                const parts = line.split(':');
-                                                if (parts.length > 1) {
-                                                    return (
-                                                        <span key={i} className="block mb-2">
-                                                            <span className="text-neon-blue font-black text-[12px] uppercase">{parts[0]}:</span>
-                                                            <span className="text-gray-400 opacity-80"> {parts.slice(1).join(':')}</span>
-                                                        </span>
-                                                    );
-                                                }
-                                                return <span key={i} className="block mb-2">{line}</span>;
-                                            })
+                                            <div dangerouslySetInnerHTML={{ __html: campaign.description }} />
                                         ) : "No briefing provided for this workspace."}
                                     </div>
                                 </div>

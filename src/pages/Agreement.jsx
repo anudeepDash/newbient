@@ -286,10 +286,10 @@ const Agreement = () => {
                                                 <div className="space-y-6">
                                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Provider Signature</p>
                                                     <div className="h-20 flex items-end">
-                                                        {displayAgreement.showSignature && <p className="text-5xl font-signature text-black leading-none opacity-90">Abhinav Anand</p>}
+                                                        {displayAgreement.showSignature && <p className="text-5xl font-signature text-black leading-none opacity-90">Authorized Signatory</p>}
                                                     </div>
                                                     <div className="pt-2 border-t border-black/5">
-                                                        <p className="text-[10px] font-bold uppercase">Name: Abhinav Anand</p>
+                                                        <p className="text-[10px] font-bold uppercase">Name: Authorized Signatory</p>
                                                         <p className="text-[9px] text-gray-500 uppercase">Title: Director of Operations</p>
                                                     </div>
                                                 </div>
@@ -368,7 +368,7 @@ const Agreement = () => {
                                             type="email" 
                                             value={verificationEmail}
                                             onChange={e => setVerificationEmail(e.target.value)}
-                                            placeholder="legal@company.com"
+                                            placeholder="email@newbi.live"
                                             className="w-full h-14 bg-gray-50 border border-gray-100 rounded-xl px-6 text-sm font-bold outline-none focus:border-neon-blue transition-all"
                                         />
                                     </div>

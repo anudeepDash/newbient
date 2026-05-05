@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileText, FileSpreadsheet, Sparkles, Users, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, DollarSign, CheckCircle, Smartphone, Globe, MoreVertical, MessageCircle, Upload } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileText, FileSpreadsheet, Users, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, DollarSign, CheckCircle, Smartphone, Globe, MoreVertical, MessageCircle, Upload } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -11,97 +11,24 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import { generateInvoiceContent, generateInvoiceFieldRefinement } from '../../services/aiService';
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import { generateFullDocument } from '../../lib/ai';
+import AIPromptBox from '../../components/admin/AIPromptBox';
+import DocumentSeal from '../../components/ui/DocumentSeal';
 
 // Markdown-like formatting toolbar for textareas
-const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'min-h-[150px]' }) => {
-    const textareaRef = useRef(null);
-    const historyRef = useRef([]);
-    const pushHistory = () => {
-        const h = historyRef.current;
-        if (h.length === 0 || h[h.length - 1] !== value) {
-            h.push(value);
-            if (h.length > 30) h.shift();
-        }
-    };
-    const handleUndo = () => {
-        const h = historyRef.current;
-        if (h.length > 0) {
-            const prev = h.pop();
-            onChange({ target: { value: prev } });
-        }
-    };
-    const insertFormat = (before, after = '') => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const scroll = ta.scrollTop;
-        const selected = value.substring(start, end);
-        const newText = value.substring(0, start) + before + (selected || 'text') + after + value.substring(end);
-        onChange({ target: { value: newText } });
-        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + before.length; ta.selectionEnd = start + before.length + (selected || 'text').length; }, 10);
-    };
-    const insertLine = (prefix) => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const scroll = ta.scrollTop;
-        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-        const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
-        onChange({ target: { value: newText } });
-        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + prefix.length; ta.selectionEnd = start + prefix.length; }, 10);
-    };
-    const handleKeyDown = (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'b') { e.preventDefault(); insertFormat('**', '**'); }
-            else if (e.key === 'i') { e.preventDefault(); insertFormat('*', '*'); }
-            else if (e.key === 'h') { e.preventDefault(); insertLine('## '); }
-            else if (e.key === 'l') { e.preventDefault(); insertLine('• '); }
-            else if (e.key === 'z') { e.preventDefault(); handleUndo(); }
-        }
-    };
-    return (
-        <div className="space-y-2">
-            <div className="flex items-center gap-1 px-4">
-                <button type="button" onClick={handleUndo} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertFormat('**', '**')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bold (Ctrl+B)"><span className="text-[11px] font-black">B</span></button>
-                <button type="button" onClick={() => insertFormat('*', '*')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Italic (Ctrl+I)"><span className="text-[11px] font-bold italic">I</span></button>
-                <button type="button" onClick={() => insertLine('## ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Heading (Ctrl+H)"><span className="text-[11px] font-black">H</span></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertLine('• ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bullet List (Ctrl+L)"><span className="text-[11px] font-bold">•</span></button>
-            </div>
-            <textarea ref={textareaRef} value={value} onChange={onChange} onKeyDown={handleKeyDown} className={cn("w-full bg-zinc-900 border border-white/10 rounded-[2rem] p-6 text-sm font-medium outline-none focus:border-neon-blue/40 transition-all leading-relaxed", minH, className)} placeholder={placeholder} />
-        </div>
-    );
-};
 
 const InvoiceGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addInvoice, updateInvoice, invoices, uploadToCloudinary } = useStore();
+    const { addInvoice, updateInvoice, invoices, uploadToCloudinary, user } = useStore();
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
-    // AI & Workflow State
-    const [aiPrompt, setAiPrompt] = useState('');
-    const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
-    
-    // Auto-migrate deprecated models to Gemini 1.5/2.0 series
-    const migrateModel = (m) => {
-        if (!m || !m.startsWith('gemini')) return 'gemini-1.5-flash';
-        return m;
-    };
-    const [aiModel, setAiModel] = useState(migrateModel(localStorage.getItem('geminiModel')));
-    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-    const [showAiSettings, setShowAiSettings] = useState(false);
     const [activeTab, setActiveTab] = useState('1'); 
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [aiError, setAiError] = useState(null);
+    const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
 
     const logoOptions = [
@@ -113,9 +40,9 @@ const InvoiceGenerator = () => {
         const savedSender = JSON.parse(localStorage.getItem('newbi_invoice_sender') || '{}');
         return {
             senderName: savedSender.name || 'Newbi Entertainment & Marketing LLP',
-            senderContact: savedSender.contact || '+91 93043 72773',
-            senderEmail: savedSender.email || 'partnership@newbi.live',
-            senderGst: savedSender.gst || 'ETXPA9107A',
+            senderContact: savedSender.contact || '+91 00000 00000',
+            senderEmail: savedSender.email || 'email@newbi.live',
+            senderGst: savedSender.gst || 'XXXXXXXXXXX',
             clientName: '',
             clientAddress: '',
             clientGst: '',
@@ -124,13 +51,13 @@ const InvoiceGenerator = () => {
             dueDate: '',
             advancePaid: 0,
             note: '',
-            paymentDetails: `Name: ABHINAV ANAND\nAccount No.: 77780102222341\nIFSC Code: FDRL0007778\nBranch: Neo Banking - Jupiter\nUPI ID: 6207708566@jupiteraxis\nContact No.: 6207708566`,
+            paymentDetails: `Name: YOUR NAME\nAccount No.: 0000000000\nIFSC Code: YOUR000000\nBranch: YOUR BRANCH\nUPI ID: yourname@upi\nContact No.: 0000000000`,
             showSignatory: 'none',
             signatoryImage: '',
             showNotes: true,
             showPaymentDetails: true,
             showUPI: false,
-            upiId: '6207708566@jupiteraxis',
+            upiId: 'yourname@upi',
             qrType: 'auto',
             customQrImage: '',
             showGst: true,
@@ -141,7 +68,11 @@ const InvoiceGenerator = () => {
             showPaymentButton: false,
             paymentLink: '',
             selectedLogo: 'entertainment',
-            status: 'Pending'
+            status: 'Pending',
+            showSeal: false,
+            showSignatures: false,
+            providerSignature: '',
+            clientSignature: '',
         };
     });
 
@@ -157,10 +88,40 @@ const InvoiceGenerator = () => {
     }, [formData.senderName, formData.senderContact, formData.senderEmail, formData.senderGst]);
 
     const [items, setItems] = useState([
-        { id: 1, description: '', qty: 1, price: 0 }
+        { id: 1, name: '', description: '', qty: 1, price: 0 }
     ]);
 
     const [customColumns, setCustomColumns] = useState([]);
+
+    const renderFormatted = (text, baseClass = '') => {
+        if (!text) return null;
+        const paragraphs = text.split(/\n\n+/);
+        return (
+            <div className={cn("space-y-4", baseClass)}>
+                {paragraphs.map((p, i) => (
+                    <p key={i} className="whitespace-pre-line leading-relaxed">
+                        {p}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
+    const renderContent = (content, baseClass = '') => {
+        if (!content) return null;
+        const isHtml = content.includes('<') && content.includes('>');
+        
+        if (isHtml) {
+            return (
+                <div 
+                    className={cn("article-content", baseClass)} 
+                    dangerouslySetInnerHTML={{ __html: content }} 
+                />
+            );
+        }
+        
+        return renderFormatted(content, baseClass);
+    };
     const [newColumnName, setNewColumnName] = useState('');
 
     const handleAddColumn = () => {
@@ -219,6 +180,10 @@ const InvoiceGenerator = () => {
             };
             if (id) await updateInvoice(id, invoiceData);
             else await addInvoice({ ...invoiceData, createdAt: new Date().toISOString() });
+            
+            setPromptBoxClear(true);
+            setTimeout(() => setPromptBoxClear(false), 100);
+
             navigate('/admin/invoices');
         } catch (error) {
             alert("Save Error: " + error.message);
@@ -227,33 +192,35 @@ const InvoiceGenerator = () => {
         }
     };
 
-    const handleGenerateAI = async () => {
-        if (!aiPrompt) return;
-        setIsGeneratingAi(true);
-        setAiError(null);
+    const handleGenerateInvoice = async (prompt) => {
+        setIsGenerating(true);
         try {
-            const result = await generateInvoiceContent(aiApiKey, aiPrompt, formData, aiModel);
-            setFormData(prev => ({ ...prev, ...result }));
-            if (result.items) setItems(result.items.map((it, idx) => ({ ...it, id: idx + 1 })));
-            setActiveTab('2');
+            const data = await generateFullDocument('invoice', prompt, 'Premium', {});
+            setFormData(prev => ({
+                ...prev,
+                clientName: data.clientName || prev.clientName,
+                clientAddress: data.clientAddress || prev.clientAddress,
+                clientGst: data.clientGst || prev.clientGst,
+                invoiceDate: data.invoiceDate || prev.invoiceDate,
+                dueDate: data.dueDate || prev.dueDate,
+                note: data.note || prev.note,
+                // NOTE: Never overwrite paymentDetails — user has their own bank details pre-configured
+            }));
+            
+            if (data.items && data.items.length > 0) {
+                setItems(data.items.map((item, idx) => ({
+                    id: Date.now() + idx,
+                    name: item.name || item.description || '',
+                    description: item.description || '',
+                    qty: Number(item.qty) || 1,
+                    price: Number(item.price) || 0,
+                    customValues: {}
+                })));
+            }
         } catch (error) {
-            setAiError(error.message);
+            alert("AI Generation failed: " + error.message);
         } finally {
-            setIsGeneratingAi(false);
-        }
-    };
-
-    const handleRefineField = async (fieldName, fieldLabel) => {
-        const prompt = window.prompt(`How should we refine the ${fieldLabel}?`);
-        if (!prompt) return;
-        setIsGeneratingAi(true);
-        try {
-            const refined = await generateInvoiceFieldRefinement(aiApiKey, fieldName, fieldLabel, formData[fieldName], prompt, aiModel);
-            setFormData(prev => ({ ...prev, [fieldName]: refined }));
-        } catch (error) {
-            setAiError(error.message);
-        } finally {
-            setIsGeneratingAi(false);
+            setIsGenerating(false);
         }
     };
 
@@ -395,7 +362,6 @@ const InvoiceGenerator = () => {
                         <Eye size={14} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
-                    <button onClick={() => setShowAiSettings(true)} className="p-2.5 bg-white/5 rounded-xl border border-white/5 text-gray-500 hover:text-neon-blue transition-all"><Settings size={16} /></button>
                     <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
@@ -409,15 +375,19 @@ const InvoiceGenerator = () => {
 
             <main className="flex-1 flex overflow-hidden">
                 {/* Sidebar */}
-                <aside className="hidden lg:flex w-24 border-r border-white/5 bg-zinc-900/20 flex-col p-4 items-center">
-                    <nav className="space-y-4">
+                <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                    <div className="space-y-2">
+                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group relative", activeTab === tab.id ? "bg-neon-blue text-black shadow-[0_0_30px_rgba(0,255,255,0.3)] scale-110" : "bg-white/5 text-gray-500 hover:text-white hover:bg-white/10")}>
-                                <tab.icon size={24} />
-                                <div className="absolute left-20 bg-black border border-white/10 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-[100] whitespace-nowrap">{tab.label}</div>
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
+                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                </div>
                             </button>
                         ))}
-                    </nav>
+                    </div>
                 </aside>
                 
                 {/* Mobile Bottom Navigation */}
@@ -434,29 +404,15 @@ const InvoiceGenerator = () => {
                 {/* Editor */}
                 <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-3xl mx-auto">
-                        {/* AI Strategist */}
-                        <div className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] mb-12 group relative overflow-hidden">
-                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Sparkles size={60} className="text-neon-blue" /></div>
-                             <div className="flex items-center gap-3 mb-4">
-                                <Sparkles size={14} className="text-neon-blue" />
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Financial AI Orchestrator</p>
-                             </div>
-                             <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="w-full bg-black/40 border border-white/10 focus:border-neon-blue/40 rounded-2xl p-4 text-xs font-medium min-h-[80px] outline-none text-white mb-4 transition-all" placeholder="Describe billing requirements (Services, counts, pricing, client info)..." />
-                             <button onClick={handleGenerateAI} disabled={isGeneratingAi || !aiPrompt} className="w-full h-12 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50">{isGeneratingAi ? <RefreshCw className="animate-spin" size={14} /> : <Zap size={14} />} Execute Strategic Generation</button>
-                             
-                             {aiError && (
-                                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 animate-in slide-in-from-top-2">
-                                    <AlertCircle size={14} />
-                                    <p className="text-[10px] font-black uppercase tracking-widest">{aiError}</p>
-                                </div>
-                             )}
-                        </div>
+                        
+                        <AIPromptBox onGenerate={handleGenerateInvoice} isGenerating={isGenerating} type="invoice" forceClear={promptBoxClear} />
 
                         <div className="mb-12">
                             <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic mb-1">{currentTab?.label}.</h2>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
                             <div className="w-16 h-1.5 bg-neon-blue" />
                         </div>
+                        
 
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-12">
@@ -473,6 +429,7 @@ const InvoiceGenerator = () => {
                                                 </button>
                                             ))}
                                         </div>
+                                        
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Invoice ID</label>
@@ -547,14 +504,15 @@ const InvoiceGenerator = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button onClick={() => setItems([...items, { id: Date.now(), description: '', qty: 1, price: 0, customValues: {} }])} className="w-12 h-12 bg-neon-blue text-black rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-[0_10px_25px_rgba(0,255,255,0.2)] flex items-center justify-center"><Plus size={20} /></button>
+                                            <button onClick={() => setItems([...items, { id: Date.now(), name: '', description: '', qty: 1, price: 0, customValues: {} }])} className="w-12 h-12 bg-neon-blue text-black rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-[0_10px_25px_rgba(0,255,255,0.2)] flex items-center justify-center"><Plus size={20} /></button>
                                         </div>
                                         <div className="space-y-4">
                                             {items.map((item, idx) => (
                                                 <div key={item.id} className="flex flex-col bg-zinc-900/40 p-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60 gap-4">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="flex-1">
-                                                            <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Description of service or product..." />
+                                                    <div className="flex items-start gap-6">
+                                                        <div className="flex-1 space-y-3">
+                                                            <input value={item.name} onChange={e => { const newItems = [...items]; newItems[idx].name = e.target.value; setItems(newItems); }} className="w-full bg-transparent border-b border-white/10 pb-2 text-sm font-black uppercase italic outline-none focus:border-neon-blue/40 transition-all text-white placeholder:text-gray-600" placeholder="Service Name (e.g. Brand Activation)" />
+                                                            <textarea value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-[10px] font-bold uppercase tracking-widest outline-none resize-none scrollbar-hide text-gray-400 placeholder:text-gray-700" placeholder="Detailed description..." />
                                                         </div>
                                                         <div className="flex items-center gap-6">
                                                             <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-blue/50" /></div>
@@ -603,13 +561,14 @@ const InvoiceGenerator = () => {
                                             </div>
                                         </div>
 
-                                        {/* Bank Details */}
-                                        <div className="space-y-6 pt-8 border-t border-white/5">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Settlement Account Details</label>
-                                                <button onClick={() => setFormData({...formData, showPaymentDetails: !formData.showPaymentDetails})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showPaymentDetails ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{formData.showPaymentDetails ? 'Visible' : 'Hidden'}</button>
-                                            </div>
-                                            <textarea value={formData.paymentDetails} onChange={e => setFormData({...formData, paymentDetails: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 p-8 rounded-3xl font-mono text-xs leading-relaxed outline-none focus:border-neon-blue/40 transition-all min-h-[160px]", !formData.showPaymentDetails && "opacity-30")} placeholder="Account Name, Number, IFSC, etc..." />
+                                        <div className={cn("space-y-4", !formData.showPaymentDetails && "opacity-30")}>
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Settlement Account Details</label>
+                                            <textarea 
+                                                value={formData.paymentDetails} 
+                                                onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
+                                                className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl font-mono font-bold text-sm outline-none focus:border-neon-blue/40 transition-all min-h-[160px]" 
+                                                placeholder="Account Name, Number, IFSC, etc..." 
+                                            />
                                         </div>
 
                                         {/* UPI QR */}
@@ -650,18 +609,15 @@ const InvoiceGenerator = () => {
                                         </div>
 
                                         {/* Notes & Terms */}
-                                        <div className="space-y-6 pt-8 border-t border-white/5">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strategic Notes & Terms</label>
-                                                <div className="flex items-center gap-4">
-                                                    <button onClick={() => handleRefineField('note', 'Invoice Notes')} className="text-[9px] font-black text-neon-blue uppercase tracking-widest underline">AI Refine</button>
-                                                    <button onClick={() => setFormData({...formData, showNotes: !formData.showNotes})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showNotes ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{formData.showNotes ? 'Visible' : 'Hidden'}</button>
-                                                </div>
-                                            </div>
                                             <div className={cn(!formData.showNotes && "opacity-30")}>
-                                                <FormattedTextArea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} placeholder="Billing terms, payment instructions, etc..." />
+                                                <StudioRichEditor 
+                                                    label="Strategic Notes & Terms"
+                                                    value={formData.note} 
+                                                    onChange={val => setFormData({...formData, note: val})} 
+                                                    placeholder="Billing terms, payment instructions, etc..." 
+                                                    minHeight="150px"
+                                                />
                                             </div>
-                                        </div>
 
                                         {/* PayU Gateway */}
                                         <div className="p-8 bg-zinc-900 border border-white/10 rounded-[2.5rem] space-y-8 mt-8">
@@ -709,45 +665,148 @@ const InvoiceGenerator = () => {
 
                                 {activeTab === '4' && (
                                     <div className="space-y-12">
-                                        <div className="space-y-6">
-                                            <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em] mb-8 flex items-center gap-4">
-                                                <div className="w-12 h-px bg-neon-blue/30" /> SIGNATURE BLOCK
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Signature Display Mode</label>
-                                                    <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
-                                                        {['none', 'text', 'image'].map(mode => (
-                                                            <button key={mode} onClick={() => setFormData({...formData, showSignatory: mode})} className={cn("flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", formData.showSignatory === mode ? "bg-white text-black" : "text-gray-500")}>{mode}</button>
-                                                        ))}
+                                        {/* Document Settings Section */}
+                                        <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                            <div className="space-y-2">
+                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Document Settings</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Global authentication preferences</p>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button 
+                                                    onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
+                                                    className={cn(
+                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
+                                                        formData.showSeal ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Eye size={14} className={cn(formData.showSeal ? "text-black" : "text-white/20")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Official Seal</span>
                                                     </div>
+                                                </button>
+                                                
+                                                <button 
+                                                    onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
+                                                    className={cn(
+                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
+                                                        formData.showSignatures ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Eye size={14} className={cn(formData.showSignatures ? "text-black" : "text-white/20")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center text-center">Digital Signatures</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {formData.showSeal && (
+                                                <div className="flex justify-center p-12 bg-black/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                                    <DocumentSeal className="scale-75 origin-center" />
                                                 </div>
-                                                {formData.showSignatory === 'image' && (
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Seal / Signature Upload</label>
-                                                        <div className="relative group aspect-video">
-                                                            {formData.signatoryImage ? (
-                                                                <div className="relative h-full bg-white/5 rounded-2xl border border-white/10 p-6 flex items-center justify-center overflow-hidden">
-                                                                    <img src={formData.signatoryImage} alt="Signature" className="max-h-full object-contain" />
-                                                                    <button onClick={() => setFormData({...formData, signatoryImage: ''})} className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="h-full border-2 border-dashed border-white/5 rounded-3xl bg-black/30 flex flex-col items-center justify-center gap-4 group-hover:border-neon-blue/20 transition-all">
-                                                                    <input type="file" onChange={handleSignatoryUpload} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
-                                                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-neon-blue group-hover:text-black transition-all">
-                                                                        <Upload size={20} />
-                                                                    </div>
-                                                                    <div className="text-center">
-                                                                        <p className="text-[10px] font-black uppercase tracking-widest text-white mb-1">Click to Upload</p>
-                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase">PNG, JPG (Max 2MB)</p>
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                            )}
+                                        </div>
+
+                                        {/* Authorization Sections */}
+                                        {formData.showSignatures && (
+                                            <div className="space-y-6">
+                                                {/* Provider Authorization (Newbi) */}
+                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Provider Authorization</h3>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sign on behalf of Newbi Entertainment</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => document.getElementById('provider-sig-upload-inv').click()}
+                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                                                            >
+                                                                <Upload size={12} /> Upload Sign
+                                                            </button>
+                                                            <input 
+                                                                type="file" 
+                                                                id="provider-sig-upload-inv" 
+                                                                className="hidden" 
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = (re) => setFormData({...formData, providerSignature: re.target.result});
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
                                                         </div>
                                                     </div>
-                                                )}
+                                                    
+                                                    <div className="relative h-48 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                        {formData.providerSignature ? (
+                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                <button 
+                                                                    onClick={() => setFormData({...formData, providerSignature: ''})}
+                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Upload Signature</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Client Authorization */}
+                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Client Authorization</h3>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Customer sign-off area</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => document.getElementById('client-sig-upload-inv').click()}
+                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                                                            >
+                                                                <Upload size={12} /> Upload Sign
+                                                            </button>
+                                                            <input 
+                                                                type="file" 
+                                                                id="client-sig-upload-inv" 
+                                                                className="hidden" 
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = (re) => setFormData({...formData, clientSignature: re.target.result});
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="relative h-48 bg-white rounded-[32px] flex items-center justify-center overflow-hidden">
+                                                        {formData.clientSignature ? (
+                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                <button 
+                                                                    onClick={() => setFormData({...formData, clientSignature: ''})}
+                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -908,10 +967,10 @@ const InvoiceGenerator = () => {
                                                 <div className="flex-1 space-y-2">
                                                     {/* Payment Details */}
                                                     {formData.showPaymentDetails && formData.paymentDetails && (
-                                                        <div className="p-2 border-2 border-dashed border-gray-300 rounded-2xl text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                            <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                            <div className="whitespace-pre-line tracking-wide">
-                                                                {formData.paymentDetails}
+                                                        <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/40 shadow-sm w-full">
+                                                            <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
+                                                            <div className="font-mono">
+                                                                {renderContent(formData.paymentDetails)}
                                                             </div>
                                                         </div>
                                                     )}
@@ -921,8 +980,10 @@ const InvoiceGenerator = () => {
                                                             <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
                                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
                                                             </div>
-                                                            <div className="p-2">
-                                                                <p className="text-[9px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p>
+                                                            <div className="p-4">
+                                                                <div className="text-[10px] text-gray-700 leading-relaxed italic">
+                                                                    {renderContent(formData.note)}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -990,21 +1051,43 @@ const InvoiceGenerator = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Signature Block */}
-                                                    {formData.showSignatory !== 'none' && (
-                                                        <div className="w-full flex flex-col items-end mt-4">
-                                                            {formData.showSignatory === 'image' && formData.signatoryImage ? (
-                                                                <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                            ) : formData.showSignatory === 'text' ? (
-                                                                <div className="h-16 flex items-end justify-center">
-                                                                    <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{formData.senderName || 'Authorized Signatory'}</p>
+                                                    {/* Authentication Layer */}
+                                                    {(formData.showSeal || formData.showSignatures) && (
+                                                        <div className="w-full grid grid-cols-2 gap-16 mt-12 pt-12 border-t-2 border-gray-100 relative">
+                                                            {/* Provider Signature */}
+                                                            <div className="space-y-6">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                <div className="h-32 flex items-center justify-start relative">
+                                                                    {formData.showSignatures && formData.providerSignature ? (
+                                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                    ) : (
+                                                                        <p className="text-[20px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                    )}
+                                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10" />
                                                                 </div>
-                                                            ) : (
-                                                                <div className="h-16" />
-                                                            )}
-                                                            <div className="w-40 pt-3 border-t-2 border-dashed border-gray-400 text-center">
-                                                                <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic font-bold">Authorized Signature</p>
+                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest leading-none">{formData.senderName || 'Authorized Signatory'}</p>
                                                             </div>
+
+                                                            {/* Client Signature */}
+                                                            <div className="space-y-6 text-right">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                                <div className="h-32 flex items-center justify-end relative">
+                                                                    {formData.showSignatures && formData.clientSignature ? (
+                                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                    ) : (
+                                                                        <p className="text-[20px] font-formal italic text-black opacity-10">Type name to sign</p>
+                                                                    )}
+                                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10" />
+                                                                </div>
+                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest leading-none">Acknowledged & Accepted</p>
+                                                            </div>
+
+                                                            {/* Official Seal Overlay */}
+                                                            {formData.showSeal && (
+                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-85 mix-blend-multiply">
+                                                                    <DocumentSeal className="w-52 h-52" />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1115,9 +1198,7 @@ const InvoiceGenerator = () => {
                                             {formData.showPaymentDetails && formData.paymentDetails && (
                                                 <div className="p-2 border-2 border-dashed border-gray-300 rounded-2xl text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
                                                     <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                    <div className="whitespace-pre-line tracking-wide">
-                                                        {formData.paymentDetails}
-                                                    </div>
+                                                    <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
                                                 </div>
                                             )}
                                             {/* Additional Notes */}
@@ -1127,7 +1208,7 @@ const InvoiceGenerator = () => {
                                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
                                                     </div>
                                                     <div className="p-2">
-                                                        <p className="text-[9px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p>
+                                                        <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: formData.note || 'No additional notes.' }} />
                                                     </div>
                                                 </div>
                                             )}
@@ -1195,21 +1276,43 @@ const InvoiceGenerator = () => {
                                                 </div>
                                             )}
 
-                                            {/* Signature Block */}
-                                            {formData.showSignatory !== 'none' && (
-                                                <div className="w-full flex flex-col items-end mt-4">
-                                                    {formData.showSignatory === 'image' && formData.signatoryImage ? (
-                                                        <img src={formData.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                    ) : formData.showSignatory === 'text' ? (
-                                                        <div className="h-16 flex items-end justify-center">
-                                                            <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{formData.senderName || 'Authorized Signatory'}</p>
+                                            {/* Authentication Layer */}
+                                            {(formData.showSeal || formData.showSignatures) && (
+                                                <div className="w-full grid grid-cols-2 gap-12 mt-8 pt-8 border-t border-gray-200 relative">
+                                                    {/* Provider Signature */}
+                                                    <div className="space-y-4">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                        <div className="h-24 flex items-center justify-start relative">
+                                                            {formData.showSignatures && formData.providerSignature ? (
+                                                                <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" />
+                                                            ) : (
+                                                                <p className="text-[16px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                            )}
+                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
                                                         </div>
-                                                    ) : (
-                                                        <div className="h-16" />
-                                                    )}
-                                                    <div className="w-40 pt-3 border-t-2 border-dashed border-gray-400 text-center">
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic font-bold">Authorized Signature</p>
+                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest leading-none">{formData.senderName || 'Authorized Signatory'}</p>
                                                     </div>
+
+                                                    {/* Client Signature */}
+                                                    <div className="space-y-4 text-right">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                        <div className="h-24 flex items-center justify-end relative">
+                                                            {formData.showSignatures && formData.clientSignature ? (
+                                                                <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" />
+                                                            ) : (
+                                                                <p className="text-[16px] font-formal italic text-black opacity-10">Type name to sign</p>
+                                                            )}
+                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                        </div>
+                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest leading-none">Acknowledged & Accepted</p>
+                                                    </div>
+
+                                                    {/* Official Seal Overlay */}
+                                                    {formData.showSeal && (
+                                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply scale-75">
+                                                            <DocumentSeal className="w-40 h-40" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1343,16 +1446,15 @@ const InvoiceGenerator = () => {
                             {pageIdx === paginatedPages.length - 1 && (
                                 <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200">
                                     <div className="space-y-6">
-                                        {formData.showPaymentDetails && formData.paymentDetails && (
                                             <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
                                                 <p className="text-xs font-black text-black mb-3 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                <div className="whitespace-pre-line tracking-wide">{formData.paymentDetails}</div>
+                                                <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
                                             </div>
-                                        )}
                                         {formData.showNotes && (
                                             <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                                <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}><h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4></div>
-                                                <div className="p-4"><p className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{formData.note || 'No additional notes.'}</p></div>
+                                                <div className="p-4">
+                                                    <div className="article-content text-[10px] text-gray-700 font-bold leading-relaxed italic" dangerouslySetInnerHTML={{ __html: formData.note || 'No additional notes.' }} />
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -1377,7 +1479,7 @@ const InvoiceGenerator = () => {
                                             <div className="flex flex-col items-center">
                                                 <div className="bg-white p-2 rounded-xl shadow-lg border border-black/5">
                                                     <img 
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=6207708566@jupitera xis%26pn=ABHINAV%20ANAND%26am=${balanceDue}%26cu=INR`}
+                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${formData.upiId}%26pn=${encodeURIComponent(formData.senderName)}%26am=${balanceDue}%26cu=INR`}
                                                         alt="Payment QR"
                                                         className="w-[70px] h-[70px] grayscale contrast-125"
                                                         crossOrigin="anonymous"
@@ -1427,46 +1529,6 @@ const InvoiceGenerator = () => {
                 ))}
             </div>
             <AnimatePresence>
-                {showAiSettings && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-black/60">
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden">
-                            <button onClick={() => setShowAiSettings(false)} className="absolute top-6 right-6 p-3 bg-white/5 rounded-xl hover:bg-white/10 border border-white/5 transition-all"><X size={18} /></button>
-                            <div className="mb-8">
-                                <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">AI <span className="text-neon-blue">Protocol.</span></h3>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Configure Generative Intelligence</p>
-                            </div>
-                            <div className="space-y-8">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Gemini API Key</label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-0 bg-neon-blue/5 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                                        <input type="password" value={aiApiKey} onChange={e => { setAiApiKey(e.target.value); localStorage.setItem('geminiApiKey', e.target.value); }} className="w-full bg-black/40 border border-white/10 focus:border-neon-blue/40 rounded-2xl h-16 px-6 font-mono text-sm outline-none transition-all relative z-10" placeholder="Paste your API key..." />
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Intelligence Model</label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {[
-                                            { id: 'gemini-1.5-flash', label: 'Flash 1.5', desc: 'Speed Optimized' },
-                                            { id: 'gemini-2.0-flash-exp', label: 'Flash 2.0', desc: 'Reasoning Focus' }
-                                        ].map(m => (
-                                            <button key={m.id} onClick={() => { setAiModel(m.id); localStorage.setItem('geminiModel', m.id); }} className={cn("p-4 rounded-2xl border text-left transition-all group", aiModel === m.id ? "bg-neon-blue border-neon-blue text-black" : "bg-black/40 border-white/10 text-gray-400 hover:text-white hover:bg-white/5")}>
-                                                <div className="text-[10px] font-black uppercase tracking-widest mb-1">{m.label}</div>
-                                                <div className={cn("text-[8px] font-bold uppercase tracking-widest opacity-60", aiModel === m.id ? "text-black" : "text-gray-500 group-hover:text-gray-400")}>{m.desc}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="p-6 bg-neon-blue/5 border border-neon-blue/10 rounded-2xl">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
-                                        Your API keys are stored locally in your browser. All intelligence processing happens directly via Google Generative AI endpoints.
-                                    </p>
-                                </div>
-                                <button onClick={() => setShowAiSettings(false)} className="w-full h-14 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-[1.02] transition-all">Confirm Settings</button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
             </AnimatePresence>
         </div>
     );

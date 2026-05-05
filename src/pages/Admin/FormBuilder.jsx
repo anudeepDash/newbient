@@ -8,6 +8,8 @@ import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import { generateFullDocument } from '../../lib/ai';
+import AIPromptBox from '../../components/admin/AIPromptBox';
 
 const FormBuilder = () => {
     const colorPresets = [
@@ -36,13 +38,14 @@ const FormBuilder = () => {
     const [highlightColor, setHighlightColor] = useState('#FF4F8B');
     const [isPinned, setIsPinned] = useState(false);
     const [imageTransform, setImageTransform] = useState({ scale: 1.05, x: 0, y: 0 });
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [promptBoxClear, setPromptBoxClear] = useState(false);
 
     useEffect(() => {
         if (id) {
             // Fix: Do NOT parseToInt. IDs are strings in Firestore.
             const form = forms.find(f => f.id === id);
             if (form) {
-                setTitle(form.title);
                 setTitle(form.title);
                 setDescription(form.description);
                 setActiveLabel(form.activeLabel || 'Live');
@@ -76,8 +79,24 @@ const FormBuilder = () => {
         }
     };
 
+    const handleGenerateForm = async (prompt) => {
+        setIsGenerating(true);
+        try {
+            const data = await generateFullDocument('form', prompt, 'Premium', {});
+            if (data.title) setTitle(data.title);
+            if (data.description) setDescription(data.description);
+            if (data.activeLabel) setActiveLabel(data.activeLabel);
+            if (data.bottomText) setBottomText(data.bottomText);
+            if (data.buttonText) setButtonText(data.buttonText);
+        } catch (error) {
+            alert("AI Generation failed: " + error.message);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
 
         // Extract src if user pasted full iframe code
         let cleanUrl = formUrl;
@@ -112,6 +131,8 @@ const FormBuilder = () => {
                     createdAt: new Date().toISOString()
                 });
             }
+            setPromptBoxClear(true);
+            setTimeout(() => setPromptBoxClear(false), 100);
             navigate('/admin/forms');
         } catch (error) {
             console.error("Error saving form:", error);
@@ -154,6 +175,9 @@ const FormBuilder = () => {
                         </Button>
                     </div>
                 </div>
+
+                {/* AI Prompt Box for Form Generation */}
+                <AIPromptBox onGenerate={handleGenerateForm} isGenerating={isGenerating} type="form" forceClear={promptBoxClear} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     {/* Left Column: Builder */}
@@ -291,7 +315,7 @@ const FormBuilder = () => {
                                                     <div className="relative group w-14">
                                                         <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                                         <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center border-2 border-dashed transition-all", isUploading ? "border-neon-pink bg-neon-pink/10 text-neon-pink" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20")}>
-                                                            {isUploading ? <Loader className="animate-spin" size={20} /> : <Plus size={20} />}
+                                                            {isUploading ? <Sparkles className="animate-spin" size={20} /> : <Plus size={20} />}
                                                         </div>
                                                     </div>
                                                 </div>

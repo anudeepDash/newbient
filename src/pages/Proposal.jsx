@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, FileText, Check, PenTool, Settings, LogOut, LayoutGrid, Zap, ShieldCheck, Layers, Globe, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DocumentSeal from '../components/ui/DocumentSeal';
+import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -18,7 +19,7 @@ const Proposal = () => {
     const [scale, setScale] = useState(1);
     const [isExporting, setIsExporting] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [verificationEmail, setVerificationEmail] = useState('');
+    const [verificationEmail, setVerificationEmail] = useState(user?.email || '');
     const [ipAddress, setIpAddress] = useState('Detecting...');
 
     useEffect(() => {
@@ -28,6 +29,7 @@ const Proposal = () => {
             .catch(() => setIpAddress('Hidden/Protected'));
     }, []);
     const [signatureName, setSignatureName] = useState('');
+    const [clientSignature, setClientSignature] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -57,6 +59,12 @@ const Proposal = () => {
         hiddenFields: [],
         selectedLogo: 'entertainment'
     };
+
+    useEffect(() => {
+        if (user?.email && !verificationEmail) {
+            setVerificationEmail(user.email);
+        }
+    }, [user, verificationEmail]);
 
     useEffect(() => {
         if (proposal && !isAdmin) {
@@ -173,7 +181,7 @@ const Proposal = () => {
         }
 
         if (!verificationEmail.trim() || !verificationEmail.includes('@')) {
-            alert('A valid professional email is required for identity verification.');
+            setIsVerifying(true);
             return;
         }
         
@@ -194,10 +202,16 @@ const Proposal = () => {
                 status: 'Accepted',
                 approvalMetadata: {
                     signedBy: signatureName,
+                    clientSignature: clientSignature,
                     signedAt: new Date().toISOString(),
                     ip: ipAddress,
                     email: verificationEmail,
-                    device: deviceMetadata
+                    device: deviceMetadata,
+                    footprint: {
+                        browser: navigator.userAgent.split(' ').slice(-1)[0],
+                        os: navigator.platform,
+                        res: `${window.screen.width}x${window.screen.height}`
+                    }
                 }
             });
             setIsVerifying(false);
@@ -302,6 +316,23 @@ const Proposal = () => {
             i++;
         }
         return <div>{elements}</div>;
+    };
+
+    // Helper to render content that might be HTML or legacy text
+    const renderContent = (content, baseClass = '') => {
+        if (!content) return null;
+        const isHtml = content.includes('<') && content.includes('>');
+        
+        if (isHtml) {
+            return (
+                <div 
+                    className={cn("article-content", baseClass)} 
+                    dangerouslySetInnerHTML={{ __html: content }} 
+                />
+            );
+        }
+        
+        return renderFormatted(content, baseClass);
     };
 
     const inlineFmt = (text) => {
@@ -420,12 +451,12 @@ const Proposal = () => {
                                 {page.type === 'strategy' && (
                                     <div className="space-y-16 py-8">
                                         <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Execution Roadmap.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-                                        {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(displayProposal.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                        {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                         {!isHidden('primaryGoal') && (
                                             <div className="pt-12">
                                                 <div className="p-12 border-2 border-black space-y-6">
                                                     <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                    <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                                    <div className="text-xl font-black uppercase text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
                                                 </div>
                                             </div>
                                         )}
@@ -444,7 +475,7 @@ const Proposal = () => {
                                                 <div className="pl-10">
                                                     {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                     {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                    {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                    {renderContent(page.scopeText || '', 'text-[12px] font-medium text-black')}
                                                 </div>
                                             </div>
                                         </div>
@@ -550,42 +581,93 @@ const Proposal = () => {
                                     <div className="space-y-16 py-8">
                                         <div className="grid grid-cols-2 gap-16 items-start">
                                             <div className="space-y-12">
-                                                {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{displayProposal.terms}</p></div>}
-                                                {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{displayProposal.paymentDetails}</p></div>}
+                                                {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(displayProposal.terms)}</div></div>}
+                                                {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(displayProposal.paymentDetails)}</div></div>}
                                                 
                                                 {idx === paginatedPages.length - 1 && (
                                                     <div className="pt-10 space-y-10 border-t border-gray-100">
                                                         {!displayProposal.approvalMetadata ? (
-                                                            <div className="space-y-6 no-print">
-                                                                <div className="space-y-2">
-                                                                    <p className="text-[10px] font-black text-black uppercase tracking-widest">Official Authorization</p>
-                                                                    <p className="text-[9px] font-medium text-gray-400">By typing your name, you agree to authorize this official project quotation and its associated commercial terms.</p>
+                                                            <div className="space-y-8 no-print bg-[#0a0a0a] p-8 rounded-[32px] border border-white/5 shadow-2xl">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="space-y-1">
+                                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Client Authorization</h3>
+                                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize this memorandum</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 rounded-full">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">Secure Handshake Active</span>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="relative group">
-                                                                    <input 
-                                                                        value={signatureName} 
-                                                                        onChange={e => setSignatureName(e.target.value)} 
-                                                                        placeholder="Enter Full Name to Authorize..." 
-                                                                        className="w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 px-8 rounded-2xl text-2xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-sm placeholder:font-bold placeholder:tracking-widest" 
-                                                                    />
+
+                                                                <div className="space-y-6">
+                                                                    <div className="space-y-3">
+                                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2">Authorized Representative</label>
+                                                                        <input 
+                                                                            value={signatureName} 
+                                                                            onChange={e => setSignatureName(e.target.value)} 
+                                                                            placeholder="ENTER FULL LEGAL NAME" 
+                                                                            className="w-full bg-black/40 border border-white/10 h-16 px-6 rounded-2xl text-sm font-bold text-white outline-none focus:border-neon-green/40 transition-all uppercase tracking-widest" 
+                                                                        />
+                                                                    </div>
+
+                                                                    <div className="space-y-3">
+                                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2">Digital Signature</label>
+                                                                        <div className="bg-white rounded-2xl overflow-hidden h-48 border-2 border-dashed border-white/10 relative group/pad">
+                                                                            <SignaturePad 
+                                                                                onSave={setClientSignature}
+                                                                                className="h-full w-full"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex gap-4">
+                                                                        <Button 
+                                                                            onClick={handleApproveProposal} 
+                                                                            disabled={isSubmitting || !signatureName.trim() || !clientSignature} 
+                                                                            className="flex-[2] h-16 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.2)] disabled:opacity-30 disabled:grayscale"
+                                                                        >
+                                                                            {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
+                                                                            Authorize Document
+                                                                        </Button>
+                                                                    </div>
+                                                                    
+                                                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
                                                                 </div>
-                                                                <Button 
-                                                                    onClick={handleApproveProposal} 
-                                                                    disabled={isSubmitting || !signatureName.trim()} 
-                                                                    className="w-full h-16 bg-black text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-neon-green hover:text-black transition-all group overflow-hidden relative shadow-2xl disabled:opacity-30"
-                                                                >
-                                                                    <span className="relative z-10 flex items-center justify-center gap-2">{isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} className="text-neon-green" />} Authorize Strategic Memorandum</span>
-                                                                    <div className="absolute inset-0 bg-gradient-to-r from-neon-green/20 via-transparent to-neon-green/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                                                </Button>
                                                             </div>
                                                         ) : (
-                                                            <div className="p-10 border-2 border-neon-green/30 bg-neon-green/5 relative overflow-hidden group">
-                                                                <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={80} className="text-neon-green" /></div>
-                                                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-2"><ShieldCheck size={14} /> Digitally Authorized</p>
-                                                                <div className="space-y-2">
-                                                                    <p className="text-5xl font-black font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
-                                                                    <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Ref: {displayProposal.id}</p>
+                                                            <div className="space-y-10 relative">
+                                                                {/* Accepted View */}
+                                                                <div className="grid grid-cols-2 gap-10">
+                                                                    <div className="space-y-6">
+                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
+                                                                        <div className="h-24 flex items-end">
+                                                                            {displayProposal.approvalMetadata.clientSignature ? (
+                                                                                <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                                            ) : (
+                                                                                <p className="text-4xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <div className="space-y-6">
+                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2 text-right">Digital Footprints</p>
+                                                                        <div className="space-y-2 text-[8px] font-black uppercase tracking-widest text-gray-500 text-right">
+                                                                            <div className="flex justify-end gap-2"><span>IP Address:</span><span className="text-black">{displayProposal.approvalMetadata.ip}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Verified Email:</span><span className="text-black">{displayProposal.approvalMetadata.email}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>User Agent:</span><span className="text-black max-w-[120px] truncate">{displayProposal.approvalMetadata.footprint?.browser || 'System'}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Timestamp:</span><span className="text-black">{new Date(displayProposal.approvalMetadata.signedAt).toISOString()}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Ref ID:</span><span className="text-black">{displayProposal.id.slice(-8).toUpperCase()}</span></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Seal Overlay */}
+                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[60%] pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                                                                    <DocumentSeal className="w-48 h-48 grayscale brightness-0" />
                                                                 </div>
                                                             </div>
                                                         )}
@@ -649,12 +731,12 @@ const Proposal = () => {
                             {page.type === 'strategy' && (
                                 <div className="space-y-16 py-8">
                                     <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Project Timeline.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-                                    {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(displayProposal.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                    {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                                <div className="text-xl font-black uppercase text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
                                             </div>
                                         </div>
                                     )}
@@ -673,7 +755,7 @@ const Proposal = () => {
                                             <div className="pl-10">
                                                 {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                 {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                {renderContent(page.scopeText || '', 'text-[12px] font-medium text-black')}
                                             </div>
                                         </div>
                                     </div>
@@ -750,8 +832,8 @@ const Proposal = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="grid grid-cols-2 gap-16 items-start">
                                         <div className="space-y-12">
-                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{displayProposal.terms}</p></div>}
-                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{displayProposal.paymentDetails}</p></div>}
+                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-bold text-gray-500 italic leading-relaxed text-justify">{renderContent(displayProposal.terms)}</div></div>}
+                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-black font-mono text-black leading-relaxed">{renderContent(displayProposal.paymentDetails)}</div></div>}
                                             
                                             <div className="pt-10 space-y-10 border-t border-gray-100">
                                                 {displayProposal.approvalMetadata && (
@@ -883,7 +965,7 @@ const Proposal = () => {
 
                                 <div className="space-y-4 pt-4">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-2">Authorization Email</label>
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-2">Professional Authorization Email</label>
                                         <input 
                                             type="email" 
                                             value={verificationEmail}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Sparkles, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload, Sparkles, Cpu } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -12,106 +12,28 @@ import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
-import { generateProposalContent, generateFieldRefinement } from '../../services/aiService';
-// Markdown-like formatting toolbar for textareas — defined outside to prevent remount on parent re-render
-const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'min-h-[250px]' }) => {
-    const textareaRef = useRef(null);
-    const historyRef = useRef([]);
-    const pushHistory = () => {
-        const h = historyRef.current;
-        if (h.length === 0 || h[h.length - 1] !== value) {
-            h.push(value);
-            if (h.length > 30) h.shift();
-        }
-    };
-    const handleUndo = () => {
-        const h = historyRef.current;
-        if (h.length > 0) {
-            const prev = h.pop();
-            onChange({ target: { value: prev } });
-        }
-    };
-    const insertFormat = (before, after = '') => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const scroll = ta.scrollTop;
-        const selected = value.substring(start, end);
-        const newText = value.substring(0, start) + before + (selected || 'text') + after + value.substring(end);
-        onChange({ target: { value: newText } });
-        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + before.length; ta.selectionEnd = start + before.length + (selected || 'text').length; }, 10);
-    };
-    const insertLine = (prefix) => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const scroll = ta.scrollTop;
-        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-        const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
-        onChange({ target: { value: newText } });
-        setTimeout(() => { ta.focus(); ta.scrollTop = scroll; ta.selectionStart = start + prefix.length; ta.selectionEnd = start + prefix.length; }, 10);
-    };
-    const handleKeyDown = (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'b') { e.preventDefault(); insertFormat('**', '**'); }
-            else if (e.key === 'i') { e.preventDefault(); insertFormat('*', '*'); }
-            else if (e.key === 'h') { e.preventDefault(); insertLine('## '); }
-            else if (e.key === 'l') { e.preventDefault(); insertLine('• '); }
-            else if (e.key === 'z') { e.preventDefault(); handleUndo(); }
-        }
-    };
-    return (
-        <div className="space-y-2">
-            <div className="flex items-center gap-1 px-4">
-                <button type="button" onClick={handleUndo} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertFormat('**', '**')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bold (Ctrl+B)"><span className="text-[11px] font-black">B</span></button>
-                <button type="button" onClick={() => insertFormat('*', '*')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Italic (Ctrl+I)"><span className="text-[11px] font-bold italic">I</span></button>
-                <button type="button" onClick={() => insertLine('## ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Heading (Ctrl+H)"><span className="text-[11px] font-black">H</span></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertLine('• ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Bullet List (Ctrl+L)"><span className="text-[11px] font-bold">•</span></button>
-                <button type="button" onClick={() => insertLine('1. ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all" title="Numbered List"><span className="text-[11px] font-bold">1.</span></button>
-            </div>
-            <textarea ref={textareaRef} value={value} onChange={onChange} onKeyDown={handleKeyDown} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-base font-medium outline-none focus:border-neon-green/40 transition-all leading-relaxed", minH, className)} placeholder={placeholder} />
-        </div>
-    );
-};
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import { generateFullDocument } from '../../lib/ai';
+import AIPromptBox from '../../components/admin/AIPromptBox';
+import DocumentSeal from '../../components/ui/DocumentSeal';
+
+// Markdown-like formatting toolbar for textareas â€” defined outside to prevent remount on parent re-render
 
 const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addProposal, updateProposal, proposals } = useStore();
+    const { addProposal, updateProposal, proposals, user } = useStore();
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
-    // AI & Workflow State
-    const [aiPrompt, setAiPrompt] = useState('');
-    const [aiApiKey, setAiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
-    
-    // Auto-migrate deprecated model names to current generation
-    const migrateModel = (m) => {
-        if (!m || !m.startsWith('gemini')) return 'gemini-1.5-flash';
-        return m;
-    };
-    const [aiModel, setAiModel] = useState(migrateModel(localStorage.getItem('geminiModel')));
-    const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-    const [showAiSettings, setShowAiSettings] = useState(false);
     const [activeTab, setActiveTab] = useState('1'); 
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
-    const [refiningField, setRefiningField] = useState(null);
-    const [refinementPrompt, setRefinementPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [aiError, setAiError] = useState(null);
+    const [generatingSection, setGeneratingSection] = useState(null); // 'all', 'strategy', 'scope', 'deliverables', etc.
+    const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-
-    // Parse structured error from aiService
-    const parsedError = (() => {
-        if (!aiError) return null;
-        try { return JSON.parse(aiError); } catch { return { code: 'NB-999', title: 'Error', message: aiError }; }
-    })();
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [bulkRawText, setBulkRawText] = useState('');
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -136,12 +58,17 @@ const ProposalGenerator = () => {
         deliverables: [{ id: 1, item: '', qty: '', timeline: '' }],
         clientRequirements: [{ id: 1, description: '' }],
         scopeOfWork: '',
-        terms: '1. 50% Advance activation fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
-        paymentDetails: 'Account Name: ABHINAV ANAND\nAccount Number: 77780102222341\nIFSC: FDRL0007778\nUPI: 6207708566@jupiteraxis',
+        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
         gstRate: 18,
         advanceRequested: 50,
         showGst: true,
-        senderName: 'Abhinav Anand',
+        showSeal: false,
+        showSignatures: false,
+        signatureType: 'handwritten', // 'handwritten' | 'digital' | 'typed'
+        providerSignature: '',
+        clientSignature: '',
+        senderName: 'Authorized Signatory',
         status: 'Draft',
         hiddenFields: [],
         selectedLogo: 'entertainment' 
@@ -222,13 +149,16 @@ const ProposalGenerator = () => {
         }
         return pages;
     };
-
     const handleSave = async () => {
         setIsGenerating(true);
         try {
             const proposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
             if (id) await updateProposal(id, proposalData);
             else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
+            
+            setPromptBoxClear(true);
+            setTimeout(() => setPromptBoxClear(false), 100);
+            
             navigate('/admin/proposals');
         } catch (error) {
             alert("Save Error: " + error.message);
@@ -236,29 +166,53 @@ const ProposalGenerator = () => {
             setIsGenerating(false);
         }
     };
-
-    const handleGenerateAI = async () => {
-        if (!aiPrompt) return;
-        setIsGeneratingAi(true);
-        setAiError(null);
+    const handleGenerateProposal = async (prompt) => {
+        setIsGenerating(true);
         try {
-            const detailedPrompt = `Generate a high-fidelity strategic quotation for: ${aiPrompt}. 
-            IMPORTANT FORMATTING RULES:
-            - For scopeOfWork: Use bullet points (• ) with single-line explanations. Group under ## headings. Keep each point concise (one line max).
-            - For overview: Write 2-3 concise sentences. No bullet points.
-            - For primaryGoal: One powerful sentence.
-            - Avoid long paragraphs everywhere. Prefer structured, scannable content.
-            Use terminology like 'Execution Roadmap' and 'Strategic Summary'. Avoid words like 'Formal'.`;
-            const result = await generateProposalContent(aiApiKey, detailedPrompt, formData, aiModel);
-            setFormData(prev => ({ ...prev, ...result }));
-            if (result.items) setItems(result.items.map((it, idx) => ({ ...it, id: idx + 1 })));
-            setActiveTab('1');
+            const data = await generateFullDocument('proposal', prompt, 'Premium', {});
+            setFormData(prev => ({
+                ...prev,
+                clientName: data.clientName || prev.clientName,
+                clientAddress: data.clientAddress || prev.clientAddress,
+                campaignName: data.campaignName || prev.campaignName,
+                campaignDuration: data.campaignDuration || prev.campaignDuration,
+                coverDescription: data.coverDescription || prev.coverDescription,
+                overview: data.overview || prev.overview,
+                primaryGoal: data.primaryGoal || prev.primaryGoal,
+                scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                terms: data.terms || prev.terms,
+                // NOTE: Never overwrite paymentDetails â€” user has their own bank details pre-configured
+                deliverables: data.deliverables?.length 
+                    ? data.deliverables.map((d, i) => ({ 
+                        id: Date.now() + i, 
+                        item: d.item || d.name || '', 
+                        qty: d.qty || '1', 
+                        timeline: d.timeline || 'TBD' 
+                    })) 
+                    : prev.deliverables,
+                clientRequirements: data.clientRequirements?.length 
+                    ? data.clientRequirements.map((r, i) => ({ 
+                        id: Date.now() + 100 + i, 
+                        description: r.description || r.requirement || '' 
+                    })) 
+                    : prev.clientRequirements,
+            }));
+            if (data.items && data.items.length > 0) {
+                setItems(data.items.map((item, idx) => ({
+                    id: Date.now() + 200 + idx,
+                    description: item.description || item.name || '',
+                    qty: Number(item.qty) || 1,
+                    unit: item.unit || 'Unit',
+                    price: Number(item.price) || 0
+                })));
+            }
         } catch (error) {
-            setAiError(error.message);
+            alert("AI Generation failed: " + error.message);
         } finally {
-            setIsGeneratingAi(false);
+            setIsGenerating(false);
         }
     };
+
 
     const handleTabClick = (tabId) => {
         setActiveTab(tabId);
@@ -267,26 +221,6 @@ const ProposalGenerator = () => {
         const targetType = mapping[tabId];
         const pageIndex = pages.findIndex(p => p.type === targetType);
         if (pageIndex !== -1) setCurrentPreviewPage(pageIndex);
-    };
-
-    const handleRefineField = async (fieldName, fieldLabel) => {
-        setRefiningField({ name: fieldName, label: fieldLabel });
-    };
-
-    const executeRefinement = async () => {
-        if (!refinementPrompt || !refiningField) return;
-        setIsGeneratingAi(true);
-        setAiError(null);
-        try {
-            const refinedText = await generateFieldRefinement(aiApiKey, refiningField.name, refiningField.label, formData[refiningField.name], refinementPrompt, aiModel);
-            setFormData(prev => ({ ...prev, [refiningField.name]: refinedText }));
-            setRefiningField(null);
-            setRefinementPrompt('');
-        } catch (error) {
-            setAiError(error.message);
-        } finally {
-            setIsGeneratingAi(false);
-        }
     };
 
     const generatePDF = async () => {
@@ -324,12 +258,13 @@ const ProposalGenerator = () => {
     const paginatedPages = getPaginatedPages();
 
     const tabs = [
-        { id: '1', label: 'Identity', icon: FileText, desc: 'Project Configuration', visibilityKey: null },
-        { id: '2', label: 'Roadmap', icon: Target, desc: 'Execution Strategy', visibilityKey: 'roadmap' },
-        { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Scope of Work', visibilityKey: 'scopeOfWork' },
-        { id: '4', label: 'Proposal', icon: Layers, desc: 'Deliverables & Requirements', visibilityKey: 'proposal' },
-        { id: '5', label: 'Inventory', icon: Briefcase, desc: 'Service & Resource Inventory', visibilityKey: 'inventory' },
-        { id: '6', label: 'Commercials', icon: CreditCard, desc: 'Financial Projections', visibilityKey: 'commercials' }
+        { id: '0', label: 'Briefing', icon: Zap, desc: 'Project Source Data', visibilityKey: null },
+        { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: null },
+        { id: '2', label: 'Architecture', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
+        { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
+        { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
+        { id: '5', label: 'Commercials', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
+        { id: '6', label: 'Settlement', icon: CreditCard, desc: 'Payment Terms', visibilityKey: 'commercials' }
     ];
 
     const VisibilityToggle = ({ field, label }) => (
@@ -346,60 +281,37 @@ const ProposalGenerator = () => {
     );
 
     // Render markdown-formatted text into styled JSX for the document preview
-    const renderFormatted = (text, baseClass = 'text-[13px] font-medium text-black leading-[1.9]') => {
+    const renderFormatted = (text, baseClass = '') => {
         if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i];
-            // Heading
-            if (line.startsWith('## ')) {
-                elements.push(<p key={i} className="text-[13px] font-black text-black uppercase tracking-wider mt-4 mb-1">{line.slice(3)}</p>);
-            // Bullet
-            } else if (line.match(/^[•\-\*]\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
-                    i++;
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-4 space-y-1 my-2">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
-                    </div>
-                );
-                continue;
-            // Numbered
-            } else if (line.match(/^\d+\.\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-                    items.push(lines[i].replace(/^\d+\.\s/, ''));
-                    i++;
-                }
-                elements.push(
-                    <div key={`ol-${i}`} className="pl-4 space-y-1 my-2">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-[10px] font-black text-gray-400 mt-0.5 w-5 shrink-0">{j + 1}.</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
-                    </div>
-                );
-                continue;
-            // Empty line
-            } else if (line.trim() === '') {
-                elements.push(<div key={i} className="h-2" />);
-            // Regular paragraph
-            } else {
-                elements.push(<p key={i} className={cn(baseClass, 'text-justify')} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
+        const paragraphs = text.split(/\n\n+/);
+        return (
+            <div className={cn("space-y-4", baseClass)}>
+                {paragraphs.map((p, i) => (
+                    <p key={i} className="whitespace-pre-line leading-relaxed">
+                        {p}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
+    const renderContent = (content, baseClass = '') => {
+        if (!content) return null;
+        const isHtml = content.includes('<') && content.includes('>');
+        
+        if (isHtml) {
+            return (
+                <div 
+                    className={cn("article-content", baseClass)} 
+                    dangerouslySetInnerHTML={{ __html: content }} 
+                />
+            );
         }
-        return <div>{elements}</div>;
+        
+        return renderFormatted(content, baseClass);
     };
 
     // Inline bold/italic formatting
-    const inlineFmt = (text) => {
-        return text
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>');
-    };
 
     const currentTab = tabs.find(t => t.id === activeTab);
 
@@ -434,33 +346,31 @@ const ProposalGenerator = () => {
                         <Eye size={14} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
                     </button>
-                    <button onClick={() => setShowAiSettings(true)} className="p-2.5 bg-white/5 rounded-xl border border-white/5 hover:text-neon-green transition-all"><Settings size={16} /></button>
                     <button onClick={handleSave} className="h-10 md:h-12 px-3 md:px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl transition-all flex items-center gap-2">
                         <Save size={14} className="sm:hidden" />
                         <span className="hidden sm:inline">Save</span>
                     </button>
-                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl hover:scale-105 transition-all shadow-[0_10px_30_rgba(57,255,20,0.3)] flex items-center gap-2">
-                        <Download size={14} className="sm:hidden" />
-                        <span className="hidden sm:inline">Export</span>
+                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 transition-all flex items-center gap-2">
+                        {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
+                        <span className="hidden sm:inline">Export Proposal</span>
                     </button>
                 </div>
             </header>
 
             <main className="flex-1 flex overflow-hidden">
-                <aside className="hidden lg:flex w-24 border-r border-white/5 bg-zinc-900/20 flex-col p-4 overflow-y-auto scrollbar-hide items-center">
-                    <nav className="space-y-4">
+                <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                    <div className="space-y-2">
+                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <div key={tab.id} className="relative group">
-                                <button onClick={() => handleTabClick(tab.id)} className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group relative", activeTab === tab.id ? "bg-neon-green text-black shadow-[0_0_30_rgba(57,255,20,0.3)] scale-110" : "bg-white/5 text-gray-500 hover:text-white hover:bg-white/10")}>
-                                    <tab.icon size={24} />
-                                    <div className="absolute left-20 bg-black border border-white/10 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-2 group-hover:translate-x-0 z-[100] whitespace-nowrap">{tab.label}</div>
-                                </button>
-                                {tab.visibilityKey && (
-                                    <button onClick={(e) => { e.stopPropagation(); toggleFieldVisibility(tab.visibilityKey); }} className={cn("absolute -top-1 -right-1 p-1 rounded-full border-2 border-[#020202] transition-all", isHidden(tab.visibilityKey) ? "bg-red-500 text-white" : "bg-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black")}>{isHidden(tab.visibilityKey) ? <EyeOff size={10} /> : <Eye size={10} />}</button>
-                                )}
-                            </div>
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
+                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                </div>
+                            </button>
                         ))}
-                    </nav>
+                    </div>
                 </aside>
 
                 {/* Mobile Bottom Navigation */}
@@ -469,7 +379,7 @@ const ProposalGenerator = () => {
                         <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
                             <tab.icon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-green mt-1 shadow-[0_0_8px_#39FF14]" />}
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
                         </button>
                     ))}
                 </div>
@@ -478,16 +388,13 @@ const ProposalGenerator = () => {
                 {/* Editor Area */}
                 <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-3xl mx-auto">
-                        {/* Compact AI strategist block */}
-                        <div className="p-6 bg-zinc-900/40 border border-white/5 rounded-[2rem] relative overflow-hidden mb-12 group">
-                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Sparkles size={60} className="text-neon-green" /></div>
-                             <div className="flex items-center gap-3 mb-4">
-                                <Sparkles size={14} className="text-neon-green" />
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">AI Strategic Orchestrator</p>
-                             </div>
-                             <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="w-full bg-black/40 border border-white/10 focus:border-neon-green/40 rounded-2xl p-4 text-xs font-medium min-h-[80px] outline-none text-white scrollbar-hide mb-4 transition-all" placeholder="Describe project brief (Events, Production, Activations, Volunteers, etc)..." />
-                             <button onClick={handleGenerateAI} disabled={isGeneratingAi || !aiPrompt} className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-widest text-[9px] rounded-xl shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-2 disabled:opacity-50">{isGeneratingAi ? <RefreshCw className="animate-spin" size={14} /> : <Sparkles size={14} />} Execute Strategic Generation</button>
-                        </div>
+                        
+                        <AIPromptBox 
+                            onGenerate={handleGenerateProposal} 
+                            isGenerating={isGenerating && generatingSection === 'all' && !showBulkImport} 
+                            type="proposal" 
+                            forceClear={promptBoxClear}
+                        />
 
                         <div className="mb-8 flex items-center justify-between">
                             <div>
@@ -496,13 +403,117 @@ const ProposalGenerator = () => {
                                 <div className="w-16 h-1.5 bg-neon-green" />
                             </div>
                             {currentTab?.visibilityKey && (
-                                <VisibilityToggle field={currentTab.visibilityKey} label={`Page ${isHidden(currentTab.visibilityKey) ? 'Disabled' : 'Enabled'}`} />
+                                <div className="flex items-center gap-4">
+                                    <button 
+                                        onClick={async () => {
+                                            setGeneratingSection(currentTab.id);
+                                            setIsGenerating(true);
+                                            try {
+                                                // Call AI to refine ONLY this section
+                                                const refined = await generateFullDocument(`Refine the ${currentTab.label} section for: ${formData.campaignName}. Current: ${JSON.stringify(formData)}`, 'proposal');
+                                                // Merge refined data
+                                                setFormData(prev => ({...prev, ...refined}));
+                                            } catch (e) {
+                                                alert(e.message);
+                                            } finally {
+                                                setIsGenerating(false);
+                                                setGeneratingSection(null);
+                                            }
+                                        }}
+                                        disabled={isGenerating}
+                                        className="flex items-center gap-2 px-4 py-2 bg-[#39FF14]/10 text-[#39FF14] rounded-xl hover:bg-[#39FF14] hover:text-black transition-all text-[9px] font-black uppercase tracking-widest border border-[#39FF14]/20"
+                                    >
+                                        {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={12} /> : <Sparkles size={12} />}
+                                        Refine Section
+                                    </button>
+                                    <VisibilityToggle field={currentTab.visibilityKey} label={`Page ${isHidden(currentTab.visibilityKey) ? 'Disabled' : 'Enabled'}`} />
+                                </div>
                             )}
                         </div>
 
+                        {activeTab === '1' && (
+                            <div className="mb-12 flex justify-end">
+                                <Button 
+                                    onClick={() => setShowBulkImport(true)} 
+                                    variant="outline" 
+                                    className="border-white/10 hover:bg-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2 bg-zinc-900/50 text-white"
+                                >
+                                    <Upload size={14} />
+                                    Smart Bulk Import
+                                </Button>
+                            </div>
+                        )}
+
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
-                                {activeTab === '1' && (
+                                {activeTab === '0' && (
+                                    <div className="space-y-12">
+                                        <div className="bg-zinc-900/40 border border-white/5 rounded-[40px] p-10 space-y-10">
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Paste Project Brief / Raw Data</label>
+                                                    <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-3 py-1 rounded-full uppercase">AI Enabled</span>
+                                                </div>
+                                                <textarea 
+                                                    value={bulkRawText} 
+                                                    onChange={e => setBulkRawText(e.target.value)} 
+                                                    className="w-full bg-black/40 border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-neon-green/40 transition-all min-h-[300px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-700" 
+                                                    placeholder="Paste meeting notes, emails, or raw requirements here... The AI will extract everything automatically." 
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Upload Reference Files</label>
+                                                    <div className="group relative h-48 rounded-[32px] border-2 border-dashed border-white/10 hover:border-neon-green/50 hover:bg-neon-green/[0.02] transition-all flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden">
+                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple onChange={(e) => {
+                                                            // For now, just a visual feedback
+                                                            const files = Array.from(e.target.files);
+                                                            if (files.length) alert(`${files.length} files attached. In this version, please paste the text content for AI processing.`);
+                                                        }} />
+                                                        <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-neon-green group-hover:text-black transition-all">
+                                                            <Upload size={24} />
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-xs font-black text-white uppercase tracking-widest">Drop Briefs / PDFs</p>
+                                                            <p className="text-[9px] font-bold text-gray-500 uppercase mt-1">Up to 10MB per file</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col justify-end space-y-4">
+                                                    <div className="p-6 bg-neon-green/5 rounded-3xl border border-neon-green/10 space-y-2">
+                                                        <div className="flex items-center gap-2 text-neon-green">
+                                                            <Sparkles size={14} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Smart Extraction</span>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-gray-500 leading-relaxed uppercase">Our AI will automatically map names, objectives, deliverables, and line items from your source.</p>
+                                                    </div>
+                                                    <Button 
+                                                        onClick={async () => {
+                                                            if (!bulkRawText.trim()) return;
+                                                            setIsGenerating(true);
+                                                            setGeneratingSection('all');
+                                                            try {
+                                                                await handleGenerateProposal(bulkRawText);
+                                                                setActiveTab('1'); // Move to Identity after success
+                                                            } catch (e) {
+                                                                alert(e.message);
+                                                            } finally {
+                                                                setIsGenerating(false);
+                                                                setGeneratingSection(null);
+                                                            }
+                                                        }} 
+                                                        disabled={isGenerating || !bulkRawText.trim()}
+                                                        className="h-20 rounded-[24px] bg-neon-green text-black text-[12px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_0_40px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-all w-full"
+                                                    >
+                                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={20} /> : <Zap size={20} />}
+                                                        Initialize AI Build
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                     <div className="space-y-12">
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-2">
@@ -521,14 +532,21 @@ const ProposalGenerator = () => {
                                                 ))}
                                             </div>
                                         </div>
+                                        
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Client Entity</label>
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Entity</label>
+                                                    
+                                                </div>
                                                 <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
                                             </div>
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Project Title</label>
-                                                <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Engagement Name" />
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Project Name</label>
+                                                    
+                                                </div>
+                                                <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-10">
@@ -540,54 +558,73 @@ const ProposalGenerator = () => {
                                                 <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
                                             </div>
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Deployment Period</label>
-                                                <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Duration or Dates" />
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Timeline / Duration</label>
+                                                <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
                                             </div>
                                         </div>
-                                        <div className="space-y-6 pt-4">
-                                            <div className="flex justify-between items-center px-2">
-                                                <div className="flex items-center gap-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
-                                                    <VisibilityToggle field="coverDescription" />
+                                            <div className="relative group/editor">
+                                                <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
+                                                    
                                                 </div>
-                                                <button onClick={() => handleRefineField('coverDescription', 'Cover Description')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                                <StudioRichEditor 
+                                                    label="Cover Memorandum"
+                                                    value={formData.coverDescription} 
+                                                    onChange={val => setFormData({...formData, coverDescription: val})} 
+                                                    className={isHidden('coverDescription') ? 'opacity-30' : ''} 
+                                                    placeholder="Cover page description for this proposal..." 
+                                                    minHeight="180px" 
+                                                    accentColor="neon-green"
+                                                />
                                             </div>
-                                            <FormattedTextArea value={formData.coverDescription} onChange={e => setFormData({...formData, coverDescription: e.target.value})} className={isHidden('coverDescription') ? 'opacity-30' : ''} placeholder="Cover page description for this proposal..." minH="min-h-[180px]" />
-                                        </div>
                                     </div>
                                 )}
                                 {activeTab === '2' && (
                                     <div className="space-y-12">
-                                        <div className="space-y-6 pt-4">
-                                            <div className="flex justify-between items-center px-2">
-                                                <div className="flex items-center gap-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
-                                                    <VisibilityToggle field="overview" />
-                                                </div>
-                                                <button onClick={() => handleRefineField('overview', 'Overview')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                        <div className="relative group/editor">
+                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
+                                                
                                             </div>
-                                            <FormattedTextArea value={formData.overview} onChange={e => setFormData({...formData, overview: e.target.value})} className={isHidden('overview') ? 'opacity-30' : ''} placeholder="Strategic vision..." minH="min-h-[200px]" />
+                                            <StudioRichEditor 
+                                                label="Executive Summary"
+                                                value={formData.overview} 
+                                                onChange={val => setFormData({...formData, overview: val})} 
+                                                className={isHidden('overview') ? 'opacity-30' : ''} 
+                                                placeholder="Strategic vision..." 
+                                                minHeight="200px" 
+                                                accentColor="neon-green"
+                                            />
                                         </div>
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center px-2">
-                                                <div className="flex items-center gap-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective</label>
-                                                    <VisibilityToggle field="primaryGoal" />
-                                                </div>
-                                                <button onClick={() => handleRefineField('primaryGoal', 'Primary Goal')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                        <div className="relative group/editor">
+                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
+                                                
                                             </div>
-                                            <FormattedTextArea value={formData.primaryGoal} onChange={e => setFormData({...formData, primaryGoal: e.target.value})} className={isHidden('primaryGoal') ? 'opacity-30' : ''} placeholder="Strategic / Tactical Goal" minH="min-h-[120px]" />
+                                            <StudioRichEditor 
+                                                label="Primary Objective"
+                                                value={formData.primaryGoal} 
+                                                onChange={val => setFormData({...formData, primaryGoal: val})} 
+                                                className={isHidden('primaryGoal') ? 'opacity-30' : ''} 
+                                                placeholder="Strategic / Tactical Goal" 
+                                                minHeight="120px" 
+                                                accentColor="neon-green"
+                                            />
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === '3' && (
                                     <div className="space-y-12">
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scope of Work</label>
-                                                <button onClick={() => handleRefineField('scopeOfWork', 'Scope of Work')} className="text-[9px] font-black text-neon-green uppercase tracking-widest underline">AI Refine</button>
+                                        <div className="relative group/editor">
+                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
+                                                
                                             </div>
-                                            <FormattedTextArea value={formData.scopeOfWork} onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} className={isHidden('scopeOfWork') ? 'opacity-30' : ''} placeholder="Use bullet points (• ) for each scope item. Group under ## headings." minH="min-h-[400px]" />
+                                            <StudioRichEditor 
+                                                label="Scope of Work"
+                                                value={formData.scopeOfWork} 
+                                                onChange={val => setFormData({...formData, scopeOfWork: val})} 
+                                                className={isHidden('scopeOfWork') ? 'opacity-30' : ''} 
+                                                placeholder="Use bullet points for each scope item. Group under headings." 
+                                                minHeight="400px" 
+                                                accentColor="neon-green"
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -596,10 +633,13 @@ const ProposalGenerator = () => {
                                         {/* Deliverables Section */}
                                         <div className="space-y-8">
                                             <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">What We Deliver</label>
-                                                <button onClick={() => setFormData({...formData, deliverables: [...(formData.deliverables || []), { id: Date.now(), item: '', qty: '', timeline: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
-                                            </div>
-                                            <div className="space-y-4">
+                                                 <div className="flex items-center gap-4">
+                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">What we deliver</label>
+                                                     <VisibilityToggle field="deliverables" />
+                                                 </div>
+                                                 <button onClick={() => setFormData({...formData, deliverables: [...(formData.deliverables || []), { id: Date.now(), item: '', qty: '', timeline: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
+                                             </div>
+                                            <div className={cn("space-y-4 transition-opacity", isHidden('deliverables') && "opacity-30")}>
                                                 {(formData.deliverables || []).map((d, idx) => (
                                                     <div key={d.id} className="flex items-start gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 mt-4 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
@@ -619,10 +659,13 @@ const ProposalGenerator = () => {
                                         {/* Client Requirements Section */}
                                         <div className="space-y-8 pt-10 border-t border-white/5">
                                             <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Requirements From Client</label>
-                                                <button onClick={() => setFormData({...formData, clientRequirements: [...(formData.clientRequirements || []), { id: Date.now(), description: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
-                                            </div>
-                                            <div className="space-y-4">
+                                                 <div className="flex items-center gap-4">
+                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Requirements from Client</label>
+                                                     <VisibilityToggle field="clientRequirements" />
+                                                 </div>
+                                                 <button onClick={() => setFormData({...formData, clientRequirements: [...(formData.clientRequirements || []), { id: Date.now(), description: '' }]})} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl"><Plus size={16} /></button>
+                                             </div>
+                                            <div className={cn("space-y-4 transition-opacity", isHidden('clientRequirements') && "opacity-30")}>
                                                 {(formData.clientRequirements || []).map((r, idx) => (
                                                     <div key={r.id} className="flex items-center gap-4 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
@@ -647,7 +690,7 @@ const ProposalGenerator = () => {
                                                     <div className="flex-1"><textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." /></div>
                                                     <div className="flex items-center gap-6">
                                                         <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50" /></div>
-                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
+                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">â‚¹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
                                                         <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
                                                     </div>
                                                 </div>
@@ -659,21 +702,178 @@ const ProposalGenerator = () => {
                                     <div className="space-y-12">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                             <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">GST Percentage</label><input type="number" value={formData.gstRate} onChange={e => setFormData({...formData, gstRate: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
-                                            <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Security Deposit (%)</label><input type="number" value={formData.advanceRequested} onChange={e => setFormData({...formData, advanceRequested: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
+                                            <div className="space-y-4"><label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Advance Fee (%)</label><input type="number" value={formData.advanceRequested} onChange={e => setFormData({...formData, advanceRequested: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" /></div>
                                         </div>
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-4 px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strategic Terms</label>
+                                        <div className="relative group/editor">
+                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
+                                                
+                                            </div>
+                                            <div className="flex justify-between items-center px-2 mb-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Terms & Conditions</label>
                                                 <VisibilityToggle field="terms" />
                                             </div>
-                                            <textarea value={formData.terms} onChange={e => setFormData({...formData, terms: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-[13px] font-medium min-h-[200px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('terms') && "opacity-30")} />
+                                            <StudioRichEditor 
+                                                value={formData.terms} 
+                                                onChange={val => setFormData({...formData, terms: val})} 
+                                                className={isHidden('terms') ? 'opacity-30' : ''} 
+                                                minHeight="200px" 
+                                                accentColor="neon-green"
+                                            />
                                         </div>
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-4 px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bank Settlement Details</label>
+                                        {/* Document Settings Section */}
+                                        <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                            <div className="space-y-2">
+                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Document Settings</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Global authentication preferences</p>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button 
+                                                    onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
+                                                    className={cn(
+                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
+                                                        formData.showSeal ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Eye size={14} className={cn(formData.showSeal ? "text-black" : "text-white/20")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Official Seal</span>
+                                                    </div>
+                                                </button>
+                                                
+                                                <button 
+                                                    onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
+                                                    className={cn(
+                                                        "p-6 rounded-[32px] border transition-all flex flex-col items-center justify-center gap-4 text-center group",
+                                                        formData.showSignatures ? "bg-white text-black border-white shadow-[0_0_40px_rgba(255,255,255,0.1)]" : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Eye size={14} className={cn(formData.showSignatures ? "text-black" : "text-white/20")} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">Digital Signatures</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {formData.showSeal && (
+                                                <div className="flex justify-center p-12 bg-black/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                                    <DocumentSeal className="scale-75 origin-center" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Authorization Sections */}
+                                        {formData.showSignatures && (
+                                            <div className="space-y-6">
+                                                {/* Provider Authorization (Newbi) */}
+                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Provider Authorization</h3>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sign on behalf of Newbi Entertainment</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => document.getElementById('provider-sig-upload').click()}
+                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                                                            >
+                                                                <Upload size={12} /> Upload Sign
+                                                            </button>
+                                                            <input 
+                                                                type="file" 
+                                                                id="provider-sig-upload" 
+                                                                className="hidden" 
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = (re) => setFormData({...formData, providerSignature: re.target.result});
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="relative h-48 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                        {formData.providerSignature ? (
+                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                <button 
+                                                                    onClick={() => setFormData({...formData, providerSignature: ''})}
+                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Upload Signature</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Client Authorization */}
+                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Client Authorization</h3>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Customer sign-off area</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => document.getElementById('client-sig-upload').click()}
+                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                                                            >
+                                                                <Upload size={12} /> Upload Sign
+                                                            </button>
+                                                            <input 
+                                                                type="file" 
+                                                                id="client-sig-upload" 
+                                                                className="hidden" 
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = (re) => setFormData({...formData, clientSignature: re.target.result});
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="relative h-48 bg-white rounded-[32px] flex items-center justify-center overflow-hidden">
+                                                        {formData.clientSignature ? (
+                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                <button 
+                                                                    onClick={() => setFormData({...formData, clientSignature: ''})}
+                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className={cn("space-y-4 relative group/editor", isHidden('paymentDetails') && "opacity-30")}>
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bank Details</label>
                                                 <VisibilityToggle field="paymentDetails" />
                                             </div>
-                                            <textarea value={formData.paymentDetails} onChange={e => setFormData({...formData, paymentDetails: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-[13px] font-black font-mono min-h-[150px] outline-none focus:border-neon-green/40 transition-all leading-relaxed", isHidden('paymentDetails') && "opacity-30")} />
+                                            <textarea 
+                                                value={formData.paymentDetails} 
+                                                onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
+                                                className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl font-mono font-bold text-sm outline-none focus:border-neon-green/40 transition-all min-h-[150px]" 
+                                                placeholder="Account Name, Number, IFSC, etc..." 
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -755,64 +955,81 @@ const ProposalGenerator = () => {
                                                     <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
                                                     <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Engagement Mission</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Mission Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
                                                 </div>
-                                                <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p></div>{!isHidden('coverDescription') && <p className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{formData.coverDescription || 'Cover description pending...'}</p>}</div>
+                                                <div className="pt-16 space-y-10">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-1 bg-black" />
+                                                        <p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p>
+                                                    </div>
+                                                    {!isHidden('coverDescription') && (
+                                                        <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
+                                                            {renderContent(formData.coverDescription || 'Cover description pending...')}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
-                                            <div className="space-y-16 py-8">
-                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Execution Roadmap.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-                                                {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(formData.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                            <div className="space-y-12 py-10 px-4">
+                                                <div className="space-y-2 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Strategic Context</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Architecture.</h3>
+                                                </div>
+                                                {!isHidden('overview') && (
+                                                    <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">
+                                                        {renderContent(formData.overview || 'Strategic framework pending...')}
+                                                    </div>
+                                                )}
                                                 {!isHidden('primaryGoal') && (
-                                                    <div className="pt-12">
-                                                        <div className="p-12 border-2 border-black space-y-6">
-                                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                            <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(formData.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                                    <div className="pt-16 p-12 bg-zinc-50 border border-gray-100 rounded-3xl space-y-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-[2px] bg-black" />
+                                                            <p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Engagement Mission</p>
                                                         </div>
+                                                        <div className="text-2xl font-black text-black leading-tight italic uppercase tracking-tight">{renderContent(formData.primaryGoal)}</div>
                                                     </div>
                                                 )}
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
-                                            <div className="h-full flex flex-col py-8">
-                                                <div className="space-y-4 mb-12">
-                                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                                    <div className="w-16 h-1 bg-black" />
+                                            <div className="h-full flex flex-col py-10 px-4">
+                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3>
                                                 </div>
-                                                <div className="flex-1 relative overflow-hidden">
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
-                                                    <div className="pl-10">
-                                                        {!paginatedPages[currentPreviewPage]?.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                        {paginatedPages[currentPreviewPage]?.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                        {renderFormatted(paginatedPages[currentPreviewPage]?.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                <div className="flex-1">
+                                                    <div className="pl-0">
+                                                        {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
-                                            <div className="space-y-16 py-8">
-                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-
-                                                {/* Deliverables Table */}
-                                                {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && (
+                                            <div className="space-y-12 py-10 px-4">
+                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Service Matrix</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Deliverables.</h3>
+                                                </div>
+                                                
+                                                {!isHidden('deliverables') && (
                                                     <div className="space-y-6">
-                                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
-                                                        <table className="w-full text-left border-collapse border-2 border-black">
+                                                        <table className="w-full text-left">
                                                             <thead>
-                                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                                    <th className="p-4 w-10">#</th>
-                                                                    <th className="p-4">Deliverable</th>
-                                                                    <th className="p-4 text-center w-28 border-x border-white/20">Qty / Unit</th>
-                                                                    <th className="p-4 text-right w-40">Timeline</th>
+                                                                <tr className="border-b-4 border-black text-[10px] font-black uppercase text-black tracking-[0.3em]">
+                                                                    <th className="py-6 pr-4">Specification</th>
+                                                                    <th className="py-6 px-4 text-center w-32">Volume</th>
+                                                                    <th className="py-6 pl-4 text-right w-40">Timeline</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody className="divide-y divide-gray-200">
+                                                            <tbody className="divide-y-2 divide-gray-100">
                                                                 {formData.deliverables.filter(d => d.item).map((d, i) => (
-                                                                    <tr key={d.id} className="hover:bg-gray-50">
-                                                                        <td className="p-4 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                                        <td className="p-4 text-[12px] font-bold text-black">{d.item}</td>
-                                                                        <td className="p-4 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
-                                                                        <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                                    <tr key={d.id}>
+                                                                        <td className="py-8 pr-4">
+                                                                            <p className="text-[15px] font-black text-black mb-1 uppercase tracking-tight">{d.item}</p>
+                                                                            <p className="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Spec ID: {String(i+1).padStart(3, '0')}</p>
+                                                                        </td>
+                                                                        <td className="py-8 px-4 text-center text-[14px] font-black text-gray-500">{d.qty || '—'}</td>
+                                                                        <td className="py-8 pl-4 text-right text-[11px] font-black text-black uppercase tracking-widest bg-zinc-50/50">{d.timeline || '—'}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -820,15 +1037,14 @@ const ProposalGenerator = () => {
                                                     </div>
                                                 )}
 
-                                                {/* Client Requirements */}
-                                                {(formData.clientRequirements?.length > 0 && formData.clientRequirements.some(r => r.description)) && (
-                                                    <div className="space-y-6 pt-4">
-                                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
-                                                        <div className="p-6 border-2 border-gray-200 space-y-0">
+                                                {!isHidden('clientRequirements') && (
+                                                    <div className="pt-8 border-t border-gray-100">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Prerequisites</p>
+                                                        <div className="grid grid-cols-2 gap-4">
                                                             {formData.clientRequirements.filter(r => r.description).map((r, i) => (
-                                                                <div key={r.id} className={cn("flex items-start gap-4 py-3", i > 0 && "border-t border-gray-100")}>
-                                                                    <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
-                                                                    <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
+                                                                <div key={r.id} className="flex items-start gap-3 p-4 bg-zinc-50 rounded-lg">
+                                                                    <span className="w-1.5 h-1.5 bg-neon-green rounded-full mt-1.5 shrink-0" />
+                                                                    <p className="text-[12px] font-bold text-black leading-tight">{r.description}</p>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -837,34 +1053,111 @@ const ProposalGenerator = () => {
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'table' && (
-                                            <div className="space-y-12 py-8">
-                                                <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
-                                                <table className="w-full text-left border-collapse border-2 border-black"><thead><tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black"><th className="p-6">Resource Inventory</th><th className="p-6 text-center w-24 border-x border-white/20">Qty</th><th className="p-6 text-right w-48">Amount (INR)</th></tr></thead><tbody className="divide-y divide-gray-200">{paginatedPages[currentPreviewPage].items.map((item, i) => (<tr key={i} className="hover:bg-gray-50"><td className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td><td className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td><td className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td></tr>))}</tbody></table>
+                                            <div className="space-y-12 py-6">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Section 04</span>
+                                                        <div className="h-[1px] flex-1 bg-gray-100" />
+                                                    </div>
+                                                    <h3 className="text-4xl font-black text-black tracking-tight leading-none">Commercials.</h3>
+                                                </div>
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest">
+                                                            <th className="py-4 pr-4">Description</th>
+                                                            <th className="py-4 px-4 text-center w-24">Qty</th>
+                                                            <th className="py-4 pl-4 text-right w-48">Value (INR)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {paginatedPages[currentPreviewPage].items.map((item, i) => (
+                                                            <tr key={i}>
+                                                                <td className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td>
+                                                                <td className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td>
+                                                                <td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">â‚¹{item.price.toLocaleString()}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
-                                            <div className="space-y-16 py-8">
-                                                <div className="grid grid-cols-2 gap-16 items-start">
-                                                    <div className="space-y-12">
-                                                        {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
-                                                        {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
+                                            <div className="space-y-12 py-6">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Finalization</span>
+                                                        <div className="h-[1px] flex-1 bg-gray-100" />
                                                     </div>
-                                                    <div className="space-y-6">
-                                                        <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
-                                                        {formData.showGst && (<div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500"><span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
-                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
-                                                        {(formData.advanceRequested > 0) && (
-                                                            <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex flex-col items-start gap-2">
-                                                                <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Payment Required</span>
-                                                                <span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span>
+                                                    <h3 className="text-4xl font-black text-black tracking-tight leading-none">Summary & Terms.</h3>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-16 items-start">
+                                                    <div className="space-y-8">
+                                                        {!isHidden('terms') && (
+                                                            <div className="space-y-4">
+                                                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b border-gray-100 pb-2">Conditions</h4>
+                                                                <div className="text-[11px] font-medium text-gray-500 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
+                                                            </div>
+                                                        )}
+                                                        {!isHidden('paymentDetails') && (
+                                                            <div className="pt-8 border-t border-gray-100">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Settlement Details</p>
+                                                                <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line bg-zinc-50 p-6 rounded-lg">{formData.paymentDetails}</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">Subtotal</span><span className="text-lg font-black text-black font-mono">₹{subtotal.toLocaleString()}</span></div>
+                                                        {formData.showGst && (<div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">GST ({formData.gstRate}%)</span><span className="text-lg font-black text-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
+                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Estimated Cost</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
+                                                        {formData.advanceRequested > 0 && (
+                                                            <div className="mt-8 p-6 bg-black text-white rounded-lg flex justify-between items-center">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">Advance Fee ({formData.advanceRequested}%)</span>
+                                                                <span className="text-xl font-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
+                                                {/* Authentication Layer */}
+                                                <div className="mt-12 pt-12 border-t border-gray-100 grid grid-cols-2 gap-16 relative">
+                                                    {/* Provider Signature */}
+                                                    <div className="space-y-6">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                        <div className="h-32 flex items-center justify-start relative">
+                                                            {formData.showSignatures && formData.providerSignature ? (
+                                                                <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
+                                                            ) : (
+                                                                <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                            )}
+                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                        </div>
+                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                    </div>
+
+                                                    {/* Client Signature */}
+                                                    <div className="space-y-6 text-right">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                        <div className="h-32 flex items-center justify-end relative">
+                                                            {formData.showSignatures && formData.clientSignature ? (
+                                                                <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
+                                                            ) : (
+                                                                <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
+                                                            )}
+                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                        </div>
+                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                    </div>
+
+                                                    {/* Official Seal Overlay */}
+                                                    {formData.showSeal && (
+                                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                                                            <DocumentSeal className="w-44 h-44" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
-                                            </div>
                                         </div>
+                                    </div>
                                     <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                                         <p>Newbi Entertainment © 2024</p>
                                         <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
@@ -876,195 +1169,8 @@ const ProposalGenerator = () => {
                 </section>
             </main>
 
-            {/* AI Settings Modal */}
-            <AnimatePresence>
-                {showAiSettings && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAiSettings(false)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
-                            <div className="absolute top-0 right-0 p-8 opacity-5"><Settings size={80} className="text-neon-green" /></div>
-                            <h3 className="text-2xl font-black uppercase italic text-white mb-2">AI <span className="text-neon-green">Settings.</span></h3>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8">Orchestrator Configuration</p>
-                            
-                            <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Gemini API Key</label>
-                                    <div className="relative">
-                                        <input 
-                                            type="password" 
-                                            value={aiApiKey} 
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setAiApiKey(val);
-                                                if (val) localStorage.setItem('geminiApiKey', val);
-                                                else localStorage.removeItem('geminiApiKey');
-                                            }} 
-                                            className="w-full bg-black border border-white/10 h-14 px-6 rounded-xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all text-neon-green" 
-                                            placeholder="Paste your API key here..." 
-                                        />
-                                        <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-neon-green/20" size={18} />
-                                    </div>
-                                    <div className="flex justify-between px-2">
-                                        <p className="text-[9px] font-medium text-gray-500 leading-relaxed">
-                                            Using {localStorage.getItem('geminiApiKey') ? 'Custom Browser Key' : 'System Default Key'}
-                                        </p>
-                                        <button onClick={() => { setAiApiKey(''); localStorage.removeItem('geminiApiKey'); }} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Reset to Default</button>
-                                    </div>
-                                </div>
 
-                                <div className="p-4 bg-neon-green/5 border border-neon-green/10 rounded-2xl">
-                                    <div className="flex items-start gap-3">
-                                        <Zap size={14} className="text-neon-green mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Model Info</p>
-                                            <p className="text-[9px] font-medium text-gray-400 leading-relaxed">Gemini 3.0 Flash is the production standard. Use 3.0 Pro for complex strategic logic.</p>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Deployment Model</label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {[
-                                            { id: 'gemini-1.5-flash', label: 'Flash 1.5', desc: 'Speed' },
-                                            { id: 'gemini-2.0-flash-exp', label: 'Flash 2.0', desc: 'Reasoning' },
-                                            { id: 'gemini-2.0-flash', label: '2.0 Flash', desc: 'Legacy' }
-                                        ].map(m => (
-                                            <button 
-                                                key={m.id} 
-                                                onClick={() => {
-                                                    setAiModel(m.id);
-                                                    localStorage.setItem('geminiModel', m.id);
-                                                }}
-                                                className={cn(
-                                                    "p-4 rounded-xl border text-left transition-all",
-                                                    aiModel === m.id ? "bg-neon-green border-neon-green text-black" : "bg-black border-white/10 text-gray-500 hover:text-white"
-                                                )}
-                                            >
-                                                <p className="text-[10px] font-black uppercase tracking-widest mb-1">{m.label}</p>
-                                                <p className={cn("text-[8px] font-bold uppercase opacity-60", aiModel === m.id ? "text-black" : "text-gray-600")}>{m.desc}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    
-                                    <div className="relative mt-2">
-                                        <input 
-                                            type="text" 
-                                            value={aiModel} 
-                                            onChange={e => {
-                                                setAiModel(e.target.value);
-                                                localStorage.setItem('geminiModel', e.target.value);
-                                            }} 
-                                            className="w-full bg-black/50 border border-white/5 h-10 px-4 rounded-lg font-bold text-[9px] outline-none focus:border-neon-green/20 transition-all text-gray-400" 
-                                            placeholder="Manual Model ID (e.g. gemini-pro)" 
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/5">
-                                    <button 
-                                        onClick={() => { 
-                                            localStorage.removeItem('geminiApiKey'); 
-                                            localStorage.removeItem('geminiModel');
-                                            window.location.reload(); 
-                                        }} 
-                                        className="text-[9px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-500 transition-colors text-center"
-                                    >
-                                        Hard Reset AI Cache
-                                    </button>
-                                </div>
-
-                                <button onClick={() => setShowAiSettings(false)} className="w-full h-14 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-[1.02] transition-all mt-2">Save & Close</button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Field Refinement Modal */}
-            <AnimatePresence>
-                {refiningField && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setRefiningField(null)} className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
-                            <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles size={80} className="text-neon-green" /></div>
-                            <h3 className="text-2xl font-black uppercase italic text-white mb-2">Refine <span className="text-neon-green">{refiningField.label}.</span></h3>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8">AI Content Optimization</p>
-                            
-                            <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Refinement Instruction</label>
-                                    <textarea 
-                                        autoFocus
-                                        value={refinementPrompt} 
-                                        onChange={e => setRefinementPrompt(e.target.value)} 
-                                        className="w-full bg-black border border-white/10 min-h-[120px] p-6 rounded-2xl font-medium text-sm outline-none focus:border-neon-green/40 transition-all text-white scrollbar-hide" 
-                                        placeholder="Make it more aggressive / focus on luxury / add technical details about the production team..." 
-                                    />
-                                </div>
-
-                                {parsedError && (
-                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
-                                        <div className="px-2 py-1 bg-red-500/20 rounded-md shrink-0 mt-0.5"><span className="text-[9px] font-black text-red-400 font-mono">{parsedError.code}</span></div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-red-400 uppercase tracking-tight">{parsedError.title}</p>
-                                            <p className="text-[10px] font-medium text-red-400/70 leading-relaxed mt-0.5">{parsedError.message}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex gap-4">
-                                    <button onClick={() => setRefiningField(null)} className="flex-1 h-14 bg-white/5 text-white border border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white/10 transition-all">Cancel</button>
-                                    <button 
-                                        onClick={executeRefinement} 
-                                        disabled={isGeneratingAi || !refinementPrompt}
-                                        className="flex-[2] h-14 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {isGeneratingAi ? <RefreshCw className="animate-spin" size={14} /> : <Sparkles size={14} />} 
-                                        Optimize Section
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Global AI Status Notification */}
-            <AnimatePresence>
-                {parsedError && !refiningField && (
-                    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[300] w-full max-w-md">
-                        <div className="bg-zinc-900 border border-white/10 p-1.5 rounded-3xl shadow-2xl">
-                            <div className="bg-red-500/5 border border-red-500/10 p-5 rounded-2xl">
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl shrink-0">
-                                        <X size={16} className="text-red-400" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <span className="px-2 py-0.5 bg-red-500/15 rounded text-[9px] font-black text-red-400 font-mono tracking-wider">{parsedError.code}</span>
-                                            <span className="text-[10px] font-black text-red-400 uppercase tracking-wider">{parsedError.title}</span>
-                                        </div>
-                                        <p className="text-[11px] font-medium text-gray-400 leading-relaxed">{parsedError.message}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <button 
-                                            onClick={() => {
-                                                if (aiPrompt) handleGenerateAI();
-                                                else setAiError(null);
-                                            }} 
-                                            className="h-9 px-4 bg-white text-black font-black uppercase tracking-widest text-[8px] rounded-lg hover:scale-105 transition-all"
-                                        >
-                                            Retry
-                                        </button>
-                                        <button onClick={() => setAiError(null)} className="p-2 text-gray-600 hover:text-white transition-colors rounded-lg hover:bg-white/5"><X size={14} /></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
             {/* Hidden container for PDF export — renders all pages for html2canvas */}
             <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white">
                 {paginatedPages.map((page, idx) => (
@@ -1089,19 +1195,29 @@ const ProposalGenerator = () => {
                                         <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
                                         <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {formData.campaignDuration || 'TBD'}</p></div></div>
                                     </div>
-                                    <div className="pt-16 space-y-10"><div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p></div>{!isHidden('coverDescription') && <p className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl text-justify">{formData.coverDescription || 'Cover description pending...'}</p>}</div>
+                                    <div className="pt-16 space-y-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-1 bg-black" />
+                                            <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
+                                        </div>
+                                        {!isHidden('coverDescription') && (
+                                            <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
+                                                {renderContent(formData.coverDescription || 'Cover description pending...')}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
                                 </div>
                             )}
                             {page.type === 'strategy' && (
                                 <div className="space-y-16 py-8">
                                     <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Project Timeline.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-                                    {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderFormatted(formData.overview || 'Strategic framework pending...', 'text-lg font-medium text-gray-700 leading-[1.7]')}</div>}
+                                    {!isHidden('overview') && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(formData.overview || 'Strategic framework pending...')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
                                             <div className="p-12 border-2 border-black space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                <div className="text-xl font-black uppercase text-black leading-relaxed">{renderFormatted(formData.primaryGoal || 'Objective pending...', 'text-lg font-black text-black leading-relaxed')}</div>
+                                                <div className="text-lg font-black uppercase text-black leading-relaxed">{renderContent(formData.primaryGoal || 'Objective pending...')}</div>
                                             </div>
                                         </div>
                                     )}
@@ -1119,7 +1235,7 @@ const ProposalGenerator = () => {
                                             <div className="pl-10">
                                                 {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                 {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                {renderFormatted(page.scopeText || '', 'text-[12px] font-medium text-black leading-[1.8]')}
+                                                {renderContent(page.scopeText || '')}
                                             </div>
                                         </div>
                                     </div>
@@ -1133,8 +1249,8 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'proposal' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
-                                    {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && (
+                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Deliverables & Specs.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && !isHidden('deliverables') && (
                                         <div className="space-y-6">
                                             <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
                                             <table className="w-full text-left border-collapse border-2 border-black">
@@ -1184,32 +1300,138 @@ const ProposalGenerator = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="grid grid-cols-2 gap-16 items-start">
                                         <div className="space-y-12">
-                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><p className="text-[11px] font-bold text-gray-500 whitespace-pre-line italic leading-relaxed text-justify">{formData.terms}</p></div>}
-                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><p className="text-[11px] font-black font-mono whitespace-pre-line text-black leading-relaxed">{formData.paymentDetails}</p></div>}
+                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(formData.terms)}</div></div>}
+                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(formData.paymentDetails)}</div></div>}
                                         </div>
                                         <div className="space-y-6">
                                             <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
-                                            {formData.showGst && (<div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500"><span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span><span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
-                                            <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p><h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
+                                            {formData.showGst && (
+                                                <div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500">
+                                                    <span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span>
+                                                    <span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p>
+                                                <h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                <div className="absolute top-0 right-0 w-2 h-full bg-neon-green" />
+                                            </div>
                                             {(formData.advanceRequested > 0) && (
                                                 <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex flex-col items-start gap-2">
-                                                    <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Payment Required</span>
+                                                    <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Fee Required</span>
                                                     <span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
+                                    {/* Authentication Layer (Export) */}
+                                    {(formData.showSeal || formData.showSignatures) && (
+                                        <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
+                                            {/* Provider Signature */}
+                                            <div className="space-y-6">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                <div className="h-40 flex items-center justify-start relative">
+                                                    {formData.showSignatures && formData.providerSignature ? (
+                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" crossOrigin="anonymous" />
+                                                    ) : (
+                                                        <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                    )}
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                </div>
+                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                            </div>
+
+                                            {/* Client Signature */}
+                                            <div className="space-y-6 text-right">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                <div className="h-40 flex items-center justify-end relative">
+                                                    {formData.showSignatures && formData.clientSignature ? (
+                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" crossOrigin="anonymous" />
+                                                    ) : (
+                                                        <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
+                                                    )}
+                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                </div>
+                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                            </div>
+
+                                            {/* Official Seal Overlay */}
+                                            {formData.showSeal && (
+                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
+                                                    <DocumentSeal className="w-56 h-56" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                                </div>
                             </div>
+                        </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                            <p>Newbi Entertainment © 2024</p>
+                            <p>Newbi Entertainment Â© 2024</p>
                             <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
                     </div>
                 ))}
             </div>
+
+            <AnimatePresence>
+                {showBulkImport && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkImport(false)} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-4xl bg-zinc-900 border border-white/10 rounded-[40px] overflow-hidden shadow-2xl">
+                            <div className="p-10 space-y-8">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3 text-neon-green">
+                                            <Cpu size={24} />
+                                            <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Smart Bulk Import.</h2>
+                                        </div>
+                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Paste raw details, emails, or notes</p>
+                                    </div>
+                                    <button onClick={() => setShowBulkImport(false)} className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-white"><X size={20} /></button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Raw Project Data</label>
+                                    <textarea 
+                                        value={bulkRawText} 
+                                        onChange={e => setBulkRawText(e.target.value)} 
+                                        className="w-full bg-black border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-neon-green/40 transition-all min-h-[400px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-600" 
+                                        placeholder="Paste your client requirements, event details, or service lists here... Example: 'Client needs artist logistics for 3 cities, 20 volunteers for 5 days, production for main stage...'" 
+                                    />
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <Button onClick={() => setShowBulkImport(false)} variant="outline" className="flex-1 h-16 rounded-2xl border-white/5 hover:bg-white/5 text-[11px] font-black uppercase tracking-widest text-white">Cancel</Button>
+                                    <Button 
+                                        onClick={async () => {
+                                            if (!bulkRawText.trim()) return;
+                                            setIsGenerating(true);
+                                            setGeneratingSection('all');
+                                            try {
+                                                await handleGenerateProposal(bulkRawText);
+                                                setBulkRawText('');
+                                                setShowBulkImport(false);
+                                            } catch (e) {
+                                                alert(e.message);
+                                            } finally {
+                                                setIsGenerating(false);
+                                                setGeneratingSection(null);
+                                            }
+                                        }} 
+                                        disabled={isGenerating || !bulkRawText.trim()}
+                                        className="flex-[2] h-16 rounded-2xl bg-neon-green text-black text-[11px] font-black uppercase tracking-widest gap-3 shadow-[0_0_30px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-all"
+                                    >
+                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
+                                        Transform Into Proposal
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

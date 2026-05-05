@@ -13,7 +13,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 
 const ProposalManagement = () => {
     const navigate = useNavigate();
-    const { proposals, deleteProposal, updateProposalStatus, duplicateProposal } = useStore();
+    const { proposals, deleteProposal, updateProposalStatus, duplicateProposal, user } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [viewMode, setViewMode] = useState('grid');
@@ -23,15 +23,22 @@ const ProposalManagement = () => {
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Agreements', path: '#', icon: ShieldCheck, color: 'text-gray-500', comingSoon: true },
+        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
     ];
 
-    const filteredProposals = proposals.filter(p => {
-        const matchesSearch = p.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             p.proposalNumber?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredProposals = proposals
+        .filter(p => {
+            if (user?.role === 'editor') {
+                return p.createdBy === user?.uid;
+            }
+            return true;
+        })
+        .filter(p => {
+            const matchesSearch = p.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                 p.proposalNumber?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
 
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/proposal/${id}`;
@@ -40,6 +47,10 @@ const ProposalManagement = () => {
     };
 
     const handleDelete = (id) => {
+        if (user?.role === 'editor') {
+            alert("Permission Denied: Editors cannot delete documents.");
+            return;
+        }
         if (window.confirm('Are you sure you want to delete this proposal?')) {
             deleteProposal(id);
         }
@@ -129,14 +140,14 @@ const ProposalManagement = () => {
             studioHeader={{
                 title: 'PROPOSAL',
                 subtitle: 'VAULT',
-                accentClass: 'text-neon-green',
+                accentClass: 'text-[#39FF14]',
                 icon: FileSpreadsheet
             }}
             tabs={vaultTabs}
             accentColor="neon-green"
             action={
                 <Link to="/admin/create-proposal" className="w-full md:w-auto">
-                    <button className="w-full md:w-auto bg-neon-blue text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,209,255,0.2)] hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] flex items-center justify-center">
+                    <button className="w-full md:w-auto bg-[#39FF14] text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
                         <Plus className="mr-2 h-4 w-4" /> New Quote
                     </button>
                 </Link>
@@ -146,7 +157,7 @@ const ProposalManagement = () => {
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
                 <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={18} md={20} />
+                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} md={20} />
                         <input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -164,7 +175,7 @@ const ProposalManagement = () => {
                                         className={cn(
                                             "px-4 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] sm:min-w-[100px] md:min-w-[120px]",
                                             statusFilter === s 
-                                                ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
+                                                ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
                                                 : "text-gray-500 hover:text-white hover:bg-white/5"
                                         )}
                                     >
@@ -180,7 +191,7 @@ const ProposalManagement = () => {
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'grid' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={16} md={18} />
@@ -189,7 +200,7 @@ const ProposalManagement = () => {
                                 onClick={() => setViewMode('table')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'table' ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'table' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 <FileText size={16} md={18} />
@@ -225,14 +236,14 @@ const ProposalManagement = () => {
                                         <div>
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">
+                                                    <span className="text-[10px] font-black font-mono tracking-widest text-neon-green bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20">
                                                         {proposal.proposalNumber || 'ID: ' + proposal.id.slice(0, 8)}
                                                     </span>
                                                     <div className={cn(
                                                         "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]",
                                                         proposal.status === 'Accepted' ? 'text-neon-green bg-neon-green' : 
                                                         (proposal.status === 'Rejected' ? 'text-red-500 bg-red-500' : 
-                                                        (proposal.status === 'Sent' ? 'text-neon-blue bg-neon-blue' : 'text-gray-600 bg-gray-600'))
+                                                        (proposal.status === 'Sent' ? 'text-neon-green bg-neon-green' : 'text-gray-600 bg-gray-600'))
                                                     )} />
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -243,20 +254,24 @@ const ProposalManagement = () => {
                                                     >
                                                         <History size={14} />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => setSelectedAnalytics(proposal)}
-                                                        className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"
-                                                        title="View Analytics"
-                                                    >
-                                                        <Activity size={14} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDelete(proposal.id)}
-                                                        className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
-                                                        title="Delete Proposal"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                                    {user?.role !== 'editor' && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => setSelectedAnalytics(proposal)}
+                                                                className="p-2.5 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                                                title="View Analytics"
+                                                            >
+                                                                <Activity size={14} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDelete(proposal.id)}
+                                                                className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"
+                                                                title="Delete Proposal"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -324,7 +339,7 @@ const ProposalManagement = () => {
                                             <tr key={proposal.id} className="group hover:bg-white/[0.02] transition-colors">
                                                 <td className="p-8">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform">
                                                             <FileSpreadsheet size={20} />
                                                         </div>
                                                         <div>
@@ -346,7 +361,7 @@ const ProposalManagement = () => {
                                                         "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
                                                         proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
                                                         (proposal.status === 'Rejected' ? 'bg-red-500/10 text-red-500' : 
-                                                        (proposal.status === 'Sent' ? 'bg-neon-blue/10 text-neon-blue' : 'bg-gray-600/10 text-gray-600'))
+                                                        (proposal.status === 'Sent' ? 'bg-neon-green/10 text-neon-green' : 'bg-gray-600/10 text-gray-600'))
                                                     )}>
                                                         {proposal.status}
                                                     </div>
@@ -354,11 +369,15 @@ const ProposalManagement = () => {
                                                 <td className="p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <a href={`/proposal/${proposal.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
-                                                        <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
+                                                        {user?.role !== 'editor' && (
+                                                            <>
+                                                                <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>
+                                                                <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                            </>
+                                                        )}
                                                         <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
                                                         <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                        <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -446,7 +465,7 @@ const ProposalManagement = () => {
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
                                                             <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{new Date(log.timestamp).toLocaleDateString()}</p>
                                                         </div>
                                                     </div>
@@ -480,7 +499,7 @@ const ProposalManagement = () => {
                                         onClick={() => { handleCopyLink(sharingProposal.id); setSharingProposal(null); }}
                                         className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><Copy size={16} /></div>
+                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Copy size={16} /></div>
                                         <div className="text-left">
                                             <p className="text-[11px] font-black uppercase tracking-widest">Copy Link</p>
                                         </div>
@@ -498,9 +517,9 @@ const ProposalManagement = () => {
 
                                     <button 
                                         onClick={() => { handleSendEmail(sharingProposal); setSharingProposal(null); }}
-                                        className="p-4 bg-white/5 hover:bg-neon-blue/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
+                                        className="p-4 bg-white/5 hover:bg-neon-green/10 border border-white/5 rounded-2xl flex items-center gap-4 transition-all group"
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><Send size={16} /></div>
+                                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform"><Send size={16} /></div>
                                         <div className="text-left">
                                             <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
                                         </div>

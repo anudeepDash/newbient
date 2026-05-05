@@ -30,7 +30,8 @@ import {
     Gift,
     ClipboardList,
     ListChecks,
-    Scale
+    Scale,
+    Briefcase
 } from 'lucide-react';
 
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
@@ -43,10 +44,11 @@ import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
 import { cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import artistantLogo from '../../assets/logo/artistant.png';
 
 const Dashboard = () => {
     const { 
-        invoices, proposals, concerts, portfolio, announcements, user, 
+        invoices, proposals, agreements, concerts, portfolio, announcements, user, 
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.cards || {};
@@ -112,8 +114,21 @@ const Dashboard = () => {
     };
 
     const stats = [
-        { label: 'Settlements', value: invoices.length, icon: FileText, color: 'neon-green', detail: 'Total Invoices', link: '/admin/invoices' },
-        { label: 'Proposals', value: proposals?.length || 0, icon: FileSpreadsheet, color: 'neon-blue', detail: 'Quotation Pipeline', link: '/admin/proposals' },
+        { 
+            label: 'Settlements', 
+            value: user?.role === 'editor' ? invoices.filter(i => i.createdBy === user.uid).length : invoices.length, 
+            icon: FileText, color: 'neon-blue', detail: 'Total Invoices', link: '/admin/invoices' 
+        },
+        { 
+            label: 'Proposals', 
+            value: user?.role === 'editor' ? proposals.filter(p => p.createdBy === user.uid).length : (proposals?.length || 0), 
+            icon: FileSpreadsheet, color: 'neon-green', detail: 'Quotation Pipeline', link: '/admin/proposals' 
+        },
+        { 
+            label: 'Contracts', 
+            value: user?.role === 'editor' ? agreements.filter(a => a.createdBy === user.uid).length : (agreements?.length || 0), 
+            icon: Scale, color: 'neon-purple', detail: 'Legal Repository', link: '/admin/agreements' 
+        },
         { label: 'Portfolio', value: portfolio.length, icon: Music, color: 'neon-pink', detail: 'Past Productions', link: '/admin/concertzone' },
         { label: 'Updates', value: announcements.length, icon: Radio, color: 'yellow-400', detail: 'Public Announcements', link: '/admin/announcements' },
     ];
@@ -181,10 +196,12 @@ const Dashboard = () => {
                         className="flex items-center gap-2 bg-[#0a0a0a]/60 border border-white/10 p-2 rounded-[2.5rem] backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] self-start xl:self-auto"
                     >
                         <div className="flex items-center gap-1">
-                            <Link to="/admin/site-settings" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all group relative overflow-hidden">
-                                <Settings size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </Link>
+                            {user.role === 'developer' && (
+                                <Link to="/admin/site-settings" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all group relative overflow-hidden">
+                                    <Settings size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </Link>
+                            )}
                             <Link to="/admin/messages" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all relative group overflow-hidden">
                                 <Bell size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
                                 {unreadCount > 0 && <span className="absolute top-3 right-3 w-2 h-2 bg-neon-pink rounded-full shadow-[0_0_15px_rgba(255,0,255,0.6)] z-20 animate-pulse" />}
@@ -223,12 +240,13 @@ const Dashboard = () => {
                                 <div className={cn("absolute -inset-px rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-opacity blur-xl bg-gradient-to-br", 
                                     stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
                                     (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
-                                    (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500'))
+                                    (stat.color === 'neon-purple' ? 'from-neon-purple to-indigo-500' : 
+                                    (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500')))
                                 )} />
                                 <Card className="p-8 h-full bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-2xl">
                                     <div className="flex items-start justify-between mb-8">
                                         <div className={cn("p-4 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500", 
-                                            stat.color === 'neon-green' ? 'text-neon-green' : (stat.color === 'neon-blue' ? 'text-neon-blue' : (stat.color === 'neon-pink' ? 'text-neon-pink' : 'text-yellow-400'))
+                                            stat.color === 'neon-green' ? 'text-neon-green' : (stat.color === 'neon-blue' ? 'text-neon-blue' : (stat.color === 'neon-purple' ? 'text-neon-purple' : (stat.color === 'neon-pink' ? 'text-neon-pink' : 'text-yellow-400')))
                                         )}>
                                             <stat.icon size={24} />
                                         </div>
@@ -244,7 +262,7 @@ const Dashboard = () => {
                                             <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
                                             <div className="w-8 h-1 bg-white/5 rounded-full overflow-hidden">
                                                 <div className={cn("h-full w-2/3 rounded-full", 
-                                                    stat.color === 'neon-green' ? 'bg-neon-green' : (stat.color === 'neon-blue' ? 'bg-neon-blue' : (stat.color === 'neon-pink' ? 'bg-neon-pink' : 'bg-yellow-400'))
+                                                    stat.color === 'neon-green' ? 'bg-neon-green' : (stat.color === 'neon-blue' ? 'bg-neon-blue' : (stat.color === 'neon-purple' ? 'bg-neon-purple' : (stat.color === 'neon-pink' ? 'bg-neon-pink' : 'bg-yellow-400')))
                                                 )} />
                                             </div>
                                         </div>
@@ -261,9 +279,9 @@ const Dashboard = () => {
                 {/* Operational Modules */}
                 <div className="space-y-32">
                     <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
-                        <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-green" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
-                        <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-blue" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
-                        <ControlCard title="Agreements" desc="AI-assisted legal MOU and contract generator." icon={Scale} color="neon-blue" link="/admin/agreements" comingSoon />
+                        <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
+                        <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
+                        <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} />
                         <ControlCard title="Ticketing" desc="Access control and order management." icon={Ticket} color="neon-pink" link="/admin/tickets" isHidden={cards.tickets} />
                     </DashboardSection>
 
@@ -279,9 +297,11 @@ const Dashboard = () => {
                         <ControlCard title="Creators" desc="Influencer validation and reach metrics." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
                         <ControlCard title="Campaigns" desc="Social takeovers and marketing missions." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
                         <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
-                        <ControlCard title="Artistant" desc="Performance talent and gig casting." icon={Mic2} color="neon-blue" link="/admin/artists" isNew />
+                        <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew />
                         <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
-                        <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
+                        {user.role !== 'editor' && (
+                            <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
+                        )}
                         <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
                     </DashboardSection>
                 </div>
@@ -317,12 +337,12 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
     </section>
 );
 
-const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHidden, comingSoon }) => (
+const ControlCard = ({ title, desc, icon: Icon, logo, color, link, count, isNew, isHidden, comingSoon }) => (
     <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative block h-full", (isHidden || comingSoon) && "pointer-events-none")}>
         {/* Glow Effect */}
         <div className={cn(
             "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-all duration-700 blur-2xl",
-            color === 'neon-green' ? 'bg-neon-green' : (color === 'neon-blue' ? 'bg-neon-blue' : (color === 'neon-pink' ? 'bg-neon-pink' : 'bg-white'))
+            color === 'neon-green' ? 'bg-neon-green' : (color === 'neon-blue' ? 'bg-neon-blue' : (color === 'neon-purple' ? 'bg-neon-purple' : (color === 'neon-pink' ? 'bg-neon-pink' : 'bg-white')))
         )} />
         
         <Card className={cn(
@@ -350,10 +370,14 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
 
             <div className={cn(
                 "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
-                color === 'neon-green' ? 'text-neon-green' : (color === 'neon-blue' ? 'text-neon-blue' : (color === 'neon-pink' ? 'text-neon-pink' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white')))
+                color === 'neon-green' ? 'text-[#39FF14]' : (color === 'neon-blue' ? 'text-[#00F0FF]' : (color === 'neon-purple' ? 'text-[#A855F7]' : (color === 'neon-pink' ? 'text-[#FF4F8B]' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white'))))
             )}>
                 <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-10 rounded-3xl blur-md transition-opacity" />
-                <Icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 relative z-10" />
+                {logo ? (
+                    <img src={logo} alt={title} className="w-10 h-10 md:w-14 md:h-14 object-contain relative z-10" />
+                ) : (
+                    Icon && <Icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 relative z-10" />
+                )}
             </div>
 
             <h3 className="text-base sm:text-lg md:text-2xl font-black font-heading text-white mb-2 md:mb-3 tracking-tighter uppercase italic group-hover:text-neon-green transition-colors">{title}</h3>
@@ -377,6 +401,8 @@ const ControlCard = ({ title, desc, icon: Icon, color, link, count, isNew, isHid
         )}
     </Link>
 );
+
+
 
 const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setIsResetting, isRegistering, setIsRegistering, handleLogin }) => (
     <div className="min-h-screen bg-[#020202] flex items-center justify-center px-4 relative overflow-hidden">

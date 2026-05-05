@@ -107,7 +107,8 @@
 }
 
 .article-content b, .article-content strong {
-  @apply font-black text-white;
+  font-weight: 900 !important;
+  color: inherit;
 }
 
 .article-content i, .article-content em {
@@ -115,11 +116,23 @@
 }
 
 .article-content ul {
-  @apply list-disc list-inside mb-8 space-y-3;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.article-content ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin-left: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
 }
 
 .article-content li {
-  @apply text-gray-300;
+  padding-left: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  color: #d1d5db; /* text-gray-300 */
 }
 
 .article-content img {
@@ -216,4 +229,10 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .animate-scan { animation: scan 2s linear infinite; }
 .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-float { animation: float 3s ease-in-out infinite; }
+.animate-spin-slow { animation: spin 3s linear infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 

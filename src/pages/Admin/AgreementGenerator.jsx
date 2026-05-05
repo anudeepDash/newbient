@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { 
-    Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, 
-    Sparkles, Send, FileText, ArrowLeft, ArrowRight, 
+    Plus, Minus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, 
+    Send, FileText, ArrowLeft, ArrowRight, 
     ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, 
     CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, 
     Layers, Image as ImageIcon, ClipboardList, Undo2, Scale,
-    ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Wand2,
-    Stamp, Gavel, ShieldAlert, Lock, History, MessageCircle, Share2,
-    Shield, TrendingUp, Upload
+    ChevronDown, ChevronUp, CheckCircle2, 
+    Stamp, Gavel, Lock, History, MessageCircle, Share2,
+    Shield, Upload
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import SignaturePad from '../../components/ui/SignaturePad';
 import { Button } from '../../components/ui/Button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -20,121 +21,32 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import DocumentSeal from '../../components/ui/DocumentSeal';
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
 
 // Contract Vault Sub-components
 import useContractGenerator from '../../components/admin/useContractGenerator';
-import ContractAIBox from '../../components/admin/ContractAIBox';
 import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
 import ContractPreview from '../../components/admin/ContractPreview';
+import { generateFullDocument } from '../../lib/ai';
+import AIPromptBox from '../../components/admin/AIPromptBox';
 
-const FormattedTextArea = ({ value, onChange, className, placeholder, minH = 'min-h-[200px]' }) => {
-    const textareaRef = useRef(null);
-    const historyRef = useRef([]);
 
-    const pushHistory = () => {
-        const h = historyRef.current;
-        if (h.length === 0 || h[h.length - 1] !== value) {
-            h.push(value);
-            if (h.length > 30) h.shift();
-        }
-    };
-
-    const handleUndo = () => {
-        const h = historyRef.current;
-        if (h.length > 0) {
-            const prev = h.pop();
-            onChange({ target: { value: prev } });
-        }
-    };
-
-    const insertFormat = (before, after = '') => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const scroll = ta.scrollTop;
-        const selected = value.substring(start, end);
-        const newText = value.substring(0, start) + before + (selected || 'text') + after + value.substring(end);
-        onChange({ target: { value: newText } });
-        setTimeout(() => {
-            ta.focus();
-            ta.scrollTop = scroll;
-            ta.selectionStart = start + before.length;
-            ta.selectionEnd = start + before.length + (selected || 'text').length;
-        }, 10);
-    };
-
-    const insertLine = (prefix) => {
-        pushHistory();
-        const ta = textareaRef.current;
-        if (!ta) return;
-        const start = ta.selectionStart;
-        const scroll = ta.scrollTop;
-        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-        const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
-        onChange({ target: { value: newText } });
-        setTimeout(() => {
-            ta.focus();
-            ta.scrollTop = scroll;
-            ta.selectionStart = start + prefix.length;
-            ta.selectionEnd = start + prefix.length;
-        }, 10);
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'b') { e.preventDefault(); insertFormat('**', '**'); }
-            else if (e.key === 'i') { e.preventDefault(); insertFormat('*', '*'); }
-            else if (e.key === 'h') { e.preventDefault(); insertLine('## '); }
-            else if (e.key === 'l') { e.preventDefault(); insertLine('• '); }
-            else if (e.key === 'z') { e.preventDefault(); handleUndo(); }
-        }
-    };
-
-    return (
-        <div className="space-y-2">
-            <div className="flex items-center gap-1 px-4">
-                <button type="button" onClick={handleUndo} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"><Undo2 size={13} /></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertFormat('**', '**')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"><span className="text-[11px] font-black">B</span></button>
-                <button type="button" onClick={() => insertFormat('*', '*')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"><span className="text-[11px] font-bold italic">I</span></button>
-                <button type="button" onClick={() => insertLine('## ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"><span className="text-[11px] font-black">H</span></button>
-                <div className="w-px h-4 bg-white/10 mx-1" />
-                <button type="button" onClick={() => insertLine('• ')} className="p-2 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"><span className="text-[11px] font-bold">•</span></button>
-            </div>
-            <textarea
-                ref={textareaRef}
-                value={value}
-                onChange={onChange}
-                onKeyDown={handleKeyDown}
-                className={cn(
-                    "w-full bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-base font-medium outline-none focus:border-neon-blue/40 transition-all leading-relaxed scrollbar-hide",
-                    minH,
-                    className
-                )}
-                placeholder={placeholder}
-            />
-        </div>
-    );
-};
-
-const AgreementGenerator = () => {
+const ContractGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addAgreement, updateAgreement, agreements } = useStore();
+    const { addAgreement, updateAgreement, agreements, user } = useStore();
     
     // UI State
     const [activeTab, setActiveTab] = useState('1');
-    const [previewScale, setPreviewScale] = useState(0.65);
+    const [previewScale, setPreviewScale] = useState(0.5);
+    const [userZoom, setUserZoom] = useState(1);
     const [currentPage, setCurrentPage] = useState(0);
-    const [showAiSettings, setShowAiSettings] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [promptBoxClear, setPromptBoxClear] = useState(false);
+    const [bulkRawText, setBulkRawText] = useState('');
     const previewContainerRef = useRef(null);
 
-    // AI Config from localStorage
-    const aiApiKey = localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '';
-    const aiModel = localStorage.getItem('geminiModel') || 'gemini-1.5-flash';
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -144,12 +56,8 @@ const AgreementGenerator = () => {
     // Hook logic
     const existingData = id ? agreements.find(a => a.id === id) : null;
     const {
-        formData, updateField,
-        aiLoading, aiError, handleAIGenerate,
+        formData, setFormData, updateField,
         toggleClause, updateClause, removeClause, addCustomClause,
-        clauseActionLoading, handleClauseAction,
-        riskData, riskLoading, runRiskAnalysis,
-        revenueLoading, runRevenueGenerate,
         paginatedPages
     } = useContractGenerator(existingData);
 
@@ -158,27 +66,119 @@ const AgreementGenerator = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
                 const containerHeight = previewContainerRef.current.clientHeight;
-                const scaleWidth = (containerWidth - 60) / 794;
-                const scaleHeight = (containerHeight - 60) / 1123;
-                setPreviewScale(Math.max(0.3, Math.min(1, scaleWidth, scaleHeight)));
+                const scaleWidth = (containerWidth - 20) / 794;
+                const scaleHeight = (containerHeight - 20) / 1123;
+                setPreviewScale(Math.max(0.4, Math.min(1.5, scaleWidth, scaleHeight)) * userZoom);
             }
         };
+
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [userZoom]);
+
+
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const data = { ...formData, updatedAt: new Date().toISOString() };
+            const data = { 
+                ...formData, 
+                updatedAt: new Date().toISOString(),
+                createdBy: formData.createdBy || user?.uid 
+            };
             if (id) await updateAgreement(id, data);
             else await addAgreement(data);
+            
+            setPromptBoxClear(true);
+            setTimeout(() => setPromptBoxClear(false), 100);
+            
             navigate('/admin/agreements');
         } catch (error) {
             alert("Save Error: " + error.message);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleImproveClause = async (clauseId) => {
+        const clause = formData.clauses.find(c => c.id === clauseId);
+        if (!clause) return;
+        setIsGenerating(true);
+        try {
+            const improved = await improveContent('contract', clause.title, clause.content);
+            updateClause(clauseId, { content: improved });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleRegenerateClause = async (clauseId) => {
+        const clause = formData.clauses.find(c => c.id === clauseId);
+        if (!clause) return;
+        setIsGenerating(true);
+        try {
+            const regenerated = await regenerateField('contract', clause.title, formData.details.purpose, clause.content);
+            updateClause(clauseId, { content: regenerated });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleGenerateContract = async (prompt) => {
+        setIsGenerating(true);
+        try {
+            const data = await generateFullDocument('contract', prompt, 'Premium', {});
+            
+            setFormData(prev => ({
+                ...prev,
+                // Deep-merge parties: preserve firstParty defaults, merge secondParty from AI
+                parties: {
+                    firstParty: {
+                        ...prev.parties.firstParty,
+                        ...(data.parties?.firstParty || {}),
+                        // Always keep Newbi Entertainment as provider
+                        name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
+                        role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
+                    },
+                    secondParty: {
+                        ...prev.parties.secondParty,
+                        ...(data.parties?.secondParty || {}),
+                    }
+                },
+                // Merge details
+                details: {
+                    ...prev.details,
+                    ...(data.details || {}),
+                },
+                // Merge commercials
+                commercials: {
+                    ...prev.commercials,
+                    ...(data.commercials || {}),
+                },
+                // Replace clauses only if AI generated valid ones
+                clauses: (data.clauses?.length > 0) 
+                    ? data.clauses.map((c, i) => ({
+                        id: c.id || `ai-clause-${Date.now()}-${i}`,
+                        title: c.title || `Clause ${i + 1}`,
+                        content: c.content || '',
+                        isActive: c.isActive !== false,
+                        isCustom: true,
+                        strictness: 'medium',
+                        category: 'custom'
+                    }))
+                    : prev.clauses,
+                // Update template if AI suggests contract type
+                template: data.template || prev.template,
+            }));
+        } catch (error) {
+            alert("AI Generation failed: " + error.message);
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -195,7 +195,7 @@ const AgreementGenerator = () => {
                 if (i > 0) pdf.addPage();
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
             }
-            pdf.save(`Newbi-Agreement-${formData.parties.secondParty.name || 'Draft'}.pdf`);
+            pdf.save(`Newbi-Contract-${formData.parties.secondParty.name || 'Draft'}.pdf`);
         } catch (error) {
             console.error(error);
         } finally {
@@ -205,16 +205,31 @@ const AgreementGenerator = () => {
     };
 
     const tabs = [
-        { id: '1', label: 'Parties', icon: Users, desc: 'Legal Entities' },
-        { id: '2', label: 'Scope', icon: Target, desc: 'Mission & Context' },
+        { id: '0', label: 'Briefing', icon: Layers, desc: 'Project Source Data' },
+        { id: '1', label: 'Entities', icon: Users, desc: 'Legal Parties' },
+        { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework' },
         { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms' },
         { id: '4', label: 'Clauses', icon: Gavel, desc: 'Legal Framework' },
-        { id: '5', label: 'Revenue', icon: TrendingUp, desc: 'Smart Sharing' },
-        { id: '6', label: 'Risk', icon: ShieldAlert, desc: 'Analysis' },
-        { id: '7', label: 'Security', icon: Shield, desc: 'Execution' }
+        { id: '7', label: 'Execution', icon: Shield, desc: 'Finalization' }
     ];
 
     const currentTab = tabs.find(t => t.id === activeTab);
+
+    const handleTabClick = (tabId) => {
+        setActiveTab(tabId);
+        // Map tab IDs to paginated page types for preview sync
+        const mapping = { 
+            '0': 'intro',
+            '1': 'intro', 
+            '2': 'mission', 
+            '3': 'commercials', 
+            '4': 'clauses', 
+            '7': 'execution'
+        };
+        const targetType = mapping[tabId];
+        const pageIndex = paginatedPages.findIndex(p => p.type === targetType);
+        if (pageIndex !== -1) setCurrentPage(pageIndex);
+    };
 
     return (
         <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-hidden">
@@ -234,34 +249,30 @@ const AgreementGenerator = () => {
                     <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
                     <div className="min-w-0">
                         <p className="text-[7px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none mb-1 truncate">Contract Operating System</p>
-                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate">Contract <span className="text-neon-blue">Vault.</span></h1>
+                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate">Contract <span className="text-[#A855F7]">Vault.</span></h1>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-                    <button onClick={() => setShowAiSettings(!showAiSettings)} className={cn("p-2.5 md:p-3 rounded-2xl border transition-all", showAiSettings ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue" : "bg-white/5 border-white/5 text-gray-400")}><Settings size={16} /></button>
                     <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
                         <span className="hidden sm:inline">Save Draft</span>
                     </button>
-                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(0,209,255,0.3)] hover:scale-105 transition-all flex items-center gap-2">
+                    <button onClick={generatePDF} className="h-10 md:h-12 px-4 md:px-8 bg-neon-purple text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl shadow-[0_10px_30px_rgba(168,85,247,0.3)] hover:scale-105 transition-all flex items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />} 
-                        <span className="hidden sm:inline">Export</span>
+                        <span className="hidden sm:inline">Export Contract</span>
                     </button>
                 </div>
             </nav>
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar - Desktop Only */}
-                <aside className="hidden lg:flex w-80 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
-                    <div className="space-y-4">
-                        <ContractAIBox onGenerate={(p) => handleAIGenerate(p, aiApiKey, aiModel)} isLoading={aiLoading} />
-                    </div>
+                <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-[#A855F7]/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
                                     <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
@@ -274,21 +285,141 @@ const AgreementGenerator = () => {
                 {/* Mobile Tab Navigation */}
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-between overflow-x-auto no-scrollbar">
                     {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[70px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
+                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[70px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-purple" : "text-gray-500")}>
                             <tab.icon size={18} />
                             <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-blue mt-1 shadow-[0_0_8px_#00D1FF]" />}
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#A855F7] mt-1 shadow-[0_0_8px_#A855F7]" />}
                         </button>
                     ))}
                 </div>
 
                 {/* Editor */}
-                <main className="flex-1 overflow-y-auto p-12 scrollbar-hide bg-[#050505]">
-                    <div className="max-w-4xl mx-auto space-y-12">
+                <main className="flex-1 overflow-y-auto px-12 py-16 scrollbar-hide bg-[#050505] pb-32">
+                    <div className="max-w-5xl mx-auto space-y-12">
+                        
+                        <AIPromptBox onGenerate={handleGenerateContract} isGenerating={isGenerating} type="contract" forceClear={promptBoxClear} />
+
+                        {/* Premium Section Header with Progress (Decoupled from box) */}
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 py-4 border-b border-white/5 gap-6">
+                            <div>
+                                <h2 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                    {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
+                                </h2>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">
+                                    {tabs.find(t => t.id === activeTab)?.desc}
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+                                <span className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Deployment Step {tabs.findIndex(t => t.id === activeTab) + 1} / {tabs.length}</span>
+                                <div className="w-full md:w-48 h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 p-0.5">
+                                    <div 
+                                        className="h-full bg-[#A855F7] rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(168,85,247,0.6)]" 
+                                        style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+
+
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                                {activeTab === '0' && (
+                                    <div className="space-y-12">
+                                        <div className="bg-zinc-900/40 border border-white/5 rounded-[40px] p-10 space-y-10">
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Paste Contract Brief / Raw Data</label>
+                                                    <span className="text-[10px] font-black text-[#A855F7] bg-[#A855F7]/10 px-3 py-1 rounded-full uppercase">Newbi Agent Active</span>
+                                                </div>
+                                                <textarea 
+                                                    value={bulkRawText} 
+                                                    onChange={e => setBulkRawText(e.target.value)} 
+                                                    className="w-full bg-black/40 border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-[#A855F7]/40 transition-all min-h-[300px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-700" 
+                                                    placeholder="Paste meeting notes, emails, or raw requirements here... The AI will extract parties, scope, and commercial terms automatically." 
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Reference Assets</label>
+                                                    <div className="group relative h-48 rounded-[32px] border-2 border-dashed border-white/10 hover:border-neon-purple/50 hover:bg-neon-purple/[0.02] transition-all flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden">
+                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple />
+                                                        <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-[#A855F7] group-hover:text-black transition-all">
+                                                            <Upload size={24} />
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-xs font-black text-white uppercase tracking-widest">Drop Supporting Docs</p>
+                                                            <p className="text-[9px] font-bold text-gray-500 uppercase mt-1">AI will parse for context</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col justify-end space-y-4">
+                                                    <div className="p-6 bg-[#A855F7]/5 rounded-3xl border border-[#A855F7]/10 space-y-2">
+                                                        <div className="flex items-center gap-2 text-[#A855F7]">
+                                                            <Zap size={14} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Intelligent Extraction</span>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-gray-500 leading-relaxed uppercase">The Newbi Agent maps legal entities, financial terms, and specialized clauses directly into your contract.</p>
+                                                    </div>
+                                                    <Button 
+                                                        onClick={async () => {
+                                                            if (!bulkRawText.trim()) return;
+                                                            await handleGenerateContract(bulkRawText);
+                                                            setActiveTab('1'); 
+                                                        }} 
+                                                        disabled={isGenerating || !bulkRawText.trim()}
+                                                        className="h-20 rounded-[24px] bg-[#A855F7] text-black text-[12px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_0_40px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-all w-full"
+                                                    >
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={20} /> : <Zap size={20} />}
+                                                        Initialize Contract Build
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 opacity-30 hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-sm font-black uppercase tracking-tighter italic text-gray-400">Developer Console (JSON)</h3>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => navigator.clipboard.writeText(JSON.stringify(formData, null, 2))} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-gray-500">Copy State</button>
+                                                </div>
+                                            </div>
+                                            <textarea 
+                                                id="bulk-data-input"
+                                                value={JSON.stringify(formData, null, 2)}
+                                                readOnly
+                                                className="w-full h-32 bg-black/60 border border-white/10 rounded-2xl p-4 font-mono text-[10px] text-zinc-500 outline-none scrollbar-hide"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {activeTab === '1' && (
                                     <div className="space-y-10">
+                                        
+                                        <div className="space-y-6">
+                                            <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Scale size={16} /> Contract Framework</h3>
+                                            <div className="grid grid-cols-2 gap-6">
+                                                {['Service Agreement', 'MOU'].map(t => (
+                                                    <button 
+                                                        key={t} 
+                                                        onClick={() => updateField('template', t)} 
+                                                        className={cn(
+                                                            "p-6 rounded-3xl border transition-all text-[10px] font-black uppercase tracking-widest text-center", 
+                                                            (formData.template || 'Service Agreement') === t 
+                                                                ? "bg-[#A855F7] border-[#A855F7] text-black shadow-[0_0_25px_rgba(168,85,247,0.4)] scale-105" 
+                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white hover:border-[#A855F7]/30"
+                                                        )}
+                                                    >
+                                                        {t === 'MOU' ? 'Memorandum of Understanding' : t}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-6">
                                             <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> Identity & Branding</h3>
                                             <div className="grid grid-cols-3 gap-6">
@@ -299,8 +430,8 @@ const AgreementGenerator = () => {
                                                         className={cn(
                                                             "p-4 rounded-3xl border transition-all text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-3 overflow-hidden relative group/btn", 
                                                             (formData.selectedLogo || 'entertainment') === logo.id 
-                                                                ? "bg-neon-blue border-neon-blue text-black scale-105 shadow-xl" 
-                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white"
+                                                                ? "bg-[#A855F7] border-[#A855F7] text-black scale-105 shadow-[0_0_25px_rgba(168,85,247,0.4)]" 
+                                                                : "bg-zinc-900 border-white/5 text-gray-500 hover:text-white hover:border-[#A855F7]/30"
                                                         )}
                                                     >
                                                         <div className="w-full aspect-[4/3] rounded-2xl bg-white flex items-center justify-center p-2 relative overflow-hidden">
@@ -317,6 +448,10 @@ const AgreementGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> First Party</h3>
                                                 <div className="space-y-4">
                                                     <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-black/40 border-white/10" />
+                                                        <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-black/40 border-white/10" />
+                                                    </div>
                                                     <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-black/40 border-white/10" />
                                                 </div>
                                             </div>
@@ -324,6 +459,10 @@ const AgreementGenerator = () => {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Users size={16} /> Second Party</h3>
                                                 <div className="space-y-4">
                                                     <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-black/40 border-white/10" />
+                                                        <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-black/40 border-white/10" />
+                                                    </div>
                                                     <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-black/40 border-white/10" />
                                                 </div>
                                             </div>
@@ -337,7 +476,14 @@ const AgreementGenerator = () => {
                                             <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-black/40 border-white/10" />
                                             <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-black/40 border-white/10" />
                                         </div>
-                                        <FormattedTextArea value={formData.details.purpose} onChange={e => updateField('details.purpose', e.target.value)} placeholder="Describe the purpose and scope of engagement..." />
+                                        <StudioRichEditor 
+                                            label="Contract Purpose"
+                                            value={formData.details.purpose} 
+                                            onChange={val => updateField('details.purpose', val)} 
+                                            placeholder="Describe the purpose and scope of engagement..." 
+                                            minHeight="200px" 
+                                            accentColor="neon-purple"
+                                        />
                                     </div>
                                 )}
 
@@ -345,14 +491,21 @@ const AgreementGenerator = () => {
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-blue font-black text-xs">{formData.commercials.currency}</span>
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-purple font-black text-xs">{formData.commercials.currency}</span>
                                                 <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-black/40 border-white/10 pl-12" placeholder="Total Value" />
                                             </div>
                                             <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm font-bold">
                                                 <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option>
                                             </select>
                                         </div>
-                                        <FormattedTextArea value={formData.commercials.paymentSchedule} onChange={e => updateField('commercials.paymentSchedule', e.target.value)} placeholder="Payment milestones and schedule..." minH="min-h-[150px]" />
+                                        <StudioRichEditor 
+                                            label="Payment Schedule"
+                                            value={formData.commercials.paymentSchedule} 
+                                            onChange={val => updateField('commercials.paymentSchedule', val)} 
+                                            placeholder="Payment milestones and schedule..." 
+                                            minHeight="150px" 
+                                            accentColor="neon-purple"
+                                        />
                                     </div>
                                 )}
 
@@ -363,86 +516,146 @@ const AgreementGenerator = () => {
                                         onUpdateClause={updateClause} 
                                         onRemoveClause={removeClause} 
                                         onAddCustom={addCustomClause}
-                                        onClauseAction={(id, act, content) => handleClauseAction(id, act, content, aiApiKey, aiModel)}
-                                        actionLoading={clauseActionLoading}
+                                        onImproveClause={handleImproveClause}
+                                        onRegenerateClause={handleRegenerateClause}
+                                        isAILoading={isGenerating}
                                     />
                                 )}
 
-                                {activeTab === '5' && (
-                                    <div className="space-y-10">
-                                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2rem] space-y-6">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="w-10 h-10 rounded-2xl bg-neon-blue/10 flex items-center justify-center text-neon-blue"><TrendingUp size={20} /></div>
-                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">Revenue Builder</h3>
-                                            </div>
-                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Generate smart revenue sharing clauses based on your deal parameters.</p>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <Input placeholder="Revenue % (e.g. 70/30)" className="h-14 bg-black/40" />
-                                                <Input placeholder="Source (e.g. Ticket Sales)" className="h-14 bg-black/40" />
-                                            </div>
-                                            <button onClick={() => runRevenueGenerate({}, aiApiKey, aiModel)} disabled={revenueLoading} className="w-full h-14 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2">
-                                                {revenueLoading ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />} Generate Revenue Clauses
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === '6' && (
-                                    <div className="space-y-8">
-                                        <div className="flex justify-between items-center px-4">
-                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Risk Assessment</h3>
-                                            <button onClick={() => runRiskAnalysis(aiApiKey, aiModel)} disabled={riskLoading} className="px-6 py-3 bg-neon-blue/10 text-neon-blue border border-neon-blue/20 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                                {riskLoading ? <RefreshCw className="animate-spin" size={14} /> : <ShieldAlert size={14} />} Analyze Risk
-                                            </button>
-                                        </div>
-                                        {riskData ? (
-                                            <div className="grid grid-cols-1 gap-6">
-                                                <div className={cn("p-8 rounded-[2.5rem] border flex items-center justify-between", riskData.riskLevel === 'High' ? "bg-red-500/5 border-red-500/20" : "bg-emerald-500/5 border-emerald-500/20")}>
-                                                    <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">Contract Risk Profile</p>
-                                                        <h2 className={cn("text-5xl font-black tracking-tighter mt-1", riskData.riskLevel === 'High' ? "text-red-500" : "text-emerald-500")}>{riskData.riskLevel?.toUpperCase()}</h2>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Protection Strength</p>
-                                                        <p className="text-lg font-black italic">{riskData.protectionStrength}</p>
-                                                    </div>
-                                                </div>
-                                                {riskData.keyRisks?.map((risk, i) => (
-                                                    <div key={i} className="p-6 bg-zinc-900/40 border border-white/5 rounded-3xl flex gap-4 items-start">
-                                                        <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0"><AlertCircle size={16} /></div>
-                                                        <div>
-                                                            <p className="text-[11px] font-black uppercase tracking-widest">{risk.title}</p>
-                                                            <p className="text-[10px] text-gray-500 mt-1">{risk.description}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="h-60 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-white/5 rounded-[3rem]">
-                                                <ShieldAlert size={40} className="mb-4" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest">Run Risk Engine to analyze contract robustness</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
                                 {activeTab === '7' && (
                                     <div className="space-y-10">
-                                        <div className="grid grid-cols-2 gap-8">
-                                            <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
-                                                <h3 className="text-lg font-black uppercase tracking-tighter italic">Document Settings</h3>
-                                                <div className="space-y-4">
-                                                    <button onClick={() => updateField('showSeal', !formData.showSeal)} className={cn("w-full h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", formData.showSeal ? "bg-white text-black" : "bg-transparent text-gray-500 border-white/10")}>
-                                                        {formData.showSeal ? <Eye size={14} /> : <EyeOff size={14} />} Official Seal
-                                                    </button>
-                                                    <button onClick={() => updateField('showSignature', !formData.showSignature)} className={cn("w-full h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", formData.showSignature ? "bg-white text-black" : "bg-transparent text-gray-500 border-white/10")}>
-                                                        {formData.showSignature ? <Eye size={14} /> : <EyeOff size={14} />} Digital Signatures
-                                                    </button>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                            <div className="space-y-8">
+                                                <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
+                                                    <h3 className="text-lg font-black uppercase tracking-tighter italic">Document Settings</h3>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <button 
+                                                            onClick={() => updateField('showSeal', !formData.showSeal)} 
+                                                            className={cn(
+                                                                "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", 
+                                                                formData.showSeal ? "bg-white text-black border-white" : "bg-transparent text-gray-500 border-white/10"
+                                                            )}
+                                                        >
+                                                            {formData.showSeal ? <Eye size={14} /> : <EyeOff size={14} />} Official Seal
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => updateField('showSignatures', !formData.showSignatures)} 
+                                                            className={cn(
+                                                                "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", 
+                                                                formData.showSignatures ? "bg-white text-black border-white" : "bg-transparent text-gray-500 border-white/10"
+                                                            )}
+                                                        >
+                                                            {formData.showSignatures ? <Eye size={14} /> : <EyeOff size={14} />} Digital Signatures
+                                                        </button>
+                                                    </div>
                                                 </div>
+
+                                                {/* Provider Authorization (Newbi) */}
+                                                {formData.showSignatures && (
+                                                    <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="space-y-1">
+                                                                <h3 className="text-lg font-black uppercase tracking-tighter italic">Provider Authorization</h3>
+                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">Sign for Newbi Entertainment</p>
+                                                            </div>
+                                                            <label className="cursor-pointer px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all">
+                                                                <input 
+                                                                    type="file" 
+                                                                    className="hidden" 
+                                                                    accept="image/*"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => updateField('providerSignature', reader.result);
+                                                                            reader.readAsDataURL(file);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Upload size={12} className="inline mr-2" /> Upload Sign
+                                                            </label>
+                                                        </div>
+                                                        
+                                                        <div className="relative h-32 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                            {formData.providerSignature ? (
+                                                                <div className="relative group w-full h-full flex items-center justify-center p-4">
+                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                    <button 
+                                                                        onClick={() => updateField('providerSignature', null)}
+                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">No Signature</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {formData.showSignatures && (
+                                                    <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="space-y-1">
+                                                                <h3 className="text-lg font-black uppercase tracking-tighter italic">Client Authorization</h3>
+                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">Customer sign-off area</p>
+                                                            </div>
+                                                            <label className="cursor-pointer px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all">
+                                                                <input 
+                                                                    type="file" 
+                                                                    className="hidden" 
+                                                                    accept="image/*"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => updateField('clientSignature', reader.result);
+                                                                            reader.readAsDataURL(file);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Upload size={12} className="inline mr-2" /> Upload Sign
+                                                            </label>
+                                                        </div>
+                                                        
+                                                        <div className="relative h-32 bg-white rounded-2xl flex items-center justify-center group overflow-hidden">
+                                                            {formData.clientSignature ? (
+                                                                <div className="relative group w-full h-full flex items-center justify-center p-4">
+                                                                    <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                    <button 
+                                                                        onClick={() => updateField('clientSignature', null)}
+                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        <SignaturePad 
+                                                            onSave={(dataURL) => updateField('clientSignature', dataURL)}
+                                                            onClear={() => updateField('clientSignature', null)}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="flex flex-col items-center justify-center p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
-                                                <DocumentSeal type="agreement" className="w-32 h-32 opacity-80" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest mt-6">Execution Ref: {formData.agreementNumber}</p>
+
+                                            <div className="flex flex-col gap-8">
+                                                <div className="flex flex-col items-center justify-center p-12 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] flex-1">
+                                                    <DocumentSeal type="contract" date={formData.effectiveDate} className="w-48 h-48 opacity-100" />
+                                                    <div className="mt-8 text-center space-y-2">
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Execution Reference</p>
+                                                        <p className="text-xl font-black text-[#A855F7] tracking-widest">{formData.agreementNumber}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
+                                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Security Protocol</p>
+                                                    <p className="text-[11px] text-gray-400 leading-relaxed italic">Documents are electronically sealed and timestamped upon export. Digital signatures are embedded as unalterable raster assets.</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -450,18 +663,19 @@ const AgreementGenerator = () => {
                             </motion.div>
                         </AnimatePresence>
 
+
+
                         {/* Section Navigation Footer */}
-                        <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                        <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-10">
                             <button 
                                 onClick={() => {
                                     const idx = tabs.findIndex(t => t.id === activeTab);
                                     if (idx > 0) setActiveTab(tabs[idx - 1].id);
                                 }}
                                 disabled={activeTab === tabs[0].id}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                                className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none font-black uppercase tracking-widest text-[11px]"
                             >
-                                <ChevronLeft size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
+                                <ChevronLeft size={18} /> Previous
                             </button>
 
                             <button 
@@ -470,40 +684,58 @@ const AgreementGenerator = () => {
                                     if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1].id);
                                 }}
                                 className={cn(
-                                    "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+                                    "flex items-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all shadow-xl",
                                     activeTab === tabs[tabs.length - 1].id 
                                         ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
-                                        : "bg-neon-blue text-black hover:scale-105 shadow-[0_0_20px_rgba(0,209,255,0.2)]"
+                                        : "bg-[#A855F7] text-black hover:scale-105 hover:shadow-[#A855F7]/20"
                                 )}
                             >
                                 <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
-                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
+                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={18} />}
                             </button>
                         </div>
                     </div>
                 </main>
 
-                {/* Preview Panel */}
-                <aside className="w-[500px] border-l border-white/5 bg-zinc-900/40 flex flex-col overflow-hidden">
+                {/* Preview Panel - Optimized width for better doc visibility */}
+                <aside className="w-[420px] 2xl:w-[500px] border-l border-white/5 bg-zinc-900/40 flex flex-col overflow-hidden shrink-0">
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
                         <div className="flex items-center gap-3">
-                            <Eye size={16} className="text-neon-blue" />
+                            <Eye size={16} className="text-neon-purple" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Preview</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} className="p-2 bg-white/5 rounded-lg text-gray-500"><ChevronLeft size={14} /></button>
-                            <span className="text-[10px] font-black text-gray-500">P. {currentPage + 1} / {paginatedPages.length}</span>
-                            <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-2 bg-white/5 rounded-lg text-gray-500"><ChevronRight size={14} /></button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                                <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:bg-white/10 transition-colors"><ChevronLeft size={14} /></button>
+                                <span className="text-[10px] font-black text-gray-500">{currentPage + 1} / {paginatedPages.length}</span>
+                                <button onClick={() => setCurrentPage(Math.min(paginatedPages.length - 1, currentPage + 1))} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:bg-white/10 transition-colors"><ChevronRight size={14} /></button>
+                            </div>
                         </div>
                     </div>
-                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-8 overflow-y-auto relative">
-                        <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} previewScale={previewScale} />
-                        <div className="h-20 shrink-0" />
+                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-2 overflow-y-auto relative scrollbar-hide">
+                        <div className="relative" style={{ 
+                            transform: `scale(${previewScale})`, 
+                            transformOrigin: 'top center',
+                            width: '794px',
+                            height: '1123px',
+                            marginBottom: `${(1123 * previewScale) - 1123}px`
+                        }}>
+                            <div className="shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-sm">
+                                <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} />
+                            </div>
+                        </div>
+                        <div className="h-48 shrink-0" />
                     </div>
                 </aside>
             </div>
+
         </div>
     );
 };
 
-export default AgreementGenerator;
+export default ContractGenerator;

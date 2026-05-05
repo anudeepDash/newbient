@@ -11,6 +11,7 @@ export default {
         'neon-green': "#39FF14", // Updated to match logo
         'neon-pink': "#FF4F8B",
         'neon-blue': "#00F0FF",
+        'neon-purple': "#A855F7",
         glass: "rgba(255, 255, 255, 0.05)",
       },
       fontFamily: {

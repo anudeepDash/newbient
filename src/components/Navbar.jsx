@@ -17,9 +17,9 @@ const Navbar = () => {
 
     const allLinks = [
         { name: 'HOME', path: '/', icon: Home },
+        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
@@ -28,9 +28,9 @@ const Navbar = () => {
 
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
+        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
         { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
-        { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 

@@ -65,10 +65,12 @@ export const useStore = create((set, get) => ({
     allUsers: [], // All Registered Users (Admin only context)
     artists: [], // Artist Onboarding state
     admins: [], // All Administrators
+    clientRequests: [], // Artistant Client Onboarding
     notifications: [], // Notifications System
     unreadNotificationsCount: 0,
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
+    aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
     portfolioCategories: [], // Dynamic categories
     maintenanceState: {
         global: false,
@@ -177,6 +179,7 @@ export const useStore = create((set, get) => ({
         const unsubAllUsers = sub('users', 'allUsers');
         const unsubArtists = sub('artists', 'artists');
         const unsubAdmins = sub('admins', 'admins');
+        const unsubClientRequests = sub('client_requests', 'clientRequests');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -202,6 +205,14 @@ export const useStore = create((set, get) => ({
                 set({ paymentDetails: docSnap.data() });
             }
         }, (error) => console.error("Error fetching payment details:", error));
+        
+        // AI Config Subscription
+        const unsubAI = onSnapshot(doc(db, 'site_settings', 'ai_config'), (docSnap) => {
+            if (docSnap.exists()) {
+                set({ aiConfig: docSnap.data() });
+            }
+        }, (error) => console.error("Error fetching AI config:", error));
+
 
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -239,6 +250,8 @@ export const useStore = create((set, get) => ({
             clearTimeout(loadingTimeout);
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
+            unsubClientRequests();
+            unsubAI();
         };
     },
 
@@ -465,6 +478,9 @@ export const useStore = create((set, get) => ({
     updateGeneralSettings: async (settings) => {
         await setDoc(doc(db, 'site_settings', 'general'), settings, { merge: true });
     },
+    updateAiConfig: async (config) => {
+        await setDoc(doc(db, 'site_settings', 'ai_config'), config, { merge: true });
+    },
 
     // Announcements
     addAnnouncement: async (announcement) => {
@@ -552,7 +568,12 @@ export const useStore = create((set, get) => ({
 
     // Invoices
     addInvoice: async (invoice) => {
-        return await addDoc(collection(db, 'invoices'), invoice);
+        const user = get().user;
+        return await addDoc(collection(db, 'invoices'), {
+            ...invoice,
+            createdBy: user?.uid,
+            createdByEmail: user?.email
+        });
     },
     updateInvoice: async (id, updates) => {
         await updateDoc(doc(db, 'invoices', id), updates);
@@ -566,10 +587,13 @@ export const useStore = create((set, get) => ({
 
     // Proposals
     addProposal: async (proposal) => {
+        const user = get().user;
         return await addDoc(collection(db, 'proposals'), {
             ...proposal,
             accessLogs: [],
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid,
+            createdByEmail: user?.email
         });
     },
     logDocumentAccess: async (type, id, metadata) => {
@@ -597,23 +621,29 @@ export const useStore = create((set, get) => ({
         const original = proposals.find(p => p.id === id);
         if (!original) throw new Error("Proposal not found");
 
-        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, rejectionMetadata: _____, ...duplicateData } = original;
+        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, rejectionMetadata: _____, createdBy: ______, createdByEmail: _______, ...duplicateData } = original;
+        const user = get().user;
         return await addProposal({
             ...duplicateData,
             clientName: `${original.clientName} (REVISED)`,
             status: 'Draft',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid,
+            createdByEmail: user?.email
         });
     },
 
     // Agreements
     addAgreement: async (agreement) => {
+        const user = get().user;
         return await addDoc(collection(db, 'agreements'), {
             ...agreement,
             accessLogs: [],
             versions: agreement.versions || [], // Redline history
             negotiationHistory: agreement.negotiationHistory || [], // Negotiation history
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid,
+            createdByEmail: user?.email
         });
     },
     updateAgreement: async (id, updates) => {
@@ -630,13 +660,16 @@ export const useStore = create((set, get) => ({
         const original = agreements.find(a => a.id === id);
         if (!original) throw new Error("Agreement not found");
 
-        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, ...duplicateData } = original;
+        const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, createdBy: _____, createdByEmail: ______, ...duplicateData } = original;
+        const user = get().user;
         return await addAgreement({
             ...duplicateData,
             agreementNumber: `${original.agreementNumber}-REV`,
             status: 'Draft',
             parentAgreementId: id, // Track revisions
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            createdBy: user?.uid,
+            createdByEmail: user?.email
         });
     },
 
@@ -770,6 +803,17 @@ export const useStore = create((set, get) => ({
             profileStatus: artist.profileStatus || 'pending'
         });
         return id;
+    },
+    addClientRequest: async (request) => {
+        const user = get().user;
+        const requestData = {
+            ...request,
+            uid: user?.uid || null,
+            email: user?.email || request.email || null,
+            createdAt: new Date().toISOString(),
+            status: 'pending'
+        };
+        return await addDoc(collection(db, 'client_requests'), requestData);
     },
     updateArtist: async (id, updates) => {
         await updateDoc(doc(db, 'artists', id), updates);
@@ -1261,7 +1305,6 @@ export const useStore = create((set, get) => ({
     },
 
     // Auth & Roles
-    user: null, // { email, uid, role, displayName, hasJoinedTribe }
     isAuthOpen: false,
     setAuthModal: (open) => set({ isAuthOpen: open }),
 

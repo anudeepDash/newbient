@@ -198,7 +198,7 @@ const CampaignPublicView = () => {
 
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Brief</h3>
-                            <p className="text-gray-400 text-lg md:text-xl font-medium leading-relaxed">{campaign.description}</p>
+                            <div className="article-content text-gray-400 text-lg md:text-xl font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                         </div>
 
                         {campaignTasks.length > 0 && (
@@ -232,7 +232,7 @@ const CampaignPublicView = () => {
                                                             <span className="px-2 py-0.5 bg-neon-blue/10 border border-neon-blue/20 rounded-md text-[7px] font-black uppercase tracking-widest text-neon-blue">★ Required</span>
                                                         )}
                                                     </div>
-                                                    {task.description && <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">{task.description}</p>}
+                                                    {task.description && <div className="article-content text-[11px] text-gray-500 mt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />}
                                                     <div className="flex flex-wrap items-center gap-3 mt-3">
                                                         <span className="px-2 py-0.5 bg-white/5 rounded-md text-[7px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1">
                                                             {React.createElement(platInfo.icon, { size: 8 })} {platInfo.label}

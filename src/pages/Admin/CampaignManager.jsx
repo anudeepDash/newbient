@@ -13,6 +13,7 @@ import { cn } from '../../lib/utils';
 import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
 
 const TASK_TYPES = [
     { value: 'content_post', label: 'Content Post', icon: Camera },
@@ -174,10 +175,13 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
                             </div>
 
                             {/* Row 2: Description */}
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Execution Details</label>
-                                <textarea value={task.description} onChange={e => onUpdate(index, 'description', e.target.value)} placeholder="Describe what the creator should do..." className="w-full bg-zinc-900/50 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-gray-300 focus:outline-none focus:border-neon-blue transition-all h-20 resize-none" />
-                            </div>
+                            <StudioRichEditor 
+                                label="Execution Details"
+                                value={task.description} 
+                                onChange={val => onUpdate(index, 'description', val)} 
+                                placeholder="Describe what the creator should do..." 
+                                minHeight="120px"
+                            />
 
                             {/* Row 3: Deadline + Priority */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,10 +207,13 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
                             </div>
 
                             {/* Row 4: Caption / Script */}
-                            <div className="space-y-2">
-                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">Caption / Script Guidelines</label>
-                                <textarea value={task.captionScript || ''} onChange={e => onUpdate(index, 'captionScript', e.target.value)} placeholder="Provide caption text, hashtags, or talking points..." className="w-full bg-zinc-900/50 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-gray-300 focus:outline-none focus:border-neon-blue transition-all h-24 resize-none" />
-                            </div>
+                            <StudioRichEditor 
+                                label="Caption / Script Guidelines"
+                                value={task.captionScript || ''} 
+                                onChange={val => onUpdate(index, 'captionScript', val)} 
+                                placeholder="Provide caption text, hashtags, or talking points..." 
+                                minHeight="120px"
+                            />
 
                             {/* Row 5: Creative Assets (uploads) */}
                             <div className="space-y-3">
@@ -750,16 +757,14 @@ const CampaignManager = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">BRIEF DESCRIPTION</label>
-                                        <textarea
-                                            required
-                                            value={formData.description}
-                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full bg-black/50 border border-white/10 rounded-[2rem] p-6 text-[11px] font-bold text-gray-300 focus:outline-none focus:border-neon-blue transition-all h-32 resize-none shadow-inner"
-                                            placeholder="Describe the campaign requirements and goals..."
-                                        />
-                                    </div>
+                                    <StudioRichEditor 
+                                        label="BRIEF DESCRIPTION"
+                                        required
+                                        value={formData.description}
+                                        onChange={val => setFormData({ ...formData, description: val })}
+                                        placeholder="Describe the campaign requirements and goals..."
+                                        minHeight="150px"
+                                    />
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
