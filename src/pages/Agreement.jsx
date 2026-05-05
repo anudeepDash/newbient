@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
     Download, Printer, ArrowLeft, ShieldCheck, 
-    Zap, RefreshCw, Globe, CheckCircle2, Eye, EyeOff, Trash2, Upload, X
+    Zap, RefreshCw, Globe, CheckCircle2, Eye, EyeOff, Trash2, Upload, X, PenTool
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
