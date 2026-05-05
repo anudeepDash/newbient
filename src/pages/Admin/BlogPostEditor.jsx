@@ -27,6 +27,7 @@ import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
 
 const BlogPostEditor = () => {
     const { id } = useParams();
@@ -98,22 +99,8 @@ const BlogPostEditor = () => {
     };
 
     const insertTag = (tag, closingTag = '') => {
-        const textarea = contentRef.current;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
-        const before = text.substring(0, start);
-        const selected = text.substring(start, end);
-        const after = text.substring(end);
-
-        const newContent = before + tag + selected + (closingTag || tag.replace('<', '</')) + after;
+        const newContent = formData.content + tag + (closingTag || tag.replace('<', '</'));
         setFormData(prev => ({ ...prev, content: newContent }));
-        
-        // Reset focus and selection
-        setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + tag.length, end + tag.length);
-        }, 0);
     };
 
     const handleContentImageUpload = async (e) => {
@@ -259,59 +246,13 @@ const BlogPostEditor = () => {
                                     />
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Main Article Content (HTML Support)</label>
-                                        
-                                        {/* Simple Toolbar */}
-                                        <div className="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-xl">
-                                            {[
-                                                { icon: Heading2, tag: '<h2>', title: 'Header 2' },
-                                                { icon: Heading3, tag: '<h3>', title: 'Header 3' },
-                                                { icon: Bold, tag: '<b>', title: 'Bold' },
-                                                { icon: Italic, tag: '<i>', title: 'Italic' },
-                                                { icon: List, tag: '<ul><li>', closingTag: '</li></ul>', title: 'List' },
-                                                { icon: LinkIcon, tag: '<a href="#" class="text-neon-blue hover:underline">', title: 'Link' },
-                                                { icon: Image, tag: '<img src="URL" class="w-full rounded-2xl my-8 border border-white/5" />', closingTag: ' ', title: 'Image' },
-                                            ].map((btn, i) => (
-                                                <button
-                                                    key={i}
-                                                    type="button"
-                                                    disabled={isContentUploading}
-                                                    onClick={() => insertTag(btn.tag, btn.closingTag)}
-                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all disabled:opacity-50"
-                                                    title={btn.title}
-                                                >
-                                                    <btn.icon size={16} />
-                                                </button>
-                                            ))}
-                                            <div className="relative">
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    className="absolute inset-0 opacity-0 cursor-pointer" 
-                                                    onChange={handleContentImageUpload}
-                                                    disabled={isContentUploading}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={`p-2 hover:bg-white/10 rounded-lg text-neon-blue transition-all ${isContentUploading ? 'animate-pulse' : ''}`}
-                                                    title="Upload Image"
-                                                >
-                                                    {isContentUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <textarea
-                                        ref={contentRef}
-                                        rows={20}
-                                        placeholder="Write your masterpiece here... HTML is welcome."
-                                        value={formData.content}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                                        className="w-full bg-zinc-900/80 border border-white/10 rounded-[2rem] p-8 font-medium text-white placeholder:text-white/10 focus:outline-none focus:border-neon-blue/50 transition-all leading-relaxed whitespace-pre-wrap"
-                                    />
-                                </div>
+                                <StudioRichEditor 
+                                    label="Main Article Content"
+                                    value={formData.content}
+                                    onChange={val => setFormData(prev => ({ ...prev, content: val }))}
+                                    placeholder="Write your masterpiece here..."
+                                    minHeight="500px"
+                                />
                             </>
                         )}
                     </div>

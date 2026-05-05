@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut } from 'lucide-react';
+import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut, Zap, ShieldCheck, RefreshCw } from 'lucide-react';
+import DocumentSeal from '../components/ui/DocumentSeal';
+import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -18,6 +20,18 @@ const Invoice = () => {
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
+    const [signatureName, setSignatureName] = React.useState('');
+    const [clientSignature, setClientSignature] = React.useState(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [ipAddress, setIpAddress] = React.useState('Detecting...');
+    const [verificationEmail, setVerificationEmail] = React.useState(user?.email || '');
+
+    React.useEffect(() => {
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => setIpAddress(data.ip))
+            .catch(() => setIpAddress('Hidden/Protected'));
+    }, []);
 
     React.useEffect(() => {
         const handleResize = () => {
@@ -260,8 +274,15 @@ const Invoice = () => {
     };
 
     const handleMarkPaid = () => {
-        if (window.confirm('Mark this invoice as PAID?')) {
+        if (window.confirm('Confirm this invoice as PAID? This will update the official status.')) {
             updateInvoiceStatus(invoice.id, 'Paid');
+        }
+    };
+
+    const handleRequestVerification = () => {
+        if (window.confirm('Notify the finance team that you have made the payment?')) {
+            updateInvoiceStatus(invoice.id, 'Verification Pending');
+            alert("Verification request sent. Our team will verify and update the status shortly.");
         }
     };
 
@@ -274,6 +295,47 @@ const Invoice = () => {
         const subject = `Invoice #${displayInvoice.invoiceNumber || displayInvoice.id} from Newbi Entertainment`;
         const body = `Hi,\n\nPlease find your invoice here: ${window.location.href}\n\nThanks,\nNewbi Entertainment`;
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    };
+
+    const handleAuthorizeInvoice = async () => {
+        if (displayInvoice.status === 'Paid') return;
+        if (!signatureName.trim() || !clientSignature) {
+            alert('Please provide your name and signature to authorize.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const deviceMetadata = {
+                ua: navigator.userAgent,
+                platform: navigator.platform,
+                ip: ipAddress,
+                timestamp: new Date().toISOString()
+            };
+
+            await updateInvoiceStatus(id, 'Paid');
+            await useStore.getState().updateInvoice(id, {
+                status: 'Paid',
+                approvalMetadata: {
+                    signedBy: signatureName,
+                    clientSignature: clientSignature,
+                    signedAt: new Date().toISOString(),
+                    ip: ipAddress,
+                    email: verificationEmail,
+                    footprint: {
+                        browser: navigator.userAgent.split(' ').slice(-1)[0],
+                        os: navigator.platform,
+                        res: `${window.screen.width}x${window.screen.height}`
+                    }
+                }
+            });
+            alert('Invoice authorized and marked as PAID.');
+        } catch (error) {
+            console.error('Error authorizing invoice:', error);
+            alert('Authorization failed.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const getGridTemplate = () => {
@@ -296,6 +358,36 @@ const Invoice = () => {
     ];
     const currentBrand = logoOptions.find(l => l.id === displayInvoice.selectedLogo) || logoOptions[0];
     const brandColor = currentBrand.color;
+    
+    const renderFormatted = (text, baseClass = '') => {
+        if (!text) return null;
+        const paragraphs = text.split(/\n\n+/);
+        return (
+            <div className={cn("space-y-4", baseClass)}>
+                {paragraphs.map((p, i) => (
+                    <p key={i} className="whitespace-pre-line leading-relaxed">
+                        {p}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
+    const renderContent = (content, baseClass = '') => {
+        if (!content) return null;
+        const isHtml = content.includes('<') && content.includes('>');
+        
+        if (isHtml) {
+            return (
+                <div 
+                    className={cn("article-content", baseClass)} 
+                    dangerouslySetInnerHTML={{ __html: content }} 
+                />
+            );
+        }
+        
+        return renderFormatted(content, baseClass);
+    };
 
     // Pagination Logic
     // Reserve space for totals/notes if they are on the last page.
@@ -443,20 +535,33 @@ const Invoice = () => {
                                 </div>
                             )}
 
-                            {isAdmin && (
-                                <div className="flex items-center gap-1 md:gap-2 mr-1">
-                                    <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
-                                    <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
-                                    {displayInvoice.status !== 'Paid' && (
-                                        <button 
-                                            onClick={handleMarkPaid} 
-                                            className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-white hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
-                                        >
-                                            Mark as Paid
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                            <div className="flex items-center gap-1 md:gap-2 mr-1">
+                                {isAdmin ? (
+                                    <>
+                                        <button onClick={handleShareWhatsApp} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><MessageCircle size={18} /></button>
+                                        <button onClick={handleShareEmail} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all hidden md:flex"><Mail size={18} /></button>
+                                        {displayInvoice.status !== 'Paid' && (
+                                            <button 
+                                                onClick={handleMarkPaid} 
+                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue text-white hover:bg-neon-blue/90 rounded-xl transition-all shadow-[0_10px_20px_rgba(56,182,255,0.2)] border border-neon-blue"
+                                            >
+                                                Mark as Paid
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && (
+                                            <button 
+                                                onClick={handleRequestVerification} 
+                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-white/10 text-white hover:bg-white/20 rounded-xl transition-all border border-white/10"
+                                            >
+                                                Notify Payment Done
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                             <button onClick={handlePrint} className="p-2 md:p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all" title="Print"><Printer size={18} /></button>
                             <Button 
                                 variant="primary" 
@@ -593,23 +698,26 @@ const Invoice = () => {
                                                         {/* Left Column: Payment Details & Notes */}
                                                         <div className="flex-1 space-y-2">
                                                             {/* Payment Details */}
-                                                            {(!invoice || invoice.showPaymentDetails !== false) && displayInvoice.paymentDetails && (
-                                                                <div className="p-2 border-2 border-dashed border-gray-300 rounded-2xl text-[9px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
-                                                                    <p className="text-[10px] font-black text-black mb-2 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
-                                                                    <div className="whitespace-pre-line tracking-wide">
-                                                                        {displayInvoice.paymentDetails}
+                                                            {displayInvoice.showPaymentDetails !== false && displayInvoice.paymentDetails && (
+                                                                <div className="p-4 border-2 border-dashed border-gray-300 rounded-2xl text-[10px] text-left leading-relaxed text-gray-600 bg-white/40 shadow-sm w-full">
+                                                                    <p className="text-[10px] font-black text-black mb-3 border-b-2 pb-1.5 inline-block uppercase tracking-widest" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
+                                                                    <div className="font-mono">
+                                                                        {renderContent(displayInvoice.paymentDetails)}
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            {/* Additional Notes */}
-                                                            <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
-                                                                <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
-                                                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                            {displayInvoice.showNotes !== false && displayInvoice.note && (
+                                                                <div className="bg-white/40 border border-black/5 rounded-2xl overflow-hidden shadow-sm">
+                                                                    <div className="px-4 py-1.5 border-b border-black/10" style={{ backgroundColor: `${brandColor}66` }}>
+                                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-black">ADDITIONAL NOTE</h4>
+                                                                    </div>
+                                                                    <div className="p-4">
+                                                                        <div className="text-[10px] text-gray-700 leading-relaxed italic">
+                                                                            {renderContent(displayInvoice.note)}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="p-2">
-                                                                    <p className="text-[9px] text-gray-700 font-bold whitespace-pre-line leading-relaxed italic">{displayInvoice.note || 'No additional notes.'}</p>
-                                                                </div>
-                                                            </div>
+                                                            )}
                                                         </div>
 
                                                         {/* Right Column: Totals, QR & Signature */}
@@ -673,22 +781,63 @@ const Invoice = () => {
                                                             )}
 
                                                             {/* Signature Block */}
-                                                            {displayInvoice.showSignatureBlock && displayInvoice.showSignatory !== 'none' && (
-                                                                <div className="w-full flex flex-col items-end mt-4">
-                                                                    {displayInvoice.showSignatory === 'image' && displayInvoice.signatoryImage ? (
-                                                                        <img src={displayInvoice.signatoryImage} alt="Signature" className="h-16 mb-2 object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                    ) : displayInvoice.showSignatory === 'text' ? (
-                                                                        <div className="h-16 flex items-end justify-center">
-                                                                            <p className="font-heading italic text-lg leading-none border-b border-gray-400 pb-1 px-4">{displayInvoice.senderName || 'Authorized Signatory'}</p>
+                                                            <div className="w-full mt-6">
+                                                                {!displayInvoice.approvalMetadata ? (
+                                                                    <div className="space-y-4 no-print bg-[#0a0a0a] p-6 rounded-3xl border border-white/5 shadow-xl text-left">
+                                                                        <div className="flex items-center justify-between mb-4">
+                                                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Client Acknowledgement</p>
+                                                                            <span className="text-[8px] font-black text-neon-blue uppercase px-2 py-0.5 bg-neon-blue/10 rounded-full">Secure</span>
                                                                         </div>
-                                                                    ) : (
-                                                                        <div className="h-16" />
-                                                                    )}
-                                                                    <div className="w-40 pt-3 border-t-2 border-dashed border-gray-400 text-center">
-                                                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic font-bold">Authorized Signature</p>
+                                                                        <div className="space-y-4">
+                                                                            <input 
+                                                                                value={signatureName}
+                                                                                onChange={e => setSignatureName(e.target.value)}
+                                                                                placeholder="ENTER FULL NAME"
+                                                                                className="w-full bg-black/40 border border-white/10 h-12 px-4 rounded-xl text-[10px] font-bold text-white outline-none focus:border-neon-blue/40 uppercase tracking-widest"
+                                                                            />
+                                                                            <div className="bg-white rounded-xl overflow-hidden h-32 border border-white/10">
+                                                                                <SignaturePad onSave={setClientSignature} className="h-full w-full" />
+                                                                            </div>
+                                                                            <Button 
+                                                                                onClick={handleAuthorizeInvoice}
+                                                                                disabled={isSubmitting || !signatureName.trim() || !clientSignature}
+                                                                                className="w-full h-12 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl shadow-[0_0_20px_rgba(56,182,255,0.2)]"
+                                                                            >
+                                                                                {isSubmitting ? <RefreshCw className="animate-spin" size={14} /> : <Zap size={14} />}
+                                                                                Authorize & Pay
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
+                                                                ) : (
+                                                                    <div className="relative pt-6 border-t border-gray-200">
+                                                                        <div className="grid grid-cols-2 gap-6 text-left">
+                                                                            <div className="space-y-3">
+                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Client Authorization</p>
+                                                                                <div className="h-16 flex items-end">
+                                                                                    {displayInvoice.approvalMetadata.clientSignature ? (
+                                                                                        <img src={displayInvoice.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                                                    ) : (
+                                                                                        <p className="font-heading italic text-lg">{displayInvoice.approvalMetadata.signedBy}</p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className="text-[10px] font-black uppercase text-black">{displayInvoice.approvalMetadata.signedBy}</p>
+                                                                            </div>
+                                                                            <div className="space-y-2 text-right">
+                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Digital Footprints</p>
+                                                                                <div className="space-y-1 text-[7px] font-black uppercase tracking-widest text-gray-400">
+                                                                                    <p>IP: {displayInvoice.approvalMetadata.ip}</p>
+                                                                                    <p>UA: {displayInvoice.approvalMetadata.footprint?.browser || 'System'}</p>
+                                                                                    <p>Time: {new Date(displayInvoice.approvalMetadata.signedAt).toISOString()}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        {/* Seal Overlay */}
+                                                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-70 mix-blend-multiply">
+                                                                            <DocumentSeal className="w-40 h-40 grayscale brightness-0" />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}

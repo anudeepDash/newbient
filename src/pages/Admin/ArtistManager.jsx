@@ -17,7 +17,7 @@ import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import StudioSelect from '../../components/ui/StudioSelect';
 
-const ArtistManager = () => {
+const ArtistManager = ({ isEmbedded = false }) => {
     const { artists, upcomingEvents, updateArtist, deleteArtist, castArtistToGig } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCity, setFilterCity] = useState('All');
@@ -82,18 +82,11 @@ const ArtistManager = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#020202] text-white pb-32">
-            {/* Immersive Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[180px]" />
-                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-neon-pink/10 rounded-full blur-[180px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32">
-                {/* Dashboard Header */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-16">
+    const renderContent = () => (
+        <div className="relative z-10 max-w-[1600px] mx-auto">
+            {/* Dashboard Header */}
+            {!isEmbedded && (
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12 mb-16 pt-32 px-4 md:px-8">
                     <div className="space-y-6">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-tight">
                             TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF]">OPERATIONS.</span>
@@ -106,7 +99,9 @@ const ArtistManager = () => {
                         <StatCard icon={<ShieldAlert />} label="Pending" value={stats.pending} color="yellow-500" />
                     </div>
                 </div>
+            )}
 
+            <div className={cn("px-4 md:px-8", isEmbedded ? "pt-10" : "pt-0")}>
                 {/* Control Panel (Filters & Actions) */}
                 <div className="relative z-50 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-4 md:p-6 mb-12 shadow-2xl flex flex-col lg:flex-row items-center gap-6">
                     {/* Search */}
@@ -206,6 +201,21 @@ const ArtistManager = () => {
                     )}
                 </div>
             </div>
+        </div>
+    );
+
+    if (isEmbedded) return renderContent();
+
+    return (
+        <div className="min-h-screen bg-[#020202] text-white pb-32">
+            {/* Immersive Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[180px]" />
+                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-neon-pink/10 rounded-full blur-[180px]" />
+            </div>
+
+            {renderContent()}
 
             {/* Detailed Artist Modal */}
             <AnimatePresence>

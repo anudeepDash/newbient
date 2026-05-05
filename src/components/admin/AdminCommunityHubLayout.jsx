@@ -20,8 +20,8 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
         <div className="min-h-screen bg-[#020202] text-white pt-20 md:pt-24 pb-20 relative overflow-hidden">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[120px] animate-pulse delay-700" />
+                <div className={cn("absolute top-0 right-0 w-[50%] h-[50%] rounded-full blur-[120px] animate-pulse", `bg-${accentColor}/5`)} />
+                <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
@@ -33,7 +33,11 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                         {studioHeader ? (
                             <div className="space-y-1 md:space-y-2">
                                 <div className="flex items-center gap-2 md:gap-3">
-                                    {studioHeader.icon ? <studioHeader.icon size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} /> : <Sparkles size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} />}
+                                    {studioHeader.logo ? (
+                                        <img src={studioHeader.logo} alt="Logo" className="w-4 h-4 md:w-5 md:h-5 object-contain" />
+                                    ) : (
+                                        studioHeader.icon ? <studioHeader.icon size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} /> : <Sparkles size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} />
+                                    )}
                                     <span className={cn(studioHeader.accentClass, "text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em]")}>Operations Hub</span>
                                 </div>
                                 <h1 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">

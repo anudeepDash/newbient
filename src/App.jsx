@@ -19,6 +19,7 @@ import ConcertManager from './pages/Admin/ConcertManager';
 import SiteSettings from './pages/Admin/SiteSettings';
 import MessageManager from './pages/Admin/MessageManager';
 import ArtistManager from './pages/Admin/ArtistManager';
+import ClientRequestManager from './pages/Admin/ClientRequestManager';
 
 import ProposalManagement from './pages/Admin/ProposalManagement';
 import ProposalGenerator from './pages/Admin/ProposalGenerator';
@@ -57,8 +58,12 @@ import BlogManager from './pages/Admin/BlogManager'; // New Admin Blog
 import BlogPostEditor from './pages/Admin/BlogPostEditor'; // New Editor
 import CampaignPublicView from './pages/CampaignPublicView'; // New Public View
 import ArtistAnt from './pages/ArtistAnt';
+import ArtistantHub from './pages/Admin/ArtistantHub';
 import AgreementManagement from './pages/Admin/AgreementManagement';
 import AgreementGenerator from './pages/Admin/AgreementGenerator';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+
 
 
 function App() {
@@ -123,6 +128,9 @@ function App() {
           <Route path="concert-zone/:category" element={<ConcertZoneBlog />} />
           <Route path="concert-zone/:category/:slug" element={<BlogPostDetail />} />
           <Route path="artistant" element={<ArtistAnt />} />
+          <Route path="terms" element={<Terms />} />
+          <Route path="privacy" element={<Privacy />} />
+
 
           {/* Admin Routes wrapped in AdminGuard */}
           <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
@@ -150,6 +158,8 @@ function App() {
           <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/artists" element={<AdminGuard><ArtistManager /></AdminGuard>} />
+          <Route path="admin/client-requests" element={<AdminGuard><ClientRequestManager /></AdminGuard>} />
+          <Route path="admin/artistant" element={<AdminGuard><ArtistantHub /></AdminGuard>} />
           <Route path="admin/tickets" element={<AdminGuard><MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />

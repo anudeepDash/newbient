@@ -1,559 +1,779 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { PREDEFINED_CITIES, ARTIST_CATEGORIES } from '../lib/constants';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Music, 
-    Mic2, 
-    Users, 
-    Camera, 
-    Video, 
-    Instagram, 
-    Youtube, 
-    Globe, 
-    Sparkles, 
-    CheckCircle2, 
-    Loader2, 
-    ArrowRight, 
-    Zap,
-    MapPin,
-    Star,
-    Layout
+    FileText, Briefcase, UserCheck, Shield, ChevronRight, ArrowRight, 
+    Loader2, Search, MapPin, Calendar, Wallet, Activity, Home, 
+    Globe, Terminal, Award, BarChart3, Clock, Sparkles, Trash2, AlertTriangle,
+    User, Settings, ExternalLink, Mail, Phone, MapPinIcon, LayoutDashboard, Zap,
+    Music, Users, Disc, Mic2, Star, PartyPopper, Wand2, Guitar, Lock, Cpu, HeartHandshake,
+    Trophy, Ticket
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
-import logo from '../assets/logo/artistant.png';
+import { useNavigate, Link } from 'react-router-dom';
+import { PREDEFINED_CITIES } from '../lib/constants';
+import artistantLogo from '../assets/logo/artistant.png';
+
+// Artistant Theme Colors: Coral/Orange & Purple/Blue
+const ARTISTANT_THEME = {
+    primary: '#FF6B6B', // Coral
+    secondary: '#7B61FF', // Purple-Blue
+};
+
+const TALENT_CATEGORIES = [
+    { id: 'singer', label: 'Vocalists', icon: <Mic2 />, desc: 'Solo performers & session singers' },
+    { id: 'band', label: 'Live Bands', icon: <Users />, desc: 'Acoustic, Rock & Fusion ensembles' },
+    { id: 'dj', label: 'DJs & Producers', icon: <Disc />, desc: 'Electronic, Hip-Hop & Commercial' },
+    { id: 'standup', label: 'Comedians', icon: <PartyPopper />, desc: 'Stand-up, Improv & Roasts' },
+    { id: 'emcee', label: 'Hosts & Emcees', icon: <Star />, desc: 'Corporate & Wedding anchors' },
+    { id: 'instrumental', label: 'Instrumentalists', icon: <Guitar />, desc: 'Violin, Sax, Flute & more' },
+    { id: 'magic', label: 'Special Acts', icon: <Wand2 />, desc: 'Magicians, Mentalists & Flow' },
+    { id: 'dance', label: 'Performance', icon: <Music />, desc: 'Dance troupes & choreographed acts' }
+];
+
+const ECOSYSTEM_FEATURES = [
+    { 
+        id: 'network', 
+        tag: 'Artist Network', 
+        title: 'Artistant Backstage™', 
+        icon: <Users />, 
+        timeline: 'Est. Q4 2026',
+        desc: <>Artists booking artists. Need a <span className="text-white font-black">session drummer</span> for this Saturday's gig? Post a call, find <span className="text-white font-black">verified musicians</span>, and complete your band instantly.</> 
+    },
+    { 
+        id: 'payments', 
+        tag: 'Secure Payments', 
+        title: 'GigSafe Escrow', 
+        icon: <Lock />, 
+        timeline: 'Est. Q1 2027',
+        desc: <>No more chasing payments. Clients pay <span className="text-white font-black">upfront</span>, funds are held securely, and released automatically to the artist <span className="text-white font-black">immediately after</span> the successful gig.</> 
+    },
+    { 
+        id: 'automation', 
+        tag: 'Smart Automation', 
+        title: 'Smart Tech Riders', 
+        icon: <Cpu />, 
+        timeline: 'Est. Q2 2027',
+        desc: <>Automated equipment matching. We cross-reference the artist's required sound setup with the <span className="text-white font-black">venue's inventory</span> to flag <span className="text-white font-black">missing gear</span> before the show day.</> 
+    },
+    { 
+        id: 'trust', 
+        tag: 'Trust Layer', 
+        title: 'Replacement Guarantee', 
+        icon: <HeartHandshake />, 
+        timeline: 'Est. Q2 2027',
+        desc: <>Total <span className="text-white font-black">peace of mind</span> for event organizers. If an artist cancels due to an emergency, our engine automatically sources and funds a <span className="text-white font-black">highly-rated replacement</span>.</> 
+    },
+    { 
+        id: 'monetization', 
+        tag: 'Monetization', 
+        title: 'Brand Collab Hub', 
+        icon: <Trophy />, 
+        timeline: 'Est. Q3 2027',
+        desc: <>Monetize <span className="text-white font-black">beyond the stage</span>. We connect top-rated independent artists directly with lifestyle and beverage brands for <span className="text-white font-black">hyper-local sponsorships</span>.</> 
+    },
+    { 
+        id: 'ticketing', 
+        tag: 'Fan Engagement', 
+        title: 'Direct Fan Ticketing', 
+        icon: <Ticket />, 
+        timeline: 'Est. Q4 2027',
+        desc: <>Empowering artists to host their own shows. Sell <span className="text-white font-black">tickets directly</span> through your Artistant profile without giving away <span className="text-white font-black">massive cuts</span> to ticketing giants.</> 
+    }
+];
 
 const ArtistAnt = () => {
-    const { user, authInitialized, setAuthModal, addArtist, artists, upcomingEvents, applyArtistToGig, updateArtist, deleteArtist } = useStore();
+    const { user, authInitialized, setAuthModal, artists, addArtist, addClientRequest, deleteArtist, updateArtist } = useStore();
     const navigate = useNavigate();
 
-    // Form State
+    const [view, setView] = useState('gateway');
     const [step, setStep] = useState(1);
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
-        city: '',
-        category: '',
-        bio: '',
-        instagram: '',
-        youtube: '',
-        portfolioLink: '',
-        basePrice: '',
-        experienceYears: ''
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    
+    const [artistProfile, setArtistProfile] = useState(null);
+
+    const [artistData, setArtistData] = useState({
+        name: '', phone: '', city: '', categories: '', bio: '',
+        instagram: '', instagramFollowers: '', youtube: '', portfolio: ''
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [hasJoined, setHasJoined] = useState(false);
+    const [clientData, setClientData] = useState({
+        name: '', org: '', email: '', city: '', category: '', 
+        budget: '', date: '', requirement: ''
+    });
 
     useEffect(() => {
         if (user && artists) {
             const existingProfile = artists.find(a => a.uid === user.uid);
             if (existingProfile) {
-                setHasJoined(true);
-                setFormData({
-                    name: existingProfile.name || '',
-                    phone: existingProfile.phone || '',
-                    city: existingProfile.city || '',
-                    category: existingProfile.category || '',
-                    bio: existingProfile.bio || '',
-                    instagram: existingProfile.instagram || '',
-                    youtube: existingProfile.youtube || '',
-                    portfolioLink: existingProfile.portfolioLink || '',
-                    basePrice: existingProfile.basePrice || '',
-                    experienceYears: existingProfile.experienceYears || ''
-                });
+                setArtistProfile(existingProfile);
+                if (view === 'gateway' || view === 'artist_form') {
+                    setView('dashboard');
+                }
             }
         }
-    }, [user, artists]);
+    }, [user, artists, view]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
-    const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
-
-    const handleSubmit = async (e) => {
+    const handleArtistSubmit = async (e) => {
         e.preventDefault();
-        if (!user) {
-            setAuthModal(true);
-            return;
-        }
-
+        if (!user) { setAuthModal(true); return; }
         setIsSubmitting(true);
         try {
-            if (isEditing) {
-                const existingProfile = artists.find(a => a.uid === user.uid);
-                if (existingProfile) {
-                    await updateArtist(existingProfile.id, {
-                        ...formData
-                    });
-                    setIsEditing(false);
-                    setStep(1);
-                }
-            } else {
-                await addArtist({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    profileStatus: 'pending',
-                    ...formData,
-                    isVerified: false,
-                    type: 'artist'
-                });
-                setHasJoined(true);
-            }
+            await addArtist({
+                uid: user.uid,
+                email: user.email,
+                profileStatus: 'pending',
+                ...artistData,
+                isVerified: false,
+                categories: artistData.categories.split(',').map(c => c.trim().toUpperCase())
+            });
+            setSuccessMessage("Application received! Our scouts are on it.");
+            setView('dashboard');
         } catch (error) {
-            console.error("Error saving profile:", error);
-            alert("Failed to save profile: " + error.message);
+            alert("Error: " + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        if (!user || !artistProfile) return;
+        setIsSubmitting(true);
+        try {
+            await updateArtist(user.uid, artistProfile);
+            setSuccessMessage("Profile updated successfully.");
+            setView('dashboard');
+        } catch (error) {
+            alert("Update failed: " + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleClientSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await addClientRequest({
+                ...clientData,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            });
+            setSuccessMessage("Request submitted! Expect a call soon.");
+            setView('gateway');
+            setStep(1);
+            setClientData({ name: '', org: '', email: '', city: '', category: '', budget: '', date: '', requirement: '' });
+        } catch (error) {
+            alert("Error: " + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteProfile = async () => {
+        if (!user) return;
+        setIsSubmitting(true);
+        try {
+            await deleteArtist(user.uid);
+            setArtistProfile(null);
+            setView('gateway');
+            setShowDeleteConfirm(false);
+        } catch (error) {
+            alert("Deletion failed: " + error.message);
         } finally {
             setIsSubmitting(false);
         }
     };
 
     if (!authInitialized) {
-        return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-blue" size={48} /></div>;
+        return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-neon-green" size={32} /></div>;
     }
-
-    if (hasJoined && !isEditing) {
-        const artistProfile = artists.find(a => a.uid === user?.uid);
-        return <ArtistDashboard 
-            artist={artistProfile} 
-            upcomingEvents={upcomingEvents} 
-            applyArtistToGig={applyArtistToGig} 
-            navigate={navigate} 
-            onEdit={() => setIsEditing(true)}
-            onDelete={async () => {
-                if (window.confirm("Are you sure you want to delete your artist profile? This action cannot be undone.")) {
-                    try {
-                        await deleteArtist(artistProfile.id);
-                        setHasJoined(false);
-                        setStep(1);
-                    } catch (error) {
-                        alert("Failed to delete profile.");
-                    }
-                }
-            }}
-        />;
-    }
-
-    const steps = [
-        { id: 1, title: 'ARTIST IDENTITY', icon: Mic2 },
-        { id: 2, title: 'TALENT SPEC', icon: Music },
-        { id: 3, title: 'MEDIA ASSETS', icon: Video }
-    ];
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-6 md:pt-12 pb-40 px-4 relative overflow-hidden">
-            {/* Immersive Atmosphere */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[100vh] bg-gradient-to-b from-orange-500/10 via-transparent to-transparent blur-[120px] opacity-40" />
-                <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px]" />
-                <div className="absolute bottom-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px]" />
+        <div className="min-h-screen bg-[#050505] text-white relative font-outfit scroll-smooth">
+            {/* Minimal Header */}
+            <div className="fixed top-8 left-8 right-8 z-[100] flex justify-between items-center">
+                <Link to="/" className="flex items-center gap-4 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[1.5rem] backdrop-blur-3xl transition-all group">
+                    <Home size={18} className="text-[#FF6B6B] group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to newbi.live</span>
+                </Link>
+
+                {/* Smaller logo for header */}
+                <AnimatePresence>
+                    {view !== 'gateway' && (
+                        <motion.img 
+                            initial={{ opacity: 0, scale: 0.8 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            src={artistantLogo} 
+                            alt="Artistant" 
+                            className="h-12 md:h-16 w-auto brightness-110 drop-shadow-[0_0_20px_rgba(255,107,107,0.3)] hover:scale-110 transition-transform cursor-pointer"
+                            onClick={() => setView('gateway')}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto">
-                {/* Cinema Header */}
-                <div className="text-center mb-32 relative">
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex flex-col items-center mb-0 z-10 relative"
-                    >
-
-                        <div className="relative group z-10">
-                            <div className="absolute -inset-14 bg-gradient-to-r from-orange-600/30 via-purple-600/30 to-blue-600/30 rounded-full blur-[80px] opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse" />
-                            <img src={logo} alt="Artistant Logo" className="w-64 md:w-80 lg:w-[28rem] object-contain relative z-10 drop-shadow-[0_20px_60px_rgba(255,87,34,0.3)] hover:scale-105 transition-transform duration-500" />
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.8 }}
-                        className="relative z-20 -mt-4 md:-mt-8"
-                    >
-                        <h1 className="text-[12vw] sm:text-[10vw] md:text-[9vw] lg:text-[7.5vw] xl:text-[8rem] font-black font-heading tracking-tighter leading-[0.85] uppercase italic select-none">
-                            <span className="block text-white">UNLEASH THE</span>
-                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#FF5722] via-[#FF1F71] to-[#7B61FF] filter drop-shadow-[0_0_60px_rgba(255,87,34,0.25)] pb-4">PERFORMER.</span>
-                        </h1>
-                        
-                        <div className="absolute -top-10 -right-10 hidden md:block">
-                        </div>
-                    </motion.div>
-
-                    <motion.p
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                        className="text-gray-500 max-w-2xl mx-auto text-sm md:text-lg font-medium leading-relaxed uppercase tracking-[0.2em] mt-12 px-6"
-                    >
-                        THE NEXT GENERATION OF ARTIST MANAGEMENT. <br className="hidden md:block" />
-                        <span className="text-white/40">REGISTER. VERIFY. PERFORM.</span>
-                    </motion.p>
-                </div>
-
-                {!user ? (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center px-4">
-                        <div className="p-8 md:p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] md:rounded-[4rem] shadow-2xl relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay pointer-events-none" />
-                            <img src={logo} alt="Artistant" className="h-16 md:h-20 mx-auto mb-8 md:mb-10 object-contain drop-shadow-[0_0_20px_rgba(46,191,255,0.3)] relative z-10" />
-                            <h3 className="text-3xl md:text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
-                            <p className="text-gray-500 mb-10 md:mb-12 font-medium text-sm md:text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the Artistant Registry. Sign in to proceed.</p>
-                            <button onClick={() => setAuthModal(true)} className="h-16 md:h-20 px-10 md:px-16 rounded-2xl text-sm md:text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
-                                Sign In <ArrowRight size={20} />
-                            </button>
-                        </div>
-                    </motion.div>
-                ) : (
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex items-center gap-4 text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-500 mb-6 md:mb-8 flex-wrap">
-                            <span className="flex items-center gap-3">
-                                <img src={logo} alt="Artistant" className="h-4 md:h-5 object-contain" />
-                            </span>
-                            <span className="hidden sm:inline-block">//</span>
-                            <span>{isEditing ? 'EDIT PROFILE' : 'REGISTRATION'}</span>
-                        </div>
-                        <h1 className="text-4xl md:text-7xl lg:text-8xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white mb-10 md:mb-16">
-                            {isEditing ? 'UPDATE ' : 'ARTIST '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-orange-500 block sm:inline">
-                                PROFILE.
-                            </span>
-                        </h1>
-
-                        {/* Step Progress */}
-                        <div className="flex items-center justify-between mb-10 md:mb-16 px-2 md:px-4">
-                            {steps.map((s, idx) => (
-                                <React.Fragment key={s.id}>
-                                    <div className="flex flex-col items-center gap-2 md:gap-4 group cursor-pointer" onClick={() => step > s.id && setStep(s.id)}>
-                                        <div className={cn(
-                                            "w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 border",
-                                            step === s.id ? "bg-neon-blue text-black border-neon-blue shadow-[0_0_30px_rgba(46,191,255,0.4)]" : 
-                                            step > s.id ? "bg-white/10 text-neon-blue border-white/10" : "bg-black/40 text-gray-700 border-white/5"
-                                        )}>
-                                            <s.icon size={20} className="md:w-6 md:h-6" />
-                                        </div>
-                                        <span className={cn(
-                                            "text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-colors text-center max-w-[60px] md:max-w-none",
-                                            step >= s.id ? "text-white" : "text-gray-700"
-                                        )}>{s.title}</span>
-                                    </div>
-                                    {idx < steps.length - 1 && (
-                                        <div className={cn(
-                                            "flex-1 h-px transition-all duration-700 mx-4",
-                                            step > s.id ? "bg-neon-blue" : "bg-white/5"
-                                        )} />
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
-
-                        {/* Form Card */}
-                        <motion.div
-                            key={step}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="bg-zinc-900/40 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-16 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative overflow-hidden group"
-                        >
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
-                            <div className="absolute -bottom-20 -right-20 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity duration-1000">
-                                <img src={logo} alt="Artistant Watermark" className="w-[500px] object-contain rotate-[-10deg]" />
+            <AnimatePresence mode="wait">
+                {view === 'gateway' && (
+                    <motion.div key="gateway" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        {/* ZERO-GAP ULTRA HERO */}
+                        <section className="relative min-h-screen flex flex-col justify-start items-center overflow-hidden px-4 pt-12 sm:pt-16 md:pt-20 pb-20">
+                            {/* Theme Background */}
+                            <div className="absolute inset-0 z-0">
+                                <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-[#FF6B6B]/15 rounded-full blur-[220px] animate-pulse" />
+                                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#7B61FF]/10 rounded-full blur-[220px] animate-pulse delay-700" />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#050505_100%)] z-10" />
+                                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] opacity-[0.08]" />
                             </div>
+
+                            <div className="relative z-20 text-center w-full max-w-7xl px-4 flex flex-col items-center">
+                                {/* UNIFIED BRAND BLOCK */}
+                                <div className="flex flex-col items-center mb-16">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -40, scale: 0.8 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 1.2, ease: "easeOut" }}
+                                        className="relative flex justify-center -mb-24 sm:-mb-32 md:-mb-48 lg:-mb-64 -mt-20 sm:-mt-24 md:-mt-32"
+                                    >
+                                        <div className="absolute inset-0 bg-[#FF6B6B]/20 blur-[150px] rounded-full scale-100 animate-pulse"></div>
+                                        <img 
+                                            src={artistantLogo} 
+                                            alt="Artistant" 
+                                            className="h-64 md:h-[35rem] lg:h-[45rem] w-auto relative z-10 drop-shadow-[0_0_80px_rgba(255,107,107,0.5)] hover:scale-[1.01] transition-transform duration-1000" 
+                                        />
+                                    </motion.div>
+
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 20 }} 
+                                        animate={{ opacity: 1, y: 0 }} 
+                                        transition={{ duration: 0.8, delay: 0.4 }}
+                                        className="relative z-30"
+                                    >
+                                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black font-heading tracking-[0.25em] uppercase italic leading-none text-white whitespace-nowrap overflow-visible opacity-90 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+                                            YOUR ARTIST. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF] not-italic">YOUR ASSISTANT.</span>
+                                        </h1>
+                                    </motion.div>
+                                </div>
+
+                                {/* Mission Statement */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }} 
+                                    animate={{ opacity: 1, y: 0 }} 
+                                    transition={{ duration: 0.8, delay: 0.6 }}
+                                    className="mb-16"
+                                >
+                                    <div className="max-w-5xl mx-auto px-4">
+                                        <p className="text-gray-400 text-base md:text-xl lg:text-2xl font-medium tracking-tight leading-[1.4] max-w-4xl mx-auto">
+                                            Artistant is the <span className="text-white font-black">ultimate booking platform</span> for the <span className="text-white font-black">live performance industry</span>. We seamlessly connect <span className="text-white font-black">independent talent</span> with <span className="text-white font-black">event organizers</span>—making discovering, evaluating, and booking an artist as easy as <span className="text-white font-black">booking a cab.</span>
+                                        </p>
+                                    </div>
+                                </motion.div>
+
+                                {/* Action Buttons */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 30 }} 
+                                    animate={{ opacity: 1, y: 0 }} 
+                                    transition={{ delay: 0.8 }}
+                                    className="flex flex-col sm:flex-row items-center justify-center gap-8"
+                                >
+                                    <button
+                                        onClick={() => setView('artist_form')}
+                                        className="group w-full sm:w-[320px] h-20 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-black font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(255,107,107,0.4)] flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+                                    >
+                                        <span className="relative z-10">I'M AN ARTIST</span>
+                                        <span className="relative z-10 text-[8px] opacity-60 tracking-widest">Build your profile & get gigs</span>
+                                        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => setView('client_form')}
+                                        className="group w-full sm:w-[320px] h-20 bg-transparent border-2 border-[#7B61FF] text-[#7B61FF] font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:bg-[#7B61FF] hover:text-white hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(123,97,255,0.3)] flex flex-col items-center justify-center gap-1"
+                                    >
+                                        <span className="relative z-10">I'M LOOKING FOR ARTISTS</span>
+                                        <span className="relative z-10 text-[8px] opacity-60 tracking-widest">Discover & book verified talent</span>
+                                    </button>
+                                </motion.div>
+                            </div>
+                        </section>
+
+                        {/* THE BOOKABILITY ENGINE SECTION */}
+                        <section className="relative py-24 px-8 bg-[#020202] border-t border-white/5">
+                            <div className="max-w-7xl mx-auto text-center space-y-16">
+                                <div className="space-y-6">
+                                    <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 backdrop-blur-3xl mb-4">
+                                        <Shield size={16} className="text-[#FF6B6B]" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B6B]">The Bookability Engine™</span>
+                                    </div>
+                                    <h2 className="text-4xl md:text-7xl font-black font-heading uppercase italic tracking-tighter leading-none">
+                                        CONNECTING SUPPLY AND DEMAND <br />
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SECURELY.</span>
+                                    </h2>
+                                    <p className="text-gray-400 text-lg md:text-xl font-bold uppercase tracking-widest max-w-3xl mx-auto">
+                                        Empowering the creator economy with a trust-first booking infrastructure.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <button 
+                                        onClick={() => setView('artist_form')}
+                                        className="p-10 bg-zinc-900/20 border border-white/10 rounded-[3rem] text-left space-y-8 group hover:border-[#FF6B6B]/30 transition-all hover:bg-zinc-900/40 outline-none"
+                                    >
+                                        <div className="w-16 h-16 bg-[#FF6B6B]/10 rounded-2xl flex items-center justify-center text-[#FF6B6B] group-hover:scale-110 transition-transform">
+                                            <UserCheck size={32} />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-2xl font-black uppercase italic tracking-tighter group-hover:text-[#FF6B6B] transition-colors">FOR ARTISTS</h3>
+                                                <ArrowRight size={20} className="text-gray-700 group-hover:text-[#FF6B6B] group-hover:translate-x-2 transition-all" />
+                                            </div>
+                                            <p className="text-gray-500 font-medium text-[14px] leading-relaxed">
+                                                Build a professional booking identity, get inbound gigs, and manage your calendar seamlessly. Focus on the art, we handle the logistics.
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setView('client_form')}
+                                        className="p-10 bg-zinc-900/20 border border-white/10 rounded-[3rem] text-left space-y-8 group hover:border-[#7B61FF]/30 transition-all hover:bg-zinc-900/40 outline-none"
+                                    >
+                                        <div className="w-16 h-16 bg-[#7B61FF]/10 rounded-2xl flex items-center justify-center text-[#7B61FF] group-hover:scale-110 transition-transform">
+                                            <Search size={32} />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-2xl font-black uppercase italic tracking-tighter group-hover:text-[#7B61FF] transition-colors">FOR ORGANIZERS</h3>
+                                                <ArrowRight size={20} className="text-gray-700 group-hover:text-[#7B61FF] group-hover:translate-x-2 transition-all" />
+                                            </div>
+                                            <p className="text-gray-500 font-medium text-[14px] leading-relaxed">
+                                                Discover verified talent, see transparent pricing, and book instantly with zero hassle. Total peace of mind for every event.
+                                            </p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* TALENT SPECTRUM SECTION */}
+                        <section className="relative py-20 px-8 bg-[#050505]">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="text-center mb-16 space-y-4">
+                                    <h2 className="text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
+                                        THE TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SPECTRUM.</span>
+                                    </h2>
+                                    <p className="text-gray-600 text-sm md:text-base font-bold uppercase tracking-widest">Bridging every performance vertical with precision matching.</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                    {TALENT_CATEGORIES.map((cat, i) => (
+                                        <motion.div 
+                                            key={cat.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            whileInView={{ opacity: 1, y: 0 }}
+                                            viewport={{ once: true }}
+                                            transition={{ delay: i * 0.1 }}
+                                            className="group p-8 bg-zinc-900/20 border border-white/5 rounded-[2.5rem] hover:bg-zinc-900/40 hover:border-[#FF6B6B]/20 transition-all cursor-default"
+                                        >
+                                            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-[#FF6B6B] mb-8 group-hover:scale-110 group-hover:bg-[#FF6B6B]/10 transition-all duration-500">
+                                                {React.cloneElement(cat.icon, { size: 32 })}
+                                            </div>
+                                            <h3 className="text-[14px] font-black tracking-widest text-white mb-3 group-hover:text-[#FF6B6B] transition-colors">{cat.label}</h3>
+                                            <p className="text-[12px] font-medium text-gray-500 tracking-tight leading-relaxed">{cat.desc}</p>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* LAUNCHING SOON SECTION */}
+                        <section className="relative py-24 px-8 bg-[#020202] border-t border-white/5">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="text-center mb-24 space-y-8">
+                                    <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl">
+                                        <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-ping" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Launching Soon</span>
+                                    </div>
+                                    <h2 className="text-5xl md:text-8xl font-black font-heading uppercase italic tracking-tighter leading-[0.85]">
+                                        THE COMPLETE <br />
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">ECOSYSTEM.</span>
+                                    </h2>
+                                    <p className="text-gray-400 text-lg md:text-xl font-bold uppercase tracking-widest max-w-4xl mx-auto">
+                                        We're not just building a directory; we're building the entire operating system for India's live performance economy.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {ECOSYSTEM_FEATURES.map((feature, i) => (
+                                        <motion.div 
+                                            key={feature.id}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            whileInView={{ opacity: 1, scale: 1 }}
+                                            viewport={{ once: true }}
+                                            transition={{ delay: i * 0.1 }}
+                                            className="p-10 bg-zinc-900/30 border border-white/5 rounded-[3rem] space-y-10 group hover:border-[#7B61FF]/30 transition-all hover:bg-zinc-900/50"
+                                        >
+                                            <div className="space-y-6">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-[#7B61FF] group-hover:scale-110 group-hover:bg-[#7B61FF]/10 transition-all">
+                                                        {React.cloneElement(feature.icon, { size: 28 })}
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-[10px] font-black text-[#7B61FF] uppercase tracking-widest mb-1">{feature.timeline}</div>
+                                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-600">{feature.tag}</span>
+                                                    </div>
+                                                </div>
+                                                <h3 className="text-2xl font-black italic tracking-tighter group-hover:text-[#7B61FF] transition-colors">{feature.title}</h3>
+                                                <p className="text-[13px] font-medium text-gray-500 tracking-tight leading-relaxed">
+                                                    {feature.desc}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    </motion.div>
+                )}
+
+                {/* ONBOARDING FORMS */}
+                {(view === 'artist_form' || view === 'client_form') && (
+                    <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-4xl mx-auto pt-56 px-6 pb-40">
+                        <div className="text-center mb-16">
+                            <button onClick={() => { setView('gateway'); setStep(1); }} className="mb-8 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.4em] flex items-center gap-2 mx-auto transition-colors group">
+                                <ArrowRight size={14} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Back to Mission
+                            </button>
+                            <h2 className="text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter">
+                                {view === 'artist_form' ? "ARTIST" : "CLIENT"} <span className="text-[#FF6B6B]">ONBOARDING.</span>
+                            </h2>
+                        </div>
+
+                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-2xl">
+                            <StepIndicator current={step} total={view === 'artist_form' ? 3 : 2} labels={view === 'artist_form' ? ['Identity', 'Social Impact', 'Specifications'] : ['Account', 'Requirements']} />
                             
-                            <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10 relative z-10">
-                                {step === 1 && (
-                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
-                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white shrink-0"><Mic2 size={20} className="md:w-6 md:h-6" /></div>
-                                            <div>
-                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic leading-tight">Identity Profile</h3>
-                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Artist Registration</p>
+                            <form onSubmit={
+                                view === 'artist_form' 
+                                ? (step === 3 ? handleArtistSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
+                                : (step === 2 ? handleClientSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
+                            } className="mt-12 space-y-10">
+                                {view === 'artist_form' ? (
+                                    <>
+                                        {step === 1 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
+                                                <FormField label="Professional Name" value={artistData.name} onChange={(e) => setArtistData({...artistData, name: e.target.value})} placeholder="Stage Name" />
+                                                <FormField label="Direct Phone" value={artistData.phone} onChange={(e) => setArtistData({...artistData, phone: e.target.value})} placeholder="+91..." />
+                                                <FormSelect label="Base City" value={artistData.city} onChange={(e) => setArtistData({...artistData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                <FormField label="Talent Categories" value={artistData.categories} onChange={(e) => setArtistData({...artistData, categories: e.target.value})} placeholder="e.g. Vocalist, DJ" />
                                             </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Stage Name / Full Name</label>
-                                                <Input required name="name" value={formData.name} onChange={handleChange} placeholder="The Rocking Ants" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                        )}
+                                        {step === 2 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
+                                                <FormField label="Instagram Handle" value={artistData.instagram} onChange={(e) => setArtistData({...artistData, instagram: e.target.value})} placeholder="@username" />
+                                                <FormField label="Followers" type="number" value={artistData.instagramFollowers} onChange={(e) => setArtistData({...artistData, instagramFollowers: e.target.value})} placeholder="Count" />
+                                                <div className="md:col-span-2">
+                                                    <FormField label="Portfolio Link" value={artistData.portfolio} onChange={(e) => setArtistData({...artistData, portfolio: e.target.value})} placeholder="Link to Work" />
+                                                </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Primary Category</label>
-                                                <select
-                                                    required name="category" value={formData.category} onChange={handleChange}
-                                                    className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl px-6 text-white text-[12px] font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer"
-                                                >
-                                                    <option value="" disabled className="bg-zinc-900">SELECT TALENT CATEGORY</option>
-                                                    {ARTIST_CATEGORIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c.toUpperCase()}</option>)}
-                                                </select>
+                                        )}
+                                        {step === 3 && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Professional Bio</label>
+                                                <textarea value={artistData.bio} onChange={(e) => setArtistData({...artistData, bio: e.target.value})} className="w-full h-48 bg-black/40 border border-white/5 rounded-2xl p-6 text-[12px] font-bold outline-none focus:border-[#FF6B6B]/30 text-white resize-none" placeholder="Tell us about your performance style and experience..." />
                                             </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Base Location</label>
-                                                <select
-                                                    required name="city" value={formData.city} onChange={handleChange}
-                                                    className="w-full h-16 bg-black/50 border border-white/5 rounded-2xl px-6 text-white text-[12px] font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer"
-                                                >
-                                                    <option value="" disabled className="bg-zinc-900">SELECT OPERATING HUB</option>
-                                                    {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c.toUpperCase()}</option>)}
-                                                </select>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        {step === 1 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
+                                                <FormField label="Contact Name" value={clientData.name} onChange={(e) => setClientData({...clientData, name: e.target.value})} placeholder="Your Name" />
+                                                <FormField label="Organization" value={clientData.org} onChange={(e) => setClientData({...clientData, org: e.target.value})} placeholder="Company" />
+                                                <FormField label="Email Address" value={clientData.email} onChange={(e) => setClientData({...clientData, email: e.target.value})} placeholder="email@domain.com" />
+                                                <FormSelect label="Event City" value={clientData.city} onChange={(e) => setClientData({...clientData, city: e.target.value})} options={PREDEFINED_CITIES} />
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                                                <Input required name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+91 00000 00000" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
+                                        )}
+                                        {step === 2 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
+                                                <FormField label="Artist Category" value={clientData.category} onChange={(e) => setClientData({...clientData, category: e.target.value})} placeholder="e.g. Host" />
+                                                <FormField label="Budget Range" value={clientData.budget} onChange={(e) => setClientData({...clientData, budget: e.target.value})} placeholder="Expected Payout" />
+                                                <div className="md:col-span-2 space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Requirement Details</label>
+                                                    <textarea value={clientData.requirement} onChange={(e) => setClientData({...clientData, requirement: e.target.value})} className="w-full h-48 bg-black/40 border border-white/5 rounded-2xl p-6 text-[12px] font-bold outline-none focus:border-[#7B61FF]/30 text-white resize-none" placeholder="Describe the event and kind of artist needed..." />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        )}
+                                    </>
                                 )}
 
-                                {step === 2 && (
-                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
-                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue shrink-0"><Music size={20} className="md:w-6 md:h-6" /></div>
-                                            <div>
-                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic text-orange-500 leading-tight">Performance Spec</h3>
-                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Marketable Skills</p>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-8">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Years of Experience</label>
-                                                    <Input required type="number" name="experienceYears" value={formData.experienceYears} onChange={handleChange} placeholder="e.g. 5" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Estimated Base Price (₹)</label>
-                                                    <Input required type="number" name="basePrice" value={formData.basePrice} onChange={handleChange} placeholder="e.g. 25000" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Performance Bio / Vision</label>
-                                                <textarea
-                                                    required name="bio" value={formData.bio} onChange={handleChange}
-                                                    placeholder="Describe your style, performance energy, and what makes you unique on stage..."
-                                                    className="w-full bg-black/50 border border-white/5 rounded-[2rem] p-6 text-white text-[12px] font-medium leading-relaxed focus:border-neon-blue transition-all h-40 resize-none shadow-inner"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {step === 3 && (
-                                    <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-4 md:gap-5 mb-8 md:mb-10">
-                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white shrink-0"><Video size={20} className="md:w-6 md:h-6" /></div>
-                                            <div>
-                                                <h3 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tighter italic leading-tight">Media Dossier</h3>
-                                                <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Visual Authority</p>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-8">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2"><Instagram size={14} className="text-pink-500" /> Instagram Handle</label>
-                                                    <Input required name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@handle" className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2"><Youtube size={14} className="text-red-500" /> YouTube Channel Link</label>
-                                                    <Input name="youtube" value={formData.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="h-14 bg-black/50 border-white/5 rounded-xl font-bold" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Portfolio / Live Performance Link</label>
-                                                <Input required name="portfolioLink" value={formData.portfolioLink} onChange={handleChange} placeholder="Google Drive, Dropbox or Website" className="h-16 bg-black/50 border-white/5 rounded-2xl text-[12px] font-bold" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-8 md:pt-10 border-t border-white/5">
-                                    {step > 1 ? (
-                                        <button type="button" onClick={prevStep} className="w-full sm:w-auto px-6 md:px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors flex justify-center items-center gap-2 border border-white/5 sm:border-none">
-                                            <ArrowRight size={16} className="rotate-180" /> BACK
-                                        </button>
-                                    ) : (
-                                        isEditing ? (
-                                            <button type="button" onClick={() => setIsEditing(false)} className="w-full sm:w-auto px-6 md:px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors border border-white/5 sm:border-none text-center">
-                                                CANCEL
-                                            </button>
-                                        ) : <div className="hidden sm:block" />
-                                    )}
-                                    
-                                    {step < 3 ? (
-                                        <Button type="button" onClick={nextStep} className="w-full sm:w-auto px-6 md:px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white text-black hover:bg-neon-blue transition-colors flex justify-center items-center gap-2">
-                                            CONTINUE <ArrowRight size={16} />
-                                        </Button>
-                                    ) : (
-                                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-6 md:px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest bg-neon-blue text-black hover:bg-white transition-colors flex justify-center items-center gap-2 shadow-[0_0_30px_rgba(46,191,255,0.3)]">
-                                            {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : (isEditing ? 'SAVE CHANGES' : 'INITIALIZE PROFILE')}
-                                        </Button>
-                                    )}
+                                <div className="pt-10 border-t border-white/5 flex justify-between items-center">
+                                    <button type="button" onClick={() => step > 1 ? setStep(s => s - 1) : setView('gateway')} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">
+                                        {step === 1 ? 'Cancel' : 'Previous'}
+                                    </button>
+                                    <button type="submit" disabled={isSubmitting} className="h-18 px-12 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,107,107,0.2)]">
+                                        {isSubmitting ? <Loader2 className="animate-spin" /> : (view === 'artist_form' ? (step === 3 ? 'FINISH ONBOARDING' : 'NEXT STEP') : (step === 2 ? 'SUBMIT REQUEST' : 'NEXT STEP'))}
+                                    </button>
                                 </div>
                             </form>
-                        </motion.div>
-                    </div>
+                        </div>
+                    </motion.div>
                 )}
-            </div>
-        </div>
-    );
-};
 
-export default ArtistAnt;
-
-import { Trash2, Edit } from 'lucide-react';
-
-const ArtistDashboard = ({ artist, upcomingEvents, applyArtistToGig, navigate, onEdit, onDelete }) => {
-    const isApproved = artist?.profileStatus === 'approved';
-    const gigs = upcomingEvents || [];
-    const gigCasting = artist?.gigCasting || {};
-
-    const handleApply = async (gigId) => {
-        if (!isApproved) {
-            alert('Your profile must be approved before you can apply to gigs.');
-            return;
-        }
-        try {
-            await applyArtistToGig(artist.id, gigId);
-            alert('Successfully applied to gig!');
-        } catch (error) {
-            alert('Failed to apply. Please try again.');
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 px-4 md:px-8 overflow-x-hidden">
-            {/* Ambient Lighting */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] right-[10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[10%] left-[10%] w-[40%] h-[40%] bg-neon-pink/10 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto">
-                <div className="flex flex-col lg:flex-row gap-8 mb-16">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Sparkles size={16} className="text-neon-blue" />
-                            <span className="text-neon-blue text-[10px] font-black uppercase tracking-[0.4em]">Core Talent System</span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-                            <img src={logo} alt="Artistant" className="h-16 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(46,191,255,0.3)]" />
-                            <h1 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white">
-                                DASHBOARD.
-                            </h1>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 md:gap-4 mt-6 lg:mt-0">
-                        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-4 md:px-6 py-3 md:py-4 rounded-2xl flex items-center gap-3 md:gap-4 flex-1 sm:flex-auto">
-                            <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl flex items-center justify-center font-black text-lg md:text-xl text-neon-blue">
-                                {artist?.name?.charAt(0)}
+                {/* ARTIST HUB */}
+                {view === 'dashboard' && (
+                    <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto pt-56 px-8 pb-40">
+                        <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-12 md:p-16 flex flex-col md:flex-row justify-between items-center gap-12 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B6B]/5 blur-3xl -mr-32 -mt-32" />
+                            <div className="space-y-6 text-center md:text-left relative z-10">
+                                <h2 className="text-4xl md:text-7xl font-black font-heading uppercase italic tracking-tighter leading-none">
+                                    ARTIST <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">HUB.</span>
+                                </h2>
+                                <div className="flex items-center gap-6 justify-center md:justify-start">
+                                    <div className="w-16 h-16 bg-[#FF6B6B]/10 rounded-2xl border border-[#FF6B6B]/20 flex items-center justify-center text-[#FF6B6B] shadow-[0_0_20px_rgba(255,107,107,0.1)]">
+                                        <UserCheck size={32} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Profile Status</p>
+                                        <p className="text-lg font-black text-white uppercase italic tracking-widest">PENDING CERTIFICATION</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <p className="font-black uppercase tracking-widest text-xs md:text-sm">{artist?.name}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className={cn("w-2 h-2 rounded-full", isApproved ? "bg-neon-green" : "bg-yellow-500")} />
-                                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                        {isApproved ? 'VERIFIED' : 'PENDING'}
-                                    </span>
+                            <div className="grid grid-cols-2 gap-8 w-full md:w-auto relative z-10">
+                                <DashboardStat label="Est. Payouts" value="₹0" icon={<Wallet size={16} />} color="#FF6B6B" />
+                                <DashboardStat label="Upcoming Gigs" value="0" icon={<Calendar size={16} />} color="#7B61FF" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
+                            <div className="lg:col-span-2 space-y-8">
+                                <h3 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-4 text-gray-300">
+                                    <Zap size={28} className="text-[#FF6B6B]" /> ASSIGNED GIGS
+                                </h3>
+                                <div className="bg-zinc-900/20 border border-white/5 rounded-[3rem] p-20 text-center flex flex-col items-center gap-8 group">
+                                    <Clock className="text-gray-800 group-hover:text-[#FF6B6B]/20 transition-colors" size={64} />
+                                    <div className="space-y-2">
+                                        <p className="text-[11px] font-black text-gray-600 uppercase tracking-[0.4em]">Awaiting Gig Allotment</p>
+                                        <p className="text-[10px] font-bold text-gray-800 uppercase max-w-sm mx-auto leading-relaxed">Our scouts are matching your profile with current requirements. Stay ready.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Management Section */}
+                            <div className="space-y-8">
+                                <h3 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-4 text-gray-300">
+                                    <Settings size={28} className="text-[#7B61FF]" /> MANAGEMENT
+                                </h3>
+                                
+                                <div className="space-y-4">
+                                    <button 
+                                        onClick={() => setView('profile_settings')}
+                                        className="w-full flex items-center justify-between p-8 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[2rem] transition-all group"
+                                    >
+                                        <div className="flex items-center gap-5">
+                                            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center group-hover:bg-[#FF6B6B]/20 transition-colors">
+                                                <User size={20} className="text-gray-400 group-hover:text-[#FF6B6B]" />
+                                            </div>
+                                            <span className="text-[11px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">Profile Settings</span>
+                                        </div>
+                                        <ChevronRight size={18} className="text-gray-700 group-hover:translate-x-1 transition-transform" />
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="w-full flex items-center justify-between p-8 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-[2rem] transition-all group"
+                                    >
+                                        <div className="flex items-center gap-5">
+                                            <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center">
+                                                <Trash2 size={20} className="text-red-500" />
+                                            </div>
+                                            <span className="text-[11px] font-black uppercase tracking-widest text-red-500/80 group-hover:text-red-500 transition-colors">Delete Profile</span>
+                                        </div>
+                                        <ChevronRight size={18} className="text-red-500/40 group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
+
+                                <div className="bg-zinc-900/20 border border-white/5 rounded-[2.5rem] p-10 space-y-8">
+                                    <div className="flex items-center gap-4 text-[11px] font-black text-gray-600 uppercase tracking-widest">
+                                        <Activity size={16} className="text-[#FF6B6B]" /> Casting Activity
+                                    </div>
+                                    <p className="text-[10px] font-bold text-gray-800 uppercase tracking-widest text-center py-10 italic">No public casting calls active.</p>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                            <button onClick={onEdit} className="h-12 md:h-14 px-4 md:px-6 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 hover:bg-white/10 transition-all">
-                                <Edit size={16} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white hidden sm:inline-block">EDIT</span>
-                            </button>
-                            <button onClick={onDelete} className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-red-500">
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {!isApproved && (
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 p-6 rounded-[2rem] mb-12 flex items-start gap-4">
-                        <div className="mt-1">
-                            <CheckCircle2 className="text-yellow-500" size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest text-yellow-500 mb-2">Profile Under Review</h3>
-                            <p className="text-xs font-medium text-gray-400 leading-relaxed max-w-3xl">
-                                Your artist profile has been submitted and is currently under review by our talent operations team. You will be able to apply to available gigs once your profile has been verified and approved.
-                            </p>
-                        </div>
-                    </div>
+                    </motion.div>
                 )}
 
-                <div className="space-y-8">
-                    <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
-                        <Layout className="text-neon-blue" size={24} /> AVAILABLE GIGS
-                    </h2>
+                {/* PROFILE SETTINGS VIEW */}
+                {view === 'profile_settings' && artistProfile && (
+                    <motion.div key="profile_settings" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-4xl mx-auto pt-56 px-6 pb-40">
+                        <div className="text-center mb-16">
+                            <button onClick={() => setView('dashboard')} className="mb-8 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.4em] flex items-center gap-2 mx-auto transition-colors group">
+                                <LayoutDashboard size={14} className="group-hover:scale-110 transition-transform" /> Return to Hub
+                            </button>
+                            <h2 className="text-4xl md:text-7xl font-black font-heading uppercase italic tracking-tighter">
+                                EDIT <span className="text-[#FF6B6B]">PROFILE.</span>
+                            </h2>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {gigs.length === 0 ? (
-                            <div className="col-span-full py-20 text-center bg-zinc-900/30 rounded-[3rem] border border-white/5">
-                                <Music className="mx-auto mb-4 text-gray-600" size={48} />
-                                <p className="text-sm font-black uppercase tracking-widest text-gray-500">No upcoming gigs available.</p>
-                            </div>
-                        ) : (
-                            gigs.map(gig => {
-                                const statusInfo = gigCasting[gig.id];
-                                const hasApplied = !!statusInfo;
-                                const statusText = statusInfo?.status === 'shortlisted' ? 'SHORTLISTED' : 
-                                                   statusInfo?.status === 'applied' ? 'APPLIED' : 
-                                                   statusInfo?.status === 'rejected' ? 'REJECTED' : 'APPLY NOW';
-                                
-                                return (
-                                    <div key={gig.id} className="group relative bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-neon-blue/40 transition-all duration-500 flex flex-col">
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-neon-blue/20 group-hover:bg-neon-blue transition-all" />
-                                        <div className="aspect-video overflow-hidden bg-black/50 relative">
-                                            {gig.image ? (
-                                                <img src={gig.image} alt={gig.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center"><Music size={40} className="text-gray-700" /></div>
-                                            )}
-                                            {hasApplied && (
-                                                <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                                                    <div className={cn(
-                                                        "w-2 h-2 rounded-full",
-                                                        statusInfo.status === 'shortlisted' ? "bg-neon-green" : 
-                                                        statusInfo.status === 'applied' ? "bg-neon-blue" : "bg-red-500"
-                                                    )} />
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-white">{statusText}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-8 flex-1 flex flex-col">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-400">
-                                                    {gig.category || 'MUSIC'}
-                                                </span>
-                                                <span className="text-[10px] font-black text-gray-500 flex items-center gap-1 uppercase">
-                                                    <MapPin size={12} /> {gig.location}
-                                                </span>
-                                            </div>
-                                            <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-white mb-2 group-hover:text-neon-blue transition-colors">{gig.title}</h3>
-                                            <p className="text-xs text-gray-500 font-medium line-clamp-2 mb-6 flex-1">{gig.description}</p>
-                                            
-                                            <Button 
-                                                onClick={() => handleApply(gig.id)}
-                                                disabled={hasApplied || !isApproved}
-                                                className={cn(
-                                                    "w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all",
-                                                    hasApplied ? "bg-white/5 text-gray-500 border border-white/10" : "bg-neon-blue text-black hover:scale-[1.02]"
-                                                )}
-                                            >
-                                                {hasApplied ? statusText : 'APPLY FOR GIG'}
-                                            </Button>
-                                        </div>
+                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-2xl space-y-12">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="space-y-8">
+                                    <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[#FF6B6B] flex items-center gap-3">
+                                        <UserCheck size={18} /> Basic Info
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <FormField label="Full Name" value={artistProfile.name} onChange={(e) => setArtistProfile({...artistProfile, name: e.target.value})} />
+                                        <FormField label="Phone Number" value={artistProfile.phone} onChange={(e) => setArtistProfile({...artistProfile, phone: e.target.value})} />
+                                        <FormSelect label="Base City" value={artistProfile.city} onChange={(e) => setArtistProfile({...artistProfile, city: e.target.value})} options={PREDEFINED_CITIES} />
                                     </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-            </div>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[#7B61FF] flex items-center gap-3">
+                                        <Sparkles size={18} /> Social & Work
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <FormField label="Instagram" value={artistProfile.instagram} onChange={(e) => setArtistProfile({...artistProfile, instagram: e.target.value})} />
+                                        <FormField label="Followers" value={artistProfile.instagramFollowers} onChange={(e) => setArtistProfile({...artistProfile, instagramFollowers: e.target.value})} />
+                                        <FormField label="Portfolio Link" value={artistProfile.portfolio} onChange={(e) => setArtistProfile({...artistProfile, portfolio: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">About You</label>
+                                <textarea 
+                                    value={artistProfile.bio} 
+                                    onChange={(e) => setArtistProfile({...artistProfile, bio: e.target.value})} 
+                                    className="w-full h-40 bg-black/40 border border-white/5 rounded-2xl p-6 text-[12px] font-bold outline-none focus:border-[#FF6B6B]/30 text-white resize-none"
+                                />
+                            </div>
+
+                            <div className="pt-10 border-t border-white/5 flex justify-end">
+                                <button 
+                                    onClick={handleUpdateProfile}
+                                    disabled={isSubmitting}
+                                    className="h-18 px-12 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(255,107,107,0.2)]"
+                                >
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'SAVE CHANGES'}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Deletion Confirmation Modal */}
+            <AnimatePresence>
+                {showDeleteConfirm && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-[3rem] p-12 text-center space-y-10"
+                        >
+                            <div className="w-24 h-24 bg-red-500/10 rounded-[2rem] flex items-center justify-center text-red-500 mx-auto">
+                                <AlertTriangle size={48} />
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="text-3xl font-black uppercase italic tracking-tighter">DELETE PROFILE?</h3>
+                                <p className="text-[12px] font-bold text-gray-500 uppercase tracking-wide leading-relaxed">
+                                    Warning: This will permanently remove your artist profile and eligibility for upcoming gigs. This cannot be undone.
+                                </p>
+                            </div>
+                            <div className="flex flex-col gap-4">
+                                <button 
+                                    onClick={handleDeleteProfile}
+                                    disabled={isSubmitting}
+                                    className="h-18 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
+                                >
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'YES, DELETE PROFILE'}
+                                </button>
+                                <button 
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="h-18 w-full bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-white/10 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
+
+const FeatureCard = ({ icon, title, desc }) => (
+    <div className="p-10 bg-zinc-900/20 border border-white/5 rounded-[2.5rem] group hover:bg-zinc-900/40 hover:border-[#FF6B6B]/20 transition-all">
+        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-[#FF6B6B] mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all">{icon}</div>
+        <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-white mb-4">{title}</h4>
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight leading-relaxed group-hover:text-gray-300 transition-colors">{desc}</p>
+    </div>
+);
+
+const TimelineItem = ({ phase, title, desc, status }) => (
+    <div className="flex gap-8 items-start group">
+        <div className="text-center pt-1 min-w-[90px]">
+            <p className="text-[10px] font-black text-[#FF6B6B] uppercase tracking-[0.3em]">{phase}</p>
+            <p className="text-[9px] font-bold text-gray-700 uppercase mt-1.5 group-hover:text-[#FF6B6B]/40 transition-colors">{status}</p>
+        </div>
+        <div className="space-y-2">
+            <h4 className="text-[12px] font-black text-white uppercase tracking-widest group-hover:text-[#FF6B6B] transition-colors">{title}</h4>
+            <p className="text-[11px] font-bold text-gray-600 uppercase tracking-tight leading-relaxed">{desc}</p>
+        </div>
+    </div>
+);
+
+const FormField = ({ label, ...props }) => (
+    <div className="space-y-4">
+        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">{label}</label>
+        <input {...props} className="w-full h-18 bg-black/50 border border-white/5 rounded-2xl px-6 text-[12px] font-bold outline-none focus:border-[#FF6B6B]/20 transition-all text-white placeholder:text-gray-800 shadow-inner" />
+    </div>
+);
+
+const FormSelect = ({ label, options, ...props }) => (
+    <div className="space-y-4">
+        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">{label}</label>
+        <select {...props} className="w-full h-18 bg-black/50 border border-white/5 rounded-2xl px-6 text-[12px] font-bold text-white focus:border-[#FF6B6B]/20 transition-all outline-none appearance-none cursor-pointer shadow-inner">
+            <option value="" disabled className="bg-[#050505]">Select...</option>
+            {options.map(o => <option key={o} value={o} className="bg-[#050505]">{o.toUpperCase()}</option>)}
+        </select>
+    </div>
+);
+
+const StepIndicator = ({ current, total, labels }) => (
+    <div className="flex items-center justify-between px-4 max-w-2xl mx-auto">
+        {Array.from({ length: total }).map((_, i) => (
+            <React.Fragment key={i}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border text-[14px] font-black",
+                        current === i + 1 ? "bg-gradient-to-br from-[#FF6B6B] to-[#7B61FF] text-white border-none shadow-[0_0_30px_rgba(255,107,107,0.4)]" :
+                        current > i + 1 ? "bg-white/10 text-white border-white/10" : "bg-black text-gray-800 border-white/5"
+                    )}>
+                        {i + 1}
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-600">{labels[i]}</span>
+                </div>
+                {i < total - 1 && (
+                    <div className={cn("flex-1 h-[2px] mx-6", current > i + 1 ? 'bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]' : 'bg-white/5')} />
+                )}
+            </React.Fragment>
+        ))}
+    </div>
+);
+
+const DashboardStat = ({ label, value, icon, color }) => (
+    <div className="bg-white/5 border border-white/10 rounded-[1.5rem] p-8 min-w-[180px] space-y-3 group hover:border-white/20 transition-all">
+        <div className="flex items-center gap-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">
+            <span style={{ color }} className="group-hover:scale-110 transition-transform">{icon}</span> {label}
+        </div>
+        <div className="text-3xl font-black text-white italic tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">{value}</div>
+    </div>
+);
+
+export default ArtistAnt;

@@ -181,7 +181,7 @@ const Contact = () => {
                                         <input
                                             type="text"
                                             className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-neon-blue transition-all"
-                                            placeholder="Abhinav Anand"
+                                            placeholder="Name"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
@@ -192,7 +192,7 @@ const Contact = () => {
                                         <input
                                             type="email"
                                             className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white focus:outline-none focus:border-neon-blue transition-all"
-                                            placeholder="abhinav@newbi.live"
+                                            placeholder="email@newbi.live"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required

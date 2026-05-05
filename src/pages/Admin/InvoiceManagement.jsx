@@ -12,7 +12,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 
 const InvoiceManagement = () => {
     const navigate = useNavigate();
-    const { invoices, updateInvoice, deleteInvoice, addInvoice } = useStore();
+    const { invoices, updateInvoice, deleteInvoice, addInvoice, user } = useStore();
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
@@ -21,7 +21,7 @@ const InvoiceManagement = () => {
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Agreements', path: '#', icon: ShieldCheck, color: 'text-gray-500', comingSoon: true },
+        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
     ];
 
     // Quick Upload State
@@ -31,6 +31,12 @@ const InvoiceManagement = () => {
     const [uploading, setUploading] = useState(false);
 
     const filteredInvoices = invoices
+        .filter(inv => {
+            if (user?.role === 'editor') {
+                return inv.createdBy === user?.uid;
+            }
+            return true;
+        })
         .filter(inv => filter === 'All' ? true : inv.status === filter)
         .filter(inv => {
             if (!searchTerm) return true;
@@ -46,7 +52,14 @@ const InvoiceManagement = () => {
         alert(`Invoice link copied!`);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = (id, inv) => {
+        // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
+        // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
+        if (user?.role === 'editor') {
+            alert("Permission Denied: Editors cannot delete documents.");
+            return;
+        }
+
         if (window.confirm('Are you sure you want to delete this invoice?')) {
             deleteInvoice(id);
         }
@@ -211,8 +224,12 @@ const InvoiceManagement = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleDuplicate(inv)} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"><CopyPlus size={14} /></button>
-                                                    <button onClick={() => setSelectedAnalytics(inv)} className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"><Activity size={14} /></button>
-                                                    <button onClick={() => handleDelete(inv.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"><Trash2 size={14} /></button>
+                                                    {user?.role !== 'editor' && (
+                                                        <>
+                                                            <button onClick={() => setSelectedAnalytics(inv)} className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"><Activity size={14} /></button>
+                                                            <button onClick={() => handleDelete(inv.id, inv)} className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"><Trash2 size={14} /></button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                             <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white mb-2 leading-none">{inv.clientName}</h3>
@@ -293,9 +310,16 @@ const InvoiceManagement = () => {
                                                 <td className="p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <a href={`/invoice/${inv.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
-                                                        <button onClick={() => setSelectedAnalytics(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
-                                                        <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                        <button onClick={() => handleDelete(inv.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                        {user?.role !== 'editor' && (
+                                                            <>
+                                                                <button onClick={() => setSelectedAnalytics(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
+                                                                <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                                <button onClick={() => handleDelete(inv.id, inv)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                            </>
+                                                        )}
+                                                        {user?.role === 'editor' && (
+                                                            <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

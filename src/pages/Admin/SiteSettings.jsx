@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LayoutGrid, Save, Users, Globe, Settings, Bell, Shield, Sparkles, Zap, Heart, Instagram, Linkedin, Mail, Phone, MapPin, FileText, ChevronDown, ChevronUp, Target } from 'lucide-react';
 import { useStore } from '../../lib/store';
@@ -10,11 +10,21 @@ import { motion } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const SiteSettings = () => {
-    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings, maintenanceState, toggleMaintenanceFeature, toggleGlobalMaintenance } = useStore();
+    const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings, maintenanceState, toggleMaintenanceFeature, toggleGlobalMaintenance, user } = useStore();
     const navigate = useNavigate();
+
+    React.useEffect(() => {
+        if (user && user.role !== 'developer') {
+            navigate('/admin');
+        }
+    }, [user, navigate]);
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
 
     const [formData, setFormData] = useState({ ...siteDetails });
+
+    useEffect(() => {
+        if (siteDetails) setFormData({ ...siteDetails });
+    }, [siteDetails]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -249,21 +259,9 @@ const SiteSettings = () => {
                                     <InputGroup label="Official Support Email" name="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="hello@newbi.live" />
                                     <InputGroup label="Social Authority (IG)" name="instagram" icon={Instagram} value={formData.instagram} onChange={handleChange} placeholder="IG Handle" />
                                     
-                                    <div className="md:col-span-2 space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Corporate HQ Address</label>
-                                        <div className="relative group">
-                                            <MapPin className="absolute left-4 top-4 text-gray-500 group-hover:text-neon-pink transition-colors" size={16} />
-                                            <textarea
-                                                name="address"
-                                                value={formData.address || ''}
-                                                onChange={handleChange}
-                                                className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 pl-12 text-sm font-medium h-24 focus:border-neon-pink/50 outline-none transition-all placeholder:text-gray-700"
-                                                placeholder="Primary business location..."
-                                            />
-                                        </div>
                                     </div>
                                 </div>
-                            </div>
+
                         </div>
                     </Card>
 
