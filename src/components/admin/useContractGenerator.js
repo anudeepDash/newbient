@@ -20,6 +20,7 @@ const INITIAL_FORM = {
   showSignatures: false,
   providerSignature: null,
   clientSignature: null,
+  hiddenFields: [],
 };
 
 export const useContractGenerator = (existingData) => {
@@ -62,11 +63,14 @@ export const useContractGenerator = (existingData) => {
 
   const paginatedPages = useMemo(() => {
     const pages = [];
+    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
+    
     pages.push({ type: 'intro' });
-    if (formData.details?.purpose) pages.push({ type: 'mission' });
-    if (formData.commercials?.totalValue) pages.push({ type: 'commercials' });
+    if (formData.details?.purpose && !isHidden('mission')) pages.push({ type: 'mission' });
+    if (formData.commercials?.totalValue && !isHidden('commercials')) pages.push({ type: 'commercials' });
+    
     const active = formData.clauses.filter(c => c.isActive !== false);
-    if (active.length > 0) {
+    if (active.length > 0 && !isHidden('clauses')) {
       for (let i = 0; i < active.length; i += 3) {
         pages.push({ type: 'clauses', items: active.slice(i, i + 3), pageIndex: Math.floor(i / 3) + 1 });
       }

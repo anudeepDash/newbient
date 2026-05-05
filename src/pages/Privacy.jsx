@@ -17,6 +17,12 @@ const Privacy = () => {
                     <p className="text-gray-400 text-lg md:text-xl font-medium tracking-tight">
                         Last Updated: May 6, 2026
                     </p>
+                    <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl inline-block max-w-2xl text-center">
+                        <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+                            This Privacy Policy describes how <span className="text-white font-bold text-neon-pink">Newbi Entertainment & Marketing LLP</span> collects, uses, and shares your personal information when you visit or make a purchase from our website.
+                        </p>
+                    </div>
+
                 </motion.div>
 
                 <div className="space-y-12">

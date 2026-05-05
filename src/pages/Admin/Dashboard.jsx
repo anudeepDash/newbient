@@ -129,7 +129,7 @@ const Dashboard = () => {
             value: user?.role === 'editor' ? agreements.filter(a => a.createdBy === user.uid).length : (agreements?.length || 0), 
             icon: Scale, color: 'neon-purple', detail: 'Legal Repository', link: '/admin/agreements' 
         },
-        { label: 'Portfolio', value: portfolio.length, icon: Music, color: 'neon-pink', detail: 'Past Productions', link: '/admin/concertzone' },
+
         { label: 'Updates', value: announcements.length, icon: Radio, color: 'yellow-400', detail: 'Public Announcements', link: '/admin/announcements' },
     ];
 
@@ -250,21 +250,13 @@ const Dashboard = () => {
                                         )}>
                                             <stat.icon size={24} />
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <TrendingUp size={20} className="text-white/10 group-hover:text-neon-green transition-colors" />
-                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mt-2">Active Path</span>
-                                        </div>
+
                                     </div>
                                     <div>
                                         <h3 className="text-4xl lg:text-5xl font-black font-heading tracking-tighter text-white mb-2 leading-none uppercase italic">{stat.value}</h3>
                                         <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
                                         <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
                                             <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
-                                            <div className="w-8 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <div className={cn("h-full w-2/3 rounded-full", 
-                                                    stat.color === 'neon-green' ? 'bg-neon-green' : (stat.color === 'neon-blue' ? 'bg-neon-blue' : (stat.color === 'neon-purple' ? 'bg-neon-purple' : (stat.color === 'neon-pink' ? 'bg-neon-pink' : 'bg-yellow-400')))
-                                                )} />
-                                            </div>
                                         </div>
                                     </div>
                                     <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.05] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
@@ -287,7 +279,7 @@ const Dashboard = () => {
 
                     <DashboardSection title="Core Content Infrastructure" gradient="from-neon-pink via-purple-500 to-white" icon={<LayoutDashboard size={20} />}>
                         <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
-                        <ControlCard title="PORTFOLIO" desc="Historical archive of all past missions." icon={Music} color="neon-green" link="/admin/concertzone" isHidden={cards.portfolio} />
+
                         <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
                         <ControlCard title="Blog" desc="Public-facing thought leadership logs." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
                     </DashboardSection>

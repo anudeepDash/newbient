@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
     Download, Printer, ArrowLeft, ShieldCheck, 
-    Zap, RefreshCw, Globe, CheckCircle2, Eye, EyeOff
+    Zap, RefreshCw, Globe, CheckCircle2, Eye, EyeOff, Trash2, Upload, X
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentSeal from '../components/ui/DocumentSeal';
+import SignaturePad from '../components/ui/SignaturePad';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -48,6 +49,7 @@ const Agreement = () => {
     const [isVerifying, setIsVerifying] = useState(false);
     const [verificationEmail, setVerificationEmail] = useState('');
     const [ipAddress, setIpAddress] = useState('Detecting...');
+    const [clientSignature, setClientSignature] = useState(null);
     const agreementRef = useRef(null);
 
     useEffect(() => {
@@ -78,7 +80,7 @@ const Agreement = () => {
 
     if (!displayAgreement) return (
         <div className="min-h-screen bg-black flex items-center justify-center">
-            <RefreshCw className="animate-spin text-neon-blue" size={40} />
+            <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
         </div>
     );
 
@@ -113,7 +115,8 @@ const Agreement = () => {
                 signedAt: new Date().toISOString(),
                 ip: ipAddress,
                 email: verificationEmail,
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent,
+                clientSignature: clientSignature
             };
             await updateAgreement(id, { status: 'Executed', approvalMetadata: metadata });
             setIsVerifying(false);
@@ -161,14 +164,14 @@ const Agreement = () => {
                         <div>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Legal Instrument</p>
                             <div className="flex items-center gap-2">
-                                <div className={cn("w-1.5 h-1.5 rounded-full", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-neon-blue animate-pulse")} />
+                                <div className={cn("w-1.5 h-1.5 rounded-full", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
                                 <span className="text-[10px] font-black uppercase tracking-widest">{displayAgreement.status}</span>
                             </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
-                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] h-12 px-8 rounded-xl shadow-2xl">
+                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[10px] h-12 px-8 rounded-xl shadow-2xl">
                             {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-2" />} Export PDF
                         </Button>
                     </div>
@@ -333,24 +336,84 @@ const Agreement = () => {
                 </div>
 
                 {displayAgreement.status !== 'Executed' && !isExporting && (
-                    <div className="w-[794px] bg-white rounded-[2.5rem] p-12 text-black space-y-8 no-print shadow-2xl border border-white/5">
-                        <div className="space-y-4">
-                            <h3 className="text-3xl font-black uppercase tracking-tighter italic">Execute Instrument.</h3>
-                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-relaxed">Enter your full legal name below to electronically authorize and execute this instrument. This action is legally binding.</p>
+                    <div className="w-[794px] bg-[#0a0a0a] rounded-[2.5rem] p-12 text-white space-y-10 no-print shadow-2xl border border-white/5">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-8">
+                            <div className="space-y-2">
+                                <h3 className="text-3xl font-black uppercase tracking-tighter italic">Execute Instrument.</h3>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Authorize this strategic agreement</p>
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-[#A855F7]/10 rounded-full border border-[#A855F7]/20">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+                                <span className="text-[9px] font-black text-[#A855F7] uppercase tracking-widest">Secure Handshake Active</span>
+                            </div>
                         </div>
-                        <input 
-                            value={signatureName} 
-                            onChange={e => setSignatureName(e.target.value)} 
-                            placeholder="Enter Full Name..." 
-                            className="w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 px-8 rounded-2xl text-3xl font-signature text-black outline-none focus:border-neon-blue transition-all text-center" 
-                        />
-                        <Button 
-                            onClick={() => setIsVerifying(true)}
-                            disabled={!signatureName.trim()}
-                            className="w-full h-16 bg-black text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-neon-blue hover:text-black transition-all shadow-xl"
-                        >
-                            <Zap size={16} className="mr-2" /> Authorize & Execute
-                        </Button>
+
+                        <div className="grid grid-cols-1 gap-10">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] px-2">Authorized Representative</label>
+                                <input 
+                                    value={signatureName} 
+                                    onChange={e => setSignatureName(e.target.value)} 
+                                    placeholder="ENTER FULL LEGAL NAME" 
+                                    className="w-full bg-white/5 border border-white/10 h-20 px-8 rounded-2xl text-lg font-bold text-white outline-none focus:border-[#A855F7]/40 transition-all uppercase tracking-widest" 
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between px-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Digital Signature</label>
+                                    <button 
+                                        onClick={() => document.getElementById('agreement-sig-upload').click()}
+                                        className="text-[9px] font-black uppercase tracking-widest text-[#A855F7] hover:text-white transition-all flex items-center gap-2 bg-[#A855F7]/10 px-4 py-1.5 rounded-full border border-[#A855F7]/20"
+                                    >
+                                        <Upload size={12} /> Upload Sign
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        id="agreement-sig-upload" 
+                                        className="hidden" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (re) => setClientSignature(re.target.result);
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="bg-white rounded-[2.5rem] overflow-hidden h-60 border-2 border-dashed border-white/10 relative group/pad">
+                                    {clientSignature ? (
+                                        <div className="relative group w-full h-full flex items-center justify-center p-12">
+                                            <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                            <button 
+                                                onClick={() => setClientSignature(null)}
+                                                className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <SignaturePad 
+                                            onSave={setClientSignature}
+                                            className="h-full w-full"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-6 space-y-6">
+                            <Button 
+                                onClick={() => setIsVerifying(true)}
+                                disabled={!signatureName.trim() || !clientSignature}
+                                className="w-full h-20 bg-[#A855F7] text-black font-black uppercase tracking-[0.3em] text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(168,85,247,0.3)] disabled:opacity-30 disabled:grayscale"
+                            >
+                                <Zap size={18} className="mr-3" /> Authorize & Execute Instrument
+                            </Button>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
+                        </div>
                     </div>
                 )}
             </main>
@@ -369,11 +432,11 @@ const Agreement = () => {
                                             value={verificationEmail}
                                             onChange={e => setVerificationEmail(e.target.value)}
                                             placeholder="email@newbi.live"
-                                            className="w-full h-14 bg-gray-50 border border-gray-100 rounded-xl px-6 text-sm font-bold outline-none focus:border-neon-blue transition-all"
+                                            className="w-full h-14 bg-gray-50 border border-gray-100 rounded-xl px-6 text-sm font-bold outline-none focus:border-[#A855F7] transition-all"
                                         />
                                     </div>
                                     <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-4">
-                                        <Globe size={18} className="text-neon-blue" />
+                                        <Globe size={18} className="text-[#A855F7]" />
                                         <div className="flex-1">
                                             <p className="text-[10px] font-black uppercase text-black">{ipAddress}</p>
                                             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Network Signature Detected</p>
@@ -382,7 +445,7 @@ const Agreement = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-4">
                                     <button onClick={() => setIsVerifying(false)} className="h-14 rounded-xl border-2 border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Cancel</button>
-                                    <Button onClick={handleApprove} disabled={isSubmitting || !verificationEmail.includes('@')} className="h-14 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neon-blue hover:text-black transition-all">
+                                    <Button onClick={handleApprove} disabled={isSubmitting || !verificationEmail.includes('@')} className="h-14 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#A855F7] hover:text-black transition-all">
                                         {isSubmitting ? 'Executing...' : 'Verify & Sign'}
                                     </Button>
                                 </div>

@@ -8,7 +8,7 @@ import {
     Layers, Image as ImageIcon, ClipboardList, Undo2, Scale,
     ChevronDown, ChevronUp, CheckCircle2, 
     Stamp, Gavel, Lock, History, MessageCircle, Share2,
-    Shield, Upload
+    Shield, Upload, Sparkles
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -34,7 +34,7 @@ import AIPromptBox from '../../components/admin/AIPromptBox';
 const ContractGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addAgreement, updateAgreement, agreements, user } = useStore();
+    const { addAgreement, updateAgreement, agreements, user, addToast } = useStore();
     
     // UI State
     const [activeTab, setActiveTab] = useState('1');
@@ -45,7 +45,33 @@ const ContractGenerator = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
+    const [generatingSection, setGeneratingSection] = useState(null);
     const previewContainerRef = useRef(null);
+
+    const toggleFieldVisibility = (field) => {
+        setFormData(prev => {
+            const current = prev.hiddenFields || [];
+            const updated = current.includes(field) ? current.filter(f => f !== field) : [...current, field];
+            return { ...prev, hiddenFields: updated };
+        });
+    };
+
+    const isHidden = (f) => (formData.hiddenFields || []).includes(f);
+
+    const VisibilityToggle = ({ field, label }) => (
+        <button 
+            onClick={() => toggleFieldVisibility(field)}
+            className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-[8px] font-black uppercase tracking-[0.1em]",
+                isHidden(field) 
+                    ? "bg-red-500/5 border-red-500/20 text-red-400 hover:bg-red-500/10" 
+                    : "bg-emerald-500/5 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+            )}
+        >
+            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
+            {label || (isHidden(field) ? "Hidden" : "Live")}
+        </button>
+    );
 
 
     const logoOptions = [
@@ -65,10 +91,8 @@ const ContractGenerator = () => {
         const handleResize = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
-                const containerHeight = previewContainerRef.current.clientHeight;
-                const scaleWidth = (containerWidth - 20) / 794;
-                const scaleHeight = (containerHeight - 20) / 1123;
-                setPreviewScale(Math.max(0.4, Math.min(1.5, scaleWidth, scaleHeight)) * userZoom);
+                const scaleWidth = containerWidth / 794;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)) * userZoom);
             }
         };
 
@@ -175,8 +199,9 @@ const ContractGenerator = () => {
                 // Update template if AI suggests contract type
                 template: data.template || prev.template,
             }));
+            addToast("Contract updated successfully", "success");
         } catch (error) {
-            alert("AI Generation failed: " + error.message);
+            addToast("AI Generation failed: " + error.message, 'error', error.code);
         } finally {
             setIsGenerating(false);
         }
@@ -207,9 +232,9 @@ const ContractGenerator = () => {
     const tabs = [
         { id: '0', label: 'Briefing', icon: Layers, desc: 'Project Source Data' },
         { id: '1', label: 'Entities', icon: Users, desc: 'Legal Parties' },
-        { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework' },
-        { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms' },
-        { id: '4', label: 'Clauses', icon: Gavel, desc: 'Legal Framework' },
+        { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework', visibilityKey: 'mission' },
+        { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms', visibilityKey: 'commercials' },
+        { id: '4', label: 'Clauses', icon: Gavel, desc: 'Legal Framework', visibilityKey: 'clauses' },
         { id: '7', label: 'Execution', icon: Shield, desc: 'Finalization' }
     ];
 
@@ -294,29 +319,60 @@ const ContractGenerator = () => {
                 </div>
 
                 {/* Editor */}
-                <main className="flex-1 overflow-y-auto px-12 py-16 scrollbar-hide bg-[#050505] pb-32">
-                    <div className="max-w-5xl mx-auto space-y-12">
+                <main className="flex-1 overflow-y-auto px-8 py-16 scrollbar-hide bg-[#050505] pb-32">
+                    <div className="max-w-7xl mx-auto space-y-12">
                         
                         <AIPromptBox onGenerate={handleGenerateContract} isGenerating={isGenerating} type="contract" forceClear={promptBoxClear} />
 
-                        {/* Premium Section Header with Progress (Decoupled from box) */}
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 py-4 border-b border-white/5 gap-6">
-                            <div>
+                        {/* Minimalist Section Header */}
+                        <div className="flex flex-col md:flex-row items-end justify-between mb-8 pb-6 border-b border-white/5 group/header">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em] opacity-80 mb-1">
+                                    Step {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                </p>
                                 <h2 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
                                     {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
                                 </h2>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">
+                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest pt-1">
                                     {tabs.find(t => t.id === activeTab)?.desc}
                                 </p>
                             </div>
-                            <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                                <span className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Deployment Step {tabs.findIndex(t => t.id === activeTab) + 1} / {tabs.length}</span>
-                                <div className="w-full md:w-48 h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 p-0.5">
+
+                            <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+                                {/* Compact Progress Line */}
+                                <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-[#A855F7] rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(168,85,247,0.6)]" 
+                                        className="h-full bg-[#A855F7] transition-all duration-700 shadow-[0_0_10px_rgba(168,85,247,0.8)]" 
                                         style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
                                     />
                                 </div>
+
+                                {currentTab?.visibilityKey && (
+                                    <div className="flex items-center gap-2 translate-y-1">
+                                        <button 
+                                            onClick={async () => {
+                                                setGeneratingSection(currentTab.id);
+                                                setIsGenerating(true);
+                                                try {
+                                                    const refined = await generateFullDocument('contract', `Refine the ${currentTab.label} section for: ${formData.parties.secondParty.name}. Current state: ${JSON.stringify(formData)}`, 'Premium');
+                                                    setFormData(prev => ({...prev, ...refined}));
+                                                    addToast(`Refined ${currentTab.label} successfully`, "success");
+                                                } catch (e) {
+                                                    addToast(e.message, 'error', e.code);
+                                                } finally {
+                                                    setIsGenerating(false);
+                                                    setGeneratingSection(null);
+                                                }
+                                            }}
+                                            disabled={isGenerating}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 text-gray-400 rounded-full hover:bg-[#A855F7]/10 hover:text-[#A855F7] transition-all text-[8px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-[#A855F7]/20"
+                                        >
+                                            {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={10} /> : <Sparkles size={10} />}
+                                            Refine
+                                        </button>
+                                        <VisibilityToggle field={currentTab.visibilityKey} />
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -355,12 +411,12 @@ const ContractGenerator = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col justify-end space-y-4">
-                                                    <div className="p-6 bg-[#A855F7]/5 rounded-3xl border border-[#A855F7]/10 space-y-2">
+                                                    <div className="p-4 bg-[#A855F7]/5 rounded-2xl border border-[#A855F7]/10 space-y-1.5">
                                                         <div className="flex items-center gap-2 text-[#A855F7]">
-                                                            <Zap size={14} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Intelligent Extraction</span>
+                                                            <Zap size={12} />
+                                                            <span className="text-[8px] font-black uppercase tracking-widest">Intelligent Extraction</span>
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-gray-500 leading-relaxed uppercase">The Newbi Agent maps legal entities, financial terms, and specialized clauses directly into your contract.</p>
+                                                        <p className="text-[8px] font-bold text-gray-600 leading-relaxed uppercase">The Newbi Agent maps legal entities, financial terms, and specialized clauses directly into your contract.</p>
                                                     </div>
                                                     <Button 
                                                         onClick={async () => {
@@ -369,9 +425,9 @@ const ContractGenerator = () => {
                                                             setActiveTab('1'); 
                                                         }} 
                                                         disabled={isGenerating || !bulkRawText.trim()}
-                                                        className="h-20 rounded-[24px] bg-[#A855F7] text-black text-[12px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_0_40px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-all w-full"
+                                                        className="h-14 rounded-xl bg-[#A855F7] text-black text-[10px] font-black uppercase tracking-[0.2em] gap-2 shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:scale-[1.02] transition-all w-full"
                                                     >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={20} /> : <Zap size={20} />}
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
                                                         Initialize Contract Build
                                                     </Button>
                                                 </div>
@@ -595,53 +651,7 @@ const ContractGenerator = () => {
                                                     </div>
                                                 )}
 
-                                                {formData.showSignatures && (
-                                                    <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="space-y-1">
-                                                                <h3 className="text-lg font-black uppercase tracking-tighter italic">Client Authorization</h3>
-                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">Customer sign-off area</p>
-                                                            </div>
-                                                            <label className="cursor-pointer px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all">
-                                                                <input 
-                                                                    type="file" 
-                                                                    className="hidden" 
-                                                                    accept="image/*"
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            const reader = new FileReader();
-                                                                            reader.onloadend = () => updateField('clientSignature', reader.result);
-                                                                            reader.readAsDataURL(file);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Upload size={12} className="inline mr-2" /> Upload Sign
-                                                            </label>
-                                                        </div>
-                                                        
-                                                        <div className="relative h-32 bg-white rounded-2xl flex items-center justify-center group overflow-hidden">
-                                                            {formData.clientSignature ? (
-                                                                <div className="relative group w-full h-full flex items-center justify-center p-4">
-                                                                    <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
-                                                                    <button 
-                                                                        onClick={() => updateField('clientSignature', null)}
-                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
-                                                            )}
-                                                        </div>
-                                                        
-                                                        <SignaturePad 
-                                                            onSave={(dataURL) => updateField('clientSignature', dataURL)}
-                                                            onClear={() => updateField('clientSignature', null)}
-                                                        />
-                                                    </div>
-                                                )}
+
                                             </div>
 
                                             <div className="flex flex-col gap-8">
@@ -698,7 +708,7 @@ const ContractGenerator = () => {
                 </main>
 
                 {/* Preview Panel - Optimized width for better doc visibility */}
-                <aside className="w-[420px] 2xl:w-[500px] border-l border-white/5 bg-zinc-900/40 flex flex-col overflow-hidden shrink-0">
+                <aside className="w-[400px] 2xl:w-[600px] border-l border-white/5 bg-zinc-900/40 flex flex-col overflow-hidden shrink-0">
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
                         <div className="flex items-center gap-3">
                             <Eye size={16} className="text-neon-purple" />
@@ -717,16 +727,25 @@ const ContractGenerator = () => {
                             </div>
                         </div>
                     </div>
-                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-2 overflow-y-auto relative scrollbar-hide">
-                        <div className="relative" style={{ 
-                            transform: `scale(${previewScale})`, 
-                            transformOrigin: 'top center',
-                            width: '794px',
-                            height: '1123px',
-                            marginBottom: `${(1123 * previewScale) - 1123}px`
+                    <div ref={previewContainerRef} className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                        <div style={{ 
+                            width: `${794 * previewScale}px`,
+                            height: `${1123 * previewScale}px`,
+                            flexShrink: 0,
+                            position: 'relative'
                         }}>
-                            <div className="shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-sm">
-                                <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} />
+                            <div style={{ 
+                                width: '794px', 
+                                height: '1123px', 
+                                transform: `scale(${previewScale})`, 
+                                transformOrigin: 'top left',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0
+                            }}>
+                                <div className="shadow-[0_40px_100px_rgba(0,0,0,0.8)] rounded-sm">
+                                    <ContractPreview formData={formData} paginatedPages={paginatedPages} currentPage={currentPage} />
+                                </div>
                             </div>
                         </div>
                         <div className="h-48 shrink-0" />

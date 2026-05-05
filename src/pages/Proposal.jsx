@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, FileText, Check, PenTool, Settings, LogOut, LayoutGrid, Zap, ShieldCheck, Layers, Globe, RefreshCw } from 'lucide-react';
+import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, FileText, Check, PenTool, Settings, LogOut, LayoutGrid, Zap, ShieldCheck, Layers, Globe, RefreshCw, Trash2, Upload, X, ChevronLeft, ChevronRight, Cpu, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import SignaturePad from '../components/ui/SignaturePad';
@@ -611,12 +611,46 @@ const Proposal = () => {
                                                                     </div>
 
                                                                     <div className="space-y-3">
-                                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2">Digital Signature</label>
-                                                                        <div className="bg-white rounded-2xl overflow-hidden h-48 border-2 border-dashed border-white/10 relative group/pad">
-                                                                            <SignaturePad 
-                                                                                onSave={setClientSignature}
-                                                                                className="h-full w-full"
+                                                                        <div className="flex items-center justify-between px-2">
+                                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Digital Signature</label>
+                                                                            <button 
+                                                                                onClick={() => document.getElementById('client-sig-upload-viewer').click()}
+                                                                                className="text-[8px] font-black uppercase tracking-widest text-neon-green hover:text-white transition-all flex items-center gap-1.5 bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20"
+                                                                            >
+                                                                                <Upload size={10} /> Upload Image
+                                                                            </button>
+                                                                            <input 
+                                                                                type="file" 
+                                                                                id="client-sig-upload-viewer" 
+                                                                                className="hidden" 
+                                                                                accept="image/*"
+                                                                                onChange={(e) => {
+                                                                                    const file = e.target.files[0];
+                                                                                    if (file) {
+                                                                                        const reader = new FileReader();
+                                                                                        reader.onload = (re) => setClientSignature(re.target.result);
+                                                                                        reader.readAsDataURL(file);
+                                                                                    }
+                                                                                }}
                                                                             />
+                                                                        </div>
+                                                                        <div className="bg-white rounded-2xl overflow-hidden h-48 border-2 border-dashed border-white/10 relative group/pad">
+                                                                            {clientSignature ? (
+                                                                                <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                                    <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                                    <button 
+                                                                                        onClick={() => setClientSignature(null)}
+                                                                                        className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                                    >
+                                                                                        <Trash2 size={14} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <SignaturePad 
+                                                                                    onSave={setClientSignature}
+                                                                                    className="h-full w-full"
+                                                                                 />
+                                                                            )}
                                                                         </div>
                                                                     </div>
 
