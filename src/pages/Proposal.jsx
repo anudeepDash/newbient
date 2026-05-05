@@ -858,10 +858,19 @@ const Proposal = () => {
                                                     <div className="p-10 border-2 border-neon-green/30 bg-neon-green/5 relative overflow-hidden group">
                                                         <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle size={80} className="text-neon-green" /></div>
                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-2"><ShieldCheck size={14} /> Digitally Authorized</p>
-                                                        <div className="space-y-2">
-                                                            <p className="text-6xl font-black font-mono uppercase tracking-tighter text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
-                                                            <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Ref: {displayProposal.id}</p>
+                                                        <div className="space-y-4">
+                                                            <div className="h-24 flex items-end">
+                                                                {displayProposal.approvalMetadata.clientSignature ? (
+                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                                ) : (
+                                                                    <p className="text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <p className="text-xl font-black font-mono uppercase tracking-tighter text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
+                                                            </div>
+                                                            <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Verification Ref: {displayProposal.id.slice(-12).toUpperCase()}</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -966,6 +975,9 @@ const Proposal = () => {
                         </div>
                     </div>
                 ))}
+                </div>
+
+
             <SignatureModal 
                 isOpen={isSignatureModalOpen} 
                 onClose={() => setIsSignatureModalOpen(false)} 
