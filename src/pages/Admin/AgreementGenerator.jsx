@@ -106,11 +106,12 @@ const ContractGenerator = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const data = { 
+            const rawData = { 
                 ...formData, 
                 updatedAt: new Date().toISOString(),
-                createdBy: formData.createdBy || user?.uid 
+                createdBy: formData.createdBy || user?.uid || null 
             };
+            const data = JSON.parse(JSON.stringify(rawData)); // Sanitize for Firestore
             if (id) await updateAgreement(id, data);
             else await addAgreement(data);
             
@@ -214,7 +215,7 @@ const ContractGenerator = () => {
         await new Promise(r => setTimeout(r, 800));
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pages = document.querySelectorAll('.agreement-page-render');
+            const pages = document.querySelectorAll('.pdf-export-only .agreement-page-render');
             for (let i = 0; i < pages.length; i++) {
                 const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
                 if (i > 0) pdf.addPage();
@@ -753,6 +754,12 @@ const ContractGenerator = () => {
                 </aside>
             </div>
 
+            {/* Hidden container for PDF export - renders all pages */}
+            <div className="pdf-export-only fixed -left-[9999px] top-0 pointer-events-none overflow-hidden bg-white flex flex-col gap-10">
+                {paginatedPages.map((page, idx) => (
+                    <ContractPreview key={`export-${idx}`} formData={formData} paginatedPages={paginatedPages} currentPage={idx} />
+                ))}
+            </div>
         </div>
     );
 };

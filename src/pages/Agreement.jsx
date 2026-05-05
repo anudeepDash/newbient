@@ -102,6 +102,8 @@ const Agreement = () => {
 
     const handleDownloadPDF = async () => {
         setIsExporting(true);
+        const originalScale = scale;
+        setScale(1);
         await new Promise(resolve => setTimeout(resolve, 800));
         try {
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -115,6 +117,7 @@ const Agreement = () => {
         } catch (err) {
             console.error("PDF generation failed:", err);
         } finally {
+            setScale(originalScale);
             setIsExporting(false);
         }
     };
@@ -144,6 +147,7 @@ const Agreement = () => {
 
     const getPaginatedPages = () => {
         const pages = [];
+        pages.push({ type: 'intro' });
         if (displayAgreement.details?.purpose) pages.push({ type: 'mission' });
         if (displayAgreement.commercials?.totalValue) pages.push({ type: 'commercials' });
         if (displayAgreement.clauses?.length > 0) {
@@ -201,28 +205,22 @@ const Agreement = () => {
                             <div className="absolute inset-[5mm] border border-black/5 pointer-events-none" />
                             
                             {/* Header */}
-                            <div className="flex justify-between items-start mb-8 pb-6 border-b-[2px] border-black relative z-10">
-                                <div className="flex flex-col gap-4 items-start">
-                                    <img src="/logo_document.png" alt="Logo" className="h-12 w-auto object-contain grayscale" crossOrigin="anonymous" />
+                            <div className={cn("flex justify-between items-end mb-8 pb-3 relative z-10", idx > 0 && "opacity-40")}>
+                                <img src="/logo_document.png" alt="Logo" className="h-8 w-auto object-contain grayscale opacity-80" crossOrigin="anonymous" />
+                                <div className="flex items-center gap-6 text-right">
                                     <div className="space-y-0.5">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-black">Newbi Entertainment</p>
-                                        <p className="text-[7px] font-bold text-gray-500 uppercase">Strategic Legal Division</p>
+                                        <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Agreement ID</span>
+                                        <span className="text-[10px] font-bold text-black tracking-widest block">{displayAgreement.agreementNumber}</span>
                                     </div>
-                                </div>
-                                <div className="text-right space-y-2">
-                                    <div className="space-y-0.5">
-                                        <h4 className="text-[8px] font-black uppercase text-black tracking-[0.3em]">Instrument No.</h4>
-                                        <p className="text-lg font-black text-black tracking-widest">{displayAgreement.agreementNumber}</p>
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Effective Date</p>
-                                        <p className="text-[10px] font-black text-black uppercase">{new Date(displayAgreement.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                    <div className="space-y-0.5 border-l border-black/10 pl-6">
+                                        <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Effective Date</span>
+                                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(displayAgreement.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex-1 relative z-10 flex flex-col">
-                                {idx === 0 && (
+                                {page.type === 'intro' && (
                                     <div className="space-y-10 mb-12">
                                         <div className="text-center space-y-4">
                                             <h1 className="text-3xl font-black uppercase tracking-[0.2em] border-y-2 border-black py-4">

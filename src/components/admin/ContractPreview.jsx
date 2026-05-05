@@ -41,29 +41,21 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
       className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-2xl flex flex-col p-[25mm] rounded-[1px] font-formal border-[0.5px] border-black/10 shrink-0"
     >
       {/* Formal Header */}
-      <div className="flex justify-between items-start mb-12 pb-6 border-b border-black relative z-10">
-        <div className="flex flex-col gap-3">
-          <img 
-            src={formData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} 
-            alt="Logo" 
-            className="h-10 w-auto object-contain grayscale opacity-80" 
-            crossOrigin="anonymous" 
-          />
+      <div className={cn("flex justify-between items-end mb-8 pb-3 relative z-10", currentPage > 0 && "opacity-40")}>
+        <img 
+          src={formData.selectedLogo === 'marketing' ? '/logo_marketing.png' : '/logo_document.png'} 
+          alt="Logo" 
+          className="h-8 w-auto object-contain grayscale opacity-80" 
+          crossOrigin="anonymous" 
+        />
+        <div className="flex items-center gap-6 text-right">
           <div className="space-y-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-black">
-              {formData.selectedLogo === 'marketing' ? 'Newbi Marketing' : 'Newbi Entertainment'}
-            </p>
-            <p className="text-[7px] text-gray-500 uppercase tracking-widest">Strategic Services Division</p>
+            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Agreement ID</span>
+            <span className="text-[10px] font-bold text-black tracking-widest block">{formData.agreementNumber}</span>
           </div>
-        </div>
-        <div className="text-right space-y-4">
-          <div className="space-y-1">
-            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">Agreement ID</p>
-            <p className="text-[12px] font-bold text-black tracking-widest">{formData.agreementNumber}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">Effective Date</p>
-            <p className="text-[10px] font-bold text-black uppercase tracking-wider">{new Date(formData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+          <div className="space-y-0.5 border-l border-black/10 pl-6">
+            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Effective Date</span>
+            <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(formData.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           </div>
         </div>
       </div>
