@@ -50,7 +50,22 @@ const Agreement = () => {
     const [verificationEmail, setVerificationEmail] = useState('');
     const [ipAddress, setIpAddress] = useState('Detecting...');
     const [clientSignature, setClientSignature] = useState(null);
+    const [scale, setScale] = useState(1);
     const agreementRef = useRef(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 850) {
+                const newScale = (window.innerWidth - 32) / 850;
+                setScale(newScale);
+            } else {
+                setScale(1);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const agreement = agreements.find(a => a.id === id);
@@ -157,29 +172,29 @@ const Agreement = () => {
                 @media print { .no-print { display: none !important; } .agreement-page-render { margin: 0 !important; box-shadow: none !important; } }
             `}} />
 
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-6 no-print">
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
                 <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <Link to="/" className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={18} /></Link>
+                    <div className="flex items-center gap-3 md:gap-6">
+                        <Link to="/" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={16} md={18} /></Link>
                         <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Legal Instrument</p>
+                            <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Legal Instrument</p>
                             <div className="flex items-center gap-2">
                                 <div className={cn("w-1.5 h-1.5 rounded-full", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{displayAgreement.status}</span>
+                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{displayAgreement.status}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
-                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[10px] h-12 px-8 rounded-xl shadow-2xl">
-                            {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-2" />} Export PDF
+                    <div className="flex items-center gap-2 md:gap-4">
+                        <button onClick={() => window.print()} className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
+                        <Button onClick={handleDownloadPDF} disabled={isExporting} className="bg-[#A855F7] text-black font-black uppercase tracking-widest text-[9px] md:text-[10px] h-10 md:h-12 px-4 md:px-8 rounded-xl shadow-2xl">
+                            {isExporting ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Download size={14} className="mr-1 md:mr-2" />} <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
                         </Button>
                     </div>
                 </div>
             </nav>
 
-            <main className="pt-32 pb-32 flex flex-col items-center gap-12">
-                <div ref={agreementRef} className="flex flex-col gap-12 origin-top transition-all">
+            <main className="pt-24 md:pt-32 pb-32 flex flex-col items-center gap-8 md:gap-12 px-4 md:px-0">
+                <div ref={agreementRef} className="flex flex-col gap-8 md:gap-12 origin-top transition-all" style={{ transform: `scale(${scale})`, marginBottom: `${(scale - 1) * 1123 * paginatedPages.length}px` }}>
                     {paginatedPages.map((page, idx) => (
                         <div key={idx} className="agreement-page-render w-[794px] h-[1123px] bg-white text-black relative shadow-2xl flex flex-col p-[25mm] rounded-[2px] overflow-hidden font-formal border-[1px] border-black/10">
                             <div className="absolute inset-[5mm] border border-black/5 pointer-events-none" />
@@ -336,7 +351,7 @@ const Agreement = () => {
                 </div>
 
                 {displayAgreement.status !== 'Executed' && !isExporting && (
-                    <div className="w-[794px] bg-[#0a0a0a] rounded-[2.5rem] p-12 text-white space-y-10 no-print shadow-2xl border border-white/5">
+                    <div className="w-full max-w-[794px] bg-[#0a0a0a] rounded-3xl md:rounded-[2.5rem] p-8 md:p-12 text-white space-y-10 no-print shadow-2xl border border-white/5">
                         <div className="flex items-center justify-between border-b border-white/5 pb-8">
                             <div className="space-y-2">
                                 <h3 className="text-3xl font-black uppercase tracking-tighter italic">Execute Instrument.</h3>

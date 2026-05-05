@@ -6,8 +6,8 @@ const LoadingScreen = ({ isVisible }) => {
     const location = useLocation();
     const path = location.pathname;
 
-    // Remove loading animation from home page as requested
-    if (path === '/') return null;
+    // Remove loading animation from specific high-impact pages
+    if (path === '/' || path.startsWith('/artistant')) return null;
 
     // Minimalist brand-focused animation system
     const getThemeColor = () => {
