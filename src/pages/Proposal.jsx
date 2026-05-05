@@ -10,6 +10,7 @@ import { useStore } from '../lib/store';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
+import SignatureModal from '../components/ui/SignatureModal';
 import NotificationBell from '../components/NotificationBell';
 
 const Proposal = () => {
@@ -31,6 +32,7 @@ const Proposal = () => {
     const [signatureName, setSignatureName] = useState('');
     const [clientSignature, setClientSignature] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
@@ -587,86 +589,68 @@ const Proposal = () => {
                                                 {idx === paginatedPages.length - 1 && (
                                                     <div className="pt-10 space-y-10 border-t border-gray-100">
                                                         {!displayProposal.approvalMetadata ? (
-                                                            <div className="space-y-8 no-print bg-[#0a0a0a] p-8 rounded-[32px] border border-white/5 shadow-2xl">
-                                                                <div className="flex items-center justify-between">
+                                                            <div className="space-y-6 no-print">
+                                                                <div className="flex items-center justify-between mb-4 px-2">
                                                                     <div className="space-y-1">
-                                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Client Authorization</h3>
-                                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize this memorandum</p>
+                                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Authorization.</h3>
+                                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Digital signature required</p>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 rounded-full">
+                                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 rounded-full border border-neon-green/20">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">Secure Handshake Active</span>
+                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">Handshake Active</span>
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="space-y-6">
-                                                                    <div className="space-y-3">
-                                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2">Authorized Representative</label>
-                                                                        <input 
-                                                                            value={signatureName} 
-                                                                            onChange={e => setSignatureName(e.target.value)} 
-                                                                            placeholder="ENTER FULL LEGAL NAME" 
-                                                                            className="w-full bg-black/40 border border-white/10 h-16 px-6 rounded-2xl text-sm font-bold text-white outline-none focus:border-neon-green/40 transition-all uppercase tracking-widest" 
-                                                                        />
-                                                                    </div>
-
-                                                                    <div className="space-y-3">
-                                                                        <div className="flex items-center justify-between px-2">
-                                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Digital Signature</label>
-                                                                            <button 
-                                                                                onClick={() => document.getElementById('client-sig-upload-viewer').click()}
-                                                                                className="text-[8px] font-black uppercase tracking-widest text-neon-green hover:text-white transition-all flex items-center gap-1.5 bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20"
-                                                                            >
-                                                                                <Upload size={10} /> Upload Image
-                                                                            </button>
-                                                                            <input 
-                                                                                type="file" 
-                                                                                id="client-sig-upload-viewer" 
-                                                                                className="hidden" 
-                                                                                accept="image/*"
-                                                                                onChange={(e) => {
-                                                                                    const file = e.target.files[0];
-                                                                                    if (file) {
-                                                                                        const reader = new FileReader();
-                                                                                        reader.onload = (re) => setClientSignature(re.target.result);
-                                                                                        reader.readAsDataURL(file);
-                                                                                    }
-                                                                                }}
-                                                                            />
+                                                                <div 
+                                                                    onClick={() => setIsSignatureModalOpen(true)}
+                                                                    className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-6 hover:bg-white/[0.02] hover:border-neon-green/20 transition-all shadow-2xl relative overflow-hidden"
+                                                                >
+                                                                    {clientSignature ? (
+                                                                        <div className="w-full space-y-6">
+                                                                            <div className="h-32 flex items-center justify-center">
+                                                                                <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                            </div>
+                                                                            <div className="text-center border-t border-white/5 pt-6 flex items-center justify-center gap-4">
+                                                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                                                                <button 
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setClientSignature(null);
+                                                                                    }}
+                                                                                    className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                                                >
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="bg-white rounded-2xl overflow-hidden h-48 border-2 border-dashed border-white/10 relative group/pad">
-                                                                            {clientSignature ? (
-                                                                                <div className="relative group w-full h-full flex items-center justify-center p-8">
-                                                                                    <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
-                                                                                    <button 
-                                                                                        onClick={() => setClientSignature(null)}
-                                                                                        className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                                                    >
-                                                                                        <Trash2 size={14} />
-                                                                                    </button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <SignaturePad 
-                                                                                    onSave={setClientSignature}
-                                                                                    className="h-full w-full"
-                                                                                 />
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="flex gap-4">
-                                                                        <Button 
-                                                                            onClick={handleApproveProposal} 
-                                                                            disabled={isSubmitting || !signatureName.trim() || !clientSignature} 
-                                                                            className="flex-[2] h-16 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.2)] disabled:opacity-30 disabled:grayscale"
-                                                                        >
-                                                                            {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                                                                            Authorize Document
-                                                                        </Button>
-                                                                    </div>
-                                                                    
-                                                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-neon-green/10 transition-all duration-500">
+                                                                                <PenTool size={32} className="text-gray-400 group-hover:text-neon-green" />
+                                                                            </div>
+                                                                            <div className="text-center">
+                                                                                <p className="text-[11px] font-black text-white uppercase tracking-widest">Click to sign document</p>
+                                                                                <p className="text-[9px] text-gray-500 mt-2 uppercase tracking-tighter">Type, Draw or Upload Signature</p>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+                                                                    {/* Decorative lines */}
+                                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                                                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-neon-green/5 blur-3xl rounded-full -translate-x-1/2 translate-y-1/2" />
                                                                 </div>
+
+                                                                {clientSignature && (
+                                                                    <Button 
+                                                                        onClick={handleApproveProposal} 
+                                                                        disabled={isSubmitting || !signatureName.trim()} 
+                                                                        className="w-full h-16 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(57,255,20,0.2)]"
+                                                                    >
+                                                                        {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
+                                                                        Authorize Strategic Memorandum
+                                                                    </Button>
+                                                                )}
+                                                                
+                                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints will be attached for verification.</p>
                                                             </div>
                                                         ) : (
                                                             <div className="space-y-10 relative">
@@ -982,7 +966,15 @@ const Proposal = () => {
                         </div>
                     </div>
                 ))}
-            </div>
+            <SignatureModal 
+                isOpen={isSignatureModalOpen} 
+                onClose={() => setIsSignatureModalOpen(false)} 
+                onSave={(sig, name) => {
+                    setClientSignature(sig);
+                    setSignatureName(name);
+                }}
+                initialName={signatureName}
+            />
 
             {/* Identity Verification Modal */}
             <AnimatePresence>
