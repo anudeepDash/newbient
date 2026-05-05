@@ -1323,7 +1323,7 @@ const ProposalGenerator = () => {
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
                                                 <div className="h-40 flex items-center justify-start relative">
                                                     {formData.showSignatures && formData.providerSignature ? (
-                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" crossOrigin="anonymous" />
+                                                        <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                     ) : (
                                                         <p className="text-[24px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
                                                     )}
@@ -1337,7 +1337,7 @@ const ProposalGenerator = () => {
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
                                                 <div className="h-40 flex items-center justify-end relative">
                                                     {formData.showSignatures && formData.clientSignature ? (
-                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" crossOrigin="anonymous" />
+                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
                                                     ) : (
                                                         <p className="text-[24px] font-formal italic text-black opacity-10">Type name to sign</p>
                                                     )}

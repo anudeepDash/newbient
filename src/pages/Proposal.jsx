@@ -861,7 +861,7 @@ const Proposal = () => {
                                                         <div className="space-y-4">
                                                             <div className="h-24 flex items-end">
                                                                 {displayProposal.approvalMetadata.clientSignature ? (
-                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                 ) : (
                                                                     <p className="text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
                                                                 )}
@@ -892,15 +892,43 @@ const Proposal = () => {
                                                 <>
                                                     {displayProposal.status !== 'Accepted' && displayProposal.status !== 'Rejected' ? (
                                                 <div className="pt-8 space-y-6">
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Official Authorization</label>
-                                                        <input 
-                                                            value={signatureName} 
-                                                            onChange={e => setSignatureName(e.target.value)} 
-                                                            className="w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 px-8 rounded-2xl text-2xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center" 
-                                                            placeholder="Sign Full Name..." 
-                                                        />
-                                                    </div>
+                                                    {displayProposal.showSignatures && (
+                                                        <div 
+                                                            onClick={() => setIsSignatureModalOpen(true)}
+                                                            className="group cursor-pointer bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-8 flex flex-col items-center justify-center gap-6 hover:bg-gray-100 transition-all"
+                                                        >
+                                                            {clientSignature ? (
+                                                                <div className="w-full space-y-4">
+                                                                    <div className="h-24 flex items-center justify-center">
+                                                                        <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain grayscale mix-blend-multiply" />
+                                                                    </div>
+                                                                    <div className="text-center border-t border-gray-200 pt-4 flex items-center justify-center gap-4">
+                                                                        <div className="space-y-0.5">
+                                                                            <p className="text-[10px] font-black text-black uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                                                            <p className="text-[7px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
+                                                                        </div>
+                                                                        <button 
+                                                                            onClick={(e) => { e.stopPropagation(); setClientSignature(null); setSignatureName(''); }}
+                                                                            className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="w-16 h-16 bg-white border border-gray-200 rounded-full flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-sm">
+                                                                        <PenTool size={24} className="text-gray-400 group-hover:text-black" />
+                                                                    </div>
+                                                                    <div className="text-center">
+                                                                        <p className="text-[11px] font-black text-black uppercase tracking-[0.2em]">Click to sign proposal</p>
+                                                                        <p className="text-[9px] text-gray-500 mt-1 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <Button 
                                                             onClick={handleRefuseProposal}
@@ -910,8 +938,8 @@ const Proposal = () => {
                                                             Refuse Quote
                                                         </Button>
                                                         <Button 
-                                                            onClick={handleApproveProposal} 
-                                                            disabled={isSubmitting || !signatureName.trim()} 
+                                                            onClick={() => setIsVerifying(true)} 
+                                                            disabled={isSubmitting || (displayProposal.showSignatures && !signatureName.trim())} 
                                                             className="h-16 bg-black text-white font-black uppercase tracking-widest text-[9px] rounded-2xl hover:bg-neon-green hover:text-black transition-all shadow-xl"
                                                         >
                                                             Authorize Strategic Memorandum

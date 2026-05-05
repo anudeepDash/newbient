@@ -20,8 +20,7 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
             canvas.width = 600;
             canvas.height = 200;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'black';
             ctx.font = 'italic 60px "Caveat", cursive';
             ctx.textAlign = 'center';
