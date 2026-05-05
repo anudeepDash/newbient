@@ -167,7 +167,8 @@ const ProposalGenerator = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const proposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
+            const rawProposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
+            const proposalData = JSON.parse(JSON.stringify(rawProposalData));
             if (id) await updateProposal(id, proposalData);
             else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
             
