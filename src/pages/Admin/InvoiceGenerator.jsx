@@ -755,55 +755,7 @@ const InvoiceGenerator = () => {
                                                             <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Upload Signature</span>
                                                         )}
                                                     </div>
-                                                </div>
-
-                                                {/* Client Authorization */}
-                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Client Authorization</h3>
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Customer sign-off area</p>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button 
-                                                                onClick={() => document.getElementById('client-sig-upload-inv').click()}
-                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
-                                                            >
-                                                                <Upload size={12} /> Upload Sign
-                                                            </button>
-                                                            <input 
-                                                                type="file" 
-                                                                id="client-sig-upload-inv" 
-                                                                className="hidden" 
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        const reader = new FileReader();
-                                                                        reader.onload = (re) => setFormData({...formData, clientSignature: re.target.result});
-                                                                        reader.readAsDataURL(file);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
                                                     </div>
-                                                    
-                                                    <div className="relative h-48 bg-white rounded-[32px] flex items-center justify-center overflow-hidden">
-                                                        {formData.clientSignature ? (
-                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
-                                                                <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
-                                                                <button 
-                                                                    onClick={() => setFormData({...formData, clientSignature: ''})}
-                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
-                                                        )}
-                                                    </div>
-                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -1066,7 +1018,7 @@ const InvoiceGenerator = () => {
 
                                                     {/* Authentication Layer */}
                                                     {(formData.showSeal || formData.showSignatures) && (
-                                                        <div className="w-full grid grid-cols-2 gap-16 mt-12 pt-12 border-t-2 border-gray-100 relative">
+                                                        <div className="w-full flex justify-start mt-12 pt-12 border-t-2 border-gray-100 relative">
                                                             {/* Provider Signature */}
                                                             <div className="space-y-6">
                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
@@ -1079,20 +1031,6 @@ const InvoiceGenerator = () => {
                                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10" />
                                                                 </div>
                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest leading-none">{formData.senderName || 'Authorized Signatory'}</p>
-                                                            </div>
-
-                                                            {/* Client Signature */}
-                                                            <div className="space-y-6 text-right">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                                <div className="h-32 flex items-center justify-end relative">
-                                                                    {formData.showSignatures && formData.clientSignature ? (
-                                                                        <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                    ) : (
-                                                                        <p className="text-[20px] font-formal italic text-black opacity-10">Type name to sign</p>
-                                                                    )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10" />
-                                                                </div>
-                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest leading-none">Acknowledged & Accepted</p>
                                                             </div>
 
                                                             {/* Official Seal Overlay */}
@@ -1254,10 +1192,10 @@ const InvoiceGenerator = () => {
                                                 </div>
                                                 <p className="text-[7px] font-black text-gray-400 mt-2 uppercase tracking-widest italic">Scan to pay</p>
                                             </div>
-                                            {formData.showSignatory && (
+                                            {formData.showSignatures && (
                                                 <div className="flex-1 flex flex-col items-center">
-                                                    {formData.signatoryImage && (
-                                                        <img src={formData.signatoryImage} alt="Signature" className="h-12 object-contain grayscale mix-blend-multiply mb-1" />
+                                                    {formData.providerSignature && (
+                                                        <img src={formData.providerSignature} alt="Signature" className="h-12 object-contain grayscale mix-blend-multiply mb-1" />
                                                     )}
                                                     <div className="w-full border-t-2 border-dashed border-gray-400 text-center pt-2">
                                                         <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic">Authorized Signature</p>

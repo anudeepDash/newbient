@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Printer, CheckCircle, ArrowLeft, Share2, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut, Zap, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Download, Printer, ArrowLeft, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut } from 'lucide-react';
 import DocumentSeal from '../components/ui/DocumentSeal';
-import SignaturePad from '../components/ui/SignaturePad';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useStore } from '../lib/store';
@@ -20,18 +19,9 @@ const Invoice = () => {
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
-    const [signatureName, setSignatureName] = React.useState('');
-    const [clientSignature, setClientSignature] = React.useState(null);
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [ipAddress, setIpAddress] = React.useState('Detecting...');
-    const [verificationEmail, setVerificationEmail] = React.useState(user?.email || '');
 
-    React.useEffect(() => {
-        fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => setIpAddress(data.ip))
-            .catch(() => setIpAddress('Hidden/Protected'));
-    }, []);
+
+
 
     React.useEffect(() => {
         const handleResize = () => {
@@ -297,46 +287,7 @@ const Invoice = () => {
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     };
 
-    const handleAuthorizeInvoice = async () => {
-        if (displayInvoice.status === 'Paid') return;
-        if (!signatureName.trim() || !clientSignature) {
-            alert('Please provide your name and signature to authorize.');
-            return;
-        }
 
-        setIsSubmitting(true);
-        try {
-            const deviceMetadata = {
-                ua: navigator.userAgent,
-                platform: navigator.platform,
-                ip: ipAddress,
-                timestamp: new Date().toISOString()
-            };
-
-            await updateInvoiceStatus(id, 'Paid');
-            await useStore.getState().updateInvoice(id, {
-                status: 'Paid',
-                approvalMetadata: {
-                    signedBy: signatureName,
-                    clientSignature: clientSignature,
-                    signedAt: new Date().toISOString(),
-                    ip: ipAddress,
-                    email: verificationEmail,
-                    footprint: {
-                        browser: navigator.userAgent.split(' ').slice(-1)[0],
-                        os: navigator.platform,
-                        res: `${window.screen.width}x${window.screen.height}`
-                    }
-                }
-            });
-            alert('Invoice authorized and marked as PAID.');
-        } catch (error) {
-            console.error('Error authorizing invoice:', error);
-            alert('Authorization failed.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     const getGridTemplate = () => {
         const columns = displayInvoice.customColumns || [];
@@ -780,64 +731,7 @@ const Invoice = () => {
                                                                 </div>
                                                             )}
 
-                                                            {/* Signature Block */}
-                                                            <div className="w-full mt-6">
-                                                                {!displayInvoice.approvalMetadata ? (
-                                                                    <div className="space-y-4 no-print bg-[#0a0a0a] p-6 rounded-3xl border border-white/5 shadow-xl text-left">
-                                                                        <div className="flex items-center justify-between mb-4">
-                                                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Client Acknowledgement</p>
-                                                                            <span className="text-[8px] font-black text-neon-blue uppercase px-2 py-0.5 bg-neon-blue/10 rounded-full">Secure</span>
-                                                                        </div>
-                                                                        <div className="space-y-4">
-                                                                            <input 
-                                                                                value={signatureName}
-                                                                                onChange={e => setSignatureName(e.target.value)}
-                                                                                placeholder="ENTER FULL NAME"
-                                                                                className="w-full bg-black/40 border border-white/10 h-12 px-4 rounded-xl text-[10px] font-bold text-white outline-none focus:border-neon-blue/40 uppercase tracking-widest"
-                                                                            />
-                                                                            <div className="bg-white rounded-xl overflow-hidden h-32 border border-white/10">
-                                                                                <SignaturePad onSave={setClientSignature} className="h-full w-full" />
-                                                                            </div>
-                                                                            <Button 
-                                                                                onClick={handleAuthorizeInvoice}
-                                                                                disabled={isSubmitting || !signatureName.trim() || !clientSignature}
-                                                                                className="w-full h-12 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl shadow-[0_0_20px_rgba(56,182,255,0.2)]"
-                                                                            >
-                                                                                {isSubmitting ? <RefreshCw className="animate-spin" size={14} /> : <Zap size={14} />}
-                                                                                Authorize & Pay
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="relative pt-6 border-t border-gray-200">
-                                                                        <div className="grid grid-cols-2 gap-6 text-left">
-                                                                            <div className="space-y-3">
-                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Client Authorization</p>
-                                                                                <div className="h-16 flex items-end">
-                                                                                    {displayInvoice.approvalMetadata.clientSignature ? (
-                                                                                        <img src={displayInvoice.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
-                                                                                    ) : (
-                                                                                        <p className="font-heading italic text-lg">{displayInvoice.approvalMetadata.signedBy}</p>
-                                                                                    )}
-                                                                                </div>
-                                                                                <p className="text-[10px] font-black uppercase text-black">{displayInvoice.approvalMetadata.signedBy}</p>
-                                                                            </div>
-                                                                            <div className="space-y-2 text-right">
-                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Digital Footprints</p>
-                                                                                <div className="space-y-1 text-[7px] font-black uppercase tracking-widest text-gray-400">
-                                                                                    <p>IP: {displayInvoice.approvalMetadata.ip}</p>
-                                                                                    <p>UA: {displayInvoice.approvalMetadata.footprint?.browser || 'System'}</p>
-                                                                                    <p>Time: {new Date(displayInvoice.approvalMetadata.signedAt).toISOString()}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        {/* Seal Overlay */}
-                                                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-70 mix-blend-multiply">
-                                                                            <DocumentSeal className="w-40 h-40 grayscale brightness-0" />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+
                                                         </div>
                                                     </div>
                                                 )}
