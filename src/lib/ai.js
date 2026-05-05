@@ -1,19 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // NEWBI AI NEURAL ENGINE v4.1 — Gemini-Powered with Smart Retry
 // ═══════════════════════════════════════════════════════════════════════════
-// Primary: Google Gemini (with 429 retry + model fallback chain)
-// Backup: Pollinations AI (free proxy)
+// Primary: Google Gemini (via Backend Proxy)
+// Backup: Local Failproof Mocks
+// ═══════════════════════════════════════════════════════════════════════════
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-// Gemini model fallback chain — if one is rate-limited, try next
-const GEMINI_MODELS = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-];
-
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-const PERPLEXITY_API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY || '';
+// API Keys are now handled securely by the backend proxy (/api/ai)
 
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
@@ -36,331 +28,32 @@ export class NBError extends Error {
     }
 }
 
-// ── Gemini Call with 429 Retry ──────────────────────────────────────────
-const callGemini = async (systemPrompt, userPrompt) => {
-    if (!GEMINI_API_KEY) throw new NBError(ERROR_CODES.AUTH_FAILED, 'VITE_GEMINI_API_KEY is missing');
-
-    for (const model of GEMINI_MODELS) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 30000);
-
-            console.log(`[NEWBI AI] → Gemini ${model}...`);
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal,
-                body: JSON.stringify({
-                    system_instruction: { parts: [{ text: systemPrompt }] },
-                    contents: [{ parts: [{ text: userPrompt }] }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192,
-                        responseMimeType: 'application/json'
-                    }
-                })
-            });
-
-            clearTimeout(timeout);
-
-            // Rate-limited: try ONE more time after a short wait, then move on
-            if (response.status === 429) {
-                console.warn(`[NEWBI AI] ⏳ ${model} rate-limited, retrying in 1.5s...`);
-                await new Promise(r => setTimeout(r, 1500));
-                
-                const retryController = new AbortController();
-                const retryTimeout = setTimeout(() => retryController.abort(), 15000);
-                const retryRes = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: retryController.signal,
-                    body: JSON.stringify({
-                        system_instruction: { parts: [{ text: systemPrompt }] },
-                        contents: [{ parts: [{ text: userPrompt }] }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 8192, responseMimeType: 'application/json' }
-                    })
-                });
-                clearTimeout(retryTimeout);
-                
-                if (retryRes.status === 429) {
-                    console.warn(`[NEWBI AI] ✗ ${model} still rate-limited, trying next...`);
-                    continue; // Next model
-                }
-                if (!retryRes.ok) continue;
-                
-                const retryData = await retryRes.json();
-                const retryText = retryData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (retryText && retryText.trim().length >= 20) {
-                    console.log(`[NEWBI AI] ✓ Gemini ${model} success on retry (${retryText.length} chars)`);
-                    return retryText;
-                }
-                continue;
-            }
-
-            if (!response.ok) {
-                console.warn(`[NEWBI AI] ✗ ${model} HTTP ${response.status}`);
-                continue; // Next model
-            }
-
-            const data = await response.json();
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!text || text.trim().length < 20) {
-                console.warn(`[NEWBI AI] ✗ ${model} empty response`);
-                continue;
-            }
-
-            console.log(`[NEWBI AI] ✓ Gemini ${model} success (${text.length} chars)`);
-            return text;
-        } catch (error) {
-            console.warn(`[NEWBI AI] ✗ ${model}: ${error.name === 'AbortError' ? 'timeout' : error.message}`);
-            continue;
-        }
-    }
-    
-    // If we're here, it means rate limits or network issues blocked all attempts
-    throw new NBError(ERROR_CODES.RATE_LIMITED, 'All Gemini models exhausted');
-};
-
-// ── OpenRouter Neural Path ──────────────────────────────────────────────
-const callOpenRouter = async (systemPrompt, userPrompt) => {
-    if (!OPENROUTER_API_KEY) return null;
-    
-    console.log('[NEWBI AI] → OpenRouter (Premium Model Path)...');
-    
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'HTTP-Referer': 'https://newbi.ent', 
-            'X-Title': 'Newbi Entertainment'
-        },
-        body: JSON.stringify({
-            model: "google/gemini-2.0-flash-001", // Using Gemini 2.0 via OpenRouter for maximum reliability
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-            ],
-            response_format: { type: "json_object" }
-        })
-    });
-
-    if (!response.ok) throw new Error(`OpenRouter failed: ${response.status}`);
-    const data = await response.json();
-    return data.choices[0].message.content;
-};
-
-// ── Perplexity Neural Path ─────────────────────────────────────────────
-const callPerplexity = async (systemPrompt, userPrompt) => {
-    if (!PERPLEXITY_API_KEY) return null;
-    
-    console.log('[NEWBI AI] → Perplexity AI...');
-    
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
-        },
-        body: JSON.stringify({
-            model: "llama-3.1-sonar-large-128k-online",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-            ]
-        })
-    });
-
-    if (!response.ok) throw new Error(`Perplexity failed: ${response.status}`);
-    const data = await response.json();
-    return data.choices[0].message.content;
-};
-
-// ── Airforce Proxy Fallback ─────────────────────────────────────────────
-const callAirforce = async (systemPrompt, userPrompt) => {
-    const models = ['gpt-4o-mini', 'gpt-4o', 'llama-3.3-70b-versatile', 'llama-3.1-70b-chat', 'mistral-large-v3'];
-    
-    for (const model of models) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
-
-        try {
-            console.log(`[NEWBI AI] → Airforce fallback (${model})...`);
-
-            const response = await fetch('https://api.airforce/v1/chat/completions', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer no-key' // Some proxies require a placeholder
-                },
-                signal: controller.signal,
-                body: JSON.stringify({
-                    model: model,
-                    messages: [
-                        { role: 'system', content: systemPrompt + '\n\nYou MUST respond with ONLY a valid JSON object. No markdown, no explanation, no code fences.' },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 4096,
-                })
-            });
-
-            clearTimeout(timeout);
-
-            if (!response.ok) {
-                console.warn(`[NEWBI AI] ✗ Airforce ${model} failed: HTTP ${response.status}`);
-                continue;
-            }
-
-            const data = await response.json();
-            const text = data?.choices?.[0]?.message?.content;
-
-            if (!text || text.trim().length < 20) {
-                console.warn(`[NEWBI AI] ✗ Airforce ${model} empty response`);
-                continue;
-            }
-
-            console.log(`[NEWBI AI] ✓ Airforce ${model} success (${text.length} chars)`);
-            return text;
-        } catch (error) {
-            clearTimeout(timeout);
-            console.warn(`[NEWBI AI] ✗ Airforce ${model} error:`, error.message);
-            continue;
-        }
-    }
-    throw new Error('All Airforce models failed');
-};
-
-// ── Pollinations Fallback ───────────────────────────────────────────────
-const callPollinations = async (systemPrompt, userPrompt) => {
-    const models = ['mistral', 'qwen', 'unity']; // Using Mistral as it's more stable on Pollinations
-    
-    for (const model of models) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000);
-
-        try {
-            console.log(`[NEWBI AI] → Pollinations fallback (${model})...`);
-
-            const url = 'https://text.pollinations.ai/openai';
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal,
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Return ONLY valid JSON.' },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    model: model,
-                    jsonMode: true,
-                    seed: Math.floor(Math.random() * 1000000)
-                })
-            });
-
-            clearTimeout(timeout);
-
-            if (!response.ok) {
-                console.warn(`[NEWBI AI] ✗ Pollinations ${model} failed: HTTP ${response.status}`);
-                continue;
-            }
-
-            const text = await response.text();
-
-            if (!text || text.trim().length < 20) {
-                console.warn(`[NEWBI AI] ✗ Pollinations ${model} empty response`);
-                continue;
-            }
-            
-            // Check for maintenance/deprecation notice in the response itself
-            if (text.includes('deprecated') || text.includes('IMPORTANT NOTICE')) {
-                console.warn(`[NEWBI AI] ✗ Pollinations ${model} returned maintenance notice`);
-                continue;
-            }
-            
-            // Handle cases where Pollinations might still prepend text even with jsonMode
-            const firstBrace = text.indexOf('{');
-            const lastBrace = text.lastIndexOf('}');
-            const cleaned = (firstBrace !== -1 && lastBrace !== -1) ? text.substring(firstBrace, lastBrace + 1) : text;
-
-            console.log(`[NEWBI AI] ✓ Pollinations ${model} success (${cleaned.length} chars)`);
-            return cleaned;
-        } catch (error) {
-            clearTimeout(timeout);
-            console.warn(`[NEWBI AI] ✗ Pollinations ${model} error:`, error.message);
-            continue;
-        }
-    }
-    throw new Error('All Pollinations models failed');
-};
-
-// ── Master Orchestrator ─────────────────────────────────────────────────
+// ── Master Orchestrator (Backend Proxy Migration) ────────────────────────
 const executeNeuralPulse = async (systemPrompt, userPrompt) => {
-    // 1. Try Gemini (Native / Fast)
     try {
-        const res = await callGemini(systemPrompt, userPrompt);
-        if (res) {
-            console.log('[NEWBI AI] ✓ Neural Path: Google Gemini (Native)');
-            return res;
-        }
-    } catch (e) {
-        console.warn('[NEWBI AI] ✗ Gemini path blocked:', e.message);
-    }
+        console.log('[NEWBI AI] → Requesting secure neural path via proxy...');
+        
+        const response = await fetch('/api/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemPrompt, userPrompt })
+        });
 
-    // 2. Try OpenRouter (Premium Backup)
-    try {
-        const res = await callOpenRouter(systemPrompt, userPrompt);
-        if (res) {
-            console.log('[NEWBI AI] ✓ Neural Path: OpenRouter Hub (Premium)');
-            return res;
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`[NEWBI AI] ✓ Neural Path: Secure Proxy (${data.provider})`);
+            return data.content;
         }
-    } catch (e) {
-        console.warn('[NEWBI AI] ✗ OpenRouter path failed:', e.message);
-    }
 
-    // 3. Try Perplexity
-    try {
-        const res = await callPerplexity(systemPrompt, userPrompt);
-        if (res) {
-            console.log('[NEWBI AI] ✓ Neural Path: Perplexity AI');
-            return res;
-        }
+        const errorData = await response.json();
+        console.warn('[NEWBI AI] ✗ Proxy path failed:', errorData.error);
     } catch (e) {
-        console.warn('[NEWBI AI] ✗ Perplexity path failed:', e.message);
-    }
-
-    // 4. Try Airforce proxy
-    try {
-        const res = await callAirforce(systemPrompt, userPrompt);
-        if (res) {
-            console.log('[NEWBI AI] ✓ Neural Path: Airforce Proxy (Stable)');
-            return res;
-        }
-    } catch (e) {
-        console.warn('[NEWBI AI] ✗ Airforce proxy failed:', e.message);
-    }
-
-    // 5. Try Pollinations as backup
-    try {
-        const res = await callPollinations(systemPrompt, userPrompt);
-        if (res) {
-            console.log('[NEWBI AI] ✓ Neural Path: Pollinations (Legacy)');
-            return res;
-        }
-    } catch (e) {
-        console.warn('[NEWBI AI] ✗ Pollinations failed:', e.message);
+        console.warn('[NEWBI AI] ✗ Proxy connection failed:', e.message);
     }
 
     // FINAL FAILPROOF FALLBACK
     console.error('[NEWBI AI] ✗ ✗ ✗ ALL NEURAL PATHS COLLAPSED. Activating Absolute Failproof Mock.');
     
-    // We don't throw here, we return mock, but we log the collapse as a warning
-    // If the caller wants to know if it was a mock, they can check if the response is from getAbsoluteFailproofMock
-                 
     const type = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
                  systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
                  systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 'invoice';
@@ -697,7 +390,7 @@ RULES:
 
 /**
  * Generate a complete document from a natural language prompt.
- * Primary: Gemini 2.0 Flash | Fallback: Pollinations
+ * Primary: Gemini 2.0 Flash (via Proxy) | Fallback: Mock
  */
 export const generateFullDocument = async (type, prompt, tone = 'Premium', config = {}) => {
     if (!SYSTEM_PROMPTS[type]) {
