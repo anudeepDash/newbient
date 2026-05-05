@@ -70,8 +70,9 @@ export const useStore = create((set, get) => ({
     unreadNotificationsCount: 0,
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
-    aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
     portfolioCategories: [], // Dynamic categories
+    toasts: [], // Ephemeral UI notifications
+    aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
     maintenanceState: {
         global: false,
         pages: {}, // e.g., gallery, concerts
@@ -253,6 +254,25 @@ export const useStore = create((set, get) => ({
             unsubClientRequests();
             unsubAI();
         };
+    },
+
+    // Toast System
+    addToast: (message, type = 'error', code = null) => {
+        const id = Date.now();
+        set(state => ({
+            toasts: [...state.toasts, { id, message, type, code }]
+        }));
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            set(state => ({
+                toasts: state.toasts.filter(t => t.id !== id)
+            }));
+        }, 5000);
+    },
+    removeToast: (id) => {
+        set(state => ({
+            toasts: state.toasts.filter(t => t.id !== id)
+        }));
     },
 
     // Notifications Subscription

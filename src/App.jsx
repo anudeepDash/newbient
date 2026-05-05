@@ -63,6 +63,7 @@ import AgreementManagement from './pages/Admin/AgreementManagement';
 import AgreementGenerator from './pages/Admin/AgreementGenerator';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import NeuralToast from './components/ui/NeuralToast';
 
 
 
@@ -178,6 +179,7 @@ function App() {
         </Route>
       </Routes>
       <AuthOverlay />
+      <NeuralToast />
     </Router>
   );
 }

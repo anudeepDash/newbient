@@ -46,7 +46,7 @@ const UpcomingEventsManager = () => {
         { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
         { name: 'Announcements', path: '/admin/announcements', icon: Radio },
         { name: 'Blog', path: '/admin/blog', icon: FileText },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
+
     ];
 
     const resetForm = () => {

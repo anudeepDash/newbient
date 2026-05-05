@@ -143,9 +143,9 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                 isGenerating && `${accent.border} border-opacity-50`
             )}>
                 {/* Main Input Area */}
-                <div className="flex items-start gap-3 p-3 pl-5">
+                <div className="flex items-center gap-3 p-3 pl-5">
                     <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 mt-2 relative overflow-hidden", 
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 relative overflow-hidden", 
                         isGenerating ? `${accent.bg} text-black animate-pulse ${accent.glow}` : `bg-white/[0.04] ${accent.text} border border-white/[0.06]`
                     )}>
                         <Zap size={18} fill={isGenerating ? "currentColor" : "none"} className="relative z-10" />
@@ -159,7 +159,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                             onChange={(e) => setPrompt(e.target.value)}
                             onFocus={() => !prompt.trim() && setShowSuggestions(true)}
                             placeholder={`Describe the ${type} you need — be specific for best results...`}
-                            className="w-full bg-transparent border-none text-[14px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[48px] py-3 resize-none leading-relaxed"
+                            className="w-full bg-transparent border-none text-[14px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[40px] py-2.5 resize-none leading-relaxed"
                             disabled={isGenerating}
                             rows={1}
                             onKeyDown={(e) => {
@@ -182,7 +182,7 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2 pr-1">
+                    <div className="flex items-center gap-2 pr-1">
                         {/* Suggestion toggle */}
                         <button 
                             onClick={() => setShowSuggestions(!showSuggestions)}
@@ -316,10 +316,10 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                                         <button
                                             key={i}
                                             onClick={() => useSuggestion(s)}
-                                            className="w-full text-left px-4 py-2.5 rounded-xl text-[12px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-all leading-relaxed group/s"
+                                            className="w-full flex items-start text-left px-4 py-2.5 rounded-xl text-[12px] font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-all leading-relaxed group/s gap-3"
                                         >
-                                            <span className={cn("opacity-0 group-hover/s:opacity-100 transition-opacity mr-1.5", accent.text)}>→</span>
-                                            {s}
+                                            <span className={cn("opacity-0 group-hover/s:opacity-100 transition-opacity shrink-0", accent.text)}>→</span>
+                                            <span className="flex-1">{s}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -363,10 +363,6 @@ const AIPromptBox = ({ onGenerate, isGenerating, type = 'document', forceClear =
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Newbi Agent Active</span>
                 </div>
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-white/[0.05] via-white/[0.08] to-transparent" />
-                <div className="flex items-center gap-2 bg-white/[0.03] px-3 py-1 rounded-full border border-white/[0.04]">
-                    <Cpu size={10} className={accent.text} />
-                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-wider">Model: <span className={accent.text}>Gemini 1.5 Flash</span></span>
-                </div>
             </div>
         </div>
     );

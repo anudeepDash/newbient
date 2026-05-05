@@ -6,7 +6,7 @@ import {
     Globe, Terminal, Award, BarChart3, Clock, Sparkles, Trash2, AlertTriangle,
     User, Settings, ExternalLink, Mail, Phone, MapPinIcon, LayoutDashboard, Zap,
     Music, Users, Disc, Mic2, Star, PartyPopper, Wand2, Guitar, Lock, Cpu, HeartHandshake,
-    Trophy, Ticket
+    Trophy, Ticket, ArrowLeft, ChevronDown, Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -192,14 +192,26 @@ const ArtistAnt = () => {
         return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-neon-green" size={32} /></div>;
     }
 
+    const isFormView = view === 'artist_form' || view === 'client_form';
+
     return (
         <div className="min-h-screen bg-[#050505] text-white relative font-outfit scroll-smooth">
             {/* Minimal Header */}
             <div className="fixed top-8 left-8 right-8 z-[100] flex justify-between items-center">
-                <Link to="/" className="flex items-center gap-4 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[1.5rem] backdrop-blur-3xl transition-all group">
-                    <Home size={18} className="text-[#FF6B6B] group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to newbi.live</span>
-                </Link>
+                {isFormView ? (
+                    <button 
+                        onClick={() => { setView('gateway'); setStep(1); }}
+                        className="flex items-center gap-4 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[1.5rem] backdrop-blur-3xl transition-all group"
+                    >
+                        <ArrowLeft size={18} className="text-[#FF6B6B] group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to Home</span>
+                    </button>
+                ) : (
+                    <Link to="/" className="flex items-center gap-4 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[1.5rem] backdrop-blur-3xl transition-all group">
+                        <Home size={18} className="text-[#FF6B6B] group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to newbi.live</span>
+                    </Link>
+                )}
 
                 {/* Smaller logo for header */}
                 <AnimatePresence>
@@ -224,8 +236,8 @@ const ArtistAnt = () => {
                         <section className="relative min-h-screen flex flex-col justify-start items-center overflow-hidden px-4 pt-12 sm:pt-16 md:pt-20 pb-20">
                             {/* Theme Background */}
                             <div className="absolute inset-0 z-0">
-                                <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-[#FF6B6B]/15 rounded-full blur-[220px] animate-pulse" />
-                                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#7B61FF]/10 rounded-full blur-[220px] animate-pulse delay-700" />
+                                <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-[#FF6B6B]/5 rounded-full blur-[220px] animate-pulse" />
+                                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#7B61FF]/3 rounded-full blur-[220px] animate-pulse delay-700" />
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#050505_100%)] z-10" />
                                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] opacity-[0.08]" />
                             </div>
@@ -239,7 +251,7 @@ const ArtistAnt = () => {
                                         transition={{ duration: 1.2, ease: "easeOut" }}
                                         className="relative flex justify-center -mb-24 sm:-mb-32 md:-mb-48 lg:-mb-64 -mt-20 sm:-mt-24 md:-mt-32"
                                     >
-                                        <div className="absolute inset-0 bg-[#FF6B6B]/20 blur-[150px] rounded-full scale-100 animate-pulse"></div>
+                                        <div className="absolute inset-0 bg-[#FF6B6B]/8 blur-[150px] rounded-full scale-100 animate-pulse"></div>
                                         <img 
                                             src={artistantLogo} 
                                             alt="Artistant" 
@@ -264,7 +276,7 @@ const ArtistAnt = () => {
                                     initial={{ opacity: 0, y: 20 }} 
                                     animate={{ opacity: 1, y: 0 }} 
                                     transition={{ duration: 0.8, delay: 0.6 }}
-                                    className="mb-16"
+                                    className="mb-12"
                                 >
                                     <div className="max-w-5xl mx-auto px-4">
                                         <p className="text-gray-400 text-base md:text-xl lg:text-2xl font-medium tracking-tight leading-[1.4] max-w-4xl mx-auto">
@@ -278,11 +290,11 @@ const ArtistAnt = () => {
                                     initial={{ opacity: 0, y: 30 }} 
                                     animate={{ opacity: 1, y: 0 }} 
                                     transition={{ delay: 0.8 }}
-                                    className="flex flex-col sm:flex-row items-center justify-center gap-8"
+                                    className="flex flex-col sm:flex-row items-center justify-center gap-8 mb-12"
                                 >
                                     <button
                                         onClick={() => setView('artist_form')}
-                                        className="group w-full sm:w-[320px] h-20 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-black font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(255,107,107,0.4)] flex flex-col items-center justify-center gap-1 relative overflow-hidden"
+                                        className="group w-full sm:w-[320px] h-24 bg-gradient-to-r from-[#FF6B6B] to-[#FF8E53] text-black font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(255,107,107,0.4)] flex flex-col items-center justify-center gap-1 relative overflow-hidden"
                                     >
                                         <span className="relative z-10">I'M AN ARTIST</span>
                                         <span className="relative z-10 text-[8px] opacity-60 tracking-widest">Build your profile & get gigs</span>
@@ -291,11 +303,26 @@ const ArtistAnt = () => {
 
                                     <button
                                         onClick={() => setView('client_form')}
-                                        className="group w-full sm:w-[320px] h-20 bg-transparent border-2 border-[#7B61FF] text-[#7B61FF] font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:bg-[#7B61FF] hover:text-white hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(123,97,255,0.3)] flex flex-col items-center justify-center gap-1"
+                                        className="group w-full sm:w-[320px] h-24 bg-transparent border-2 border-[#7B61FF] text-[#7B61FF] font-black font-heading uppercase tracking-[0.25em] text-sm rounded-2xl transition-all duration-500 hover:bg-[#7B61FF] hover:text-white hover:scale-[1.08] hover:shadow-[0_0_60px_rgba(123,97,255,0.3)] flex flex-col items-center justify-center gap-1"
                                     >
                                         <span className="relative z-10">I'M LOOKING FOR ARTISTS</span>
                                         <span className="relative z-10 text-[8px] opacity-60 tracking-widest">Discover & book verified talent</span>
                                     </button>
+                                </motion.div>
+
+                                {/* WAITLIST ANNOUNCEMENT (Resized & Repositioned) */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.9 }}
+                                    className="flex flex-col items-center gap-4"
+                                >
+                                    <div className="flex items-center gap-2.5 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl group hover:border-[#FF6B6B]/30 transition-all cursor-default">
+                                        <Rocket size={12} className="text-[#FF6B6B] animate-bounce" />
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 group-hover:text-white transition-colors">
+                                            Join the waitlist now. Preview live for onboarding and connecting now.
+                                        </p>
+                                    </div>
                                 </motion.div>
                             </div>
                         </section>
@@ -438,84 +465,115 @@ const ArtistAnt = () => {
                     </motion.div>
                 )}
 
-                {/* ONBOARDING FORMS */}
-                {(view === 'artist_form' || view === 'client_form') && (
-                    <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-4xl mx-auto pt-56 px-6 pb-40">
-                        <div className="text-center mb-16">
-                            <button onClick={() => { setView('gateway'); setStep(1); }} className="mb-8 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.4em] flex items-center gap-2 mx-auto transition-colors group">
-                                <ArrowRight size={14} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Back to Mission
-                            </button>
-                            <h2 className="text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter">
-                                {view === 'artist_form' ? "ARTIST" : "CLIENT"} <span className="text-[#FF6B6B]">ONBOARDING.</span>
+                {/* REDESIGNED ONBOARDING FORMS */}
+                {isFormView && (
+                    <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-6xl mx-auto pt-48 px-6 pb-40">
+                        <div className="text-center mb-24 relative">
+                            <h2 className="text-6xl md:text-9xl font-black font-heading uppercase italic tracking-tighter leading-none mb-6">
+                                {view === 'artist_form' ? "JOIN THE" : "GET A"} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SCOUT.</span>
                             </h2>
+                            <div className="flex items-center justify-center gap-4">
+                                <div className="h-[1px] w-12 bg-white/10" />
+                                <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.5em]">Phase 1: Direct Enrollment</p>
+                                <div className="h-[1px] w-12 bg-white/10" />
+                            </div>
                         </div>
 
-                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-2xl">
-                            <StepIndicator current={step} total={view === 'artist_form' ? 3 : 2} labels={view === 'artist_form' ? ['Identity', 'Social Impact', 'Specifications'] : ['Account', 'Requirements']} />
+                        <div className="relative group/form max-w-4xl mx-auto">
+                            {/* DIAGONAL LOGO STAMP AT BOTTOM RIGHT EDGE */}
+                            <div className="absolute bottom-0 right-0 w-80 h-80 opacity-[0.15] group-hover/form:opacity-[0.25] transition-all pointer-events-none z-0 -rotate-45 translate-x-1/4 translate-y-1/4">
+                                <img src={artistantLogo} alt="" className="w-full h-full object-contain" />
+                            </div>
                             
-                            <form onSubmit={
-                                view === 'artist_form' 
-                                ? (step === 3 ? handleArtistSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
-                                : (step === 2 ? handleClientSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
-                            } className="mt-12 space-y-10">
-                                {view === 'artist_form' ? (
-                                    <>
-                                        {step === 1 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                                                <FormField label="Professional Name" value={artistData.name} onChange={(e) => setArtistData({...artistData, name: e.target.value})} placeholder="Stage Name" />
-                                                <FormField label="Direct Phone" value={artistData.phone} onChange={(e) => setArtistData({...artistData, phone: e.target.value})} placeholder="+91..." />
-                                                <FormSelect label="Base City" value={artistData.city} onChange={(e) => setArtistData({...artistData, city: e.target.value})} options={PREDEFINED_CITIES} />
-                                                <FormField label="Talent Categories" value={artistData.categories} onChange={(e) => setArtistData({...artistData, categories: e.target.value})} placeholder="e.g. Vocalist, DJ" />
-                                            </div>
-                                        )}
-                                        {step === 2 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                                                <FormField label="Instagram Handle" value={artistData.instagram} onChange={(e) => setArtistData({...artistData, instagram: e.target.value})} placeholder="@username" />
-                                                <FormField label="Followers" type="number" value={artistData.instagramFollowers} onChange={(e) => setArtistData({...artistData, instagramFollowers: e.target.value})} placeholder="Count" />
-                                                <div className="md:col-span-2">
-                                                    <FormField label="Portfolio Link" value={artistData.portfolio} onChange={(e) => setArtistData({...artistData, portfolio: e.target.value})} placeholder="Link to Work" />
-                                                </div>
-                                            </div>
-                                        )}
-                                        {step === 3 && (
-                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                                                <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Professional Bio</label>
-                                                <textarea value={artistData.bio} onChange={(e) => setArtistData({...artistData, bio: e.target.value})} className="w-full h-48 bg-black/40 border border-white/5 rounded-2xl p-6 text-[12px] font-bold outline-none focus:border-[#FF6B6B]/30 text-white resize-none" placeholder="Tell us about your performance style and experience..." />
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        {step === 1 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                                                <FormField label="Contact Name" value={clientData.name} onChange={(e) => setClientData({...clientData, name: e.target.value})} placeholder="Your Name" />
-                                                <FormField label="Organization" value={clientData.org} onChange={(e) => setClientData({...clientData, org: e.target.value})} placeholder="Company" />
-                                                <FormField label="Email Address" value={clientData.email} onChange={(e) => setClientData({...clientData, email: e.target.value})} placeholder="email@domain.com" />
-                                                <FormSelect label="Event City" value={clientData.city} onChange={(e) => setClientData({...clientData, city: e.target.value})} options={PREDEFINED_CITIES} />
-                                            </div>
-                                        )}
-                                        {step === 2 && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                                                <FormField label="Artist Category" value={clientData.category} onChange={(e) => setClientData({...clientData, category: e.target.value})} placeholder="e.g. Host" />
-                                                <FormField label="Budget Range" value={clientData.budget} onChange={(e) => setClientData({...clientData, budget: e.target.value})} placeholder="Expected Payout" />
-                                                <div className="md:col-span-2 space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Requirement Details</label>
-                                                    <textarea value={clientData.requirement} onChange={(e) => setClientData({...clientData, requirement: e.target.value})} className="w-full h-48 bg-black/40 border border-white/5 rounded-2xl p-6 text-[12px] font-bold outline-none focus:border-[#7B61FF]/30 text-white resize-none" placeholder="Describe the event and kind of artist needed..." />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-
-                                <div className="pt-10 border-t border-white/5 flex justify-between items-center">
-                                    <button type="button" onClick={() => step > 1 ? setStep(s => s - 1) : setView('gateway')} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">
-                                        {step === 1 ? 'Cancel' : 'Previous'}
-                                    </button>
-                                    <button type="submit" disabled={isSubmitting} className="h-18 px-12 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,107,107,0.2)]">
-                                        {isSubmitting ? <Loader2 className="animate-spin" /> : (view === 'artist_form' ? (step === 3 ? 'FINISH ONBOARDING' : 'NEXT STEP') : (step === 2 ? 'SUBMIT REQUEST' : 'NEXT STEP'))}
-                                    </button>
+                            <div className="relative z-10 space-y-20">
+                                {/* Form Section Label */}
+                                <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-[#FF6B6B]">
+                                        <span className="text-sm font-black italic">{step}</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-[#FF6B6B] uppercase tracking-[0.4em]">Section {step}</p>
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">
+                                            {view === 'artist_form' ? ['Identity & Roots', 'Social Impact', 'The Portfolio'][step-1] : ['Client Identification', 'Talent Search Parameters'][step-1]}
+                                        </h3>
+                                    </div>
                                 </div>
-                            </form>
+
+                                <form onSubmit={
+                                    view === 'artist_form' 
+                                    ? (step === 3 ? handleArtistSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
+                                    : (step === 2 ? handleClientSubmit : (e) => { e.preventDefault(); setStep(s => s + 1); })
+                                } className="space-y-16">
+                                    
+                                    <AnimatePresence mode="wait">
+                                        {view === 'artist_form' ? (
+                                            <motion.div key={`artist-step-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
+                                                {step === 1 && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                                                        <FormField label="Professional Name" value={artistData.name} onChange={(e) => setArtistData({...artistData, name: e.target.value})} placeholder="e.g. DJ Shadow" />
+                                                        <FormField label="Direct Phone" value={artistData.phone} onChange={(e) => setArtistData({...artistData, phone: e.target.value})} placeholder="+91 XXXX XXXX" />
+                                                        <FormSelect label="Current Base" value={artistData.city} onChange={(e) => setArtistData({...artistData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                        <FormSelect label="Performance Vertical" value={artistData.categories} onChange={(e) => setArtistData({...artistData, categories: e.target.value})} options={TALENT_CATEGORIES.map(c => c.label)} />
+                                                    </div>
+                                                )}
+                                                {step === 2 && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                                                        <FormField label="Instagram Handle" value={artistData.instagram} onChange={(e) => setArtistData({...artistData, instagram: e.target.value})} placeholder="@handle" />
+                                                        <FormField label="Fanbase Count" type="number" value={artistData.instagramFollowers} onChange={(e) => setArtistData({...artistData, instagramFollowers: e.target.value})} placeholder="0" />
+                                                        <div className="md:col-span-2">
+                                                            <FormField label="Primary Portfolio Link" value={artistData.portfolio} onChange={(e) => setArtistData({...artistData, portfolio: e.target.value})} placeholder="YouTube, Soundcloud, or Website" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {step === 3 && (
+                                                    <div className="space-y-8">
+                                                        <FormField label="Professional Bio" isTextArea value={artistData.bio} onChange={(e) => setArtistData({...artistData, bio: e.target.value})} placeholder="Describe your style, experience, and the vibe you bring to a show..." />
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div key={`client-step-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
+                                                {step === 1 && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                                                        <FormField label="Authorized Representative" value={clientData.name} onChange={(e) => setClientData({...clientData, name: e.target.value})} placeholder="Full name" />
+                                                        <FormField label="Organization" value={clientData.org} onChange={(e) => setClientData({...clientData, org: e.target.value})} placeholder="Company or Entity" />
+                                                        <FormField label="Business Email" value={clientData.email} onChange={(e) => setClientData({...clientData, email: e.target.value})} placeholder="email@company.com" />
+                                                        <FormSelect label="Event Location" value={clientData.city} onChange={(e) => setClientData({...clientData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                    </div>
+                                                )}
+                                                {step === 2 && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                                                        <FormField label="Required Talent Type" value={clientData.category} onChange={(e) => setClientData({...clientData, category: e.target.value})} placeholder="Genre or category" />
+                                                        <FormField label="Allocated Budget" value={clientData.budget} onChange={(e) => setClientData({...clientData, budget: e.target.value})} placeholder="Range" />
+                                                        <div className="md:col-span-2">
+                                                            <FormField label="Gig Requirements" isTextArea value={clientData.requirement} onChange={(e) => setClientData({...clientData, requirement: e.target.value})} placeholder="Date range, venue details, and specific requirements..." />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    <div className="pt-12 flex items-center gap-10">
+                                        <button 
+                                            type="submit" 
+                                            disabled={isSubmitting} 
+                                            className="h-24 px-20 bg-white text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-4 shadow-[0_20px_60px_rgba(255,255,255,0.1)]"
+                                        >
+                                            {isSubmitting ? <Loader2 className="animate-spin" /> : (
+                                                <>
+                                                    {(view === 'artist_form' && step === 3) || (view === 'client_form' && step === 2) ? 'VERIFY & SUBMIT' : 'CONTINUE'}
+                                                    <ArrowRight size={16} />
+                                                </>
+                                            )}
+                                        </button>
+                                        
+                                        <button type="button" onClick={() => step > 1 ? setStep(s => s - 1) : setView('gateway')} className="text-[10px] font-black text-gray-700 hover:text-white uppercase tracking-widest transition-colors">
+                                            {step === 1 ? 'Cancel Application' : 'Back to previous section'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -654,7 +712,7 @@ const ArtistAnt = () => {
                                 <button 
                                     onClick={handleUpdateProfile}
                                     disabled={isSubmitting}
-                                    className="h-18 px-12 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(255,107,107,0.2)]"
+                                    className="h-22 px-14 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(255,107,107,0.2)]"
                                 >
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'SAVE CHANGES'}
                                 </button>
@@ -684,17 +742,17 @@ const ArtistAnt = () => {
                                     Warning: This will permanently remove your artist profile and eligibility for upcoming gigs. This cannot be undone.
                                 </p>
                             </div>
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-6">
                                 <button 
                                     onClick={handleDeleteProfile}
                                     disabled={isSubmitting}
-                                    className="h-18 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
+                                    className="h-22 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
                                 >
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'YES, DELETE PROFILE'}
                                 </button>
                                 <button 
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="h-18 w-full bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-white/10 transition-all"
+                                    className="h-22 w-full bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-white/10 transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -707,65 +765,51 @@ const ArtistAnt = () => {
     );
 };
 
-const FeatureCard = ({ icon, title, desc }) => (
-    <div className="p-10 bg-zinc-900/20 border border-white/5 rounded-[2.5rem] group hover:bg-zinc-900/40 hover:border-[#FF6B6B]/20 transition-all">
-        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-[#FF6B6B] mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all">{icon}</div>
-        <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-white mb-4">{title}</h4>
-        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight leading-relaxed group-hover:text-gray-300 transition-colors">{desc}</p>
-    </div>
-);
-
-const TimelineItem = ({ phase, title, desc, status }) => (
-    <div className="flex gap-8 items-start group">
-        <div className="text-center pt-1 min-w-[90px]">
-            <p className="text-[10px] font-black text-[#FF6B6B] uppercase tracking-[0.3em]">{phase}</p>
-            <p className="text-[9px] font-bold text-gray-700 uppercase mt-1.5 group-hover:text-[#FF6B6B]/40 transition-colors">{status}</p>
-        </div>
-        <div className="space-y-2">
-            <h4 className="text-[12px] font-black text-white uppercase tracking-widest group-hover:text-[#FF6B6B] transition-colors">{title}</h4>
-            <p className="text-[11px] font-bold text-gray-600 uppercase tracking-tight leading-relaxed">{desc}</p>
-        </div>
-    </div>
-);
-
-const FormField = ({ label, ...props }) => (
+const FormField = ({ label, isTextArea, ...props }) => (
     <div className="space-y-4">
-        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">{label}</label>
-        <input {...props} className="w-full h-18 bg-black/50 border border-white/5 rounded-2xl px-6 text-[12px] font-bold outline-none focus:border-[#FF6B6B]/20 transition-all text-white placeholder:text-gray-800 shadow-inner" />
+        <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] px-2">{label}</label>
+        <div className="relative group">
+            {isTextArea ? (
+                <textarea 
+                    {...props} 
+                    className="w-full h-64 bg-white/[0.02] border border-white/5 rounded-3xl px-8 py-8 text-[14px] font-medium outline-none focus:border-[#FF6B6B]/30 transition-all text-white placeholder:text-white/10 resize-none shadow-2xl focus:bg-white/[0.04]"
+                />
+            ) : (
+                <input 
+                    {...props} 
+                    className="w-full h-20 bg-white/[0.02] border border-white/5 rounded-full px-10 text-[14px] font-black outline-none focus:border-[#FF6B6B]/30 transition-all text-white placeholder:text-white/10 shadow-2xl focus:bg-white/[0.04]" 
+                />
+            )}
+            <div className="absolute inset-0 rounded-full border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
+        </div>
     </div>
 );
 
-const FormSelect = ({ label, options, ...props }) => (
-    <div className="space-y-4">
-        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">{label}</label>
-        <select {...props} className="w-full h-18 bg-black/50 border border-white/5 rounded-2xl px-6 text-[12px] font-bold text-white focus:border-[#FF6B6B]/20 transition-all outline-none appearance-none cursor-pointer shadow-inner">
-            <option value="" disabled className="bg-[#050505]">Select...</option>
-            {options.map(o => <option key={o} value={o} className="bg-[#050505]">{o.toUpperCase()}</option>)}
-        </select>
-    </div>
-);
-
-const StepIndicator = ({ current, total, labels }) => (
-    <div className="flex items-center justify-between px-4 max-w-2xl mx-auto">
-        {Array.from({ length: total }).map((_, i) => (
-            <React.Fragment key={i}>
-                <div className="flex flex-col items-center gap-4">
-                    <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border text-[14px] font-black",
-                        current === i + 1 ? "bg-gradient-to-br from-[#FF6B6B] to-[#7B61FF] text-white border-none shadow-[0_0_30px_rgba(255,107,107,0.4)]" :
-                        current > i + 1 ? "bg-white/10 text-white border-white/10" : "bg-black text-gray-800 border-white/5"
-                    )}>
-                        {i + 1}
-                    </div>
-                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-600">{labels[i]}</span>
-                </div>
-                {i < total - 1 && (
-                    <div className={cn("flex-1 h-[2px] mx-6", current > i + 1 ? 'bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]' : 'bg-white/5')} />
-                )}
-            </React.Fragment>
-        ))}
-    </div>
-);
+const FormSelect = ({ label, options, value, ...props }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="space-y-4 relative">
+            <label className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] px-2">{label}</label>
+            <div className="relative group">
+                <select 
+                    {...props} 
+                    value={value}
+                    onFocus={() => setIsOpen(true)}
+                    onBlur={() => setIsOpen(false)}
+                    className={cn(
+                        "w-full h-20 bg-white/[0.02] border border-white/5 rounded-full px-10 text-[14px] font-black outline-none appearance-none cursor-pointer transition-all shadow-2xl focus:bg-white/[0.04] focus:border-[#FF6B6B]/30",
+                        !value ? "text-white/10" : "text-white"
+                    )}
+                >
+                    <option value="" disabled className="bg-[#050505] text-white/10">Please select an option</option>
+                    {options.map(o => <option key={o} value={o} className="bg-[#050505] font-bold text-white">{o.toUpperCase()}</option>)}
+                </select>
+                <div className="absolute inset-0 rounded-full border border-[#FF6B6B]/0 group-focus-within:border-[#FF6B6B]/20 pointer-events-none transition-all duration-500" />
+                <ChevronDown className={cn("absolute right-8 top-1/2 -translate-y-1/2 text-gray-700 pointer-events-none transition-transform duration-300", isOpen ? "rotate-180 text-[#FF6B6B]" : "rotate-0")} size={18} />
+            </div>
+        </div>
+    );
+};
 
 const DashboardStat = ({ label, value, icon, color }) => (
     <div className="bg-white/5 border border-white/10 rounded-[1.5rem] p-8 min-w-[180px] space-y-3 group hover:border-white/20 transition-all">

@@ -22,13 +22,14 @@ import DocumentSeal from '../../components/ui/DocumentSeal';
 const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addProposal, updateProposal, proposals, user } = useStore();
+    const { addProposal, updateProposal, proposals, user, addToast } = useStore();
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
     const [activeTab, setActiveTab] = useState('1'); 
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [generatingSection, setGeneratingSection] = useState(null); // 'all', 'strategy', 'scope', 'deliverables', etc.
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
@@ -94,10 +95,9 @@ const ProposalGenerator = () => {
         const handleResize = () => {
             if (previewContainerRef.current) {
                 const containerWidth = previewContainerRef.current.clientWidth;
-                const containerHeight = previewContainerRef.current.clientHeight;
-                const scaleWidth = (containerWidth - 60) / 794;
-                const scaleHeight = (containerHeight - 60) / 1123;
-                setPreviewScale(Math.max(0.3, Math.min(1, scaleWidth, scaleHeight)));
+                // Aggressive Width-Fit
+                const scaleWidth = containerWidth / 794;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)));
             }
         };
         handleResize();
@@ -118,6 +118,21 @@ const ProposalGenerator = () => {
     };
 
     const isHidden = (f) => (formData.hiddenFields || []).includes(f);
+
+    const VisibilityToggle = ({ field, label }) => (
+        <button 
+            onClick={() => toggleFieldVisibility(field)}
+            className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-[8px] font-black uppercase tracking-[0.1em]",
+                isHidden(field) 
+                    ? "bg-red-500/5 border-red-500/20 text-red-400 hover:bg-red-500/10" 
+                    : "bg-[#39FF14]/5 border-[#39FF14]/20 text-[#39FF14]/70 hover:bg-[#39FF14]/10 hover:text-[#39FF14]"
+            )}
+        >
+            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
+            {label || (isHidden(field) ? "Hidden" : "Live")}
+        </button>
+    );
 
     const getPaginatedPages = () => {
         const pages = [];
@@ -150,7 +165,7 @@ const ProposalGenerator = () => {
         return pages;
     };
     const handleSave = async () => {
-        setIsGenerating(true);
+        setIsSaving(true);
         try {
             const proposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
             if (id) await updateProposal(id, proposalData);
@@ -163,11 +178,12 @@ const ProposalGenerator = () => {
         } catch (error) {
             alert("Save Error: " + error.message);
         } finally {
-            setIsGenerating(false);
+            setIsSaving(false);
         }
     };
     const handleGenerateProposal = async (prompt) => {
         setIsGenerating(true);
+        setGeneratingSection('all');
         try {
             const data = await generateFullDocument('proposal', prompt, 'Premium', {});
             setFormData(prev => ({
@@ -210,6 +226,7 @@ const ProposalGenerator = () => {
             alert("AI Generation failed: " + error.message);
         } finally {
             setIsGenerating(false);
+            setGeneratingSection(null);
         }
     };
 
@@ -224,7 +241,7 @@ const ProposalGenerator = () => {
     };
 
     const generatePDF = async () => {
-        setIsGenerating(true);
+        setIsSaving(true);
         const originalScale = previewScale;
         setPreviewScale(1);
         await new Promise(r => setTimeout(r, 800));
@@ -251,7 +268,7 @@ const ProposalGenerator = () => {
             console.error(error);
         } finally {
             setPreviewScale(originalScale);
-            setIsGenerating(false);
+            setIsSaving(false);
         }
     };
 
@@ -266,19 +283,6 @@ const ProposalGenerator = () => {
         { id: '5', label: 'Commercials', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
         { id: '6', label: 'Settlement', icon: CreditCard, desc: 'Payment Terms', visibilityKey: 'commercials' }
     ];
-
-    const VisibilityToggle = ({ field, label }) => (
-        <button 
-            onClick={() => toggleFieldVisibility(field)} 
-            className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-[9px] font-black uppercase tracking-widest",
-                isHidden(field) ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-neon-green/10 border-neon-green/20 text-neon-green"
-            )}
-        >
-            {isHidden(field) ? <EyeOff size={10} /> : <Eye size={10} />}
-            {label || (isHidden(field) ? 'Hidden' : 'Visible')}
-        </button>
-    );
 
     // Render markdown-formatted text into styled JSX for the document preview
     const renderFormatted = (text, baseClass = '') => {
@@ -386,8 +390,8 @@ const ProposalGenerator = () => {
 
 
                 {/* Editor Area */}
-                <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
-                    <div className="max-w-3xl mx-auto">
+                <section className="flex-1 overflow-y-auto px-8 py-16 scrollbar-hide bg-[#050505] pb-32">
+                    <div className="max-w-7xl mx-auto space-y-12">
                         
                         <AIPromptBox 
                             onGenerate={handleGenerateProposal} 
@@ -396,39 +400,55 @@ const ProposalGenerator = () => {
                             forceClear={promptBoxClear}
                         />
 
-                        <div className="mb-8 flex items-center justify-between">
-                            <div>
-                                <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic mb-1">{currentTab?.label}.</h2>
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6">{currentTab?.desc}</p>
-                                <div className="w-16 h-1.5 bg-neon-green" />
+                        <div className="flex flex-col md:flex-row items-end justify-between mb-8 pb-6 border-b border-white/5 group/header">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 mb-1">
+                                    Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                </p>
+                                <h2 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                    {currentTab?.label}<span className="text-neon-green">.</span>
+                                </h2>
+                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest pt-1">
+                                    {currentTab?.desc}
+                                </p>
                             </div>
-                            {currentTab?.visibilityKey && (
-                                <div className="flex items-center gap-4">
-                                    <button 
-                                        onClick={async () => {
-                                            setGeneratingSection(currentTab.id);
-                                            setIsGenerating(true);
-                                            try {
-                                                // Call AI to refine ONLY this section
-                                                const refined = await generateFullDocument(`Refine the ${currentTab.label} section for: ${formData.campaignName}. Current: ${JSON.stringify(formData)}`, 'proposal');
-                                                // Merge refined data
-                                                setFormData(prev => ({...prev, ...refined}));
-                                            } catch (e) {
-                                                alert(e.message);
-                                            } finally {
-                                                setIsGenerating(false);
-                                                setGeneratingSection(null);
-                                            }
-                                        }}
-                                        disabled={isGenerating}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#39FF14]/10 text-[#39FF14] rounded-xl hover:bg-[#39FF14] hover:text-black transition-all text-[9px] font-black uppercase tracking-widest border border-[#39FF14]/20"
-                                    >
-                                        {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                                        Refine Section
-                                    </button>
-                                    <VisibilityToggle field={currentTab.visibilityKey} label={`Page ${isHidden(currentTab.visibilityKey) ? 'Disabled' : 'Enabled'}`} />
+
+                            <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+                                {/* Compact Progress Line */}
+                                <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
+                                        style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
+                                    />
                                 </div>
-                            )}
+
+                                {currentTab?.visibilityKey && (
+                                    <div className="flex items-center gap-2 translate-y-1">
+                                        <button 
+                                            onClick={async () => {
+                                                setGeneratingSection(currentTab.id);
+                                                setIsGenerating(true);
+                                                try {
+                                                    const refined = await generateFullDocument('proposal', `Refine the ${currentTab.label} section for: ${formData.campaignName}. Current state for context: ${JSON.stringify(formData)}`, 'Premium');
+                                                    setFormData(prev => ({...prev, ...refined}));
+                                                    addToast(`AI Refinement successful for ${currentTab.label}`, 'success');
+                                                } catch (e) {
+                                                    addToast(e.message, 'error', e.code);
+                                                } finally {
+                                                    setIsGenerating(false);
+                                                    setGeneratingSection(null);
+                                                }
+                                            }}
+                                            disabled={isGenerating}
+                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 text-gray-400 rounded-full hover:bg-neon-green/10 hover:text-neon-green transition-all text-[8px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-neon-green/20"
+                                        >
+                                            {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={10} /> : <Sparkles size={10} />}
+                                            Refine
+                                        </button>
+                                        <VisibilityToggle field={currentTab.visibilityKey} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {activeTab === '1' && (
@@ -481,12 +501,12 @@ const ProposalGenerator = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col justify-end space-y-4">
-                                                    <div className="p-6 bg-neon-green/5 rounded-3xl border border-neon-green/10 space-y-2">
+                                                    <div className="p-4 bg-neon-green/5 rounded-2xl border border-neon-green/10 space-y-1.5">
                                                         <div className="flex items-center gap-2 text-neon-green">
-                                                            <Sparkles size={14} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Smart Extraction</span>
+                                                            <Sparkles size={12} />
+                                                            <span className="text-[8px] font-black uppercase tracking-widest">Smart Extraction</span>
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-gray-500 leading-relaxed uppercase">Our AI will automatically map names, objectives, deliverables, and line items from your source.</p>
+                                                        <p className="text-[8px] font-bold text-gray-600 leading-relaxed uppercase">Our AI will automatically map names, objectives, deliverables, and line items from your source.</p>
                                                     </div>
                                                     <Button 
                                                         onClick={async () => {
@@ -495,18 +515,19 @@ const ProposalGenerator = () => {
                                                             setGeneratingSection('all');
                                                             try {
                                                                 await handleGenerateProposal(bulkRawText);
+                                                                addToast("Proposal generated successfully", "success");
                                                                 setActiveTab('1'); // Move to Identity after success
                                                             } catch (e) {
-                                                                alert(e.message);
+                                                                addToast(e.message, 'error', e.code);
                                                             } finally {
                                                                 setIsGenerating(false);
                                                                 setGeneratingSection(null);
                                                             }
                                                         }} 
                                                         disabled={isGenerating || !bulkRawText.trim()}
-                                                        className="h-20 rounded-[24px] bg-neon-green text-black text-[12px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_0_40px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-all w-full"
+                                                        className="h-14 rounded-xl bg-neon-green text-black text-[10px] font-black uppercase tracking-[0.2em] gap-2 shadow-[0_0_30px_rgba(57,255,20,0.2)] hover:scale-[1.02] transition-all w-full"
                                                     >
-                                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={20} /> : <Zap size={20} />}
+                                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
                                                         Initialize AI Build
                                                     </Button>
                                                 </div>
@@ -514,6 +535,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                 )}
+                                {activeTab === '1' && (
                                     <div className="space-y-12">
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-2">
@@ -813,53 +835,6 @@ const ProposalGenerator = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Client Authorization */}
-                                                <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[40px] space-y-8">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tighter italic">Client Authorization</h3>
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Customer sign-off area</p>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button 
-                                                                onClick={() => document.getElementById('client-sig-upload').click()}
-                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
-                                                            >
-                                                                <Upload size={12} /> Upload Sign
-                                                            </button>
-                                                            <input 
-                                                                type="file" 
-                                                                id="client-sig-upload" 
-                                                                className="hidden" 
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        const reader = new FileReader();
-                                                                        reader.onload = (re) => setFormData({...formData, clientSignature: re.target.result});
-                                                                        reader.readAsDataURL(file);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="relative h-48 bg-white rounded-[32px] flex items-center justify-center overflow-hidden">
-                                                        {formData.clientSignature ? (
-                                                            <div className="relative group w-full h-full flex items-center justify-center p-8">
-                                                                <img src={formData.clientSignature} alt="Client Signature" className="max-h-full object-contain" />
-                                                                <button 
-                                                                    onClick={() => setFormData({...formData, clientSignature: ''})}
-                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] font-black text-black/10 uppercase tracking-[0.5em]">Sign Here</span>
-                                                        )}
-                                                    </div>
-                                                </div>
                                             </div>
                                         )}
 
@@ -916,7 +891,7 @@ const ProposalGenerator = () => {
                 {/* Doc Preview */}
                 <section className={cn(
                     "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    "w-full lg:w-[500px] 2xl:w-[750px] border-l border-white/5",
+                    "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
                     <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
@@ -931,9 +906,23 @@ const ProposalGenerator = () => {
                         </div>
                     </div>
 
-                    <div ref={previewContainerRef} className="flex-1 bg-zinc-950 flex flex-col items-center justify-start p-8 overflow-y-auto relative">
-                        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center', height: `${1123 * previewScale}px` }} className="transition-transform duration-500 mb-20">
-                            <AnimatePresence mode="wait">
+                    <div ref={previewContainerRef} className="flex-1 bg-[#050505] flex flex-col items-center justify-start p-0 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+                        <div style={{ 
+                            width: `${794 * previewScale}px`,
+                            height: `${1123 * previewScale}px`,
+                            flexShrink: 0,
+                            position: 'relative'
+                        }}>
+                            <div style={{ 
+                                width: '794px', 
+                                height: '1123px', 
+                                transform: `scale(${previewScale})`, 
+                                transformOrigin: 'top left',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0
+                            }}>
+                                <AnimatePresence mode="wait">
                                 <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px]">
                                     <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                                         <div className="flex flex-col gap-6 items-start">
@@ -1164,6 +1153,7 @@ const ProposalGenerator = () => {
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1411,10 +1401,11 @@ const ProposalGenerator = () => {
                                             setGeneratingSection('all');
                                             try {
                                                 await handleGenerateProposal(bulkRawText);
+                                                addToast("Import successful", "success");
                                                 setBulkRawText('');
                                                 setShowBulkImport(false);
                                             } catch (e) {
-                                                alert(e.message);
+                                                addToast(e.message, 'error', e.code);
                                             } finally {
                                                 setIsGenerating(false);
                                                 setGeneratingSection(null);

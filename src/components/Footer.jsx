@@ -82,8 +82,15 @@ const Footer = () => {
 
                 {/* Bottom Bar */}
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
-                        &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.
+                    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12">
+                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
+                            &copy; {new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.
+                        </div>
+                        
+                        <div className="flex items-center gap-6">
+                            <Link to="/terms" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors">TERMS</Link>
+                            <Link to="/privacy" className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors">PRIVACY</Link>
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-800">
@@ -93,6 +100,7 @@ const Footer = () => {
                         </div>
                     </div>
                 </div>
+
             </div>
         </footer>
     );
