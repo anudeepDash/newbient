@@ -77,7 +77,7 @@ function App() {
         if (loading || !authInitialized) {
             setShowProgress(true);
         }
-    }, 500);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [loading, authInitialized]);
