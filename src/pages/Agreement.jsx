@@ -315,7 +315,7 @@ const Agreement = () => {
                                                     <div className="h-20 flex items-end justify-end">
                                                         {displayAgreement.status === 'Executed' ? (
                                                             displayAgreement.approvalMetadata?.clientSignature ? (
-                                                                <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                                <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                             ) : (
                                                                 <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
                                                             )
@@ -353,7 +353,7 @@ const Agreement = () => {
                     ))}
                 </div>
 
-                {displayAgreement.status !== 'Executed' && !isExporting && (
+                {displayAgreement.showSignatures && displayAgreement.status !== 'Executed' && !isExporting && (
                     <div className="w-full max-w-[794px] space-y-10 no-print">
                         <div className="flex items-center justify-between border-b border-white/5 pb-8">
                             <div className="space-y-2">
@@ -373,7 +373,7 @@ const Agreement = () => {
                             {clientSignature ? (
                                 <div className="w-full space-y-8">
                                     <div className="h-40 flex items-center justify-center">
-                                        <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain brightness-0 invert" />
+                                        <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain invert" />
                                     </div>
                                     <div className="text-center border-t border-white/5 pt-8 flex items-center justify-center gap-6">
                                         <div className="space-y-1">

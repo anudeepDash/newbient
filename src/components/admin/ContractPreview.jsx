@@ -173,7 +173,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                   <div className="h-20 flex items-end">
                     {formData.showSignatures && (
                       formData.providerSignature ? (
-                        <img src={formData.providerSignature} className="h-full w-auto object-contain grayscale brightness-0" alt="Provider Signature" crossOrigin="anonymous" />
+                        <img src={formData.providerSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Provider Signature" crossOrigin="anonymous" />
                       ) : (
                         <p className="text-4xl font-signature text-black leading-none opacity-40">Authorized Signatory</p>
                       )
@@ -189,7 +189,7 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                   <div className="h-20 flex items-end justify-end">
                     {formData.showSignatures && (
                       formData.clientSignature ? (
-                        <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale brightness-0" alt="Client Signature" crossOrigin="anonymous" />
+                        <img src={formData.clientSignature} className="h-full w-auto object-contain grayscale mix-blend-multiply" alt="Client Signature" crossOrigin="anonymous" />
                       ) : (
                         <div className="w-full h-px bg-black/10 border-dashed border-t" />
                       )
