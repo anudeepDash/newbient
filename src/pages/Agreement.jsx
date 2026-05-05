@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import DocumentSeal from '../components/ui/DocumentSeal';
-import SignaturePad from '../components/ui/SignaturePad';
+import SignatureModal from '../components/ui/SignatureModal';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
@@ -51,6 +51,7 @@ const Agreement = () => {
     const [ipAddress, setIpAddress] = useState('Detecting...');
     const [clientSignature, setClientSignature] = useState(null);
     const [scale, setScale] = useState(1);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const agreementRef = useRef(null);
 
     useEffect(() => {
@@ -315,7 +316,11 @@ const Agreement = () => {
                                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
                                                     <div className="h-20 flex items-end justify-end">
                                                         {displayAgreement.status === 'Executed' ? (
-                                                            <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
+                                                            displayAgreement.approvalMetadata?.clientSignature ? (
+                                                                <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
+                                                            ) : (
+                                                                <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
+                                                            )
                                                         ) : (
                                                             <div className="w-full h-px bg-black opacity-20 border-dashed border-t" />
                                                         )}
@@ -351,10 +356,10 @@ const Agreement = () => {
                 </div>
 
                 {displayAgreement.status !== 'Executed' && !isExporting && (
-                    <div className="w-full max-w-[794px] bg-[#0a0a0a] rounded-3xl md:rounded-[2.5rem] p-8 md:p-12 text-white space-y-10 no-print shadow-2xl border border-white/5">
+                    <div className="w-full max-w-[794px] space-y-10 no-print">
                         <div className="flex items-center justify-between border-b border-white/5 pb-8">
                             <div className="space-y-2">
-                                <h3 className="text-3xl font-black uppercase tracking-tighter italic">Execute Instrument.</h3>
+                                <h3 className="text-3xl font-black uppercase tracking-tighter italic text-white">Execute Instrument.</h3>
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Authorize this strategic agreement</p>
                             </div>
                             <div className="flex items-center gap-2 px-4 py-2 bg-[#A855F7]/10 rounded-full border border-[#A855F7]/20">
@@ -363,74 +368,68 @@ const Agreement = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-10">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] px-2">Authorized Representative</label>
-                                <input 
-                                    value={signatureName} 
-                                    onChange={e => setSignatureName(e.target.value)} 
-                                    placeholder="ENTER FULL LEGAL NAME" 
-                                    className="w-full bg-white/5 border border-white/10 h-20 px-8 rounded-2xl text-lg font-bold text-white outline-none focus:border-[#A855F7]/40 transition-all uppercase tracking-widest" 
-                                />
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between px-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Digital Signature</label>
-                                    <button 
-                                        onClick={() => document.getElementById('agreement-sig-upload').click()}
-                                        className="text-[9px] font-black uppercase tracking-widest text-[#A855F7] hover:text-white transition-all flex items-center gap-2 bg-[#A855F7]/10 px-4 py-1.5 rounded-full border border-[#A855F7]/20"
-                                    >
-                                        <Upload size={12} /> Upload Sign
-                                    </button>
-                                    <input 
-                                        type="file" 
-                                        id="agreement-sig-upload" 
-                                        className="hidden" 
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onload = (re) => setClientSignature(re.target.result);
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div className="bg-white rounded-[2.5rem] overflow-hidden h-60 border-2 border-dashed border-white/10 relative group/pad">
-                                    {clientSignature ? (
-                                        <div className="relative group w-full h-full flex items-center justify-center p-12">
-                                            <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
-                                            <button 
-                                                onClick={() => setClientSignature(null)}
-                                                className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                        <div 
+                            onClick={() => setIsSignatureModalOpen(true)}
+                            className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-8 hover:bg-white/[0.02] hover:border-[#A855F7]/20 transition-all shadow-2xl relative overflow-hidden"
+                        >
+                            {clientSignature ? (
+                                <div className="w-full space-y-8">
+                                    <div className="h-40 flex items-center justify-center">
+                                        <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain brightness-0 invert" />
+                                    </div>
+                                    <div className="text-center border-t border-white/5 pt-8 flex items-center justify-center gap-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[12px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                            <p className="text-[8px] text-gray-500 uppercase tracking-widest">Signatory Representative</p>
                                         </div>
-                                    ) : (
-                                        <SignaturePad 
-                                            onSave={setClientSignature}
-                                            className="h-full w-full"
-                                        />
-                                    )}
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setClientSignature(null);
+                                            }}
+                                            className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-[#A855F7]/10 transition-all duration-500">
+                                        <PenTool size={36} className="text-gray-400 group-hover:text-[#A855F7]" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[13px] font-black text-white uppercase tracking-[0.2em]">Click to sign agreement</p>
+                                        <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-[0.3em]">Type, Draw or Upload</p>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="pt-6 space-y-6">
-                            <Button 
-                                onClick={() => setIsVerifying(true)}
-                                disabled={!signatureName.trim() || !clientSignature}
-                                className="w-full h-20 bg-[#A855F7] text-black font-black uppercase tracking-[0.3em] text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(168,85,247,0.3)] disabled:opacity-30 disabled:grayscale"
-                            >
-                                <Zap size={18} className="mr-3" /> Authorize & Execute Instrument
-                            </Button>
+                            {clientSignature && (
+                                <Button 
+                                    onClick={() => setIsVerifying(true)}
+                                    disabled={!signatureName.trim()}
+                                    className="w-full h-20 bg-[#A855F7] text-black font-black uppercase tracking-[0.3em] text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(168,85,247,0.3)]"
+                                >
+                                    <Zap size={18} className="mr-3" /> Authorize & Execute Instrument
+                                </Button>
+                            )}
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center italic">Digital footprints (IP, UA, Timestamp) will be attached for verification.</p>
                         </div>
                     </div>
                 )}
+                
+                <SignatureModal 
+                    isOpen={isSignatureModalOpen}
+                    onClose={() => setIsSignatureModalOpen(false)}
+                    onSave={(sig, name) => {
+                        setClientSignature(sig);
+                        setSignatureName(name);
+                    }}
+                    initialName={signatureName}
+                />
             </main>
 
             <AnimatePresence>
