@@ -247,14 +247,16 @@ const EventScanner = () => {
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed">Please configure the target event from the console to initialize the optical scanner.</p>
                         </motion.div>
                     ) : (
-                        <div className="w-full max-w-lg flex flex-col items-center gap-6 relative z-10 h-full justify-center">
+                        <div className="w-full max-w-sm md:max-w-lg flex flex-col items-center gap-6 relative z-10 h-full justify-center">
                             {/* Visual Scanner Frame */}
-                            <div className="w-full aspect-square bg-black/80 backdrop-blur-xl border border-white/10 rounded-[3rem] overflow-hidden relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col group">
+                            <div className="w-full aspect-[4/5] md:aspect-square bg-black/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden relative shadow-[0_0_100px_rgba(0,0,0,0.8)] shrink-0">
                                 {isScanning ? (
-                                    <div className="flex-1 relative bg-black">
-                                        <div id="reader" className="w-full h-full object-cover scanner-override flex items-center justify-center overflow-hidden" />
+                                    <>
+                                        <div className="absolute inset-0 bg-black overflow-hidden">
+                                            <div id="reader" className="w-full h-full" />
+                                        </div>
                                         {/* HUD Overlay */}
-                                        <div className="absolute inset-0 border-[2px] border-white/10 rounded-[3rem] z-50 pointer-events-none">
+                                        <div className="absolute inset-0 border-[2px] border-white/10 z-50 pointer-events-none rounded-[2.5rem] md:rounded-[3rem]">
                                             {/* Corner Reticles */}
                                             <div className="absolute top-4 left-4 md:top-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-l-[4px] md:border-t-[6px] md:border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
                                             <div className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-r-[4px] md:border-t-[6px] md:border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
@@ -264,17 +266,18 @@ const EventScanner = () => {
                                             {/* Scanning Laser */}
                                             <div className="absolute inset-x-8 top-1/2 h-1 bg-neon-green shadow-[0_0_30px_#39FF14] animate-[scan_3s_ease-in-out_infinite]" />
                                             
-                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 text-center flex flex-col items-center gap-4 pointer-events-auto">
+                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 flex flex-col items-center gap-4 pointer-events-auto">
                                                 <button 
                                                     onClick={toggleCamera} 
-                                                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all"
+                                                    className="flex items-center gap-2 bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
                                                 >
                                                     <RefreshCw size={14} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
                                                     Swap Camera
                                                 </button>
+                                                <span className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Scanning Pass...</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8 text-center bg-zinc-900/40 relative">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80" />
@@ -397,15 +400,22 @@ const EventScanner = () => {
             </div>
 
             <style>{`
-                #reader { border: none !important; width: 100% !important; background: #000; text-align: center; display: flex; flex-direction: column; }
-                #reader > div { width: 100%; display: flex; flex-direction: column; align-items: center; }
-                #reader__scan_region { background: transparent !important; min-height: 300px; display: flex; align-items: center; justify-content: center; width: 100%; }
-                #reader__scan_region img { display: none !important; }
-                
+                #reader { border: none !important; width: 100% !important; height: 100% !important; background: #000; position: relative; }
+                #reader > div { display: none !important; } /* Hide all library-injected wrappers */
                 #reader__dashboard_section_csr { display: none !important; }
                 #reader__dashboard_section_swaplink { display: none !important; }
                 
-                #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 3rem; margin: 0; }
+                #reader video { 
+                    object-fit: cover !important; 
+                    width: 100% !important; 
+                    height: 100% !important; 
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    margin: 0 !important; 
+                    padding: 0 !important;
+                    display: block !important;
+                }
                 
                 @keyframes scan {
                     0%, 100% { top: 15%; opacity: 0; }
