@@ -215,9 +215,9 @@ const VolunteerGigManager = () => {
                             <Button 
                                 onClick={handleSave} 
                                 disabled={saving}
-                                className="h-14 px-10 bg-neon-green text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.2)] hover:scale-105 transition-all border-none"
+                                className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3"
                             >
-                                {saving ? <Loader className="animate-spin mr-2" size={18} /> : <Save className="mr-2" size={18} />}
+                                {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
                                 {saving ? 'Processing...' : 'Save Changes'}
                             </Button>
                         </div>
@@ -484,9 +484,9 @@ const VolunteerGigManager = () => {
                                     <Button 
                                         type="submit" 
                                         disabled={saving}
-                                        className="h-14 px-10 bg-neon-green text-black font-black uppercase tracking-[0.2em] font-heading italic rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 transition-all outline-none border-none flex items-center justify-center min-w-[200px]"
+                                        className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] italic rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 min-w-[240px]"
                                     >
-                                        {saving ? <Loader className="animate-spin mr-3 h-5 w-5" /> : <Save className="mr-3 h-5 w-5" />}
+                                        {saving ? <Loader className="animate-spin h-6 w-6" /> : <Save className="h-6 w-6" />}
                                         {editingId ? 'UPDATE GIG' : 'SAVE GIG'}
                                     </Button>
                                 </div>
@@ -558,8 +558,8 @@ const VolunteerGigManager = () => {
                     <Button onClick={() => {
                         resetForm();
                         setIsAdding(true);
-                    }} className="h-14 px-10 bg-neon-green text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.2)] hover:scale-105 transition-all outline-none border-none">
-                        <Plus className="mr-2" size={18} /> New Assignment
+                    }} className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all outline-none border-none flex items-center justify-center gap-3">
+                        <Plus size={20} /> New Assignment
                     </Button>
                 </div>
 

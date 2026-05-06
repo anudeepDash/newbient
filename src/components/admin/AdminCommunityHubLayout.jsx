@@ -11,7 +11,6 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     const defaultTabs = [
         { name: 'Volunteer Gigs', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
         { name: 'Community Forms', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
-        { name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
     ];
 
     const tabs = customTabs || defaultTabs;
@@ -116,8 +115,21 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                     )}
                     {children}
                 </div>
+
+                {/* Footer Return Link */}
+                <div className="mt-12 flex justify-center md:justify-end">
+                    <Link 
+                        to="/admin" 
+                        className="group flex items-center gap-4 px-10 py-5 bg-white/[0.03] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] rounded-[2rem] transition-all duration-500 shadow-xl"
+
+                    >
+                        <LayoutGrid size={16} className="text-neon-blue group-hover:rotate-90 transition-transform duration-500" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-white transition-colors">Return to Hub</span>
+                    </Link>
+                </div>
             </div>
         </div>
+
     );
 };
 

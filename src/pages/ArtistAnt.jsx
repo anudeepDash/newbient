@@ -249,15 +249,17 @@ const ArtistAnt = () => {
                                         initial={{ opacity: 0, y: -40, scale: 0.8 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         transition={{ duration: 1.2, ease: "easeOut" }}
-                                        className="relative flex justify-center -mb-16 sm:-mb-24 md:-mb-40 lg:-mb-48 -mt-12 sm:-mt-20 md:-mt-32"
+                                        className="relative flex justify-center -mb-8 sm:-mb-24 md:-mb-40 lg:-mb-48 mt-4 sm:-mt-20 md:-mt-32"
                                     >
                                         <div className="absolute inset-0 bg-[#FF6B6B]/15 blur-[120px] md:blur-[180px] rounded-full scale-110 animate-pulse"></div>
                                         <img 
                                             src={artistantLogo} 
                                             alt="Artistant" 
-                                            className="h-48 sm:h-64 md:h-[32rem] lg:h-[40rem] w-auto relative z-10 drop-shadow-[0_0_100px_rgba(255,107,107,0.6)] hover:scale-[1.01] transition-transform duration-1000" 
+                                            className="h-56 sm:h-64 md:h-[32rem] lg:h-[40rem] w-auto relative z-10 drop-shadow-[0_0_100px_rgba(255,107,107,0.6)] hover:scale-[1.01] transition-transform duration-1000" 
                                         />
+
                                     </motion.div>
+
 
                                     <motion.div 
                                         initial={{ opacity: 0, y: 20 }} 
@@ -265,9 +267,10 @@ const ArtistAnt = () => {
                                         transition={{ duration: 0.8, delay: 0.4 }}
                                         className="relative z-30 w-full mx-auto px-4"
                                     >
-                                        <h1 className="text-[16px] sm:text-xl md:text-2xl lg:text-3xl font-black font-heading tracking-[0.1em] sm:tracking-[0.25em] uppercase italic leading-none text-white whitespace-nowrap overflow-visible opacity-90 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+                                        <h1 className="text-[20px] sm:text-2xl md:text-3xl lg:text-4xl font-black font-heading tracking-[0.1em] sm:tracking-[0.25em] uppercase italic leading-none text-white opacity-90 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
                                             YOUR ARTIST. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF] not-italic">YOUR ASSISTANT.</span>
                                         </h1>
+
                                     </motion.div>
                                 </div>
 
@@ -337,9 +340,10 @@ const ArtistAnt = () => {
                             <div className="max-w-7xl mx-auto">
                                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 md:mb-16">
                                     <div className="space-y-4 text-left">
-                                        <h2 className="text-[22px] sm:text-3xl md:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
+                                        <h2 className="text-3xl sm:text-4xl md:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
                                             THE TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SPECTRUM.</span>
                                         </h2>
+
                                         <p className="text-gray-600 text-[10px] md:text-base font-bold uppercase tracking-widest">Bridging every performance vertical with precision matching.</p>
                                     </div>
 
@@ -397,9 +401,10 @@ const ArtistAnt = () => {
                                         <Shield size={16} className="text-[#FF6B6B]" />
                                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B6B]">The Bookability Engine™</span>
                                     </div>
-                                    <h2 className="text-[10px] sm:text-2xl md:text-5xl lg:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none whitespace-nowrap">
+                                    <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-heading uppercase italic tracking-tighter leading-none">
                                         CONNECTING SUPPLY AND DEMAND <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SECURELY.</span>
                                     </h2>
+
                                     <p className="text-gray-400 text-base md:text-xl font-bold uppercase tracking-widest max-w-3xl mx-auto">
                                         Empowering the creator economy with a trust-first booking infrastructure.
                                     </p>
@@ -454,9 +459,10 @@ const ArtistAnt = () => {
                                         <div className="w-2 h-2 bg-[#FF6B6B] rounded-full animate-ping" />
                                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Launching Soon</span>
                                     </div>
-                                    <h2 className="text-[20px] sm:text-4xl md:text-8xl font-black font-heading uppercase italic tracking-tighter leading-none whitespace-nowrap">
+                                    <h2 className="text-3xl sm:text-5xl md:text-8xl font-black font-heading uppercase italic tracking-tighter leading-none">
                                         THE COMPLETE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">ECOSYSTEM.</span>
                                     </h2>
+
                                     <p className="text-gray-400 text-base md:text-xl font-bold uppercase tracking-widest max-w-4xl mx-auto">
                                         We're not just building a directory; we're building the entire operating system for India's live performance economy.
                                     </p>
@@ -499,9 +505,10 @@ const ArtistAnt = () => {
                 {isFormView && (
                     <motion.div key="form" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="max-w-6xl mx-auto pt-32 md:pt-48 px-6 pb-40">
                         <div className="text-center mb-12 md:mb-24 relative">
-                            <h2 className="text-[26px] sm:text-4xl md:text-9xl font-black font-heading uppercase italic tracking-tighter leading-tight md:leading-none mb-6 whitespace-nowrap">
+                            <h2 className="text-4xl sm:text-6xl md:text-9xl font-black font-heading uppercase italic tracking-tighter leading-tight md:leading-none mb-6">
                                 {view === 'artist_form' ? "JOIN THE" : "GET A"} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">SCOUT.</span>
                             </h2>
+
                             <div className="flex items-center justify-center gap-4">
                                 <div className="h-[1px] w-8 md:w-12 bg-white/10" />
                                 <p className="text-gray-600 text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.5em]">Phase 1: Direct Enrollment</p>
@@ -614,9 +621,10 @@ const ArtistAnt = () => {
                         <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-3xl md:rounded-[3.5rem] p-8 md:p-16 flex flex-col md:flex-row justify-between items-center gap-12 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B6B]/5 blur-3xl -mr-32 -mt-32" />
                             <div className="space-y-6 text-center md:text-left relative z-10">
-                                <h2 className="text-[28px] sm:text-4xl md:text-7xl font-black font-heading uppercase italic tracking-tighter leading-none whitespace-nowrap">
+                                <h2 className="text-4xl sm:text-5xl md:text-7xl font-black font-heading uppercase italic tracking-tighter leading-none">
                                     ARTIST <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF]">HUB.</span>
                                 </h2>
+
                                 <div className="flex items-center gap-6 justify-center md:justify-start">
                                     <div className="w-16 h-16 bg-[#FF6B6B]/10 rounded-2xl border border-[#FF6B6B]/20 flex items-center justify-center text-[#FF6B6B] shadow-[0_0_20px_rgba(255,107,107,0.1)]">
                                         <UserCheck size={32} />
@@ -742,10 +750,11 @@ const ArtistAnt = () => {
                                 <button 
                                     onClick={handleUpdateProfile}
                                     disabled={isSubmitting}
-                                    className="h-22 px-14 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:scale-105 transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(255,107,107,0.2)]"
+                                    className="h-28 px-24 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-[0.3em] text-[12px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(255,107,107,0.3)]"
                                 >
                                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'SAVE CHANGES'}
                                 </button>
+
                             </div>
                         </div>
                     </motion.div>

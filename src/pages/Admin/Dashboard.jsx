@@ -49,6 +49,7 @@ import artistantLogo from '../../assets/logo/artistant.png';
 const Dashboard = () => {
     const { 
         invoices, proposals, agreements, concerts, portfolio, announcements, user, 
+        artists, clientRequests, upcomingEvents, ticketOrders,
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.cards || {};
@@ -115,23 +116,29 @@ const Dashboard = () => {
 
     const stats = [
         { 
+            label: 'Artistant Hub', 
+            value: artists?.length || 0, 
+            icon: Users, color: 'neon-blue', detail: `${clientRequests?.filter(r => r.status === 'pending').length || 0} Pending Requests`, link: '/admin/artistant' 
+        },
+        { 
+            label: 'Ticketing Ops', 
+            value: upcomingEvents?.filter(e => e.isTicketed).length || 0, 
+            icon: Ticket, color: 'neon-pink', detail: `${ticketOrders?.filter(o => o.status === 'pending').length || 0} Pending Verifications`, link: '/admin/ticketing' 
+        },
+        { 
             label: 'Settlements', 
-            value: user?.role === 'editor' ? invoices.filter(i => i.createdBy === user.uid).length : invoices.length, 
-            icon: FileText, color: 'neon-blue', detail: 'Total Invoices', link: '/admin/invoices' 
+            value: invoices.length, 
+            icon: DollarSign, color: 'neon-green', detail: `Total Revenue Pipeline`, link: '/admin/invoices' 
         },
         { 
-            label: 'Proposals', 
-            value: user?.role === 'editor' ? proposals.filter(p => p.createdBy === user.uid).length : (proposals?.length || 0), 
-            icon: FileSpreadsheet, color: 'neon-green', detail: 'Quotation Pipeline', link: '/admin/proposals' 
+            label: 'Active Briefs', 
+            value: (proposals?.length || 0) + (agreements?.length || 0), 
+            icon: FileSpreadsheet, color: 'neon-purple', detail: 'Combined Contracts', link: '/admin/proposals' 
         },
-        { 
-            label: 'Contracts', 
-            value: user?.role === 'editor' ? agreements.filter(a => a.createdBy === user.uid).length : (agreements?.length || 0), 
-            icon: Scale, color: 'neon-purple', detail: 'Legal Repository', link: '/admin/agreements' 
-        },
-
-        { label: 'Updates', value: announcements.length, icon: Radio, color: 'yellow-400', detail: 'Public Announcements', link: '/admin/announcements' },
     ];
+
+
+
 
     if (authLoading) return (
         <div className="min-h-screen bg-black flex items-center justify-center">
@@ -270,32 +277,41 @@ const Dashboard = () => {
 
                 {/* Operational Modules */}
                 <div className="space-y-32">
-                    <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
-                        <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
-                        <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
-                        <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} />
-                        <ControlCard title="Ticketing" desc="Access control and order management." icon={Ticket} color="neon-pink" link="/admin/tickets" isHidden={cards.tickets} />
+                    {user?.role !== 'scanner' && (
+                        <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
+                            <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
+                            <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
+                            <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} />
+                        </DashboardSection>
+                    )}
+
+                    {user?.role !== 'scanner' && (
+                        <DashboardSection title="Core Content Infrastructure" gradient="from-neon-pink via-purple-500 to-white" icon={<LayoutDashboard size={20} />}>
+                            <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
+                            <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
+                            <ControlCard title="Blog" desc="Public-facing thought leadership logs." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
+                        </DashboardSection>
+                    )}
+
+                    <DashboardSection title="Event & Ticketing Operations" gradient="from-yellow-400 via-neon-green to-white" icon={<Ticket size={20} />}>
+                        <ControlCard title="Ticketing Ops" desc="Sales, UPI Verification & Offline Sync." icon={Ticket} color="neon-green" link="/admin/ticketing" isNew />
+                        <ControlCard title="QR Scanner" desc="Gate entry validation system." icon={Zap} color="yellow-400" link="/admin/scanner" isNew />
                     </DashboardSection>
 
-                    <DashboardSection title="Core Content Infrastructure" gradient="from-neon-pink via-purple-500 to-white" icon={<LayoutDashboard size={20} />}>
-                        <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
-
-                        <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
-                        <ControlCard title="Blog" desc="Public-facing thought leadership logs." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
-                    </DashboardSection>
-
-                    <DashboardSection title="Personnel & Community Ops" gradient="from-neon-blue via-neon-green to-white" icon={<Users size={20} />}>
-                        <ControlCard title="Community Hub" desc="Volunteer coordination and guestlist ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.volunteer_gigs} />
-                        <ControlCard title="Creators" desc="Influencer validation and reach metrics." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
-                        <ControlCard title="Campaigns" desc="Social takeovers and marketing missions." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
-                        <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
-                        <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew />
-                        <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
-                        {user.role !== 'editor' && (
-                            <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
-                        )}
-                        <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
-                    </DashboardSection>
+                    {user?.role !== 'scanner' && (
+                        <DashboardSection title="Personnel & Community Ops" gradient="from-neon-blue via-neon-green to-white" icon={<Users size={20} />}>
+                            <ControlCard title="Community Hub" desc="Volunteer coordination and guestlist ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.volunteer_gigs} />
+                            <ControlCard title="Creators" desc="Influencer validation and reach metrics." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
+                            <ControlCard title="Campaigns" desc="Social takeovers and marketing missions." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
+                            <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
+                            <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew />
+                            <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
+                            {user.role !== 'editor' && (
+                                <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
+                            )}
+                            <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
+                        </DashboardSection>
+                    )}
                 </div>
             </div>
         </div>

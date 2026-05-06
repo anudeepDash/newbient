@@ -33,10 +33,11 @@ const UpcomingEventsManager = () => {
         buttonText: '',
         image: '',
         link: '',
-        isTicketed: false,
-        ticketPrice: '',
-        ticketCategories: [],
         venueLayout: '',
+        isTicketed: false,
+        ticketMode: 'qr',
+        isGuestlistEnabled: false,
+        ticketCategories: [],
         alsoPostToAnnouncements: false,
         imageTransform: { scale: 1, x: 0, y: 0 }
     });
@@ -51,7 +52,8 @@ const UpcomingEventsManager = () => {
 
     const resetForm = () => {
         setNewEvent({
-            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', isTicketed: false, ticketPrice: '', ticketCategories: [], venueLayout: '', alsoPostToAnnouncements: false,
+            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
+            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 }
         });
         setIsAdding(false);
@@ -117,26 +119,11 @@ const UpcomingEventsManager = () => {
             let venueLayoutUrl = newEvent.venueLayout;
             if (venueLayoutFile) venueLayoutUrl = await handleFileUpload(venueLayoutFile);
 
-            const ticketCategories = newEvent.ticketCategories.map(c => ({
-                id: c.id || Math.random().toString(36).substr(2, 9),
-                name: c.name,
-                price: Number(c.price) || 0,
-                description: c.description || ''
-            }));
-
-            let ticketPrice = Number(newEvent.ticketPrice) || 0;
-            if (ticketCategories.length > 0) {
-                ticketPrice = Math.min(...ticketCategories.map(c => c.price));
-            }
-
             const eventData = { 
                 ...newEvent, 
                 image: imageUrl, 
                 venueLayout: venueLayoutUrl, 
-                ticketCategories, 
-                ticketPrice,
-                // Ensure button text has a fallback if ticketed
-                buttonText: newEvent.buttonText || (newEvent.isTicketed ? "GET TICKETS" : "LEARN MORE")
+                buttonText: newEvent.buttonText || "LEARN MORE"
             };
 
             if (editingId) {
@@ -383,75 +370,65 @@ const UpcomingEventsManager = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Section 3: Ticketing High Tech */}
+                                            {/* Section 3: Ticketing & Guestlist Config */}
                                             <div className="space-y-8">
-                                                <h3 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-yellow-500/20" /> TICKETS & NOTIFICATIONS
+                                                <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] flex items-center gap-3">
+                                                    <div className="w-8 h-px bg-neon-pink/20" /> TICKETING & ACCESS
                                                 </h3>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setNewEvent({ ...newEvent, isTicketed: !newEvent.isTicketed })}
-                                                className={cn(
-                                                    "flex items-center justify-between w-full p-6 rounded-2xl border transition-all",
-                                                    newEvent.isTicketed ? "bg-neon-green/5 border-neon-green/20" : "bg-white/5 border-white/5 opacity-60"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn("p-3 rounded-xl transition-all", newEvent.isTicketed ? "bg-neon-green text-black" : "bg-white/10 text-gray-500")}>
-                                                        <Ticket size={24} />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center gap-6 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, isTicketed: !newEvent.isTicketed })}>
+                                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent.isTicketed ? "bg-neon-green text-black" : "bg-black text-gray-500 border border-white/10")}>
+                                                            <Ticket size={20} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[11px] font-black uppercase tracking-widest text-white">ENABLE TICKETING</p>
+                                                            <p className="text-[9px] font-medium text-gray-500">Allow users to purchase tickets.</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-left">
-                                                        <p className="text-[12px] font-black uppercase tracking-widest text-white">TICKETING SYSTEM</p>
-                                                        <p className="text-[10px] font-medium text-gray-500">Enable ticketing for this event.</p>
+                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center gap-6 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, isGuestlistEnabled: !newEvent.isGuestlistEnabled })}>
+                                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent.isGuestlistEnabled ? "bg-neon-pink text-black" : "bg-black text-gray-500 border border-white/10")}>
+                                                            <Sparkles size={20} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[11px] font-black uppercase tracking-widest text-white">ENABLE GUESTLIST</p>
+                                                            <p className="text-[9px] font-medium text-gray-500">Allow users to RSVP via Guestlist.</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className={cn("w-14 h-8 rounded-full relative transition-all", newEvent.isTicketed ? "bg-neon-green" : "bg-zinc-800")}>
-                                                    <div className={cn("absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-lg", newEvent.isTicketed ? "right-1" : "left-1")} />
-                                                </div>
-                                            </button>
 
-                                            <AnimatePresence>
                                                 {newEvent.isTicketed && (
-                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-8 overflow-hidden">
+                                                    <div className="space-y-6 bg-black/30 p-8 rounded-[2rem] border border-white/5">
                                                         <div className="space-y-3">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Seating Map</label>
-                                                            <div className="relative group">
-                                                                <input type="file" onChange={(e) => setVenueLayoutFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                <div className="h-32 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:border-neon-green/30 transition-all">
-                                                                    <MapPin size={24} className="text-gray-500 group-hover:text-neon-green" />
-                                                                    <span className="text-[10px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{venueLayoutFile ? venueLayoutFile.name : 'UPLOAD NEWBI VENUE LAYOUT'}</span>
-                                                                </div>
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Ticketing Mode</label>
+                                                            <div className="flex gap-4">
+                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketMode: 'qr'})} className={cn("flex-1 h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", newEvent.ticketMode === 'qr' ? "bg-neon-green text-black border-neon-green" : "bg-black/50 border-white/10 text-gray-400 hover:text-white")}>
+                                                                    QR PASSES (AUTOMATED)
+                                                                </button>
+                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketMode: 'pdf'})} className={cn("flex-1 h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", newEvent.ticketMode === 'pdf' ? "bg-neon-blue text-black border-neon-blue" : "bg-black/50 border-white/10 text-gray-400 hover:text-white")}>
+                                                                    PDF TICKETS (OFFLINE MAPPED)
+                                                                </button>
                                                             </div>
                                                         </div>
-
                                                         <div className="space-y-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Ticket Tiers</label>
-                                                                <button type="button" onClick={() => setNewEvent({ ...newEvent, ticketCategories: [...newEvent.ticketCategories, { id: Date.now().toString(), name: '', price: '', description: '' }] })} className="text-[9px] font-black bg-neon-green/10 text-neon-green px-4 py-2 rounded-lg border border-neon-green/20 hover:bg-neon-green hover:text-black transition-all">+ ADD TIER</button>
+                                                            <div className="flex justify-between items-center">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Ticket Categories / Tiers</label>
+                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest hover:text-white flex items-center gap-1"><Plus size={12}/> Add Tier</button>
                                                             </div>
-                                                            <div className="space-y-4">
-                                                                {newEvent.ticketCategories.map((cat, idx) => (
-                                                                    <div key={cat.id} className="grid grid-cols-12 gap-4 items-center bg-black/40 p-5 rounded-2xl border border-white/5 group/tier">
-                                                                        <div className="col-span-12 md:col-span-4">
-                                                                            <Input placeholder="TIER NAME" value={cat.name} onChange={e => { const c = [...newEvent.ticketCategories]; c[idx].name = e.target.value; setNewEvent({ ...newEvent, ticketCategories: c }); }} className="h-12 text-[9px] font-black uppercase tracking-widest bg-zinc-900/50 border-white/5 rounded-xl" />
-                                                                        </div>
-                                                                        <div className="col-span-12 md:col-span-3">
-                                                                            <Input type="number" placeholder="PRICE" value={cat.price} onChange={e => { const c = [...newEvent.ticketCategories]; c[idx].price = e.target.value; setNewEvent({ ...newEvent, ticketCategories: c }); }} className="h-12 text-[9px] font-black uppercase tracking-widest bg-zinc-900/50 border-white/5 rounded-xl" />
-                                                                        </div>
-                                                                        <div className="col-span-10 md:col-span-4">
-                                                                            <Input placeholder="TIER DESCRIPTION" value={cat.description} onChange={e => { const c = [...newEvent.ticketCategories]; c[idx].description = e.target.value; setNewEvent({ ...newEvent, ticketCategories: c }); }} className="h-12 text-[9px] font-black uppercase tracking-widest bg-zinc-900/50 border-white/5 rounded-xl" />
-                                                                        </div>
-                                                                        <div className="col-span-2 md:col-span-1 flex justify-center">
-                                                                            <button type="button" onClick={() => setNewEvent({ ...newEvent, ticketCategories: newEvent.ticketCategories.filter((_, i) => i !== idx) })} className="text-gray-600 hover:text-red-500"><Trash2 size={16} /></button>
-                                                                        </div>
+                                                            <div className="space-y-3">
+                                                                {(newEvent.ticketCategories || []).map((cat, idx) => (
+                                                                    <div key={cat.id} className="flex flex-wrap md:flex-nowrap gap-4 items-center bg-white/5 p-4 rounded-xl border border-white/10">
+                                                                        <Input placeholder="TIER NAME (E.G. VIP)" value={cat.name} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].name = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10" />
+                                                                        <Input type="number" placeholder="PRICE" value={cat.price} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].price = parseFloat(e.target.value) || 0; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 w-32 bg-black/50 border-white/10" />
+                                                                        <Input placeholder="DESCRIPTION..." value={cat.description} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].description = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10" />
+                                                                        <button type="button" onClick={() => { const newCats = newEvent.ticketCategories.filter((_, i) => i !== idx); setNewEvent({...newEvent, ticketCategories: newCats}) }} className="p-3 text-red-500 hover:bg-white/5 rounded-lg"><Trash2 size={16}/></button>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                    </motion.div>
+                                                    </div>
                                                 )}
-                                            </AnimatePresence>
-                                        </div>
+                                            </div>
+
                                         </div>
 
                                         {!editingId && (
@@ -513,7 +490,7 @@ const UpcomingEventsManager = () => {
                                                                 body: item.description,
                                                                 heroImage: item.image,
                                                                 ctaText: 'See Details',
-                                                                ctaUrl: `${window.location.origin}/ticket-selection?event=${item.id}`
+                                                                ctaUrl: `${window.location.origin}/concertzone`
                                                             });
                                                             window.location.href = `/admin/mailing?${params.toString()}`;
                                                         }}
@@ -528,7 +505,7 @@ const UpcomingEventsManager = () => {
                                                                 await notifyAllUsers(
                                                                     item.title,
                                                                     item.description,
-                                                                    `/ticket-selection?event=${item.id}`,
+                                                                    `/concertzone`,
                                                                     item.image
                                                                 );
                                                                 addNotification({
@@ -553,7 +530,6 @@ const UpcomingEventsManager = () => {
                                                     <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">
                                                         {(typeof item.date === 'string' && item.date.includes('T')) ? item.date.split('T')[0] : (item.date && item.date.seconds ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'TBD')}
                                                     </span>
-                                                    {item.isTicketed && <Ticket size={14} className="text-neon-green drop-shadow-[0_0_8px_rgba(46,255,144,0.5)]" />}
                                                 </div>
                                                 <div>
                                                     <h3 className="text-xl md:text-3xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-green transition-colors">{item.title}</h3>
