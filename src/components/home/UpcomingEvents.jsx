@@ -5,15 +5,13 @@ import { useStore } from '../../lib/store';
 import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight, Plus, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
-import BuyTicketModal from '../tickets/BuyTicketModal';
-import UnifiedGuestlistModal from '../community/UnifiedGuestlistModal';
+import EventTicketingModal from '../tickets/EventTicketingModal';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
     const carouselRef = useRef();
     const [selectedEvent, setSelectedEvent] = useState(null);
-    const [selectedGL, setSelectedGL] = useState(null);
-    const [isGLModalOpen, setIsGLModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const scroll = (direction) => {
         if (carouselRef.current) {
@@ -59,6 +57,7 @@ const UpcomingEvents = () => {
                 if (shouldBuy && !maintenanceState.features?.tickets) {
                     setTimeout(() => {
                         setSelectedEvent(event);
+                        setIsModalOpen(true);
                     }, 1200);
                 }
             }
@@ -224,24 +223,18 @@ const UpcomingEvents = () => {
                             }
                             
                             const handleCardClick = () => {
-                                // STRICT PRIORITY: If isTicketed is true, ALWAYS open checkout modal
-                                if (event.isTicketed) {
-                                    if (maintenanceState.features?.tickets) {
+                                // Unified Modal for Tickets or Guestlist
+                                if (event.isTicketed || event.isGuestlistEnabled) {
+                                    if (event.isTicketed && maintenanceState.features?.tickets) {
                                         alert("Ticketing is currently paused for maintenance.");
-                                    } else {
-                                        setSelectedEvent(event);
+                                        return;
                                     }
-                                    return; // STOP execution here for ticketed events
-                                } 
-                                
-                                // GUESTLIST FLOW: Use Modal instead of redirect
-                                if (event.isGuestlistEnabled) {
-                                    if (!user) {
+                                    if (event.isGuestlistEnabled && !event.isTicketed && !user) {
                                         setAuthModal(true);
                                         return;
                                     }
-                                    setSelectedGL(event);
-                                    setIsGLModalOpen(true);
+                                    setSelectedEvent(event);
+                                    setIsModalOpen(true);
                                     return;
                                 } 
                                 
@@ -274,19 +267,13 @@ const UpcomingEvents = () => {
                 </div>
             </div>
 
-            <BuyTicketModal
-                event={selectedEvent || {}}
-                isOpen={!!selectedEvent}
-                onClose={() => setSelectedEvent(null)}
-            />
-
-            <UnifiedGuestlistModal 
-                isOpen={isGLModalOpen}
+            <EventTicketingModal
+                event={selectedEvent}
+                isOpen={isModalOpen}
                 onClose={() => {
-                    setIsGLModalOpen(false);
-                    setSelectedGL(null);
+                    setIsModalOpen(false);
+                    setTimeout(() => setSelectedEvent(null), 300);
                 }}
-                guestlist={selectedGL}
             />
         </section>
     );

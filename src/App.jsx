@@ -29,9 +29,7 @@ import FormManager from './pages/Admin/FormManager';
 import FormBuilder from './pages/Admin/FormBuilder';
 import AdminManager from './pages/Admin/AdminManager';
 import FormViewer from './pages/FormViewer';
-import GuestlistManager from './pages/Admin/GuestlistManager';
 import CommunityJoin from './pages/CommunityJoin';
-import GuestlistJoin from './pages/GuestlistJoin';
 import CreatorJoin from './pages/CreatorJoin';
 import CreatorDashboard from './pages/CreatorDashboard';
 import VolunteerGigManager from './pages/Admin/VolunteerGigManager';
@@ -39,15 +37,12 @@ import CreatorManager from './pages/Admin/CreatorManager';
 import CampaignManager from './pages/Admin/CampaignManager';
 import UpcomingEventsManager from './pages/Admin/UpcomingEventsManager';
 import Maintenance from './pages/Admin/Maintenance';
-import TicketManager from './pages/Admin/TicketManager';
 import GiveawayManager from './pages/Admin/GiveawayManager';
 import GiveawayParticipants from './pages/Admin/GiveawayParticipants';
 import DevSettings from './pages/Admin/DevSettings';
 import MailingManager from './pages/Admin/MailingManager';
 import GiveawayPage from './pages/GiveawayPage';
-import TicketViewer from './pages/TicketViewer';
 import ActionHandler from './pages/Auth/ActionHandler';
-import TicketSelection from './pages/TicketSelection';
 import AuthOverlay from './components/auth/AuthOverlay';
 import AdminGuard from './components/AdminGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
@@ -64,6 +59,9 @@ import AgreementGenerator from './pages/Admin/AgreementGenerator';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import NeuralToast from './components/ui/NeuralToast';
+import EventScanner from './pages/Admin/EventScanner';
+import TicketingManagement from './pages/Admin/TicketingManagement';
+import DigitalTicket from './pages/DigitalTicket';
 
 
 
@@ -120,9 +118,8 @@ function App() {
           <Route path="creator" element={<MaintenanceGuard isPage featureId="influencer"><CreatorJoin /></MaintenanceGuard>} />
           <Route path="creator-dashboard" element={<MaintenanceGuard isPage featureId="influencer"><CreatorDashboard /></MaintenanceGuard>} />
           <Route path="forms/:id" element={<FormViewer />} />
-          <Route path="guestlist/join/:id" element={<GuestlistJoin />} />
-          <Route path="ticket/:bookingRef" element={<TicketViewer />} />
           <Route path="giveaway/:slug" element={<GiveawayPage />} />
+          <Route path="ticket/:id" element={<DigitalTicket />} />
           
           {/* Concert Zone Media System */}
           <Route path="concert-zone" element={<ConcertZoneBlog />} />
@@ -154,14 +151,12 @@ function App() {
 
 
           <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormManager /></MaintenanceGuard></AdminGuard>} />
-          <Route path="admin/guestlists" element={<AdminGuard><GuestlistManager /></AdminGuard>} />
 
           <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/artists" element={<AdminGuard><ArtistManager /></AdminGuard>} />
           <Route path="admin/client-requests" element={<AdminGuard><ClientRequestManager /></AdminGuard>} />
           <Route path="admin/artistant" element={<AdminGuard><ArtistantHub /></AdminGuard>} />
-          <Route path="admin/tickets" element={<AdminGuard><MaintenanceGuard featureId="tickets"><TicketManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
@@ -171,9 +166,10 @@ function App() {
           <Route path="admin/blog" element={<AdminGuard><BlogManager /></AdminGuard>} />
           <Route path="admin/blog/create" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
           <Route path="admin/blog/edit/:id" element={<AdminGuard><BlogPostEditor /></AdminGuard>} />
+          <Route path="admin/scanner" element={<AdminGuard><EventScanner /></AdminGuard>} />
+          <Route path="admin/ticketing" element={<AdminGuard><TicketingManagement /></AdminGuard>} />
 
           <Route path="campaign/:id" element={<CampaignPublicView />} />
-          <Route path="ticket-selection" element={<TicketSelection />} />
           {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
           <Route path="auth/action" element={<ActionHandler />} />
         </Route>

@@ -22,7 +22,7 @@ const AdminGuard = ({ children }) => {
         );
     }
 
-    if (!user || (user.role !== 'super_admin' && user.role !== 'developer' && user.role !== 'editor')) {
+    if (!user || (user.role !== 'super_admin' && user.role !== 'developer' && user.role !== 'editor' && user.role !== 'scanner')) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center p-6">
                 <motion.div 

@@ -85,26 +85,27 @@ const StudioSelect = ({
             <div 
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center justify-between h-full bg-black/40 border border-white/5 rounded-xl px-6 cursor-pointer hover:border-white/20 transition-all group",
+                    "flex items-center justify-between h-full bg-black/60 border border-white/10 rounded-xl px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner",
                     isOpen && "border-white/20"
                 )}
             >
-                <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                <div className="flex items-center gap-3 flex-1 overflow-hidden">
                     <span className={cn(
-                        "text-[11px] font-black uppercase tracking-widest truncate",
-                        (!value || (multi && value.length === 0)) ? "text-white/20" : "text-white italic"
+                        "text-[10px] font-black uppercase tracking-[0.15em] truncate leading-none",
+                        (!value || (multi && value.length === 0)) ? "text-white/30" : "text-white italic"
                     )}>
                         {getDisplayLabel()}
                     </span>
                 </div>
                 <ChevronDown 
-                    size={16} 
+                    size={14} 
                     className={cn(
-                        "transition-all duration-300", 
-                        isOpen ? cn("rotate-180", `text-${accentColor}`) : "text-white/20 group-hover:text-white/40"
+                        "transition-all duration-300 shrink-0 ml-2", 
+                        isOpen ? cn("rotate-180", `text-${accentColor}`) : "text-white/30 group-hover:text-white/50"
                     )} 
                 />
             </div>
+
 
             <AnimatePresence>
                 {isOpen && (

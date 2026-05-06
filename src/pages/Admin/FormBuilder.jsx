@@ -168,10 +168,11 @@ const FormBuilder = () => {
                             </Button>
                         </Link>
                         <Button 
-                            onClick={handleSubmit}
-                            className="h-14 px-10 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(255,79,139,0.2)] hover:scale-105 transition-all border-none"
+                            onClick={handleSubmit} 
+                            disabled={saving}
+                            className="h-20 px-16 bg-neon-pink text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1.5rem] shadow-[0_15px_40px_rgba(255,79,139,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3"
                         >
-                            <Save className="mr-2" size={18} /> SAVE CHANGES
+                            <Save size={20} /> SAVE CHANGES
                         </Button>
                     </div>
                 </div>

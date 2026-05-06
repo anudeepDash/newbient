@@ -49,15 +49,14 @@ export const useStore = create((set, get) => ({
     invoices: [],
     forms: [], // Forms config
     upcomingEvents: [],
+    ticketOrders: [], // Ticket Purchases and Offline Reconciliations
     messages: [], // New state
     guestlists: [], // New state
     volunteerGigs: [], // New state
-    ticketOrders: [], // New state
     proposals: [], // New Proposal Generator state
     agreements: [], // New Agreement Generator state
     creators: [], // Influencer Marketing
     campaigns: [], // Influencer Marketing
-    ticketVault: [], // Bulk ticket storage
     giveaways: [], // Giveaway Campaigns
     giveawayEntries: [], // Giveaway Entries
     posts: [], // Blog Posts
@@ -130,11 +129,6 @@ export const useStore = create((set, get) => ({
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 }
 
-                // Sort ticket orders by createdAt (descending)
-                if (colName === 'ticket_orders') {
-                    data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                }
-
                 // Sort proposals by createdAt (descending)
                 if (colName === 'proposals' || colName === 'agreements') {
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -167,12 +161,10 @@ export const useStore = create((set, get) => ({
         const unsubCategory = sub('portfolio_categories', 'portfolioCategories');
         const unsubGuestlist = sub('guestlists', 'guestlists'); // New sub
         const unsubMessages = sub('messages', 'messages');
-        const unsubTicketOrders = sub('ticket_orders', 'ticketOrders'); // New sub
         const unsubCreators = sub('creators', 'creators');
         const unsubCampaigns = sub('campaigns', 'campaigns');
         const unsubProposals = sub('proposals', 'proposals');
         const unsubAgreements = sub('agreements', 'agreements');
-        const unsubTicketVault = sub('ticket_vault', 'ticketVault');
         const unsubGiveaways = sub('giveaways', 'giveaways');
         const unsubGiveawayEntries = sub('giveaway_entries', 'giveawayEntries');
         const unsubPosts = sub('posts', 'posts');
@@ -181,6 +173,7 @@ export const useStore = create((set, get) => ({
         const unsubArtists = sub('artists', 'artists');
         const unsubAdmins = sub('admins', 'admins');
         const unsubClientRequests = sub('client_requests', 'clientRequests');
+        const unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -249,9 +242,9 @@ export const useStore = create((set, get) => ({
 
         return () => {
             clearTimeout(loadingTimeout);
-            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubTicketOrders(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubTicketVault(); unsubGiveaways(); unsubGiveawayEntries();
+            unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
-            unsubClientRequests();
+            unsubClientRequests(); unsubTicketOrders();
             unsubAI();
         };
     },
@@ -794,6 +787,22 @@ export const useStore = create((set, get) => ({
         });
     },
 
+    // Ticketing & Scanning Operations
+    addTicketOrder: async (orderData) => {
+        return await addDoc(collection(db, 'ticket_orders'), {
+            ...orderData,
+            createdAt: new Date().toISOString()
+        });
+    },
+    scanTicket: async (eventId, code) => {
+        // Mock DB implementation for QR Scanner
+        console.log(`[Store] Scanning ticket ${code} for event ${eventId}`);
+        return { valid: true, scanned: false, data: { code, name: 'Offline Guest', guests: 1 } };
+    },
+    updateTicketOrderStatus: async (orderId, status) => {
+        await updateDoc(doc(db, 'ticket_orders', orderId), { status });
+    },
+
     // Messages
     markMessageRead: async (id, status = 'read') => {
         await updateDoc(doc(db, 'messages', id), { status });
@@ -844,16 +853,12 @@ export const useStore = create((set, get) => ({
 
     castArtistToGig: async (artistId, gigId, status = 'shortlisted') => {
         const artistRef = doc(db, 'artists', artistId);
-        const artistSnap = await getDoc(artistRef);
-        if (artistSnap.exists()) {
-            const data = artistSnap.data();
-            const gigCasting = data.gigCasting || {};
-            gigCasting[gigId] = {
+        await updateDoc(artistRef, {
+            [`gigCasting.${gigId}`]: {
                 status,
                 assignedAt: new Date().toISOString()
-            };
-            await updateDoc(artistRef, { gigCasting });
-        }
+            }
+        });
     },
 
     applyArtistToGig: async (artistId, gigId) => {
@@ -863,16 +868,17 @@ export const useStore = create((set, get) => ({
             const data = artistSnap.data();
             const gigCasting = data.gigCasting || {};
             
-            // Only apply if not already cast or applied
             if (!gigCasting[gigId]) {
-                gigCasting[gigId] = {
-                    status: 'applied',
-                    appliedAt: new Date().toISOString()
-                };
-                await updateDoc(artistRef, { gigCasting });
+                await updateDoc(artistRef, {
+                    [`gigCasting.${gigId}`]: {
+                        status: 'applied',
+                        appliedAt: new Date().toISOString()
+                    }
+                });
             }
         }
     },
+
 
     applyToCampaign: async (uid, campaignId) => {
         const creatorRef = doc(db, 'creators', uid);
@@ -1188,104 +1194,6 @@ export const useStore = create((set, get) => ({
     },
 
     // Ticket Orders (Offline System)
-    addTicketOrder: async (order) => {
-        await addDoc(collection(db, 'ticket_orders'), {
-            createdAt: new Date().toISOString(),
-            ...order,
-            status: order.status || 'pending',
-            fulfillmentStatus: 'pending_verification' // new state
-        });
-    },
-    updateTicketOrder: async (id, updates) => {
-        await updateDoc(doc(db, 'ticket_orders', id), updates);
-    },
-    approveTicketOrder: async (id) => {
-        const state = get();
-        const order = state.ticketOrders.find(o => o.id === id);
-        if (!order) return;
-
-        // Generate Unique Booking ID: NB-YYYY-XXXX (4 random chars)
-        const year = new Date().getFullYear();
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const bookingRef = order.bookingRef || `NB-${year}-${random}`; // Keep existing if retry
-
-        const assignedTickets = [];
-        const ticketsToDelete = [];
-        let allItemsFulfilled = true;
-
-        // For each item in the order, find tickets from the vault
-        if (order.items && order.items.length > 0) {
-            let vaultCopy = [...state.ticketVault];
-            
-            for (const item of order.items) {
-                const countNeeded = item.count || 1;
-                // Find tickets matching eventId and category (case insensitive comparison)
-                // Defaulting standard fallback if no category id matches exactly
-                const matchCategory = item.name?.toUpperCase() || 'STANDARD TICKET';
-
-                const matchingTickets = vaultCopy.filter(t => 
-                    t.eventId === order.eventId && 
-                    (t.category?.toUpperCase() === matchCategory)
-                ).slice(0, countNeeded);
-
-                if (matchingTickets.length === countNeeded) {
-                    assignedTickets.push(...matchingTickets.map(t => t.url));
-                    ticketsToDelete.push(...matchingTickets.map(t => t.id));
-                    
-                    const matchingIds = matchingTickets.map(t => t.id);
-                    vaultCopy = vaultCopy.filter(t => !matchingIds.includes(t.id));
-                } else {
-                    allItemsFulfilled = false;
-                    break; // If we can't fulfill this item completely, abort fulfilling the whole order
-                }
-            }
-        }
-
-        if (allItemsFulfilled && assignedTickets.length > 0) {
-            // Update Order as Fulfilled
-            await updateDoc(doc(db, 'ticket_orders', id), {
-                status: 'approved',
-                fulfillmentStatus: 'fulfilled',
-                bookingRef: bookingRef,
-                ticketUrls: assignedTickets,
-                ticketUrl: assignedTickets[0] || '', // Fallback
-                approvedAt: new Date().toISOString()
-            });
-
-            // Cleanup Vault
-            for (const ticketId of ticketsToDelete) {
-                await deleteDoc(doc(db, 'ticket_vault', ticketId));
-            }
-        } else {
-            // Not enough tickets, put On Hold
-            await updateDoc(doc(db, 'ticket_orders', id), {
-                status: 'approved',
-                fulfillmentStatus: 'on_hold',
-                bookingRef: bookingRef,
-                approvedAt: new Date().toISOString()
-            });
-        }
-
-        // --- AUTOMATED EMAIL DISPATCH ---
-        try {
-            const orderData = {
-                to_name: order.customerName,
-                to_email: order.customerEmail,
-                event_name: order.eventTitle,
-                booking_ref: bookingRef,
-                total_amount: order.totalAmount,
-                payment_ref: order.paymentRef,
-                ticket_url: assignedTickets,
-                tickets_html: order.items?.map(item => `${item.count}x ${item.name}`).join(', ') || 'Standard Entry'
-            };
-            await sendBookingConfirmation(orderData);
-            console.log(`[Automation] Verification email triggered for ${order.customerEmail}`);
-        } catch (emailError) {
-            console.error("[Automation] Failed to send verification email:", emailError);
-        }
-
-        return bookingRef;
-    },
     rejectTicketOrder: async (id) => {
         await updateDoc(doc(db, 'ticket_orders', id), {
             status: 'rejected',

@@ -1,0 +1,185 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Ticket, Calendar, MapPin, User, CheckCircle2, ShieldCheck, Download, AlertTriangle } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+
+const DigitalTicket = () => {
+    const { id } = useParams();
+    const [ticketData, setTicketData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchTicket = async () => {
+            if (!id) return;
+            try {
+                // First search in ticket_orders
+                let q = query(collection(db, 'ticket_orders'), where('bookingRef', '==', id));
+                let snapshot = await getDocs(q);
+                
+                if (!snapshot.empty) {
+                    setTicketData({ ...snapshot.docs[0].data(), type: 'ticket' });
+                    setLoading(false);
+                    return;
+                }
+
+                // If not found, search in guestlist entries
+                const entriesQuery = query(collectionGroup(db, 'entries'), where('bookingRef', '==', id));
+                const entriesSnapshot = await getDocs(entriesQuery);
+                
+                if (!entriesSnapshot.empty) {
+                    setTicketData({ ...entriesSnapshot.docs[0].data(), type: 'guestlist' });
+                    setLoading(false);
+                    return;
+                }
+
+                setError("Ticket not found or has been revoked.");
+            } catch (err) {
+                console.error("Error fetching ticket:", err);
+                setError("Could not verify ticket details.");
+            }
+            setLoading(false);
+        };
+
+        fetchTicket();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#020202] flex items-center justify-center">
+                <LoadingSpinner size="lg" color="#2bd93e" />
+            </div>
+        );
+    }
+
+    if (error || !ticketData) {
+        return (
+            <div className="min-h-screen bg-[#020202] text-white flex flex-col items-center justify-center p-6 text-center">
+                <AlertTriangle size={64} className="text-red-500 mb-6 opacity-80" />
+                <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Invalid Pass</h1>
+                <p className="text-gray-400 font-bold tracking-widest text-xs uppercase">{error}</p>
+                <Link to="/" className="mt-8 px-8 py-4 bg-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-white/20 transition-all">Return Home</Link>
+            </div>
+        );
+    }
+
+    const { type, status, customerName, eventTitle, date, location, items, guestsCount } = ticketData;
+    
+    // For paid tickets, check if verified
+    const isVerified = type === 'guestlist' ? true : status === 'approved' || status === 'dispatched';
+    
+    // Compute QR Data
+    const qrData = encodeURIComponent(JSON.stringify({ ref: id, type }));
+
+    return (
+        <div className="min-h-screen bg-[#020202] text-white py-20 px-4 flex items-center justify-center relative overflow-hidden">
+            {/* Atmos */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-neon-green/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px]" />
+            </div>
+
+            <motion.div 
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative z-10 w-full max-w-md bg-zinc-900/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,255,100,0.1)]"
+            >
+                {/* Header Strip */}
+                <div className={`p-8 border-b border-white/10 text-center ${isVerified ? 'bg-black/40' : 'bg-yellow-500/10'}`}>
+                    {isVerified ? (
+                        <>
+                            <div className="w-16 h-16 bg-neon-green/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-green/20">
+                                <CheckCircle2 size={32} className="text-neon-green" />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">Valid Pass</h2>
+                            <p className="text-[10px] text-neon-green font-bold tracking-[0.2em] uppercase mt-1">Ready for Scan</p>
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
+                                <ShieldCheck size={32} className="text-yellow-500" />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">Pending Verification</h2>
+                            <p className="text-[10px] text-yellow-500 font-bold tracking-[0.2em] uppercase mt-1">Payment under review</p>
+                        </>
+                    )}
+                </div>
+
+                <div className="p-8 space-y-8">
+                    {/* Event Info */}
+                    <div className="text-center">
+                        <h1 className="text-3xl font-black font-heading italic uppercase tracking-tighter leading-none mb-4">{eventTitle || 'Event'}</h1>
+                        <div className="flex flex-col gap-2 items-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                            {date && <span className="flex items-center gap-2"><Calendar size={14} className="text-neon-pink" /> {new Date(date).toLocaleDateString()}</span>}
+                            {location && <span className="flex items-center gap-2"><MapPin size={14} className="text-neon-blue" /> {location}</span>}
+                        </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="relative h-px bg-white/10 w-full">
+                        <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#020202] rounded-full border border-white/10" />
+                        <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#020202] rounded-full border border-white/10" />
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="flex justify-center p-4 bg-white rounded-3xl relative overflow-hidden group">
+                        {ticketData.ticketMode === 'pdf' ? (
+                            <div className="w-56 h-56 flex flex-col items-center justify-center text-gray-400 gap-4 text-center">
+                                <Ticket size={48} className="opacity-20" />
+                                <span className="text-[10px] font-black uppercase tracking-widest px-4">PDF Ticket Issued</span>
+                                <span className="text-[9px] font-bold text-gray-500">Check your email for the attached PDF pass.</span>
+                            </div>
+                        ) : isVerified ? (
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}`} 
+                                alt="Ticket QR" 
+                                className="w-56 h-56 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
+                            />
+                        ) : (
+                            <div className="w-56 h-56 flex flex-col items-center justify-center text-gray-400 gap-4">
+                                <ShieldCheck size={48} className="opacity-20" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">QR generates after payment verification</span>
+                            </div>
+                        )}
+                        <div className="absolute bottom-2 right-2 text-[8px] font-black text-gray-300 tracking-widest uppercase">
+                            ID: {id}
+                        </div>
+                    </div>
+
+                    {/* Guest Details */}
+                    <div className="bg-black/50 p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Holder</span>
+                            <span className="text-xs font-black uppercase tracking-widest text-white">{customerName}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Access Type</span>
+                            <span className="text-xs font-black uppercase tracking-widest text-neon-green">{type === 'guestlist' ? 'Guestlist' : 'General'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Capacity</span>
+                            <span className="text-xs font-black uppercase tracking-widest text-white">
+                                {type === 'guestlist' 
+                                    ? `${guestsCount || 1} Guests` 
+                                    : items?.map(i => `${i.count}x ${i.name}`).join(', ')
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="p-6 bg-black/60 border-t border-white/10 flex gap-4">
+                    <button onClick={() => window.print()} className="flex-1 h-14 bg-white/5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10">
+                        <Download size={16} /> Save pass
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
+export default DigitalTicket;

@@ -161,7 +161,7 @@ const AdminManager = () => {
 
     const canEditRoles = (targetRole) => {
         if (user.role === 'developer') return true;
-        if (user.role === 'super_admin' && (targetRole === 'editor' || targetRole === 'pending')) return true;
+        if (user.role === 'super_admin' && (targetRole === 'editor' || targetRole === 'pending' || targetRole === 'scanner')) return true;
         return false;
     };
 
@@ -350,6 +350,7 @@ const AdminManager = () => {
                                                 <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">Deny</button>
                                                 <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
                                                     <button onClick={() => handleApprove(admin.id, 'editor')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-neon-green hover:bg-white/5 rounded-xl transition-all">Editor</button>
+                                                    <button onClick={() => handleApprove(admin.id, 'scanner')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-yellow-500 hover:bg-white/5 rounded-xl transition-all">Scanner</button>
                                                     <button onClick={() => handleApprove(admin.id, 'super_admin')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-neon-blue hover:bg-white/5 rounded-xl transition-all">Super Admin</button>
                                                     {canManageDevelopers && <button onClick={() => handleApprove(admin.id, 'developer')} className="px-5 py-2 text-[9px] font-black uppercase text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Architect</button>}
                                                 </div>
@@ -409,6 +410,7 @@ const AdminManager = () => {
                                                         className="w-full h-14 bg-black/50 border border-white/10 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest text-white appearance-none cursor-pointer outline-none focus:border-neon-blue"
                                                     >
                                                         <option value="editor">Editor (Production Only)</option>
+                                                        <option value="scanner">Gate Agent (Scanning & Sheets)</option>
                                                         <option value="super_admin">Controller (Full Ops)</option>
                                                         {canManageDevelopers && <option value="developer">Architect (System Root)</option>}
                                                     </select>
@@ -439,6 +441,7 @@ const AdminManager = () => {
                                                     <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">Deny</button>
                                                     <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
                                                         <button onClick={() => handleApprove(admin.id, 'editor')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-neon-green hover:bg-white/5 rounded-xl transition-all">Editor</button>
+                                                        <button onClick={() => handleApprove(admin.id, 'scanner')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-yellow-500 hover:bg-white/5 rounded-xl transition-all">Scanner</button>
                                                         <button onClick={() => handleApprove(admin.id, 'super_admin')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-neon-blue hover:bg-white/5 rounded-xl transition-all">Super</button>
                                                         {canManageDevelopers && <button onClick={() => handleApprove(admin.id, 'developer')} className="px-4 py-2 text-[8px] font-black uppercase text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">Arch</button>}
                                                     </div>
@@ -484,6 +487,7 @@ const AdminManager = () => {
                                                                     className="bg-black/40 border border-white/5 rounded-xl px-4 py-2 text-[8px] font-black uppercase text-neon-green focus:border-neon-blue outline-none cursor-pointer"
                                                                 >
                                                                     <option value="editor">Editor</option>
+                                                                    <option value="scanner">Gate Agent</option>
                                                                     <option value="super_admin">Super Admin</option>
                                                                     <option value="developer">Architect</option>
                                                                 </select>
