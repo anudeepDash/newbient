@@ -96,7 +96,7 @@ const Dashboard = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try { await signInWithEmailAndPassword(auth, email, password); } 
-        catch (error) { alert("Login Failed: " + error.message); }
+        catch (error) { useStore.getState().addToast("Login Failed: " + error.message, 'error'); }
     };
 
     const handleClaimOwnership = async () => {
@@ -108,10 +108,10 @@ const Dashboard = () => {
                 addedBy: 'SYSTEM_BOOTSTRAP',
                 createdAt: new Date().toISOString()
             });
-            alert("Ownership Claimed!");
+            useStore.getState().addToast("Ownership Claimed!", 'success');
             checkUserRole(user);
             setIsFirstRun(false);
-        } catch (error) { alert("Failed to claim ownership."); }
+        } catch (error) { useStore.getState().addToast("Failed to claim ownership.", 'error'); }
     };
 
     const stats = [

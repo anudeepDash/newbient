@@ -31,7 +31,7 @@ const GalleryManager = () => {
             const uploadedImage = await res.json();
             return uploadedImage.secure_url;
         } catch (error) {
-            alert("Network error during uplink.");
+            useStore.getState().addToast("Network error during uplink.", 'error');
             return null;
         }
     };

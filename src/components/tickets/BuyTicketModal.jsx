@@ -69,17 +69,17 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
         if (step === 0) {
             setStep(1);
         } else if (step === 1) {
-            if (cartTotalCount === 0) return alert("Please select at least one ticket.");
+            if (cartTotalCount === 0) return useStore.getState().addToast("Please select at least one ticket.", 'error');
             setStep(2);
         } else if (step === 2) {
-            if (!formData.name || !formData.email || !formData.phone) return alert("Please fill all details.");
+            if (!formData.name || !formData.email || !formData.phone) return useStore.getState().addToast("Please fill all details.", 'error');
             setStep(3);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!paymentRef) return alert("Please enter the UTR/Reference No.");
+        if (!paymentRef) return useStore.getState().addToast("Please enter the UTR/Reference No.", 'error');
 
         setLoading(true);
         try {
@@ -116,7 +116,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
             setStep(4);
         } catch (error) {
             console.error("Order failed:", error);
-            alert("Failed to submit order. Please try again.");
+            useStore.getState().addToast("Failed to submit order. Please try again.", 'error');
         }
         setLoading(false);
     };

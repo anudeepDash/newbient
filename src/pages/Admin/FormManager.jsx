@@ -39,7 +39,7 @@ const FormManager = () => {
             'form'
         );
         
-        alert('Form pushed to announcements and notifications triggered!');
+        useStore.getState().addToast('Form pushed to announcements and notifications triggered!', 'success');
     };
 
     const handleShareWhatsApp = (form) => {

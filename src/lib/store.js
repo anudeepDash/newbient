@@ -1387,7 +1387,7 @@ export const useStore = create((set, get) => ({
                     const { getAuth } = await import('firebase/auth');
                     const auth = getAuth();
                     await auth.signOut();
-                    alert("Your account has been suspended. Please contact support.");
+                    useStore.getState().addToast("Your account has been suspended. Please contact support.", 'error');
                     return;
                 }
 
@@ -1633,7 +1633,7 @@ export const useStore = create((set, get) => ({
             await setDoc(doc(db, 'app_state', maintenanceDocId), newState, { merge: true });
         } catch (error) {
             console.error(`[Maintenance] Failed to update global in ${maintenanceDocId}:`, error);
-            alert(`Firestore Global Update Failed: ${error.message}`);
+            useStore.getState().addToast(`Firestore Global Update Failed: ${error.message}`, 'error');
         }
     },
 

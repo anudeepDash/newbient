@@ -54,7 +54,7 @@ const GiveawayManager = () => {
     const handlePickWinner = async (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
         if (participants.length === 0) {
-            alert("No participants in this campaign yet.");
+            useStore.getState().addToast("No participants in this campaign yet.", 'error');
             return;
         }
 
@@ -80,7 +80,7 @@ const GiveawayManager = () => {
                 // await updateGiveawayEntry(winner.id, { isWinner: true, winnerReward: true }); 
                 // Close the giveaway
                 await handleCloseGiveaway(campaignId);
-                alert(`🎊 ${winner.name} HAS BEEN SELECTED AND GIVEAWAY CLOSED!`);
+                useStore.getState().addToast(`🎊 ${winner.name} HAS BEEN SELECTED AND GIVEAWAY CLOSED!`, 'error');
             }
         }
     };
@@ -94,14 +94,14 @@ const GiveawayManager = () => {
                 endDate: new Date().toISOString().split('T')[0] // Set to today
             });
         } catch (error) {
-            alert("Error closing giveaway.");
+            useStore.getState().addToast("Error closing giveaway.", 'error');
         }
     };
 
     const handleExportCSV = (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
         if (participants.length === 0) {
-            alert("No data to export.");
+            useStore.getState().addToast("No data to export.", 'error');
             return;
         }
         
@@ -176,7 +176,7 @@ const GiveawayManager = () => {
             setSelectedFile(null);
             setVenueLayoutFile(null);
         } catch (error) {
-            alert(error.message);
+            useStore.getState().addToast(error.message, 'error');
         } finally {
             setUploading(false);
         }
@@ -338,7 +338,7 @@ const GiveawayManager = () => {
                                                     `/giveaways/${giveaway.slug}`,
                                                     giveaway.posterUrl
                                                 );
-                                                alert("Notification sent successfully.");
+                                                useStore.getState().addToast("Notification sent successfully.", 'success');
                                             }
                                         }}
                                         className="p-2.5 bg-neon-blue/10 rounded-xl text-neon-blue border border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"

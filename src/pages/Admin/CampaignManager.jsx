@@ -338,7 +338,7 @@ const CampaignManager = () => {
             setFormData(prev => ({ ...prev, thumbnail: url }));
         } catch (error) {
             console.error("Upload failed:", error);
-            alert("UPLOAD FAILED. PLEASE TRY AGAIN.");
+            useStore.getState().addToast("UPLOAD FAILED. PLEASE TRY AGAIN.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -375,7 +375,7 @@ const CampaignManager = () => {
             }
             resetForm();
         } catch (error) {
-            alert("Storage error.");
+            useStore.getState().addToast("Storage error.", 'error');
         }
     };
 
@@ -468,7 +468,7 @@ const CampaignManager = () => {
             };
             setFormData({ ...formData, tasks });
         } catch (error) {
-            alert("Upload failed");
+            useStore.getState().addToast("Upload failed", 'error');
         } finally {
             setIsUploadingTaskAsset(false);
         }
@@ -477,13 +477,13 @@ const CampaignManager = () => {
     const handleCopyLink = (id) => {
         const url = `${window.location.origin}/campaign/${id}`;
         navigator.clipboard.writeText(url);
-        alert("Campaign link copied to clipboard!");
+        useStore.getState().addToast("Campaign link copied to clipboard!", 'success');
     };
 
     const handleDownloadApplications = (campaign) => {
         const appliedCreators = useStore.getState().creators.filter(c => (c.joinedCampaigns || []).includes(campaign.id));
         if (appliedCreators.length === 0) {
-            alert("No applications yet.");
+            useStore.getState().addToast("No applications yet.", 'error');
             return;
         }
 
@@ -504,7 +504,7 @@ const CampaignManager = () => {
     const handleUploadShortlist = async (campaignId, parsedData) => {
         const uploadedUids = parsedData.map(row => row.UID).filter(Boolean);
         if (uploadedUids.length === 0) {
-            alert("No UID col found in CSV.");
+            useStore.getState().addToast("No UID col found in CSV.", 'error');
             return;
         }
 
@@ -526,9 +526,9 @@ const CampaignManager = () => {
                     );
                 }
             }
-            alert(`Shortlisted ${approvedUids.length} creators.`);
+            useStore.getState().addToast(`Shortlisted ${approvedUids.length} creators.`, 'error');
         } catch (error) {
-            alert("Sync error.");
+            useStore.getState().addToast("Sync error.", 'error');
         } finally {
             setIsProcessingCSV(false);
         }
@@ -550,7 +550,7 @@ const CampaignManager = () => {
                 );
             }
         } catch (error) {
-            alert("Failed to toggle shortlist.");
+            useStore.getState().addToast("Failed to toggle shortlist.", 'error');
         }
     };
 
@@ -574,7 +574,7 @@ const CampaignManager = () => {
                 'campaign'
             );
         } catch (error) {
-            alert("Review failed.");
+            useStore.getState().addToast("Review failed.", 'error');
         }
     };
 
@@ -604,7 +604,7 @@ const CampaignManager = () => {
             setRejectionModal(null);
             setRejectionReason('');
         } catch (error) {
-            alert("Rejection failed.");
+            useStore.getState().addToast("Rejection failed.", 'error');
         }
     };
 

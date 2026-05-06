@@ -92,7 +92,7 @@ const ConcertManager = () => {
             }
             resetForms();
         } catch (err) {
-            alert("Storage error.");
+            useStore.getState().addToast("Storage error.", 'error');
         } finally {
             setUploading(false);
         }
@@ -105,7 +105,7 @@ const ConcertManager = () => {
             await addCategory(newCategoryName.trim());
             setNewCategoryName('');
         } catch (error) {
-            alert("Category sync failure.");
+            useStore.getState().addToast("Category sync failure.", 'error');
         }
     };
 

@@ -132,7 +132,7 @@ const ArtistAnt = () => {
             setSuccessMessage("Application received! Our scouts are on it.");
             setView('dashboard');
         } catch (error) {
-            alert("Error: " + error.message);
+            useStore.getState().addToast("Error: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -147,7 +147,7 @@ const ArtistAnt = () => {
             setSuccessMessage("Profile updated successfully.");
             setView('dashboard');
         } catch (error) {
-            alert("Update failed: " + error.message);
+            useStore.getState().addToast("Update failed: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -167,7 +167,7 @@ const ArtistAnt = () => {
             setStep(1);
             setClientData({ name: '', org: '', email: '', city: '', category: '', budget: '', date: '', requirement: '' });
         } catch (error) {
-            alert("Error: " + error.message);
+            useStore.getState().addToast("Error: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -182,7 +182,7 @@ const ArtistAnt = () => {
             setView('gateway');
             setShowDeleteConfirm(false);
         } catch (error) {
-            alert("Deletion failed: " + error.message);
+            useStore.getState().addToast("Deletion failed: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }

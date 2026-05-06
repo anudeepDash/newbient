@@ -236,7 +236,7 @@ const BlogManager = () => {
                                                                     `/concert-zone-new/${post.slug}`,
                                                                     post.coverImage
                                                                 );
-                                                                alert("PUSH_SIGNAL_TRANSMITTED.");
+                                                                useStore.getState().addToast("PUSH_SIGNAL_TRANSMITTED.", 'error');
                                                             }
                                                         }}
                                                         className="p-3 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"

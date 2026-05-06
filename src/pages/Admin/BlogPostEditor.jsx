@@ -57,7 +57,7 @@ const BlogPostEditor = () => {
             return uploadedImage.secure_url;
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Upload failed. please check your connection.");
+            useStore.getState().addToast("Upload failed. please check your connection.", 'error');
             return null;
         }
     };
@@ -119,7 +119,7 @@ const BlogPostEditor = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!formData.title || !formData.slug) {
-            alert('Title and Slug are required.');
+            useStore.getState().addToast('Title and Slug are required.', 'error');
             return;
         }
 
@@ -158,7 +158,7 @@ const BlogPostEditor = () => {
             navigate('/admin/blog');
         } catch (err) {
             console.error('Save failed:', err);
-            alert('Failed to save post.');
+            useStore.getState().addToast('Failed to save post.', 'error');
         } finally {
             setIsSaving(false);
         }

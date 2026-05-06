@@ -175,7 +175,7 @@ const CommunityJoin = () => {
     const handleJoinedConfirm = async () => {
         setConfirming(true);
         try { await markFormAsSubmitted(); } 
-        catch (error) { alert(error.message || 'Verification failed.'); } 
+        catch (error) { useStore.getState().addToast(error.message || 'Verification failed.', 'error'); } 
         finally { setConfirming(false); }
     };
 
@@ -184,7 +184,7 @@ const CommunityJoin = () => {
         try {
             await markWhatsappJoined();
         } catch (error) {
-            alert(error.message || 'Verification failed.');
+            useStore.getState().addToast(error.message || 'Verification failed.', 'error');
         } finally {
             setVerifyingWhatsapp(false);
         }

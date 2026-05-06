@@ -51,7 +51,7 @@ const CreatorManager = () => {
                 setSelectedCreator({ ...selectedCreator, profileStatus: newStatus });
             }
         } catch (error) {
-            alert("Status sync failed.");
+            useStore.getState().addToast("Status sync failed.", 'error');
         }
     };
 
@@ -61,7 +61,7 @@ const CreatorManager = () => {
                 await deleteCreator(uid);
                 setSelectedCreator(null);
             } catch (error) {
-                alert("Deletion failed.");
+                useStore.getState().addToast("Deletion failed.", 'error');
             }
         }
     };

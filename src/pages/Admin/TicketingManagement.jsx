@@ -103,7 +103,7 @@ const TicketingManagement = () => {
                 await updateTicketOrderStatus(orderId, 'approved');
             } catch (err) {
                 console.error(err);
-                alert("Failed to approve order.");
+                useStore.getState().addToast("Failed to approve order.", 'error');
             }
         }
     };
@@ -114,20 +114,20 @@ const TicketingManagement = () => {
                 await updateTicketOrderStatus(orderId, 'rejected');
             } catch (err) {
                 console.error(err);
-                alert("Failed to reject order.");
+                useStore.getState().addToast("Failed to reject order.", 'error');
             }
         }
     };
 
     const handleBulkUpload = (e) => {
         if (!selectedCategory) {
-            alert("Please select a ticket category first.");
+            useStore.getState().addToast("Please select a ticket category first.", 'error');
             return;
         }
         setIsUploading(true);
         setTimeout(() => {
             setIsUploading(false);
-            alert(`Offline PDFs uploaded and mapped to approved buyers in category: ${selectedCategory}.`);
+            useStore.getState().addToast(`Offline PDFs uploaded and mapped to approved buyers in category: ${selectedCategory}.`, 'success');
         }, 2000);
     };
 
@@ -141,12 +141,12 @@ const TicketingManagement = () => {
                     console.error("Failed to dispatch order", order.id);
                 }
             }
-            alert('Tickets dispatched successfully!');
+            useStore.getState().addToast('Tickets dispatched successfully!', 'success');
         }
     };
 
     const downloadSheets = () => {
-        alert("Downloading CSV Sheets...");
+        useStore.getState().addToast("Downloading CSV Sheets...", 'error');
     };
 
     return (

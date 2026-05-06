@@ -58,7 +58,7 @@ const ActionHandler = () => {
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            alert("Passwords do not match");
+            useStore.getState().addToast("Passwords do not match", 'error');
             return;
         }
 

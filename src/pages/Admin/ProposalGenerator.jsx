@@ -180,7 +180,7 @@ const ProposalGenerator = () => {
             
             navigate('/admin/proposals');
         } catch (error) {
-            alert("Save Error: " + error.message);
+            useStore.getState().addToast("Save Error: " + error.message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -227,7 +227,7 @@ const ProposalGenerator = () => {
                 })));
             }
         } catch (error) {
-            alert("AI Generation failed: " + error.message);
+            useStore.getState().addToast("AI Generation failed: " + error.message, 'error');
         } finally {
             setIsGenerating(false);
             setGeneratingSection(null);
@@ -559,7 +559,7 @@ const ProposalGenerator = () => {
                                                         <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple onChange={(e) => {
                                                             // For now, just a visual feedback
                                                             const files = Array.from(e.target.files);
-                                                            if (files.length) alert(`${files.length} files attached. In this version, please paste the text content for AI processing.`);
+                                                            if (files.length) useStore.getState().addToast(`${files.length} files attached. In this version, please paste the text content for AI processing.`, 'error');
                                                         }} />
                                                         <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-neon-green group-hover:text-black transition-all">
                                                             <Upload size={24} />

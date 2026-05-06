@@ -73,7 +73,7 @@ const FormBuilder = () => {
             }
         } catch (error) {
             console.error("Upload failed:", error);
-            alert("UPLOAD FAILED. PLEASE TRY AGAIN.");
+            useStore.getState().addToast("UPLOAD FAILED. PLEASE TRY AGAIN.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -89,7 +89,7 @@ const FormBuilder = () => {
             if (data.bottomText) setBottomText(data.bottomText);
             if (data.buttonText) setButtonText(data.buttonText);
         } catch (error) {
-            alert("AI Generation failed: " + error.message);
+            useStore.getState().addToast("AI Generation failed: " + error.message, 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -136,7 +136,7 @@ const FormBuilder = () => {
             navigate('/admin/forms');
         } catch (error) {
             console.error("Error saving form:", error);
-            alert("Failed to save form. Please try again.");
+            useStore.getState().addToast("Failed to save form. Please try again.", 'error');
         }
     };
 

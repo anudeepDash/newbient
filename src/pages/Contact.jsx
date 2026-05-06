@@ -41,11 +41,11 @@ const Contact = () => {
             // Optional: Auto-reply (requires EmailJS setup)
             // await sendContactAutoReply(formData.name, formData.email, formData.message);
 
-            alert('Message sent! We will get back to you soon.');
+            useStore.getState().addToast('Message sent! We will get back to you soon.', 'success');
             setFormData({ name: '', email: '', message: '' });
         } catch (error) {
             console.error("Error sending message: ", error);
-            alert('Failed to send message. Please try again.');
+            useStore.getState().addToast('Failed to send message. Please try again.', 'error');
         } finally {
             setSending(false);
         }

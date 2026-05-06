@@ -72,7 +72,7 @@ const AdminManager = () => {
             const q = query(collection(db, "admins"), where("email", "==", newAdminEmail));
             const existing = await getDocs(q);
             if (!existing.empty) {
-                alert("Conflict: Administrator record already exists.");
+                useStore.getState().addToast("Conflict: Administrator record already exists.", 'error');
                 return;
             }
 
@@ -85,10 +85,10 @@ const AdminManager = () => {
 
             setNewAdminEmail('');
             fetchAdmins();
-            alert("Authorization recorded. \n\nNote: User must complete registration to activate access.");
+            useStore.getState().addToast("Authorization recorded. \n\nNote: User must complete registration to activate access.", 'error');
         } catch (error) {
             console.error("Error adding admin:", error);
-            alert("System error: Failed to authorize user.");
+            useStore.getState().addToast("System error: Failed to authorize user.", 'error');
         }
     };
 
@@ -96,10 +96,10 @@ const AdminManager = () => {
         try {
             await updateDoc(doc(db, "admins", id), { role: role });
             fetchAdmins();
-            alert(`Authorization updated: Rank set to ${role}.`);
+            useStore.getState().addToast(`Authorization updated: Rank set to ${role}.`, 'success');
         } catch (error) {
             console.error("Error approving admin:", error);
-            alert("System error: Authorization failed.");
+            useStore.getState().addToast("System error: Authorization failed.", 'error');
         }
     };
 
@@ -109,13 +109,13 @@ const AdminManager = () => {
             fetchAdmins();
         } catch (error) {
             console.error("Error updating role:", error);
-            alert("System error: Role update failed.");
+            useStore.getState().addToast("System error: Role update failed.", 'error');
         }
     };
 
     const handleRemoveAdmin = async (id, targetRole) => {
         if (!canEditRoles(targetRole)) {
-            alert("Permission denied: Level mismatch.");
+            useStore.getState().addToast("Permission denied: Level mismatch.", 'error');
             return;
         }
 
@@ -125,7 +125,7 @@ const AdminManager = () => {
                 fetchAdmins();
             } catch (error) {
                 console.error("Error removing admin:", error);
-                alert("System error: Revocation failed.");
+                useStore.getState().addToast("System error: Revocation failed.", 'error');
             }
         }
     };
@@ -136,7 +136,7 @@ const AdminManager = () => {
                 await blockUser(member.id);
                 fetchMembers();
             } catch (error) {
-                alert("Operation failed: " + error.message);
+                useStore.getState().addToast("Operation failed: " + error.message, 'error');
             }
         }
     };
@@ -147,7 +147,7 @@ const AdminManager = () => {
                 await unblockUser(member.id);
                 fetchMembers();
             } catch (error) {
-                alert("Operation failed: " + error.message);
+                useStore.getState().addToast("Operation failed: " + error.message, 'error');
             }
         }
     };
@@ -516,7 +516,7 @@ const AdminManager = () => {
                                                                         <button onClick={async () => {
                                                                             if (window.confirm(`Reset credentials for ${admin.email}?`)) {
                                                                                 await sendPasswordResetEmail(auth, admin.email);
-                                                                                alert("Instructional payload dispatched.");
+                                                                                useStore.getState().addToast("Instructional payload dispatched.", 'error');
                                                                             }
                                                                         }} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-all" title="Reset Credentials"><Shield size={16} /></button>
                                                                         <button onClick={() => handleRemoveAdmin(admin.id, admin.role)} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-red-500 transition-all" title="Terminate Access"><Trash2 size={16} /></button>

@@ -153,7 +153,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
             link.click();
         } catch (err) {
             console.error("handleDownloadTicket failed:", err);
-            alert("Failed to save image. Please try taking a screenshot.");
+            useStore.getState().addToast("Failed to save image. Please try taking a screenshot.", 'error');
         } finally {
             setIsDownloading(false);
         }

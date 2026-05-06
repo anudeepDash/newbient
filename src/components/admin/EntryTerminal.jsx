@@ -64,7 +64,7 @@ const EntryTerminal = ({ eventId }) => {
                 });
             }
         } catch (error) {
-            alert("Update Failed: " + error.message);
+            useStore.getState().addToast("Update Failed: " + error.message, 'error');
         }
     };
 

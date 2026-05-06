@@ -35,10 +35,10 @@ const SiteSettings = () => {
         e.preventDefault();
         try {
             await updateSiteDetails(formData);
-            alert('Settings updated successfully.');
+            useStore.getState().addToast('Settings updated successfully.', 'success');
             navigate('/admin');
         } catch (error) {
-            alert('Failed to update settings.');
+            useStore.getState().addToast('Failed to update settings.', 'error');
         }
     };
 

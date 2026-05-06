@@ -68,7 +68,7 @@ const GiveawayParticipants = () => {
                 );
             }
         } catch (error) {
-            alert("Error selecting winner");
+            useStore.getState().addToast("Error selecting winner", 'error');
         }
     };
 

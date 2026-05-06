@@ -116,7 +116,7 @@ const VolunteerGigManager = () => {
             resetForm();
         } catch (error) {
             console.error(error);
-            alert(`Error saving gig: ${error.code || error.message}`);
+            useStore.getState().addToast(`Error saving gig: ${error.code || error.message}`, 'error');
         } finally {
             setSaving(false);
         }
@@ -132,7 +132,7 @@ const VolunteerGigManager = () => {
                 link: gig.applyLink || '',
                 type: 'volunteer_gig'
             });
-            alert('Announcement posted!');
+            useStore.getState().addToast('Announcement posted!', 'success');
         }
     };
 
@@ -146,7 +146,7 @@ const VolunteerGigManager = () => {
             setFormData(prev => ({ ...prev, image: url }));
         } catch (error) {
             console.error("Upload failed:", error);
-            alert("UPLOAD FAILED. PLEASE TRY AGAIN.");
+            useStore.getState().addToast("UPLOAD FAILED. PLEASE TRY AGAIN.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -600,7 +600,7 @@ const VolunteerGigManager = () => {
                                                         `/community`,
                                                         ''
                                                     );
-                                                    alert("BROADCAST_COMPLETE.");
+                                                    useStore.getState().addToast("BROADCAST_COMPLETE.", 'error');
                                                 }
                                             }}
                                             className="p-2 h-auto text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-black transition-all" 

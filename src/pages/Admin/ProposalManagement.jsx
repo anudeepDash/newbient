@@ -43,12 +43,12 @@ const ProposalManagement = () => {
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/proposal/${id}`;
         navigator.clipboard.writeText(link);
-        alert(`Proposal link copied!`);
+        useStore.getState().addToast(`Proposal link copied!`, 'success');
     };
 
     const handleDelete = (id) => {
         if (user?.role === 'editor') {
-            alert("Permission Denied: Editors cannot delete documents.");
+            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
             return;
         }
         if (window.confirm('Are you sure you want to delete this proposal?')) {
@@ -65,14 +65,14 @@ const ProposalManagement = () => {
         try {
             const res = await sendProposalEmail(email, proposal.title || "Strategic Proposal", url);
             if (res.success) {
-                alert("Proposal link sent successfully!");
+                useStore.getState().addToast("Proposal link sent successfully!", 'success');
                 updateProposalStatus(proposal.id, 'Sent');
             } else {
-                alert("Failed to send email. Check console for details.");
+                useStore.getState().addToast("Failed to send email. Check console for details.", 'error');
             }
         } catch (err) {
             console.error(err);
-            alert("An error occurred while sending.");
+            useStore.getState().addToast("An error occurred while sending.", 'error');
         }
     };
 
@@ -110,10 +110,10 @@ const ProposalManagement = () => {
         if (window.confirm('Duplicate this proposal for a revision?')) {
             try {
                 const newId = await duplicateProposal(id);
-                alert('Proposal duplicated as Draft.');
+                useStore.getState().addToast('Proposal duplicated as Draft.', 'success');
             } catch (err) {
                 console.error(err);
-                alert('Failed to duplicate.');
+                useStore.getState().addToast('Failed to duplicate.', 'error');
             }
         }
     };
@@ -126,11 +126,11 @@ const ProposalManagement = () => {
                     approvalMetadata: null,
                     rejectionMetadata: null
                 });
-                alert('Signature revoked successfully. Document is now active.');
+                useStore.getState().addToast('Signature revoked successfully. Document is now active.', 'success');
                 setSelectedAnalytics(null);
             } catch (err) {
                 console.error(err);
-                alert('Failed to revoke signature.');
+                useStore.getState().addToast('Failed to revoke signature.', 'error');
             }
         }
     };

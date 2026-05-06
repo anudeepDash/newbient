@@ -67,7 +67,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                 setSelectedRequest({ ...selectedRequest, status: newStatus });
             }
         } catch (error) {
-            alert("Status update failed.");
+            useStore.getState().addToast("Status update failed.", 'error');
         }
     };
 
@@ -77,7 +77,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                 await deleteDoc(doc(db, 'client_requests', id));
                 setSelectedRequest(null);
             } catch (error) {
-                alert("Deletion failed.");
+                useStore.getState().addToast("Deletion failed.", 'error');
             }
         }
     };

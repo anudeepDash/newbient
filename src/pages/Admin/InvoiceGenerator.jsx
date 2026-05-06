@@ -185,7 +185,7 @@ const InvoiceGenerator = () => {
 
             navigate('/admin/invoices');
         } catch (error) {
-            alert("Save Error: " + error.message);
+            useStore.getState().addToast("Save Error: " + error.message, 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -217,7 +217,7 @@ const InvoiceGenerator = () => {
                 })));
             }
         } catch (error) {
-            alert("AI Generation failed: " + error.message);
+            useStore.getState().addToast("AI Generation failed: " + error.message, 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -231,7 +231,7 @@ const InvoiceGenerator = () => {
             const url = await uploadToCloudinary(file);
             if (url) setFormData(prev => ({ ...prev, signatoryImage: url, showSignatory: 'image' }));
         } catch (error) {
-            alert("Upload Failed.");
+            useStore.getState().addToast("Upload Failed.", 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -276,7 +276,7 @@ const InvoiceGenerator = () => {
             pdf.save(`Newbi-Invoice-${formData.invoiceNumber}.pdf`);
         } catch (error) {
             console.error(error);
-            alert("PDF Export failed. Check console.");
+            useStore.getState().addToast("PDF Export failed. Check console.", 'error');
         } finally {
             document.body.removeChild(hiddenContainer);
             setPreviewScale(originalScale);
