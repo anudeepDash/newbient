@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, Trash2, Copy, Eye, FileText, Clock, CheckCircle2, AlertCircle, Calendar, Users, Scale, ChevronRight, X, Sparkles, Send, ShieldCheck, History, Share2, MessageCircle, Activity, Edit, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Trash2, Copy, Eye, FileText, Clock, CheckCircle2, AlertCircle, Calendar, Users, Scale, ChevronRight, X, Sparkles, Send, ShieldCheck, History, Share2, MessageCircle, Activity, Edit, FileSpreadsheet, Globe, Smartphone } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,7 +11,7 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 
 const ContractManagement = () => {
     const navigate = useNavigate();
-    const { agreements, deleteAgreement, duplicateAgreement, user } = useStore();
+    const { agreements, deleteAgreement, updateAgreement, duplicateAgreement, user } = useStore();
     const [viewMode, setViewMode] = useState('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
@@ -56,6 +56,22 @@ const ContractManagement = () => {
             try { await navigator.share({ title: `Contract - ${a.parties?.secondParty?.name}`, text: 'View your contract from Newbi Entertainment.', url }); return; } catch {}
         }
         setSharingAgreement(a);
+    };
+
+    const handleRevokeSignature = async (agreementId) => {
+        if (window.confirm('CRITICAL: Are you sure you want to revoke this signature? This will unlock the contract and void the current authorization.')) {
+            try {
+                await updateAgreement(agreementId, {
+                    status: 'Final',
+                    approvalMetadata: null
+                });
+                alert('Signature revoked successfully. Contract is now active.');
+                setSelectedAnalytics(null);
+            } catch (err) {
+                console.error(err);
+                alert('Failed to revoke signature.');
+            }
+        }
     };
 
     const statusColor = (s) => ({ Draft: 'text-amber-500 bg-amber-500/10 border-amber-500/20', Final: 'text-blue-500 bg-blue-500/10 border-blue-500/20', Executed: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' }[s] || 'text-gray-500 bg-gray-500/10 border-gray-500/20');
@@ -214,6 +230,28 @@ const ContractManagement = () => {
                                             <div key={i} className="p-5 bg-black/40 border border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-3" size={16} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-sm font-black uppercase">{s.v}</p></div>
                                         ))}
                                     </div>
+                                    {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
+                                        <>
+                                            <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-4">
+                                                <ShieldCheck className="text-emerald-500 shrink-0" size={24} />
+                                                <div>
+                                                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
+                                                    <p className="text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                                        <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
+                                                        <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
+                                                        <span className="flex items-center gap-1"><Smartphone size={10} /> {selectedAnalytics.approvalMetadata.footprint?.browser || 'System'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleRevokeSignature(selectedAnalytics.id)}
+                                                className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-red-500/10 transition-all"
+                                            >
+                                                Revoke Authorization
+                                            </button>
+                                        </>
+                                    )}
                                     <div className="space-y-4">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Logs</p>
                                         {(selectedAnalytics.accessLogs || []).length > 0 ? (

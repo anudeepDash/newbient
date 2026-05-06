@@ -298,37 +298,48 @@ const Agreement = () => {
                                     <div className="h-full flex flex-col py-4">
                                         <h3 className="text-lg font-black uppercase tracking-widest text-black border-b border-black pb-1 inline-block mb-12">Execution & Authorization.</h3>
                                         <div className="flex-1 flex flex-col justify-start space-y-20">
-                                            <p className="text-[12px] italic text-gray-500 mb-8">IN WITNESS WHEREOF, the Parties hereto have executed this Agreement as of the Effective Date first above written.</p>
-                                            <div className="grid grid-cols-2 gap-20">
-                                                <div className="space-y-6">
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Provider Signature</p>
-                                                    <div className="h-20 flex items-end">
-                                                        {displayAgreement.showSignature && <p className="text-5xl font-signature text-black leading-none opacity-90">Authorized Signatory</p>}
-                                                    </div>
-                                                    <div className="pt-2 border-t border-black/5">
-                                                        <p className="text-[10px] font-bold uppercase">Name: Authorized Signatory</p>
-                                                        <p className="text-[9px] text-gray-500 uppercase">Title: Director of Operations</p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-6 text-right">
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
-                                                    <div className="h-20 flex items-end justify-end">
-                                                        {displayAgreement.status === 'Executed' ? (
-                                                            displayAgreement.approvalMetadata?.clientSignature ? (
-                                                                <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                            {displayAgreement.showSignatures && (
+                                                <>
+                                                    <p className="text-[12px] italic text-gray-500 mb-8">IN WITNESS WHEREOF, the Parties hereto have executed this Agreement as of the Effective Date first above written.</p>
+                                                    <div className="grid grid-cols-2 gap-20">
+                                                    <div className="space-y-6">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Provider Signature</p>
+                                                        <div className="h-20 flex items-end">
+                                                            {displayAgreement.providerSignature ? (
+                                                                <img src={displayAgreement.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" />
                                                             ) : (
-                                                                <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
-                                                            )
-                                                        ) : (
-                                                            <div className="w-full h-px bg-black opacity-20 border-dashed border-t" />
-                                                        )}
+                                                                <p className="text-5xl font-signature text-black leading-none opacity-90">Authorized Signatory</p>
+                                                            )}
+                                                        </div>
+                                                        <div className="pt-2 border-t border-black/5">
+                                                            <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.providerName || 'Authorized Signatory'}</p>
+                                                            <p className="text-[9px] text-gray-500 uppercase">Title: {displayAgreement.providerDesignation || 'Director of Operations'}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="pt-2 border-t border-black/5">
-                                                        <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? displayAgreement.approvalMetadata?.signedBy : '________________'}</p>
-                                                        <p className="text-[9px] text-gray-500 uppercase">Title: Authorized Signatory</p>
+                                                    <div className="space-y-6 text-right">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-black pb-1">Client Signature</p>
+                                                        <div className="h-20 flex items-end justify-end">
+                                                            {displayAgreement.status === 'Executed' ? (
+                                                                displayAgreement.approvalMetadata?.clientSignature ? (
+                                                                    <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                ) : (
+                                                                    <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
+                                                                )
+                                                            ) : (
+                                                                <div className="w-full h-px bg-black opacity-20 border-dashed border-t" />
+                                                            )}
+                                                        </div>
+                                                        <div className="pt-2 border-t border-black/5">
+                                                            <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? displayAgreement.approvalMetadata?.signedBy : '________________'}</p>
+                                                            <p className="text-[9px] text-gray-500 uppercase">Title: Authorized Signatory</p>
+                                                            {displayAgreement.status === 'Executed' && displayAgreement.approvalMetadata && (
+                                                                <p className="text-[7px] text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata.ip} | Signed: {new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString()}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </>
+                                        )}
                                             <div className="flex flex-col items-center justify-center text-center space-y-8 pt-12">
                                                 {(displayAgreement.status === 'Executed' || isExporting) && displayAgreement.showSeal && (
                                                     <DocumentSeal type="agreement" date={displayAgreement.approvalMetadata?.signedAt || displayAgreement.effectiveDate} className="w-40 h-40 opacity-90" />
@@ -346,7 +357,7 @@ const Agreement = () => {
                                 )}
                             </div>
                             <div className="mt-auto pt-8 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                <p>© NEWBI ENTERTAINMENT 2024</p>
+                                <p>© NEWBI ENTERTAINMENT</p>
                                 <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
                         </div>

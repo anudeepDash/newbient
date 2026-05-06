@@ -795,9 +795,70 @@ export const useStore = create((set, get) => ({
         });
     },
     scanTicket: async (eventId, code) => {
-        // Mock DB implementation for QR Scanner
         console.log(`[Store] Scanning ticket ${code} for event ${eventId}`);
-        return { valid: true, scanned: false, data: { code, name: 'Offline Guest', guests: 1 } };
+        
+        let refId = code;
+        try {
+            const decodedUri = decodeURIComponent(code);
+            const obj = JSON.parse(decodedUri);
+            if (obj.ref) refId = obj.ref;
+        } catch (e) {
+            try {
+                const obj = JSON.parse(code);
+                if (obj.ref) refId = obj.ref;
+            } catch (e2) {
+                // Not a JSON, assume it's directly a code
+            }
+        }
+
+        // 1. Check in ticket_orders
+        const qTicket = query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId), where('eventId', '==', eventId));
+        const snapTicket = await getDocs(qTicket);
+        
+        if (!snapTicket.empty) {
+            const docSnap = snapTicket.docs[0];
+            const data = docSnap.data();
+            
+            // Validate payment status
+            if (data.status !== 'approved' && data.status !== 'dispatched') {
+                return { valid: false, message: 'PAYMENT NOT VERIFIED' };
+            }
+
+            if (data.isScanned) {
+                return { valid: true, scanned: true, data: { code: refId, name: data.customerName, type: 'Paid Ticket' } };
+            }
+
+            // Mark as scanned
+            await updateDoc(doc(db, 'ticket_orders', docSnap.id), {
+                isScanned: true,
+                scannedAt: new Date().toISOString()
+            });
+
+            return { valid: true, scanned: false, data: { code: refId, name: data.customerName, type: 'Paid Ticket', items: data.items } };
+        }
+
+        // 2. Check in guestlist entries
+        const qGuest = query(collection(db, 'guestlists', eventId, 'entries'), where('bookingRef', '==', refId));
+        const snapGuest = await getDocs(qGuest);
+
+        if (!snapGuest.empty) {
+            const docSnap = snapGuest.docs[0];
+            const data = docSnap.data();
+
+            if (data.attended) {
+                return { valid: true, scanned: true, data: { code: refId, name: data.name, type: 'Guestlist' } };
+            }
+
+            // Mark as attended
+            await updateDoc(docSnap.ref, {
+                attended: true,
+                attendedAt: new Date().toISOString()
+            });
+
+            return { valid: true, scanned: false, data: { code: refId, name: data.name, type: 'Guestlist', guestsCount: data.guestsCount } };
+        }
+
+        return { valid: false, message: 'INVALID PASS OR WRONG EVENT' };
     },
     updateTicketOrderStatus: async (orderId, status) => {
         await updateDoc(doc(db, 'ticket_orders', orderId), { status });

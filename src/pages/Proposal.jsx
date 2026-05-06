@@ -274,45 +274,75 @@ const Proposal = () => {
     // Markdown-like formatting logic
     const renderFormatted = (text, baseClass = 'text-[13px] font-medium text-black leading-[1.9]') => {
         if (!text) return null;
-        const lines = text.split('\n');
+        
+        // Split text into logical lines, handling cases where multiple numbers are on one line
+        const rawLines = text.split('\n');
+        const lines = [];
+        rawLines.forEach(rl => {
+            const parts = rl.split(/\s(?=\d+\.\s)/);
+            if (parts.length > 1) lines.push(...parts);
+            else lines.push(rl);
+        });
+
         const elements = [];
         let i = 0;
         while (i < lines.length) {
-            const line = lines[i];
+            const line = lines[i].trim();
+            if (!line && i < lines.length - 1) {
+                elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                i++;
+                continue;
+            }
+
+            // Horizontal Line
+            if (line.match(/^[-*_]{3,}$/)) {
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                i++;
+                continue;
+            }
+
             // Heading
             if (line.startsWith('## ')) {
-                elements.push(<p key={i} className="text-[13px] font-black text-black uppercase tracking-wider mt-4 mb-1">{line.slice(3)}</p>);
+                elements.push(<p key={i} className="text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5">{line.slice(3)}</p>);
             // Bullet
             } else if (line.match(/^[•\-\*]\s/)) {
                 const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].trim().replace(/^[•\-\*]\s/, ''));
                     i++;
                 }
                 elements.push(
-                    <div key={`ul-${i}`} className="pl-4 space-y-1 my-2">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
+                        {items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
                     </div>
                 );
                 continue;
             // Numbered
             } else if (line.match(/^\d+\.\s/)) {
                 const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-                    items.push(lines[i].replace(/^\d+\.\s/, ''));
+                while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                    const l = lines[i].trim();
+                    const match = l.match(/^(\d+)\.\s(.*)/);
+                    if (match) {
+                        items.push({ num: match[1], text: match[2] });
+                    } else {
+                        items.push({ num: '•', text: l.replace(/^\d+\.\s/, '') });
+                    }
                     i++;
                 }
                 elements.push(
-                    <div key={`ol-${i}`} className="pl-4 space-y-1 my-2">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-2"><span className="text-[10px] font-black text-gray-400 mt-0.5 w-5 shrink-0">{j + 1}.</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
+                        {items.map((item, j) => (
+                            <div key={j} className="flex items-start gap-3">
+                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
+                            </div>
+                        ))}
                     </div>
                 );
                 continue;
-            // Empty line
-            } else if (line.trim() === '') {
-                elements.push(<div key={i} className="h-2" />);
             // Regular paragraph
-            } else {
+            } else if (line) {
                 elements.push(<p key={i} className={cn(baseClass, 'text-justify')} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
             }
             i++;
@@ -338,9 +368,12 @@ const Proposal = () => {
     };
 
     const inlineFmt = (text) => {
+        if (!text) return '';
         return text
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
+            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
     };
 
     const getPaginatedPages = () => {
@@ -456,9 +489,9 @@ const Proposal = () => {
                                         {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                         {!isHidden('primaryGoal') && (
                                             <div className="pt-12">
-                                                <div className="p-12 border-2 border-black space-y-6">
+                                                <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                     <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                    <div className="text-xl font-black uppercase text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
+                                                    <div className="text-xl font-black text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
                                                 </div>
                                             </div>
                                         )}
@@ -481,7 +514,7 @@ const Proposal = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        {idx === paginatedPages.length - 1 && (
+                                        {idx === paginatedPages.length - 1 && displayProposal.showSignatures && (
                                             <>
                                                 <div className="mt-auto pt-12 flex flex-col gap-8 border-t border-gray-100">
                                                     <div className="flex items-center gap-4">
@@ -489,16 +522,26 @@ const Proposal = () => {
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Official Authorization</label>
                                                             <div className="relative group">
-                                                                <input 
-                                                                    value={signatureName} 
-                                                                    onChange={e => setSignatureName(e.target.value)} 
-                                                                    disabled={displayProposal.status === 'Accepted'}
-                                                                    className={cn(
-                                                                        "w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 sm:h-32 px-8 sm:px-12 rounded-2xl text-2xl sm:text-4xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-gray-200 placeholder:italic",
-                                                                        displayProposal.status === 'Accepted' && "border-neon-green/20 bg-neon-green/[0.02]"
-                                                                    )} 
-                                                                    placeholder="Enter Full Name..." 
-                                                                />
+                                                                {displayProposal.status === 'Accepted' ? (
+                                                                    <div className="h-24 sm:h-32 flex items-end justify-center">
+                                                                        {displayProposal.approvalMetadata?.clientSignature ? (
+                                                                            <img src={displayProposal.approvalMetadata.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                        ) : (
+                                                                            <p className="text-4xl sm:text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata?.signedBy}</p>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <input 
+                                                                        value={signatureName} 
+                                                                        onChange={e => setSignatureName(e.target.value)} 
+                                                                        disabled={displayProposal.status === 'Accepted'}
+                                                                        className={cn(
+                                                                            "w-full bg-gray-50 border-2 border-dashed border-gray-200 h-24 sm:h-32 px-8 sm:px-12 rounded-2xl text-2xl sm:text-4xl font-signature text-black outline-none focus:border-neon-green/40 transition-all text-center placeholder:text-gray-200 placeholder:italic",
+                                                                            displayProposal.status === 'Accepted' && "border-neon-green/20 bg-neon-green/[0.02]"
+                                                                        )} 
+                                                                        placeholder="Enter Full Name..." 
+                                                                    />
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="flex justify-center py-6">
@@ -586,37 +629,23 @@ const Proposal = () => {
                                                 {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(displayProposal.terms)}</div></div>}
                                                 {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(displayProposal.paymentDetails)}</div></div>}
                                                 
-                                                {idx === paginatedPages.length - 1 && (
-                                                    <div className="pt-10 space-y-10 border-t border-gray-100">
-                                                        {!displayProposal.approvalMetadata ? (
-                                                            <div className="space-y-6 no-print">
-                                                                <div className="flex items-center justify-between mb-4 px-2">
-                                                                    <div className="space-y-1">
-                                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Authorization.</h3>
-                                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Digital signature required</p>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-neon-green/10 rounded-full border border-neon-green/20">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
-                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">Handshake Active</span>
-                                                                    </div>
-                                                                </div>
-
+                                                {idx === paginatedPages.length - 1 && displayProposal.showSignatures && (
+                                                    <div className="p-10 bg-zinc-900/[0.03] border-2 border-gray-100 rounded-[40px] space-y-10 relative overflow-hidden group">
+                                                        {displayProposal.status !== 'Accepted' ? (
+                                                            <div className="space-y-10">
                                                                 <div 
                                                                     onClick={() => setIsSignatureModalOpen(true)}
-                                                                    className="group cursor-pointer bg-[#0a0a0a] border-2 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-6 hover:bg-white/[0.02] hover:border-neon-green/20 transition-all shadow-2xl relative overflow-hidden"
+                                                                    className="relative h-48 bg-black/5 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-black/10 hover:border-neon-green/40 transition-all group overflow-hidden"
                                                                 >
                                                                     {clientSignature ? (
-                                                                        <div className="w-full space-y-6">
-                                                                            <div className="h-32 flex items-center justify-center">
-                                                                                <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain" />
+                                                                        <div className="relative group w-full h-full flex items-center justify-center p-8">
+                                                                            <img src={clientSignature} alt="Client Signature" className="max-h-full object-contain grayscale mix-blend-multiply" />
+                                                                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                                                <RefreshCw size={24} className="text-black" />
                                                                             </div>
-                                                                            <div className="text-center border-t border-white/5 pt-6 flex items-center justify-center gap-4">
-                                                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">{signatureName || 'Authorized Signatory'}</p>
+                                                                            <div className="absolute top-4 right-4 flex gap-2">
                                                                                 <button 
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        setClientSignature(null);
-                                                                                    }}
+                                                                                    onClick={(e) => { e.stopPropagation(); setClientSignature(null); }}
                                                                                     className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
                                                                                 >
                                                                                     <Trash2 size={12} />
@@ -656,18 +685,36 @@ const Proposal = () => {
                                                             <div className="space-y-10 relative">
                                                                 {/* Accepted View */}
                                                                 <div className="grid grid-cols-2 gap-10">
-                                                                    <div className="space-y-6">
-                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
-                                                                        <div className="h-24 flex items-end">
-                                                                            {displayProposal.approvalMetadata.clientSignature ? (
-                                                                                <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale brightness-0" alt="Client Signature" />
-                                                                            ) : (
-                                                                                <p className="text-4xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
-                                                                            )}
+                                                                    <div className="space-y-8 border-r border-gray-100 pr-10">
+                                                                        <div className="space-y-6">
+                                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Provider Authorization</p>
+                                                                            <div className="h-24 flex items-end">
+                                                                                {displayProposal.providerSignature ? (
+                                                                                    <img src={displayProposal.providerSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Provider Signature" />
+                                                                                ) : (
+                                                                                    <p className="text-4xl font-signature text-black leading-none italic opacity-90">Authorized Signatory</p>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-[11px] font-black uppercase text-black">{displayProposal.senderName || 'Newbi Entertainment'}</p>
+                                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{displayProposal.senderDesignation || 'Service Provider'}</p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata.signedBy}</p>
-                                                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
+
+                                                                        <div className="space-y-6">
+                                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
+                                                                            <div className="h-24 flex items-end">
+                                                                                {displayProposal.approvalMetadata.clientSignature ? (
+                                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                                ) : (
+                                                                                    <p className="text-4xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
+                                                                                <p className="text-[7px] text-gray-400 mt-1 uppercase tracking-tighter font-black">IP: {displayProposal.approvalMetadata.ip} | Signed: {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString()}</p>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                     
@@ -709,7 +756,7 @@ const Proposal = () => {
                                 </div>
                             </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                <p>Newbi Entertainment © 2024</p>
+                                <p>Newbi Entertainment ©</p>
                                 <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                             </div>
                         </div>
@@ -752,9 +799,9 @@ const Proposal = () => {
                                     {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
-                                            <div className="p-12 border-2 border-black space-y-6">
+                                            <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                <div className="text-xl font-black uppercase text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
+                                                <div className="text-xl font-black text-black leading-relaxed">{renderContent(displayProposal.primaryGoal || 'Objective pending...', 'text-lg font-black')}</div>
                                             </div>
                                         </div>
                                     )}
@@ -991,7 +1038,7 @@ const Proposal = () => {
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
                             <div className="flex items-center gap-4">
-                                <p>Newbi Entertainment © 2024</p>
+                                <p>Newbi Entertainment ©</p>
                                 {idx !== paginatedPages.length - 1 && (
                                     <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
                                         <div className="w-4 h-4 bg-black flex items-center justify-center"><span className="text-[6px] font-black text-neon-green">NB</span></div>

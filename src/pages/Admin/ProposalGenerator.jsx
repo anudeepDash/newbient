@@ -5,6 +5,7 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import SignatureModal from '../../components/ui/SignatureModal';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../lib/firebase';
 import html2canvas from 'html2canvas';
@@ -34,6 +35,7 @@ const ProposalGenerator = () => {
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [showBulkImport, setShowBulkImport] = useState(false);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
 
     const logoOptions = [
@@ -70,6 +72,7 @@ const ProposalGenerator = () => {
         providerSignature: '',
         clientSignature: '',
         senderName: 'Authorized Signatory',
+        senderDesignation: 'Director of Operations',
         status: 'Draft',
         hiddenFields: [],
         selectedLogo: 'entertainment' 
@@ -286,18 +289,84 @@ const ProposalGenerator = () => {
     ];
 
     // Render markdown-formatted text into styled JSX for the document preview
+    const inlineFmt = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
+            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
+    };
+
     const renderFormatted = (text, baseClass = '') => {
         if (!text) return null;
-        const paragraphs = text.split(/\n\n+/);
-        return (
-            <div className={cn("space-y-4", baseClass)}>
-                {paragraphs.map((p, i) => (
-                    <p key={i} className="whitespace-pre-line leading-relaxed">
-                        {p}
-                    </p>
-                ))}
-            </div>
-        );
+        const rawLines = text.split('\n');
+        const lines = [];
+        rawLines.forEach(rl => {
+            const parts = rl.split(/\s(?=\d+\.\s)/);
+            if (parts.length > 1) lines.push(...parts);
+            else lines.push(rl);
+        });
+
+        const elements = [];
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (!line && i < lines.length - 1) {
+                elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                i++;
+                continue;
+            }
+
+            if (line.match(/^[-*_]{3,}$/)) {
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                i++;
+                continue;
+            }
+
+            if (line.startsWith('## ')) {
+                elements.push(<p key={i} className="text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5">{line.slice(3)}</p>);
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].trim().replace(/^[•\-\*]\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
+                        {items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                    </div>
+                );
+                continue;
+            } else if (line.match(/^\d+\.\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                    const l = lines[i].trim();
+                    const match = l.match(/^(\d+)\.\s(.*)/);
+                    if (match) {
+                        items.push({ num: match[1], text: match[2] });
+                    } else {
+                        items.push({ num: '•', text: l.replace(/^\d+\.\s/, '') });
+                    }
+                    i++;
+                }
+                elements.push(
+                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
+                        {items.map((item, j) => (
+                            <div key={j} className="flex items-start gap-3">
+                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
+                            </div>
+                        ))}
+                    </div>
+                );
+                continue;
+            } else if (line) {
+                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+            }
+            i++;
+        }
+        return <div>{elements}</div>;
     };
 
     const renderContent = (content, baseClass = '') => {
@@ -796,42 +865,51 @@ const ProposalGenerator = () => {
                                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sign on behalf of Newbi Entertainment</p>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <button 
-                                                                onClick={() => document.getElementById('provider-sig-upload').click()}
-                                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
-                                                            >
-                                                                <Upload size={12} /> Upload Sign
-                                                            </button>
                                                             <input 
-                                                                type="file" 
-                                                                id="provider-sig-upload" 
-                                                                className="hidden" 
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        const reader = new FileReader();
-                                                                        reader.onload = (re) => setFormData({...formData, providerSignature: re.target.result});
-                                                                        reader.readAsDataURL(file);
-                                                                    }
-                                                                }}
+                                                                value={formData.senderName} 
+                                                                onChange={e => setFormData({...formData, senderName: e.target.value})} 
+                                                                placeholder="Signatory Name" 
+                                                                className="h-10 w-48 bg-black/40 border border-white/10 rounded-xl px-4 text-[10px] font-bold text-white outline-none focus:border-neon-green/40" 
                                                             />
+                                                            <input 
+                                                                value={formData.senderDesignation} 
+                                                                onChange={e => setFormData({...formData, senderDesignation: e.target.value})} 
+                                                                placeholder="Designation" 
+                                                                className="h-10 w-48 bg-black/40 border border-white/10 rounded-xl px-4 text-[10px] font-bold text-white outline-none focus:border-neon-green/40" 
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => setIsSignatureModalOpen(true)}
+                                                                className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-white"
+                                                            >
+                                                                <PenTool size={14} /> Capture Signature
+                                                            </button>
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="relative h-48 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                    <div 
+                                                        onClick={() => setIsSignatureModalOpen(true)}
+                                                        className="relative h-40 bg-black/40 rounded-[32px] border border-white/5 flex items-center justify-center group overflow-hidden cursor-pointer hover:bg-black/60 transition-all"
+                                                    >
                                                         {formData.providerSignature ? (
                                                             <div className="relative group w-full h-full flex items-center justify-center p-8">
                                                                 <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                                    <RefreshCw size={24} className="text-white" />
+                                                                </div>
                                                                 <button 
-                                                                    onClick={() => setFormData({...formData, providerSignature: ''})}
-                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                    onClick={(e) => { e.stopPropagation(); setFormData({...formData, providerSignature: null}); }}
+                                                                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                                                                 >
-                                                                    <Trash2 size={14} />
+                                                                    <Trash2 size={16} />
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Upload Signature</span>
+                                                            <div className="flex flex-col items-center gap-3 text-white/10">
+                                                                <PenTool size={32} />
+                                                                <span className="text-xs font-black uppercase tracking-[0.5em]">Click to Sign</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -976,7 +1054,7 @@ const ProposalGenerator = () => {
                                                             <div className="w-12 h-[2px] bg-black" />
                                                             <p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Engagement Mission</p>
                                                         </div>
-                                                        <div className="text-2xl font-black text-black leading-tight italic uppercase tracking-tight">{renderContent(formData.primaryGoal)}</div>
+                                                        <div className="text-2xl font-black text-black leading-tight italic tracking-tight">{renderContent(formData.primaryGoal)}</div>
                                                     </div>
                                                 )}
                                             </div>
@@ -1121,6 +1199,7 @@ const ProposalGenerator = () => {
                                                             <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
                                                         </div>
                                                         <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                        <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
                                                     </div>
 
                                                     {/* Client Signature */}
@@ -1149,7 +1228,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
                                     <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                        <p>Newbi Entertainment © 2024</p>
+                                        <p>Newbi Entertainment ©</p>
                                         <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                     </div>
                                 </motion.div>
@@ -1206,9 +1285,9 @@ const ProposalGenerator = () => {
                                     {!isHidden('overview') && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(formData.overview || 'Strategic framework pending...')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
-                                            <div className="p-12 border-2 border-black space-y-6">
+                                            <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                <div className="text-lg font-black uppercase text-black leading-relaxed">{renderContent(formData.primaryGoal || 'Objective pending...')}</div>
+                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(formData.primaryGoal || 'Objective pending...')}</div>
                                             </div>
                                         </div>
                                     )}
@@ -1330,6 +1409,7 @@ const ProposalGenerator = () => {
                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
                                                 </div>
                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
                                             </div>
 
                                             {/* Client Signature */}
@@ -1359,7 +1439,7 @@ const ProposalGenerator = () => {
                             </div>
                         </div>
                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                            <p>Newbi Entertainment Â© 2024</p>
+                            <p>Newbi Entertainment ©</p>
                             <p className="text-black">Page {idx + 1} of {paginatedPages.length}</p>
                         </div>
                     </div>
@@ -1424,6 +1504,14 @@ const ProposalGenerator = () => {
                     </div>
                 )}
             </AnimatePresence>
+            <SignatureModal 
+                isOpen={isSignatureModalOpen} 
+                onClose={() => setIsSignatureModalOpen(false)} 
+                onSave={(sig) => {
+                    setFormData(prev => ({...prev, providerSignature: sig}));
+                }}
+                initialName="Authorized Signatory"
+            />
         </div>
     );
 };
