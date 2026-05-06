@@ -65,7 +65,7 @@ const AdminGuard = ({ children }) => {
                                         btn.innerText = 'SENDING REQUEST...';
                                         await useStore.getState().requestAdminAccess();
                                     } catch (err) {
-                                        alert(err.message || "Failed to send request");
+                                        useStore.getState().addToast(err.message || "Failed to send request", 'error');
                                         const btn = document.activeElement;
                                         btn.disabled = false;
                                         btn.innerText = 'REQUEST COMMAND ACCESS';

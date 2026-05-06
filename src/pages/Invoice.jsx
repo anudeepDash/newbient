@@ -131,7 +131,7 @@ const Invoice = () => {
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
             if (!pageElements.length) {
-                alert("No invoice pages found to download!");
+                useStore.getState().addToast("No invoice pages found to download!", 'error');
                 return;
             }
 
@@ -166,7 +166,7 @@ const Invoice = () => {
             pdf.save(`Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`);
         } catch (error) {
             console.error("PDF generation failed:", error);
-            alert("PDF Generation Error: " + error.message);
+            useStore.getState().addToast("PDF Generation Error: " + error.message, 'error');
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -259,7 +259,7 @@ const Invoice = () => {
             };
         } catch (error) {
             console.error("Print failed:", error);
-            alert("Failed to prepare for printing.");
+            useStore.getState().addToast("Failed to prepare for printing.", 'error');
         }
     };
 
@@ -272,7 +272,7 @@ const Invoice = () => {
     const handleRequestVerification = () => {
         if (window.confirm('Notify the finance team that you have made the payment?')) {
             updateInvoiceStatus(invoice.id, 'Verification Pending');
-            alert("Verification request sent. Our team will verify and update the status shortly.");
+            useStore.getState().addToast("Verification request sent. Our team will verify and update the status shortly.", 'success');
         }
     };
 

@@ -82,7 +82,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                 setSelectedArtist({ ...selectedArtist, profileStatus: newStatus });
             }
         } catch (error) {
-            alert("Status update failed.");
+            useStore.getState().addToast("Status update failed.", 'error');
         }
     };
 
@@ -92,7 +92,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                 await deleteArtist(id);
                 setSelectedArtist(null);
             } catch (error) {
-                alert("Deletion failed.");
+                useStore.getState().addToast("Deletion failed.", 'error');
             }
         }
     };
@@ -106,16 +106,16 @@ const ArtistManager = ({ isEmbedded = false }) => {
     const handleCastToGig = async (artistId, gigId) => {
         if (!artistId || !gigId) {
             console.error("Missing IDs for casting:", { artistId, gigId });
-            alert("Internal Error: Missing Talent or Mission ID");
+            useStore.getState().addToast("Internal Error: Missing Talent or Mission ID", 'error');
             return;
         }
         try {
             console.log(`Initiating casting: Artist[${artistId}] -> Mission[${gigId}]`);
             await castArtistToGig(artistId, gigId);
-            alert("Talent successfully deployed to mission parameters.");
+            useStore.getState().addToast("Talent successfully deployed to mission parameters.", 'success');
         } catch (error) {
             console.error("Casting execution failed:", error);
-            alert("Mission Deployment Failed: " + error.message);
+            useStore.getState().addToast("Mission Deployment Failed: " + error.message, 'error');
         }
     };
 

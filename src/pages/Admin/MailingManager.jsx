@@ -49,7 +49,7 @@ const MailingManager = () => {
     const handleBroadcast = async (e) => {
         if (e) e.preventDefault();
         if (recipients.length === 0) {
-            alert("Digital void detected: No recipients in the current sector.");
+            useStore.getState().addToast("Digital void detected: No recipients in the current sector.", 'error');
             return;
         }
 
@@ -310,7 +310,7 @@ const MailingManager = () => {
                                                 });
                                                 setStatus({ type: 'info', text: 'LOCAL_SIGNAL_DISPATCHED. CHECK_LAPTOP_NOTIFICATIONS.' });
                                             } else {
-                                                alert("PERMISSION_DENIED: Browser has blocked native signals.");
+                                                useStore.getState().addToast("PERMISSION_DENIED: Browser has blocked native signals.", 'error');
                                             }
                                         }}
                                         className="h-20 bg-white/5 text-white font-black font-heading uppercase tracking-[0.2em] rounded-[2rem] border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3"

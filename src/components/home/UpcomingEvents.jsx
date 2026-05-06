@@ -138,13 +138,13 @@ const UpcomingEvents = () => {
                 link.click();
                 
                 await navigator.clipboard.writeText(eventUrl);
-                alert("Image downloaded and event link copied to clipboard!");
+                useStore.getState().addToast("Image downloaded and event link copied to clipboard!", 'success');
             }
         } catch (error) {
             console.error("Share failed:", error);
             const eventUrl = `${window.location.origin}/?event=${event.id}`;
             await navigator.clipboard.writeText(eventUrl);
-            alert("Link copied to clipboard!");
+            useStore.getState().addToast("Link copied to clipboard!", 'success');
         }
     };
 
@@ -226,7 +226,7 @@ const UpcomingEvents = () => {
                                 // Unified Modal for Tickets or Guestlist
                                 if (event.isTicketed || event.isGuestlistEnabled) {
                                     if (event.isTicketed && maintenanceState.features?.tickets) {
-                                        alert("Ticketing is currently paused for maintenance.");
+                                        useStore.getState().addToast("Ticketing is currently paused for maintenance.", 'error');
                                         return;
                                     }
                                     if (event.isGuestlistEnabled && !event.isTicketed && !user) {
@@ -248,7 +248,7 @@ const UpcomingEvents = () => {
                                 if (linkedGiveaway) {
                                     window.location.href = `/giveaway/${linkedGiveaway.slug}`;
                                 } else {
-                                    alert("No active protocol defined for this event.");
+                                    useStore.getState().addToast("No active protocol defined for this event.", 'error');
                                 }
                             };
 

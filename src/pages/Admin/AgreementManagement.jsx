@@ -42,13 +42,13 @@ const ContractManagement = () => {
 
     const handleDelete = async (id) => { 
         if (user?.role === 'editor') {
-            alert("Permission Denied: Editors cannot delete documents.");
+            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
             return;
         }
-        try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { alert("Error: " + e.message); } 
+        try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } 
     };
-    const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { alert("Error: " + e.message); } };
-    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}`); alert('Link copied!'); };
+    const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } };
+    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}`); useStore.getState().addToast('Link copied!', 'success'); };
     const handleWhatsApp = (a) => { const url = `${window.location.origin}/agreement/${a.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`Contract from Newbi Entertainment: ${url}`)}`, '_blank'); };
     const handleNativeShare = async (a) => {
         const url = `${window.location.origin}/agreement/${a.id}`;
@@ -65,11 +65,11 @@ const ContractManagement = () => {
                     status: 'Final',
                     approvalMetadata: null
                 });
-                alert('Signature revoked successfully. Contract is now active.');
+                useStore.getState().addToast('Signature revoked successfully. Contract is now active.', 'success');
                 setSelectedAnalytics(null);
             } catch (err) {
                 console.error(err);
-                alert('Failed to revoke signature.');
+                useStore.getState().addToast('Failed to revoke signature.', 'error');
             }
         }
     };

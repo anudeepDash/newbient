@@ -284,7 +284,7 @@ const CreatorSettingsModal = ({ profile, onClose }) => {
             });
             onClose();
         } catch (err) {
-            alert("Failed to update profile.");
+            useStore.getState().addToast("Failed to update profile.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -297,7 +297,7 @@ const CreatorSettingsModal = ({ profile, onClose }) => {
                 await logout();
                 navigate('/');
             } catch (err) {
-                alert("Failed to delete profile.");
+                useStore.getState().addToast("Failed to delete profile.", 'error');
             }
         }
     };
@@ -632,7 +632,7 @@ const CreatorDashboard = () => {
 
     const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
         if (!contentLink && !proofFile) {
-            alert("Please provide a content link or upload proof.");
+            useStore.getState().addToast("Please provide a content link or upload proof.", 'error');
             return;
         }
         setIsSubmitting(true);
@@ -647,7 +647,7 @@ const CreatorDashboard = () => {
             });
             setSelectedTask(null);
         } catch (error) {
-            alert("Submission failed. Please try again.");
+            useStore.getState().addToast("Submission failed. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -660,7 +660,7 @@ const CreatorDashboard = () => {
             await useStore.getState().applyToCampaign(profile.uid, campaignId);
             // We can keep the panel open, it will auto-update state due to Firebase subscription
         } catch (error) {
-            alert("Application failed.");
+            useStore.getState().addToast("Application failed.", 'error');
         } finally {
             setIsApplying(false);
         }

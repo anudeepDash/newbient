@@ -80,7 +80,7 @@ const BlogPostDetail = () => {
                 navigator.share({ title: post.title, text, url });
             } else {
                 navigator.clipboard.writeText(url);
-                alert('Link copied to clipboard!');
+                useStore.getState().addToast('Link copied to clipboard!', 'success');
             }
         } else {
             window.open(links[platform], '_blank');

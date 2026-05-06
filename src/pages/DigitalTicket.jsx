@@ -108,7 +108,7 @@ const DigitalTicket = () => {
             document.body.removeChild(link);
         } catch (error) {
             console.error("Error generating pass image:", error);
-            alert("Could not save the pass. Please try again.");
+            useStore.getState().addToast("Could not save the pass. Please try again.", 'error');
         }
     };
 

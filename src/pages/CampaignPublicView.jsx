@@ -79,7 +79,7 @@ const CampaignPublicView = () => {
     });
 
     const handleInstagramVerify = async () => {
-        if (!form.instagram) return alert("Enter your Instagram handle");
+        if (!form.instagram) return useStore.getState().addToast("Enter your Instagram handle", 'error');
         setIsVerifying(true);
         setVerificationStep('verifying');
 
@@ -88,7 +88,7 @@ const CampaignPublicView = () => {
             if (isNaN(count)) {
                 setIsVerifying(false);
                 setVerificationStep('failed');
-                alert("Please enter a valid follower count for verification.");
+                useStore.getState().addToast("Please enter a valid follower count for verification.", 'error');
             } else if (count < (campaign?.minInstagramFollowers || 0)) {
                 setIsVerifying(false);
                 setVerificationStep('failed');
@@ -107,14 +107,14 @@ const CampaignPublicView = () => {
         }
 
         if (verificationStep !== 'success') {
-            return alert("Check your Instagram eligibility first!");
+            return useStore.getState().addToast("Check your Instagram eligibility first!", 'error');
         }
 
         setIsJoining(true);
         try {
             const currentJoined = profile?.joinedCampaigns || [];
             if (currentJoined.includes(id)) {
-                alert("You've already applied!");
+                useStore.getState().addToast("You've already applied!", 'error');
                 navigate('/creator-dashboard');
                 return;
             }
@@ -141,7 +141,7 @@ const CampaignPublicView = () => {
 
             setJoinSuccess(true);
         } catch (error) {
-            alert("Application submission failed.");
+            useStore.getState().addToast("Application submission failed.", 'error');
         } finally {
             setIsJoining(false);
         }

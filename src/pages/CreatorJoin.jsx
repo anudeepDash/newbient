@@ -69,7 +69,7 @@ const CreatorJoin = () => {
             // navigate('/creator-dashboard'); // Handled by the success state UI
         } catch (error) {
             console.error("Error joining creator hub:", error);
-            alert("Failed to submit application: " + error.message);
+            useStore.getState().addToast("Failed to submit application: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }

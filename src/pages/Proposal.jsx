@@ -167,7 +167,7 @@ const Proposal = () => {
             pdf.save(`Newbi-Strategic-Memorandum-${displayProposal.clientName}.pdf`);
         } catch (err) {
             console.error("PDF generation failed:", err);
-            alert("Failed to generate PDF.");
+            useStore.getState().addToast("Failed to generate PDF.", 'error');
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -178,7 +178,7 @@ const Proposal = () => {
     const handleApproveProposal = async () => {
         if (displayProposal.status === 'Accepted' || displayProposal.status === 'Rejected') return;
         if (!signatureName.trim()) {
-            alert('Please enter your full name to authorize this quotation.');
+            useStore.getState().addToast('Please enter your full name to authorize this quotation.', 'error');
             return;
         }
 
@@ -217,10 +217,10 @@ const Proposal = () => {
                 }
             });
             setIsVerifying(false);
-            alert('Strategic proposal authorized and legally binding.');
+            useStore.getState().addToast('Strategic proposal authorized and legally binding.', 'error');
         } catch (error) {
             console.error('Error approving proposal:', error);
-            alert('Authorization failed. Please contact support.');
+            useStore.getState().addToast('Authorization failed. Please contact support.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -242,10 +242,10 @@ const Proposal = () => {
                     ip: ipAddress
                 }
             });
-            alert('Proposal status updated to Refused.');
+            useStore.getState().addToast('Proposal status updated to Refused.', 'success');
         } catch (error) {
             console.error('Error refusing proposal:', error);
-            alert('Failed to update status.');
+            useStore.getState().addToast('Failed to update status.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -265,7 +265,7 @@ const Proposal = () => {
             }
         } else {
             navigator.clipboard.writeText(url);
-            alert("Link copied to clipboard!");
+            useStore.getState().addToast("Link copied to clipboard!", 'success');
         }
     };
 

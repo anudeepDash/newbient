@@ -94,10 +94,10 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
         } else if (step === 'layout') {
             setStep('selection');
         } else if (step === 'selection') {
-            if (activeTab === 'tickets' && cartTotalCount === 0) return alert("Select at least one ticket.");
+            if (activeTab === 'tickets' && cartTotalCount === 0) return useStore.getState().addToast("Select at least one ticket.", 'error');
             setStep('details');
         } else if (step === 'details') {
-            if (!formData.name || !formData.email || !formData.phone) return alert("Please fill all details.");
+            if (!formData.name || !formData.email || !formData.phone) return useStore.getState().addToast("Please fill all details.", 'error');
             if (activeTab === 'tickets') {
                 if (totalAmount === 0) {
                     submitTickets();
@@ -132,13 +132,13 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
             setStep('success');
         } catch (err) {
             console.error(err);
-            alert("Registration failed.");
+            useStore.getState().addToast("Registration failed.", 'error');
         }
         setLoading(false);
     };
 
     const submitTickets = async () => {
-        if (totalAmount > 0 && !paymentRef) return alert("Please enter UTR/Transaction ID.");
+        if (totalAmount > 0 && !paymentRef) return useStore.getState().addToast("Please enter UTR/Transaction ID.", 'error');
         setLoading(true);
         try {
             const ref = `TKT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -174,7 +174,7 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
             setStep('success');
         } catch (err) {
             console.error(err);
-            alert("Failed to submit order.");
+            useStore.getState().addToast("Failed to submit order.", 'error');
         }
         setLoading(false);
     };

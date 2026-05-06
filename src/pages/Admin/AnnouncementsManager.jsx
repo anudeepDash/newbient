@@ -54,7 +54,7 @@ const AnnouncementsManager = () => {
             resetForm();
         } catch (error) {
             console.error("Broadcast failed:", error);
-            alert("Broadcast failure.");
+            useStore.getState().addToast("Broadcast failure.", 'error');
         }
     };
 
@@ -306,7 +306,7 @@ const AnnouncementsManager = () => {
                                                                     item.link || `/announcements`,
                                                                     item.image
                                                                 );
-                                                                alert("BROADCAST_COMPLETE.");
+                                                                useStore.getState().addToast("BROADCAST_COMPLETE.", 'error');
                                                             }
                                                         }}
                                                         className="w-12 h-12 rounded-2xl bg-neon-blue/10 text-neon-blue border border-neon-blue/20 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"

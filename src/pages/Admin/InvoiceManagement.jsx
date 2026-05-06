@@ -49,14 +49,14 @@ const InvoiceManagement = () => {
     const handleCopyLink = (id) => {
         const link = `${window.location.origin}/invoice/${id}`;
         navigator.clipboard.writeText(link);
-        alert(`Invoice link copied!`);
+        useStore.getState().addToast(`Invoice link copied!`, 'success');
     };
 
     const handleDelete = (id, inv) => {
         // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
         // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
         if (user?.role === 'editor') {
-            alert("Permission Denied: Editors cannot delete documents.");
+            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
             return;
         }
 
@@ -77,9 +77,9 @@ const InvoiceManagement = () => {
                     issueDate: new Date().toISOString().split('T')[0]
                 };
                 await addInvoice(newInvoice);
-                alert('Invoice duplicated.');
+                useStore.getState().addToast('Invoice duplicated.', 'success');
             } catch (error) {
-                alert("Failed to duplicate invoice.");
+                useStore.getState().addToast("Failed to duplicate invoice.", 'error');
             }
         }
     };
@@ -94,13 +94,13 @@ const InvoiceManagement = () => {
         try {
             const res = await sendInvoiceEmail(email, invoice.invoiceNumber, amount, url);
             if (res.success) {
-                alert("Invoice link sent successfully!");
+                useStore.getState().addToast("Invoice link sent successfully!", 'success');
             } else {
-                alert("Failed to send email.");
+                useStore.getState().addToast("Failed to send email.", 'error');
             }
         } catch (err) {
             console.error(err);
-            alert("An error occurred.");
+            useStore.getState().addToast("An error occurred.", 'error');
         }
     };
 
@@ -109,7 +109,7 @@ const InvoiceManagement = () => {
             try {
                 await updateInvoice(invoice.id, { status: 'Paid' });
             } catch (error) {
-                alert("Failed to update status.");
+                useStore.getState().addToast("Failed to update status.", 'error');
             }
         }
     };
@@ -140,7 +140,7 @@ const InvoiceManagement = () => {
             setQuickClientName('');
             setQuickFile(null);
         } catch (error) {
-            alert("Failed to upload.");
+            useStore.getState().addToast("Failed to upload.", 'error');
         } finally {
             setUploading(false);
         }

@@ -75,7 +75,7 @@ const GiveawayPage = () => {
         try {
             await enterGiveaway(giveaway.id, { ...formData, referredBy });
         } catch (error) {
-            alert(error.message);
+            useStore.getState().addToast(error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -85,7 +85,7 @@ const GiveawayPage = () => {
         if (!userEntry) return;
         if (task.type === 'instagram') {
             if (!instaUsername && !userEntry.completedTasks?.[task.id]) {
-                alert("Please enter your Instagram username first.");
+                useStore.getState().addToast("Please enter your Instagram username first.", 'error');
                 return;
             }
             window.open(task.config.url, '_blank');
@@ -140,7 +140,7 @@ const GiveawayPage = () => {
         } else {
             // Copy and prompt for Instagram
             navigator.clipboard.writeText(link);
-            alert('Link copied! Open Instagram Stories and paste it as a link sticker.');
+            useStore.getState().addToast('Link copied! Open Instagram Stories and paste it as a link sticker.', 'success');
         }
     };
 

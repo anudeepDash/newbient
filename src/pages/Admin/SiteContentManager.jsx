@@ -24,10 +24,10 @@ const SiteContentManager = () => {
         e.preventDefault();
         try {
             await updateSiteDetails(formData);
-            alert('Site details updated successfully!');
+            useStore.getState().addToast('Site details updated successfully!', 'success');
             navigate('/admin');
         } catch (error) {
-            alert('Failed to update details.');
+            useStore.getState().addToast('Failed to update details.', 'error');
         }
     };
 

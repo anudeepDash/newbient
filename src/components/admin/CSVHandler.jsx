@@ -5,7 +5,7 @@ import { Download, Upload } from 'lucide-react';
 // Converts an array of objects to a CSV string and downloads it
 export const downloadCSV = (data, filename) => {
     if (!data || data.length === 0) {
-        alert("No data available to download.");
+        useStore.getState().addToast("No data available to download.", 'error');
         return;
     }
 
@@ -55,7 +55,7 @@ export const CSVUploadButton = ({ onUpload, className, isLoading }) => {
             // Basic CSV parsing
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
             if (lines.length < 2) {
-                alert("CSV seems empty or invalid.");
+                useStore.getState().addToast("CSV seems empty or invalid.", 'error');
                 return;
             }
 

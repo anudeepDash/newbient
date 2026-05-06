@@ -121,7 +121,7 @@ const ContractGenerator = () => {
             
             navigate('/admin/agreements');
         } catch (error) {
-            alert("Save Error: " + error.message);
+            useStore.getState().addToast("Save Error: " + error.message, 'error');
         } finally {
             setIsSaving(false);
         }
