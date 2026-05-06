@@ -19,57 +19,93 @@ const EventScanner = () => {
 
     const [facingMode, setFacingMode] = useState("environment");
     const scannerRef = useRef(null);
+    const isTransitioning = useRef(false);
 
     const activeEvent = upcomingEvents?.find(e => e.id === selectedEventId);
 
     useEffect(() => {
+        let mounted = true;
+
         if (!isScanning || !selectedEventId) {
-            if (scannerRef.current) {
+            if (scannerRef.current && !isTransitioning.current) {
+                isTransitioning.current = true;
                 scannerRef.current.stop().then(() => {
-                    scannerRef.current.clear();
-                    scannerRef.current = null;
+                    if (scannerRef.current) scannerRef.current.clear();
+                    isTransitioning.current = false;
                 }).catch(() => {
-                    // Ignore errors on cleanup
-                    scannerRef.current = null;
+                    isTransitioning.current = false;
                 });
             }
             return;
         }
 
         const startScanner = async () => {
+            if (isTransitioning.current) return;
+            
             if (!scannerRef.current) {
                 scannerRef.current = new Html5Qrcode("reader");
             }
 
             try {
+                isTransitioning.current = true;
                 if (scannerRef.current.isScanning) {
                     await scannerRef.current.stop();
                 }
                 
-                await scannerRef.current.start(
-                    { facingMode: facingMode },
-                    { fps: 10 }, // Removed qrbox completely so it scans the full feed, eliminating the offset white box
-                    handleScanSuccess,
-                    handleScanFailure
-                );
+                if (mounted) {
+                    await scannerRef.current.start(
+                        { facingMode: facingMode },
+                        { fps: 10 },
+                        handleScanSuccess,
+                        handleScanFailure
+                    );
+                }
             } catch (error) {
                 console.error("Scanner init error:", error);
+            } finally {
+                isTransitioning.current = false;
             }
         };
 
         startScanner();
 
         return () => {
-            if (scannerRef.current && scannerRef.current.isScanning) {
+            mounted = false;
+            if (scannerRef.current && scannerRef.current.isScanning && !isTransitioning.current) {
+                isTransitioning.current = true;
                 scannerRef.current.stop().then(() => {
-                    scannerRef.current.clear();
-                }).catch(() => {});
+                    if (scannerRef.current) scannerRef.current.clear();
+                    isTransitioning.current = false;
+                }).catch(() => {
+                    isTransitioning.current = false;
+                });
             }
         };
-    }, [isScanning, selectedEventId, facingMode]);
+    }, [isScanning, selectedEventId]);
 
-    const toggleCamera = () => {
-        setFacingMode(prev => prev === "environment" ? "user" : "environment");
+    const toggleCamera = async () => {
+        if (isTransitioning.current || !scannerRef.current) return;
+
+        const newMode = facingMode === "environment" ? "user" : "environment";
+        setFacingMode(newMode);
+
+        try {
+            isTransitioning.current = true;
+            if (scannerRef.current.isScanning) {
+                await scannerRef.current.stop();
+            }
+            
+            await scannerRef.current.start(
+                { facingMode: newMode },
+                { fps: 10 },
+                handleScanSuccess,
+                handleScanFailure
+            );
+        } catch (error) {
+            console.error("Swap error:", error);
+        } finally {
+            isTransitioning.current = false;
+        }
     };
 
     const handleScanSuccess = async (decodedText, decodedResult) => {
