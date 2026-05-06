@@ -87,23 +87,36 @@ const EventScanner = () => {
             )} />
 
             {/* Header */}
-            <div className="h-24 bg-black/40 backdrop-blur-3xl border-b border-white/10 flex items-center justify-between px-6 md:px-10 shrink-0 z-50">
-                <button onClick={handleBack} className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 text-gray-300 hover:text-white transition-all group">
-                    <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
-                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Back</span>
+            <div className="h-16 md:h-24 bg-black/40 backdrop-blur-3xl border-b border-white/10 flex items-center justify-between px-4 md:px-10 shrink-0 z-50">
+                <button onClick={handleBack} className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 md:py-2.5 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl border border-white/10 text-gray-300 hover:text-white transition-all group">
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Back</span>
                 </button>
-                <div className="flex items-center gap-4 bg-black/60 px-6 py-3 rounded-2xl border border-white/10 shadow-2xl">
-                    <div className={cn(
-                        "w-2 h-2 rounded-full animate-pulse",
-                        isScanning ? "bg-neon-green shadow-[0_0_10px_#39FF14]" : "bg-gray-500"
-                    )} />
-                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white">Scanner UI</span>
+                <div className="flex items-center gap-3 md:gap-4">
+                    {selectedEventId && (
+                        <button 
+                            onClick={() => { setSelectedEventId(''); setIsScanning(false); setScanResult(null); }}
+                            className="md:hidden px-3 py-1.5 bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-widest rounded-xl"
+                        >
+                            Change Event
+                        </button>
+                    )}
+                    <div className="flex items-center gap-2 md:gap-4 bg-black/60 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border border-white/10 shadow-2xl">
+                        <div className={cn(
+                            "w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse",
+                            isScanning ? "bg-neon-green shadow-[0_0_10px_#39FF14]" : "bg-gray-500"
+                        )} />
+                        <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white">Scanner</span>
+                    </div>
                 </div>
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
                 {/* Configuration Sidebar */}
-                <div className="w-full md:w-96 bg-black/60 backdrop-blur-2xl border-r border-white/10 p-6 md:p-8 flex flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar z-20">
+                <div className={cn(
+                    "w-full md:w-96 bg-black/60 backdrop-blur-2xl border-r border-white/10 p-4 md:p-8 flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar z-20",
+                    selectedEventId ? "hidden md:flex" : "flex"
+                )}>
                     
                     {/* Active Protocol Details */}
                     {activeEvent && (
@@ -171,16 +184,16 @@ const EventScanner = () => {
                                         {/* HUD Overlay */}
                                         <div className="absolute inset-0 pointer-events-none border-[2px] border-white/10 rounded-[3rem] z-50">
                                             {/* Corner Reticles */}
-                                            <div className="absolute top-6 left-6 w-16 h-16 border-t-[6px] border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
-                                            <div className="absolute top-6 right-6 w-16 h-16 border-t-[6px] border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
-                                            <div className="absolute bottom-6 left-6 w-16 h-16 border-b-[6px] border-l-[6px] border-neon-green rounded-bl-[1.5rem] opacity-80" />
-                                            <div className="absolute bottom-6 right-6 w-16 h-16 border-b-[6px] border-r-[6px] border-neon-green rounded-br-[1.5rem] opacity-80" />
+                                            <div className="absolute top-4 left-4 md:top-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-l-[4px] md:border-t-[6px] md:border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
+                                            <div className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-r-[4px] md:border-t-[6px] md:border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
+                                            <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-b-[4px] border-l-[4px] md:border-b-[6px] md:border-l-[6px] border-neon-green rounded-bl-[1.5rem] opacity-80" />
+                                            <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-b-[4px] border-r-[4px] md:border-b-[6px] md:border-r-[6px] border-neon-green rounded-br-[1.5rem] opacity-80" />
                                             
                                             {/* Scanning Laser */}
                                             <div className="absolute inset-x-8 top-1/2 h-1 bg-neon-green shadow-[0_0_30px_#39FF14] animate-[scan_3s_ease-in-out_infinite]" />
                                             
-                                            <div className="absolute bottom-8 left-0 right-0 text-center">
-                                                <span className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white/80">Scanning Pass...</span>
+                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 text-center">
+                                                <span className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Scanning Pass...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -225,7 +238,7 @@ const EventScanner = () => {
                                 className="absolute inset-x-6 md:inset-x-auto md:w-[500px] bottom-10 z-[100]"
                             >
                                 <div className={cn(
-                                    "p-8 md:p-10 rounded-[3rem] border backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl",
+                                    "p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border backdrop-blur-3xl text-center relative overflow-hidden shadow-2xl",
                                     scanResult.status === 'GREEN' && "bg-black/90 border-neon-green/50 shadow-[0_30px_100px_rgba(57,255,20,0.2)]",
                                     scanResult.status === 'RED' && "bg-black/90 border-red-500/50 shadow-[0_30px_100px_rgba(239,68,68,0.2)]",
                                     scanResult.status === 'YELLOW' && "bg-black/90 border-yellow-500/50 shadow-[0_30px_100px_rgba(234,179,8,0.2)]"
@@ -238,16 +251,16 @@ const EventScanner = () => {
                                     )} />
 
                                     {/* Icon Header */}
-                                    <div className="flex justify-center mb-6 relative z-10">
+                                    <div className="flex justify-center mb-4 md:mb-6 relative z-10">
                                         <div className={cn(
-                                            "w-24 h-24 rounded-full flex items-center justify-center border-4",
+                                            "w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center border-[3px] md:border-4",
                                             scanResult.status === 'GREEN' && "bg-neon-green/20 border-neon-green text-neon-green",
                                             scanResult.status === 'RED' && "bg-red-500/20 border-red-500 text-red-500",
                                             scanResult.status === 'YELLOW' && "bg-yellow-500/20 border-yellow-500 text-yellow-500"
                                         )}>
-                                            {scanResult.status === 'GREEN' && <CheckCircle2 size={48} />}
-                                            {scanResult.status === 'RED' && <XCircle size={48} />}
-                                            {scanResult.status === 'YELLOW' && <AlertTriangle size={48} />}
+                                            {scanResult.status === 'GREEN' && <CheckCircle2 className="w-8 h-8 md:w-12 md:h-12" />}
+                                            {scanResult.status === 'RED' && <XCircle className="w-8 h-8 md:w-12 md:h-12" />}
+                                            {scanResult.status === 'YELLOW' && <AlertTriangle className="w-8 h-8 md:w-12 md:h-12" />}
                                         </div>
                                     </div>
 
