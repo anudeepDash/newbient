@@ -19,6 +19,8 @@ const INITIAL_FORM = {
   showSeal: false,
   showSignatures: false,
   providerSignature: null,
+  providerName: 'Authorized Signatory',
+  providerDesignation: 'Director of Operations',
   clientSignature: null,
   hiddenFields: [],
 };

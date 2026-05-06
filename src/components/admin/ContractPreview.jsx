@@ -180,8 +180,8 @@ const ContractPreview = ({ formData, paginatedPages, currentPage }) => {
                     )}
                   </div>
                   <div className="pt-4">
-                    <p className="text-[11px] font-bold uppercase">Authorized Signatory</p>
-                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">Director of Operations</p>
+                    <p className="text-[11px] font-bold uppercase">{formData.providerName || 'Authorized Signatory'}</p>
+                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">{formData.providerDesignation || 'Director of Operations'}</p>
                   </div>
                 </div>
                 <div className="space-y-8 text-right">

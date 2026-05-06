@@ -418,6 +418,7 @@ const ProposalManagement = () => {
                                                     <p className="text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
                                                     <div className="flex flex-wrap gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                                         <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
+                                                        <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
                                                         <span className="flex items-center gap-1"><Smartphone size={10} /> {selectedAnalytics.approvalMetadata.device?.platform || 'Unknown Device'}</span>
                                                     </div>
                                                 </div>

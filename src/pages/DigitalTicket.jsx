@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Ticket, Calendar, MapPin, User, CheckCircle2, ShieldCheck, Download, AlertTriangle } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
+import html2canvas from 'html2canvas';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const DigitalTicket = () => {
@@ -20,23 +21,35 @@ const DigitalTicket = () => {
                 let q = query(collection(db, 'ticket_orders'), where('bookingRef', '==', id));
                 let snapshot = await getDocs(q);
                 
+                let fetchedData = null;
+
                 if (!snapshot.empty) {
-                    setTicketData({ ...snapshot.docs[0].data(), type: 'ticket' });
-                    setLoading(false);
-                    return;
+                    fetchedData = { ...snapshot.docs[0].data(), type: 'ticket' };
+                } else {
+                    const entriesQuery = query(collectionGroup(db, 'entries'), where('bookingRef', '==', id));
+                    const entriesSnapshot = await getDocs(entriesQuery);
+                    
+                    if (!entriesSnapshot.empty) {
+                        fetchedData = { ...entriesSnapshot.docs[0].data(), type: 'guestlist' };
+                    } else {
+                        setError("Ticket not found or has been revoked.");
+                        setLoading(false);
+                        return;
+                    }
                 }
 
-                // If not found, search in guestlist entries
-                const entriesQuery = query(collectionGroup(db, 'entries'), where('bookingRef', '==', id));
-                const entriesSnapshot = await getDocs(entriesQuery);
-                
-                if (!entriesSnapshot.empty) {
-                    setTicketData({ ...entriesSnapshot.docs[0].data(), type: 'guestlist' });
-                    setLoading(false);
-                    return;
+                // Fetch event details
+                if (fetchedData.eventId) {
+                    const eventDoc = await getDoc(doc(db, 'upcoming_events', fetchedData.eventId));
+                    if (eventDoc.exists()) {
+                        const eventData = eventDoc.data();
+                        fetchedData.eventDate = eventData.date;
+                        fetchedData.eventLocation = eventData.location;
+                        fetchedData.eventTime = eventData.time;
+                    }
                 }
 
-                setError("Ticket not found or has been revoked.");
+                setTicketData(fetchedData);
             } catch (err) {
                 console.error("Error fetching ticket:", err);
                 setError("Could not verify ticket details.");
@@ -66,7 +79,7 @@ const DigitalTicket = () => {
         );
     }
 
-    const { type, status, customerName, eventTitle, date, location, items, guestsCount } = ticketData;
+    const { type, status, customerName, eventTitle, eventDate, eventLocation, eventTime, items, guestsCount } = ticketData;
     
     // For paid tickets, check if verified
     const isVerified = type === 'guestlist' ? true : status === 'approved' || status === 'dispatched';
@@ -74,8 +87,33 @@ const DigitalTicket = () => {
     // Compute QR Data
     const qrData = encodeURIComponent(JSON.stringify({ ref: id, type }));
 
+    const handleDownloadPass = async () => {
+        const ticketElement = document.getElementById('digital-pass-card');
+        if (!ticketElement) return;
+
+        try {
+            const canvas = await html2canvas(ticketElement, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#020202',
+                logging: false
+            });
+            
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = `Pass-${id}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error generating pass image:", error);
+            alert("Could not save the pass. Please try again.");
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#020202] text-white py-20 px-4 flex items-center justify-center relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white py-20 px-4 flex flex-col items-center justify-center relative overflow-hidden">
             {/* Atmos */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-neon-green/10 rounded-full blur-[150px]" />
@@ -83,6 +121,7 @@ const DigitalTicket = () => {
             </div>
 
             <motion.div 
+                id="digital-pass-card"
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="relative z-10 w-full max-w-md bg-zinc-900/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,255,100,0.1)]"
@@ -112,9 +151,19 @@ const DigitalTicket = () => {
                     {/* Event Info */}
                     <div className="text-center">
                         <h1 className="text-3xl font-black font-heading italic uppercase tracking-tighter leading-none mb-4">{eventTitle || 'Event'}</h1>
-                        <div className="flex flex-col gap-2 items-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                            {date && <span className="flex items-center gap-2"><Calendar size={14} className="text-neon-pink" /> {new Date(date).toLocaleDateString()}</span>}
-                            {location && <span className="flex items-center gap-2"><MapPin size={14} className="text-neon-blue" /> {location}</span>}
+                        <div className="flex flex-col gap-2 items-center text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-4">
+                            {eventDate && (
+                                <span className="flex items-center gap-2">
+                                    <Calendar size={14} className="text-neon-pink" /> 
+                                    {new Date(eventDate).toLocaleDateString()} {eventTime ? `| ${eventTime}` : ''}
+                                </span>
+                            )}
+                            {eventLocation && (
+                                <span className="flex items-center gap-2 text-center">
+                                    <MapPin size={14} className="text-neon-blue shrink-0" /> 
+                                    {eventLocation}
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -125,9 +174,9 @@ const DigitalTicket = () => {
                     </div>
 
                     {/* QR Code */}
-                    <div className="flex justify-center p-4 bg-white rounded-3xl relative overflow-hidden group">
+                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-3xl relative overflow-hidden group">
                         {ticketData.ticketMode === 'pdf' ? (
-                            <div className="w-56 h-56 flex flex-col items-center justify-center text-gray-400 gap-4 text-center">
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 gap-4 text-center">
                                 <Ticket size={48} className="opacity-20" />
                                 <span className="text-[10px] font-black uppercase tracking-widest px-4">PDF Ticket Issued</span>
                                 <span className="text-[9px] font-bold text-gray-500">Check your email for the attached PDF pass.</span>
@@ -136,16 +185,16 @@ const DigitalTicket = () => {
                             <img 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}`} 
                                 alt="Ticket QR" 
-                                className="w-56 h-56 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
+                                className="w-48 h-48 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
                             />
                         ) : (
-                            <div className="w-56 h-56 flex flex-col items-center justify-center text-gray-400 gap-4">
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 gap-4">
                                 <ShieldCheck size={48} className="opacity-20" />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">QR generates after payment verification</span>
                             </div>
                         )}
-                        <div className="absolute bottom-2 right-2 text-[8px] font-black text-gray-300 tracking-widest uppercase">
-                            ID: {id}
+                        <div className="mt-6 px-6 py-3 bg-black/5 rounded-xl border border-black/10 w-full text-center">
+                            <span className="text-sm font-black font-mono tracking-[0.3em] text-black/80 uppercase">{id}</span>
                         </div>
                     </div>
 
@@ -170,14 +219,18 @@ const DigitalTicket = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Footer Action */}
-                <div className="p-6 bg-black/60 border-t border-white/10 flex gap-4">
-                    <button onClick={() => window.print()} className="flex-1 h-14 bg-white/5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10">
-                        <Download size={16} /> Save pass
-                    </button>
-                </div>
             </motion.div>
+
+            {/* Floating Action Button for Download (kept outside the canvas capture) */}
+            <motion.button 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                onClick={handleDownloadPass} 
+                className="relative z-20 mt-8 h-14 px-8 bg-white/5 rounded-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10 shadow-2xl"
+            >
+                <Download size={16} className="text-neon-green" /> DOWNLOAD DIGITAL PASS
+            </motion.button>
         </div>
     );
 };

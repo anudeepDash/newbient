@@ -13,7 +13,7 @@ import {
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import SignaturePad from '../../components/ui/SignaturePad';
+import SignatureModal from '../../components/ui/SignatureModal';
 import { Button } from '../../components/ui/Button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -43,6 +43,7 @@ const ContractGenerator = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
     const [generatingSection, setGeneratingSection] = useState(null);
@@ -616,37 +617,50 @@ const ContractGenerator = () => {
                                                                 <h3 className="text-lg font-black uppercase tracking-tighter italic">Provider Authorization</h3>
                                                                 <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">Sign for Newbi Entertainment</p>
                                                             </div>
-                                                            <label className="cursor-pointer px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all">
-                                                                <input 
-                                                                    type="file" 
-                                                                    className="hidden" 
-                                                                    accept="image/*"
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            const reader = new FileReader();
-                                                                            reader.onloadend = () => updateField('providerSignature', reader.result);
-                                                                            reader.readAsDataURL(file);
-                                                                        }
-                                                                    }}
+                                                            <div className="flex gap-2">
+                                                                <Input 
+                                                                    value={formData.providerName} 
+                                                                    onChange={e => updateField('providerName', e.target.value)} 
+                                                                    placeholder="Signatory Name" 
+                                                                    className="h-10 w-48 bg-black/40 border-white/10 text-[10px]" 
                                                                 />
-                                                                <Upload size={12} className="inline mr-2" /> Upload Sign
-                                                            </label>
+                                                                <Input 
+                                                                    value={formData.providerDesignation} 
+                                                                    onChange={e => updateField('providerDesignation', e.target.value)} 
+                                                                    placeholder="Designation" 
+                                                                    className="h-10 w-48 bg-black/40 border-white/10 text-[10px]" 
+                                                                />
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => setIsSignatureModalOpen(true)}
+                                                                className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                                                            >
+                                                                <PenTool size={12} /> Capture Signature
+                                                            </button>
                                                         </div>
                                                         
-                                                        <div className="relative h-32 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-center group overflow-hidden">
+                                                        <div 
+                                                            onClick={() => setIsSignatureModalOpen(true)}
+                                                            className="relative h-32 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-center group overflow-hidden cursor-pointer hover:bg-black/60 transition-all"
+                                                        >
                                                             {formData.providerSignature ? (
                                                                 <div className="relative group w-full h-full flex items-center justify-center p-4">
                                                                     <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                                                        <RefreshCw size={20} className="text-white" />
+                                                                    </div>
                                                                     <button 
-                                                                        onClick={() => updateField('providerSignature', null)}
-                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                        onClick={(e) => { e.stopPropagation(); updateField('providerSignature', null); }}
+                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                                                                     >
                                                                         <Trash2 size={12} />
                                                                     </button>
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">No Signature</span>
+                                                                <div className="flex flex-col items-center gap-2 text-white/10">
+                                                                    <PenTool size={24} />
+                                                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">Click to Sign</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -760,6 +774,13 @@ const ContractGenerator = () => {
                     <ContractPreview key={`export-${idx}`} formData={formData} paginatedPages={paginatedPages} currentPage={idx} />
                 ))}
             </div>
+
+            <SignatureModal 
+                isOpen={isSignatureModalOpen} 
+                onClose={() => setIsSignatureModalOpen(false)} 
+                onSave={(sig) => updateField('providerSignature', sig)} 
+                initialName="Authorized Signatory"
+            />
         </div>
     );
 };
