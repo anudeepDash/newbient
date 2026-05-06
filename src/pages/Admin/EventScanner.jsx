@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QrCode, CheckCircle2, XCircle, AlertTriangle, ScanLine, ArrowLeft, Loader2, Users, Search, Maximize, Ticket } from 'lucide-react';
 import { useStore } from '../../lib/store';
@@ -18,33 +18,52 @@ const EventScanner = () => {
     const [manualCode, setManualCode] = useState('');
 
     const [facingMode, setFacingMode] = useState("environment");
+    const scannerRef = useRef(null);
 
     const activeEvent = upcomingEvents?.find(e => e.id === selectedEventId);
 
     useEffect(() => {
-        let scanner = null;
-        
-        const initScanner = async () => {
-            if (isScanning && selectedEventId) {
-                try {
-                    scanner = new Html5Qrcode("reader");
-                    await scanner.start(
-                        { facingMode: facingMode },
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        handleScanSuccess,
-                        handleScanFailure
-                    );
-                } catch (error) {
-                    console.error("Scanner init error:", error);
+        if (!isScanning || !selectedEventId) {
+            if (scannerRef.current) {
+                scannerRef.current.stop().then(() => {
+                    scannerRef.current.clear();
+                    scannerRef.current = null;
+                }).catch(() => {
+                    // Ignore errors on cleanup
+                    scannerRef.current = null;
+                });
+            }
+            return;
+        }
+
+        const startScanner = async () => {
+            if (!scannerRef.current) {
+                scannerRef.current = new Html5Qrcode("reader");
+            }
+
+            try {
+                if (scannerRef.current.isScanning) {
+                    await scannerRef.current.stop();
                 }
+                
+                await scannerRef.current.start(
+                    { facingMode: facingMode },
+                    { fps: 10 }, // Removed qrbox completely so it scans the full feed, eliminating the offset white box
+                    handleScanSuccess,
+                    handleScanFailure
+                );
+            } catch (error) {
+                console.error("Scanner init error:", error);
             }
         };
 
-        initScanner();
+        startScanner();
 
         return () => {
-            if (scanner && scanner.isScanning) {
-                scanner.stop().then(() => scanner.clear()).catch(console.error);
+            if (scannerRef.current && scannerRef.current.isScanning) {
+                scannerRef.current.stop().then(() => {
+                    scannerRef.current.clear();
+                }).catch(() => {});
             }
         };
     }, [isScanning, selectedEventId, facingMode]);
