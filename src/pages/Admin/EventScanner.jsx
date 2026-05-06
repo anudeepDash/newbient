@@ -6,7 +6,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
+import { RefreshCw } from 'lucide-react';
 
 const EventScanner = () => {
     const { upcomingEvents, scanTicket, user } = useStore();
@@ -16,28 +17,41 @@ const EventScanner = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [manualCode, setManualCode] = useState('');
 
+    const [facingMode, setFacingMode] = useState("environment");
+
     const activeEvent = upcomingEvents?.find(e => e.id === selectedEventId);
 
     useEffect(() => {
         let scanner = null;
-        if (isScanning && selectedEventId) {
-            scanner = new Html5QrcodeScanner(
-                "reader",
-                { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 } 
-                },
-                /* verbose= */ false
-            );
-            scanner.render(handleScanSuccess, handleScanFailure);
-        }
-
-        return () => {
-            if (scanner) {
-                scanner.clear().catch(console.error);
+        
+        const initScanner = async () => {
+            if (isScanning && selectedEventId) {
+                try {
+                    scanner = new Html5Qrcode("reader");
+                    await scanner.start(
+                        { facingMode: facingMode },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        handleScanSuccess,
+                        handleScanFailure
+                    );
+                } catch (error) {
+                    console.error("Scanner init error:", error);
+                }
             }
         };
-    }, [isScanning, selectedEventId]);
+
+        initScanner();
+
+        return () => {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().then(() => scanner.clear()).catch(console.error);
+            }
+        };
+    }, [isScanning, selectedEventId, facingMode]);
+
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === "environment" ? "user" : "environment");
+    };
 
     const handleScanSuccess = async (decodedText, decodedResult) => {
         setIsScanning(false);
@@ -185,7 +199,7 @@ const EventScanner = () => {
                                     <div className="flex-1 relative bg-black">
                                         <div id="reader" className="w-full h-full object-cover scanner-override flex items-center justify-center overflow-hidden" />
                                         {/* HUD Overlay */}
-                                        <div className="absolute inset-0 pointer-events-none border-[2px] border-white/10 rounded-[3rem] z-50">
+                                        <div className="absolute inset-0 border-[2px] border-white/10 rounded-[3rem] z-50 pointer-events-none">
                                             {/* Corner Reticles */}
                                             <div className="absolute top-4 left-4 md:top-6 md:left-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-l-[4px] md:border-t-[6px] md:border-l-[6px] border-neon-green rounded-tl-[1.5rem] opacity-80" />
                                             <div className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 md:w-16 md:h-16 border-t-[4px] border-r-[4px] md:border-t-[6px] md:border-r-[6px] border-neon-green rounded-tr-[1.5rem] opacity-80" />
@@ -195,8 +209,14 @@ const EventScanner = () => {
                                             {/* Scanning Laser */}
                                             <div className="absolute inset-x-8 top-1/2 h-1 bg-neon-green shadow-[0_0_30px_#39FF14] animate-[scan_3s_ease-in-out_infinite]" />
                                             
-                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 text-center">
-                                                <span className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Scanning Pass...</span>
+                                            <div className="absolute bottom-4 md:bottom-8 left-0 right-0 text-center flex flex-col items-center gap-4 pointer-events-auto">
+                                                <button 
+                                                    onClick={toggleCamera} 
+                                                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all"
+                                                >
+                                                    <RefreshCw size={14} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
+                                                    Swap Camera
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -327,14 +347,10 @@ const EventScanner = () => {
                 #reader__scan_region { background: transparent !important; min-height: 300px; display: flex; align-items: center; justify-content: center; width: 100%; }
                 #reader__scan_region img { display: none !important; }
                 
-                #reader__dashboard_section_csr { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin-top: 20px; }
-                #reader__dashboard_section_csr span { color: white !important; font-family: 'Inter', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 900;}
-                #reader__dashboard_section_csr select { width: 80%; max-width: 300px; padding: 12px; margin: 10px auto; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: bold; background: #111; color: white; border: 1px solid #333; outline: none; text-align: center; cursor: pointer; }
+                #reader__dashboard_section_csr { display: none !important; }
+                #reader__dashboard_section_swaplink { display: none !important; }
                 
-                #reader button { background: white; color: black; border-radius: 12px; font-weight: 900; padding: 14px 28px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border: none; font-size: 11px; margin-top: 15px; transition: transform 0.2s; display: inline-block;}
-                #reader button:hover { transform: scale(1.05); }
-                #reader__dashboard_section_swaplink { color: #888 !important; text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-decoration: none; margin-top: 15px; display: block; text-align: center; width: 100%;}
-                #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 3rem; transform: scale(1.05); margin: 0; }
+                #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 3rem; margin: 0; }
                 
                 @keyframes scan {
                     0%, 100% { top: 15%; opacity: 0; }
