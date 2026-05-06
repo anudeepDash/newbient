@@ -301,7 +301,7 @@ const EventScanner = () => {
                                 <Input 
                                     value={manualCode} 
                                     onChange={e => setManualCode(e.target.value)} 
-                                    placeholder="INPUT OVERRIDE CODE..." 
+                                    placeholder="TICKET CODE" 
                                     className="flex-1 h-16 bg-black/80 backdrop-blur border-white/10 rounded-2xl text-center font-mono font-black tracking-[0.3em] uppercase focus:border-neon-blue relative z-10"
                                 />
                                 <Button type="submit" className="h-16 px-8 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 relative z-10"><Search size={20}/></Button>
