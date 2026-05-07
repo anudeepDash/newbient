@@ -45,13 +45,17 @@ const VolunteerGigManager = () => {
         image: '',
         highlightColor: '#39FF14',
         isPinned: false,
-        imageTransform: { scale: 1.05, x: 0, y: 0 }
+        imageTransform: { scale: 1.05, x: 0, y: 0 },
+        guestlistEnabled: false,
+        maxSpots: 100,
+        perUserLimit: 2
     });
 
     const resetForm = () => {
         setFormData({ 
             title: '', dates: [], tempDate: '', time: '', location: '', description: '', status: 'Open', applyType: 'link', applyLink: '', whatsappLink: '',
-            image: '', highlightColor: '#39FF14', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 }
+            image: '', highlightColor: '#39FF14', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 },
+            guestlistEnabled: false, maxSpots: 100, perUserLimit: 2
         });
         setIsAdding(false);
         setEditingId(null);
@@ -87,7 +91,10 @@ const VolunteerGigManager = () => {
             image: gig.image || '',
             highlightColor: gig.highlightColor || '#39FF14',
             isPinned: gig.isPinned || false,
-            imageTransform: gig.imageTransform || { scale: 1.05, x: 0, y: 0 }
+            imageTransform: gig.imageTransform || { scale: 1.05, x: 0, y: 0 },
+            guestlistEnabled: gig.guestlistEnabled || false,
+            maxSpots: gig.maxSpots || 100,
+            perUserLimit: gig.perUserLimit || 2
         });
         setEditingId(gig.id);
         setIsAdding(true);
@@ -208,14 +215,14 @@ const VolunteerGigManager = () => {
                             </h1>
                         </div>
                         
-                        <div className="flex gap-4">
-                            <Button type="button" onClick={resetForm} className="h-14 px-8 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <Button type="button" onClick={resetForm} className="h-12 md:h-14 px-6 md:px-8 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest rounded-xl md:rounded-2xl hover:bg-white hover:text-black transition-all w-full sm:w-auto">
                                 Cancel
                             </Button>
                             <Button 
                                 onClick={handleSave} 
                                 disabled={saving}
-                                className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3"
+                                className="h-16 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 w-full sm:w-auto"
                             >
                                 {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
                                 {saving ? 'Processing...' : 'Save Changes'}
@@ -478,15 +485,55 @@ const VolunteerGigManager = () => {
                                         <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
                                     </button>
                                 </div>
+                                
+                                {/* GUESTLIST INTEGRATION */}
+                                <div className={cn(
+                                    "p-10 rounded-[2.5rem] border transition-all duration-500 mb-6", 
+                                    formData.guestlistEnabled ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                )}>
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-8">
+                                            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.guestlistEnabled ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                                <ListChecks size={28} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">GUESTLIST INTEGRATION</h4>
+                                                <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">Enable verified entry signups for this gig.</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setFormData({ ...formData, guestlistEnabled: !formData.guestlistEnabled })} 
+                                            className={cn("w-16 h-9 rounded-full relative transition-all border-2", formData.guestlistEnabled ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                        >
+                                            <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all shadow-lg", formData.guestlistEnabled ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                        </button>
+                                    </div>
 
-                                <div className="flex justify-end gap-4 pt-4 mt-auto border-t border-white/10">
-                                    <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
+                                    {formData.guestlistEnabled && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">MAX CAPACITY</label>
+                                                <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} 
+                                                    className="h-14 bg-black/40 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">PER USER LIMIT</label>
+                                                <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} 
+                                                    className="h-14 bg-black/40 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-auto border-t border-white/10">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="h-12 md:h-14 rounded-xl md:rounded-2xl w-full sm:w-auto">Cancel</Button>
                                     <Button 
                                         type="submit" 
                                         disabled={saving}
-                                        className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] italic rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 min-w-[240px]"
+                                        className="h-14 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] italic rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 w-full sm:min-w-[240px]"
                                     >
-                                        {saving ? <Loader className="animate-spin h-6 w-6" /> : <Save className="h-6 w-6" />}
+                                        {saving ? <Loader className="animate-spin h-5 w-5 md:h-6 md:w-6" /> : <Save className="h-5 w-5 md:h-6 md:w-6" />}
                                         {editingId ? 'UPDATE GIG' : 'SAVE GIG'}
                                     </Button>
                                 </div>
@@ -554,11 +601,11 @@ const VolunteerGigManager = () => {
         >
             <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
                 {/* Mode Actions */}
-                <div className="flex justify-end mb-12">
+                <div className="flex justify-end mb-8 md:mb-12">
                     <Button onClick={() => {
                         resetForm();
                         setIsAdding(true);
-                    }} className="h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all outline-none border-none flex items-center justify-center gap-3">
+                    }} className="h-14 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all outline-none border-none flex items-center justify-center gap-3 w-full sm:w-auto">
                         <Plus size={20} /> New Assignment
                     </Button>
                 </div>
@@ -566,57 +613,62 @@ const VolunteerGigManager = () => {
                 <div className="grid grid-cols-1 gap-4">
                         {volunteerGigs && volunteerGigs.length > 0 ? (
                             volunteerGigs.map((gig) => (
-                                <Card key={gig.id} className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,255,255,0.05)]">
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h3 className="text-xl font-bold text-white">{gig.title}</h3>
-                                            <span className={`px-2 py-0.5 text-xs rounded-full ${gig.status === 'Open' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                {gig.status}
-                                            </span>
-                                            {gig.applyType === 'whatsapp' && <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-green-400">WA</span>}
+                                <Card key={gig.id} className="p-5 md:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,255,255,0.05)]">
+                                    <div className="w-full">
+                                        <div className="flex items-center flex-wrap gap-3 mb-2">
+                                            <h3 className="text-lg md:text-xl font-bold text-white leading-tight">{gig.title}</h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2 py-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-full ${gig.status === 'Open' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                    {gig.status}
+                                                </span>
+                                                {gig.applyType === 'whatsapp' && <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded text-green-400 border border-green-400/20">WA</span>}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
-                                            <span className="flex items-center gap-1"><Calendar size={14} /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} Days` : gig.dates[0]) : gig.date}</span>
-                                            <span className="flex items-center gap-1"><MapPin size={14} /> {gig.location}</span>
-                                            {gig.description && <span className="flex items-center gap-1 line-clamp-1 max-w-md italic opacity-70">"{gig.description}"</span>}
+                                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] md:text-sm text-gray-400 mt-2">
+                                            <span className="flex items-center gap-2 font-medium"><Calendar size={14} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} Days` : gig.dates[0]) : gig.date}</span>
+                                            <span className="flex items-center gap-2 font-medium"><MapPin size={14} className="text-neon-green" /> {gig.location}</span>
+                                            {gig.description && <span className="flex items-center gap-2 line-clamp-1 max-w-md italic opacity-70 italic font-medium"><FileText size={14} className="text-neon-green" /> {gig.description}</span>}
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 self-end md:self-center">
-                                        <div className="flex flex-col mr-2">
-                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-1 hover:text-white text-gray-500 disabled:opacity-30">
-                                                <ArrowUp size={14} />
+                                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-none border-white/5">
+                                        <div className="flex items-center bg-white/5 rounded-xl px-1">
+                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-2.5 hover:text-white text-gray-500 disabled:opacity-30 transition-colors">
+                                                <ArrowUp size={16} />
                                             </button>
-                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-1 hover:text-white text-gray-500 disabled:opacity-30">
-                                                <ArrowDown size={14} />
+                                            <div className="w-px h-4 bg-white/10" />
+                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-2.5 hover:text-white text-gray-500 disabled:opacity-30 transition-colors">
+                                                <ArrowDown size={16} />
                                             </button>
                                         </div>
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={async () => {
-                                                if (window.confirm(`Transmit broadcast update for "${gig.title}"?`)) {
-                                                    await notifyAllUsers(
-                                                        `Volunteers Needed: ${gig.title}`,
-                                                        `Join the Newbi squad for ${gig.title} at ${gig.location}. Apply now!`,
-                                                        `/community`,
-                                                        ''
-                                                    );
-                                                    useStore.getState().addToast("BROADCAST_COMPLETE.", 'error');
-                                                }
-                                            }}
-                                            className="p-2 h-auto text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-black transition-all" 
-                                            title="Direct Broadcast"
-                                        >
-                                            <Sparkles size={16} />
-                                        </Button>
-                                        <Button variant="outline" onClick={() => handlePushAnnouncement(gig)} className="p-2 h-auto text-neon-blue hover:text-neon-blue hover:border-neon-blue" title="Post to Announcements">
-                                            <Megaphone size={16} />
-                                        </Button>
-                                        <Button variant="outline" onClick={() => handleEdit(gig)} className="p-2 h-auto">
-                                            <Edit size={16} />
-                                        </Button>
-                                        <Button variant="outline" onClick={() => deleteVolunteerGig(gig.id)} className="p-2 h-auto text-red-400 hover:text-red-500 hover:border-red-500">
-                                            <Trash2 size={16} />
-                                        </Button>
+                                        <div className="flex items-center gap-2 ml-auto lg:ml-0">
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={async () => {
+                                                    if (window.confirm(`Transmit broadcast update for "${gig.title}"?`)) {
+                                                        await notifyAllUsers(
+                                                            `Volunteers Needed: ${gig.title}`,
+                                                            `Join the Newbi squad for ${gig.title} at ${gig.location}. Apply now!`,
+                                                            `/community`,
+                                                            ''
+                                                        );
+                                                        useStore.getState().addToast("BROADCAST_COMPLETE.", 'error');
+                                                    }
+                                                }}
+                                                className="p-3 h-12 w-12 rounded-xl text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center" 
+                                                title="Direct Broadcast"
+                                            >
+                                                <Sparkles size={18} />
+                                            </Button>
+                                            <Button variant="outline" onClick={() => handlePushAnnouncement(gig)} className="p-3 h-12 w-12 rounded-xl text-neon-blue border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center" title="Post to Announcements">
+                                                <Megaphone size={18} />
+                                            </Button>
+                                            <Button variant="outline" onClick={() => handleEdit(gig)} className="p-3 h-12 w-12 rounded-xl border-white/10 hover:bg-white hover:text-black transition-all flex items-center justify-center">
+                                                <Edit size={18} />
+                                            </Button>
+                                            <Button variant="outline" onClick={() => deleteVolunteerGig(gig.id)} className="p-3 h-12 w-12 rounded-xl text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center">
+                                                <Trash2 size={18} />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </Card>
                             ))

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload, Sparkles, Cpu } from 'lucide-react';
+import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload, Sparkles, Cpu, PenTool } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -34,7 +34,6 @@ const ProposalGenerator = () => {
     const [generatingSection, setGeneratingSection] = useState(null); // 'all', 'strategy', 'scope', 'deliverables', etc.
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
-    const [showBulkImport, setShowBulkImport] = useState(false);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
 
@@ -279,7 +278,6 @@ const ProposalGenerator = () => {
     const paginatedPages = getPaginatedPages();
 
     const tabs = [
-        { id: '0', label: 'Briefing', icon: Zap, desc: 'Project Source Data', visibilityKey: null },
         { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: null },
         { id: '2', label: 'Architecture', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
         { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
@@ -465,22 +463,27 @@ const ProposalGenerator = () => {
                         
                         <AIPromptBox 
                             onGenerate={handleGenerateProposal} 
-                            isGenerating={isGenerating && generatingSection === 'all' && !showBulkImport} 
+                            isGenerating={isGenerating && generatingSection === 'all'} 
                             type="proposal" 
                             forceClear={promptBoxClear}
                         />
 
-                        <div className="flex flex-col md:flex-row items-end justify-between mb-8 pb-6 border-b border-white/5 group/header">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 mb-1">
-                                    Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
-                                </p>
-                                <h2 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
-                                    {currentTab?.label}<span className="text-neon-green">.</span>
-                                </h2>
-                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest pt-1">
-                                    {currentTab?.desc}
-                                </p>
+                        <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-[2px] bg-neon-green/40" />
+                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80">
+                                        Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                        {currentTab?.label}<span className="text-neon-green">.</span>
+                                    </h2>
+                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
+                                        {currentTab?.desc}
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex flex-col items-end gap-4 w-full md:w-auto">
@@ -521,90 +524,8 @@ const ProposalGenerator = () => {
                             </div>
                         </div>
 
-                        {activeTab === '1' && (
-                            <div className="mb-12 flex justify-end">
-                                <Button 
-                                    onClick={() => setShowBulkImport(true)} 
-                                    variant="outline" 
-                                    className="border-white/10 hover:bg-white/5 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2 bg-zinc-900/50 text-white"
-                                >
-                                    <Upload size={14} />
-                                    Smart Bulk Import
-                                </Button>
-                            </div>
-                        )}
-
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
-                                {activeTab === '0' && (
-                                    <div className="space-y-12">
-                                        <div className="bg-zinc-900/40 border border-white/5 rounded-[40px] p-10 space-y-10">
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Paste Project Brief / Raw Data</label>
-                                                    <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-3 py-1 rounded-full uppercase">AI Enabled</span>
-                                                </div>
-                                                <textarea 
-                                                    value={bulkRawText} 
-                                                    onChange={e => setBulkRawText(e.target.value)} 
-                                                    className="w-full bg-black/40 border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-neon-green/40 transition-all min-h-[300px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-700" 
-                                                    placeholder="Paste meeting notes, emails, or raw requirements here... The AI will extract everything automatically." 
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Upload Reference Files</label>
-                                                    <div className="group relative h-48 rounded-[32px] border-2 border-dashed border-white/10 hover:border-neon-green/50 hover:bg-neon-green/[0.02] transition-all flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden">
-                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple onChange={(e) => {
-                                                            // For now, just a visual feedback
-                                                            const files = Array.from(e.target.files);
-                                                            if (files.length) useStore.getState().addToast(`${files.length} files attached. In this version, please paste the text content for AI processing.`, 'error');
-                                                        }} />
-                                                        <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-neon-green group-hover:text-black transition-all">
-                                                            <Upload size={24} />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-xs font-black text-white uppercase tracking-widest">Drop Briefs / PDFs</p>
-                                                            <p className="text-[9px] font-bold text-gray-500 uppercase mt-1">Up to 10MB per file</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col justify-end space-y-4">
-                                                    <div className="p-4 bg-neon-green/5 rounded-2xl border border-neon-green/10 space-y-1.5">
-                                                        <div className="flex items-center gap-2 text-neon-green">
-                                                            <Sparkles size={12} />
-                                                            <span className="text-[8px] font-black uppercase tracking-widest">Smart Extraction</span>
-                                                        </div>
-                                                        <p className="text-[8px] font-bold text-gray-600 leading-relaxed uppercase">Our AI will automatically map names, objectives, deliverables, and line items from your source.</p>
-                                                    </div>
-                                                    <Button 
-                                                        onClick={async () => {
-                                                            if (!bulkRawText.trim()) return;
-                                                            setIsGenerating(true);
-                                                            setGeneratingSection('all');
-                                                            try {
-                                                                await handleGenerateProposal(bulkRawText);
-                                                                addToast("Proposal generated successfully", "success");
-                                                                setActiveTab('1'); // Move to Identity after success
-                                                            } catch (e) {
-                                                                addToast(e.message, 'error', e.code);
-                                                            } finally {
-                                                                setIsGenerating(false);
-                                                                setGeneratingSection(null);
-                                                            }
-                                                        }} 
-                                                        disabled={isGenerating || !bulkRawText.trim()}
-                                                        className="h-14 rounded-xl bg-neon-green text-black text-[10px] font-black uppercase tracking-[0.2em] gap-2 shadow-[0_0_30px_rgba(57,255,20,0.2)] hover:scale-[1.02] transition-all w-full"
-                                                    >
-                                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                                                        Initialize AI Build
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                                 {activeTab === '1' && (
                                     <div className="space-y-12">
                                         <div className="space-y-4">
@@ -1446,64 +1367,6 @@ const ProposalGenerator = () => {
                 ))}
             </div>
 
-            <AnimatePresence>
-                {showBulkImport && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBulkImport(false)} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-4xl bg-zinc-900 border border-white/10 rounded-[40px] overflow-hidden shadow-2xl">
-                            <div className="p-10 space-y-8">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3 text-neon-green">
-                                            <Cpu size={24} />
-                                            <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Smart Bulk Import.</h2>
-                                        </div>
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Paste raw details, emails, or notes</p>
-                                    </div>
-                                    <button onClick={() => setShowBulkImport(false)} className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-white"><X size={20} /></button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Raw Project Data</label>
-                                    <textarea 
-                                        value={bulkRawText} 
-                                        onChange={e => setBulkRawText(e.target.value)} 
-                                        className="w-full bg-black border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-neon-green/40 transition-all min-h-[400px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-600" 
-                                        placeholder="Paste your client requirements, event details, or service lists here... Example: 'Client needs artist logistics for 3 cities, 20 volunteers for 5 days, production for main stage...'" 
-                                    />
-                                </div>
-
-                                <div className="flex gap-4">
-                                    <Button onClick={() => setShowBulkImport(false)} variant="outline" className="flex-1 h-16 rounded-2xl border-white/5 hover:bg-white/5 text-[11px] font-black uppercase tracking-widest text-white">Cancel</Button>
-                                    <Button 
-                                        onClick={async () => {
-                                            if (!bulkRawText.trim()) return;
-                                            setIsGenerating(true);
-                                            setGeneratingSection('all');
-                                            try {
-                                                await handleGenerateProposal(bulkRawText);
-                                                addToast("Import successful", "success");
-                                                setBulkRawText('');
-                                                setShowBulkImport(false);
-                                            } catch (e) {
-                                                addToast(e.message, 'error', e.code);
-                                            } finally {
-                                                setIsGenerating(false);
-                                                setGeneratingSection(null);
-                                            }
-                                        }} 
-                                        disabled={isGenerating || !bulkRawText.trim()}
-                                        className="flex-[2] h-16 rounded-2xl bg-neon-green text-black text-[11px] font-black uppercase tracking-widest gap-3 shadow-[0_0_30px_rgba(57,255,20,0.3)] hover:scale-[1.02] transition-all"
-                                    >
-                                        {isGenerating && generatingSection === 'all' ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
-                                        Transform Into Proposal
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
             <SignatureModal 
                 isOpen={isSignatureModalOpen} 
                 onClose={() => setIsSignatureModalOpen(false)} 

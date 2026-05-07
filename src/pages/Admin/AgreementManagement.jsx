@@ -98,22 +98,22 @@ const ContractManagement = () => {
 
 
                 {/* Search & Filters */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
+                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
                         <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-purple transition-colors" size={18} />
-                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search contracts, clients, IDs..." className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-gray-600" />
+                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search contracts..." className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-gray-600" />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto scrollbar-hide">
-                            <div className="flex min-w-max md:min-w-0">
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex flex-1">
                                 {['All', 'Draft', 'Final', 'Executed'].map(s => (
-                                    <button key={s} onClick={() => setStatusFilter(s)} className={cn("px-4 sm:px-6 md:px-10 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all min-w-[80px] md:min-w-[120px]", statusFilter === s ? "bg-[#A855F7] text-black shadow-[0_10px_25px_rgba(168,85,247,0.5)]" : "text-gray-500 hover:text-white hover:bg-white/5")}>{s}</button>
+                                    <button key={s} onClick={() => setStatusFilter(s)} className={cn("flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all min-w-[70px] sm:min-w-[100px] md:min-w-[120px]", statusFilter === s ? "bg-[#A855F7] text-black shadow-[0_10px_25px_rgba(168,85,247,0.5)]" : "text-gray-500 hover:text-white hover:bg-white/5")}>{s}</button>
                                 ))}
                             </div>
                         </div>
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5">
-                            <button onClick={() => setViewMode('grid')} className={cn("p-3 rounded-xl transition-all", viewMode === 'grid' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><LayoutGrid size={16} /></button>
-                            <button onClick={() => setViewMode('list')} className={cn("p-3 rounded-xl transition-all", viewMode === 'list' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><FileText size={16} /></button>
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
+                            <button onClick={() => setViewMode('grid')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'grid' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><LayoutGrid size={16} /></button>
+                            <button onClick={() => setViewMode('list')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'list' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><FileText size={16} /></button>
                         </div>
                     </div>
                 </div>
@@ -164,18 +164,18 @@ const ContractManagement = () => {
                         </motion.div>
                     ) : (
                         <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            <Card className="min-w-[800px] md:min-w-0 bg-zinc-900/40 border-white/5 rounded-[2.5rem] p-0 border overflow-hidden">
+                            <Card className="min-w-[800px] bg-zinc-900/40 border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left">
-                                    <thead><tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500"><th className="p-8">Document</th><th className="p-8">Client</th><th className="p-8">Type</th><th className="p-8">Created</th><th className="p-8">Status</th><th className="p-8 text-right">Actions</th></tr></thead>
+                                    <thead><tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500"><th className="p-6 md:p-8">Document</th><th className="p-6 md:p-8">Client</th><th className="p-6 md:p-8">Type</th><th className="p-6 md:p-8">Created</th><th className="p-6 md:p-8">Status</th><th className="p-6 md:p-8 text-right">Actions</th></tr></thead>
                                     <tbody className="divide-y divide-white/5">
                                         {filtered.map(a => (
                                             <tr key={a.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple"><Scale size={20} /></div><div><div className="text-xs font-black uppercase tracking-widest">{a.agreementNumber}</div><div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div></div></div></td>
-                                                <td className="p-8 text-sm font-black uppercase tracking-tight">{a.parties?.secondParty?.name}</td>
-                                                <td className="p-8 text-[10px] font-bold text-gray-400 uppercase">{a.template || a.type || 'Service'}</td>
-                                                <td className="p-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}</td>
-                                                <td className="p-8"><div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>{a.status}</div></td>
-                                                <td className="p-8"><div className="flex justify-end gap-2">
+                                                <td className="p-6 md:p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple"><Scale size={20} /></div><div><div className="text-xs font-black uppercase tracking-widest">{a.agreementNumber}</div><div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">CONTRACT</div></div></div></td>
+                                                <td className="p-6 md:p-8 text-sm font-black uppercase tracking-tight">{a.parties?.secondParty?.name}</td>
+                                                <td className="p-6 md:p-8 text-[10px] font-bold text-gray-400 uppercase">{a.template || a.type || 'Service'}</td>
+                                                <td className="p-6 md:p-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}</td>
+                                                <td className="p-6 md:p-8"><div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>{a.status}</div></td>
+                                                <td className="p-6 md:p-8"><div className="flex justify-end gap-2">
                                                     <a href={`/agreement/${a.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white"><Eye size={18} /></a>
                                                     <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-white"><History size={18} /></button>
@@ -202,12 +202,12 @@ const ContractManagement = () => {
                     {showDeleteModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-10 text-center space-y-8">
-                                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={32} /></div>
-                                <div><h3 className="text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-sm mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
-                                <div className="flex gap-4">
-                                    <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-gray-400 font-black uppercase tracking-widest text-xs rounded-xl">Cancel</button>
-                                    <button onClick={() => handleDelete(showDeleteModal)} className="flex-1 h-14 bg-red-500 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-red-500/20">Purge</button>
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-10 text-center space-y-6 md:space-y-8">
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} md={32} /></div>
+                                <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-[11px] md:text-sm mt-2 md:mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
+                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                                    <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-12 md:h-14 bg-white/5 hover:bg-white/10 text-gray-400 font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl">Cancel</button>
+                                    <button onClick={() => handleDelete(showDeleteModal)} className="flex-1 h-12 md:h-14 bg-red-500 text-white font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl shadow-lg shadow-red-500/20">Purge</button>
                                 </div>
                             </motion.div>
                         </div>
@@ -219,49 +219,48 @@ const ContractManagement = () => {
                     {selectedAnalytics && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden">
-                                <div className="p-8 border-b border-white/5 flex justify-between items-center">
-                                    <div><h3 className="text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-white/5 rounded-full"><X size={20} /></button>
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
+                                <div className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center shrink-0">
+                                    <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full"><X size={18} md={20} /></button>
                                 </div>
-                                <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6 scrollbar-hide">
-                                    <div className="grid grid-cols-3 gap-4">
+                                <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                         {[{ l: 'Status', v: selectedAnalytics.status, icon: ShieldCheck }, { l: 'Risk', v: selectedAnalytics.risk || 'N/A', icon: AlertCircle }, { l: 'Type', v: selectedAnalytics.template || selectedAnalytics.type || 'Service', icon: FileText }].map((s, i) => (
-                                            <div key={i} className="p-5 bg-black/40 border border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-3" size={16} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-sm font-black uppercase">{s.v}</p></div>
+                                            <div key={i} className="p-4 md:p-5 bg-black/40 border border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} md={16} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
                                         ))}
                                     </div>
                                     {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
                                         <>
-                                            <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-4">
-                                                <ShieldCheck className="text-emerald-500 shrink-0" size={24} />
+                                            <div className="p-4 md:p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3 md:gap-4">
+                                                <ShieldCheck className="text-emerald-500 shrink-0" size={20} md={24} />
                                                 <div>
-                                                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
-                                                    <p className="text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
-                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                                    <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
+                                                    <p className="text-[11px] md:text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                    <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                                         <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
                                                         <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
-                                                        <span className="flex items-center gap-1"><Smartphone size={10} /> {selectedAnalytics.approvalMetadata.footprint?.browser || 'System'}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <button 
                                                 onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-red-500/10 transition-all"
+                                                className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
                                             >
                                                 Revoke Authorization
                                             </button>
                                         </>
                                     )}
-                                    <div className="space-y-4">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Logs</p>
+                                    <div className="space-y-3 md:space-y-4">
+                                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Logs</p>
                                         {(selectedAnalytics.accessLogs || []).length > 0 ? (
                                             [...(selectedAnalytics.accessLogs || [])].reverse().slice(0, 10).map((log, i) => (
-                                                <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
-                                                    <div className="flex items-center gap-4"><div className="w-2 h-2 rounded-full bg-neon-purple" /><div><p className="text-[11px] font-bold">{log.userEmail || 'Guest'}</p><p className="text-[8px] font-bold text-gray-600 uppercase">{log.ip || 'Unknown IP'}</p></div></div>
-                                                    <div className="text-right"><p className="text-[10px] font-black text-neon-purple">{new Date(log.timestamp).toLocaleTimeString()}</p><p className="text-[8px] font-bold text-gray-600">{new Date(log.timestamp).toLocaleDateString()}</p></div>
+                                                <div key={i} className="p-3 md:p-4 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 md:gap-4"><div className="w-1.5 h-1.5 rounded-full bg-neon-purple" /><div><p className="text-[10px] md:text-[11px] font-bold">{log.userEmail || 'Guest'}</p><p className="text-[8px] font-bold text-gray-600 uppercase">{log.ip || 'Unknown IP'}</p></div></div>
+                                                    <div className="text-right"><p className="text-[9px] md:text-[10px] font-black text-neon-purple">{new Date(log.timestamp).toLocaleTimeString()}</p><p className="text-[8px] font-bold text-gray-600">{new Date(log.timestamp).toLocaleDateString()}</p></div>
                                                 </div>
                                             ))
-                                        ) : <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl"><p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No access logs yet.</p></div>}
+                                        ) : <div className="py-8 md:py-10 text-center border-2 border-dashed border-white/5 rounded-2xl"><p className="text-[9px] md:text-[10px] font-black text-gray-700 uppercase tracking-widest">No access logs yet.</p></div>}
                                     </div>
                                 </div>
                             </motion.div>

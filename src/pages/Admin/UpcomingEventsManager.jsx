@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music } from 'lucide-react';
+import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music, RotateCcw } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -23,6 +23,8 @@ const UpcomingEventsManager = () => {
     const [editingId, setEditingId] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+    const [activeEditorTab, setActiveEditorTab] = useState('basics');
 
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -39,23 +41,33 @@ const UpcomingEventsManager = () => {
         isGuestlistEnabled: false,
         ticketCategories: [],
         alsoPostToAnnouncements: false,
-        imageTransform: { scale: 1, x: 0, y: 0 }
+        imageTransform: { scale: 1, x: 0, y: 0 },
+        artists: [],
+        ageLimit: 'ALL AGES',
+        doorsOpen: '',
+        performanceType: 'LIVE SHOW',
+        highlightColor: '#2ebfff',
     });
+    const [artistsInput, setArtistsInput] = useState('');
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
 
     const coreContentTabs = [
         { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
         { name: 'Announcements', path: '/admin/announcements', icon: Radio },
         { name: 'Blog', path: '/admin/blog', icon: FileText },
-
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
     ];
 
     const resetForm = () => {
         setNewEvent({
             title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
             isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, ticketCategories: [],
-            imageTransform: { scale: 1, x: 0, y: 0 }
+            imageTransform: { scale: 1, x: 0, y: 0 },
+            artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff'
         });
+        setArtistsInput('');
+        setActiveEditorTab('basics');
+        setShowPreviewMobile(false);
         setIsAdding(false);
         setEditingId(null);
         setSelectedFile(null);
@@ -79,7 +91,19 @@ const UpcomingEventsManager = () => {
             }
         }
 
-        setNewEvent({ ...item, date: dateValue || '', alsoPostToAnnouncements: false });
+        const artists = item.artists || [];
+        setArtistsInput(artists.join(', '));
+        
+        setNewEvent({ 
+            ...item, 
+            date: dateValue || '', 
+            alsoPostToAnnouncements: false,
+            artists: artists,
+            ageLimit: item.ageLimit || 'ALL AGES',
+            doorsOpen: item.doorsOpen || '',
+            performanceType: item.performanceType || 'LIVE SHOW',
+            highlightColor: item.highlightColor || '#2ebfff'
+        });
     };
 
     const moveItem = async (index, direction) => {
@@ -154,404 +178,468 @@ const UpcomingEventsManager = () => {
             tabs={coreContentTabs}
             accentColor="neon-pink"
             action={!isAdding && (
-                <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-4 w-full md:w-auto">
                     <button
                         onClick={() => toggleUpcomingSectionVisibility(siteSettings?.showUpcomingEvents)}
                         className={cn(
-                            "h-14 px-8 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest border transition-all",
+                            "h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl flex items-center justify-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-widest border transition-all w-full sm:w-auto",
                             siteSettings?.showUpcomingEvents ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-red-500/10 text-red-500 border-red-500/20"
                         )}
                     >
                         {siteSettings?.showUpcomingEvents ? <Eye size={16} /> : <EyeOff size={16} />}
-                        Public View: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
+                        Public: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
                     </button>
-                    <Button onClick={() => { setIsAdding(true); setEditingId(null); }} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)]">
+                    <Button onClick={() => { setIsAdding(true); setEditingId(null); setActiveEditorTab('basics'); }} className="h-12 md:h-14 px-6 md:px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)] w-full sm:w-auto">
                         <Plus className="mr-2" size={18} /> New Entry
                     </Button>
                 </div>
             )}
         >
+            {/* Mobile Preview Toggle */}
+            {isAdding && (
+                <div className="lg:hidden fixed bottom-6 right-6 z-[200]">
+                    <button 
+                        onClick={() => setShowPreviewMobile(!showPreviewMobile)}
+                        className={cn(
+                            "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all border animate-in zoom-in duration-300",
+                            showPreviewMobile ? "bg-white text-black border-white" : "bg-neon-blue text-black border-neon-blue"
+                        )}
+                    >
+                        {showPreviewMobile ? <X size={24} /> : <Eye size={24} />}
+                    </button>
+                </div>
+            )}
             <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10">
 
                 <AnimatePresence mode="wait">
                     {isAdding ? (
-                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                            {/* Editor Column */}
-                            <div className="lg:col-span-8">
-                                <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
-                                    <div className="flex justify-between items-center mb-10">
-                                        <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3">
-                                            <Sparkles className="text-neon-blue" size={24} /> {editingId ? 'EDIT' : 'NEW'} EVENT
-                                        </h2>
-                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest">Discard</button>
-                                    </div>
+                        <div className="flex flex-col lg:flex-row gap-10 items-start pb-32">
+                            <div className="flex-1 w-full relative">
+                                <AnimatePresence mode="wait">
+                                    {showPreviewMobile ? (
+                                        <motion.div key="mobile-preview" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="lg:hidden">
+                                            <LivePreview type="event" data={{ ...newEvent, image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image }} />
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                                            <div className="xl:col-span-8">
+                                                <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
+                                                    <div className="flex justify-between items-center mb-10">
+                                                        <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3 leading-none">
+                                                            BASICS <span className="text-neon-blue">ENGINE.</span>
+                                                        </h2>
+                                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest">Abort</button>
+                                                    </div>
 
-                                    <form onSubmit={handleSubmit} className="space-y-8">
-                                        <div className="space-y-12">
-                                            {/* Section 1: Core Identities */}
-                                            <div className="space-y-8">
-                                                <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-blue/20" /> BASIC INFO
-                                                </h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Title</label>
-                                                        <Input
-                                                            placeholder="E.G. SUMMER MUSIC FESTIVAL..."
-                                                            value={newEvent.title}
-                                                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                                                            required
-                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest focus:border-neon-blue/30 px-6"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Date & Time</label>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <StudioDatePicker
-                                                                value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : (typeof newEvent.date === 'string' ? newEvent.date : '')}
-                                                                onChange={(val) => {
-                                                                    const timePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00';
-                                                                    setNewEvent({ ...newEvent, date: `${val}T${timePart}` });
-                                                                }}
-                                                                className="h-16"
-                                                            />
-                                                            <StudioTimePicker
-                                                                value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00'}
-                                                                onChange={(val) => {
-                                                                    const datePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : new Date().toISOString().split('T')[0];
-                                                                    setNewEvent({ ...newEvent, date: `${datePart}T${val}` });
-                                                                }}
-                                                                className="h-16"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Location</label>
-                                                        <Input
-                                                            placeholder="E.G. MAINLAND INDIA, VENUE NAME..."
-                                                            value={newEvent.location}
-                                                            onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Category</label>
-                                                        <StudioSelect
-                                                            value={newEvent.category}
-                                                            options={portfolioCategories.map(cat => ({ 
-                                                                value: cat.id, 
-                                                                label: cat.label.toUpperCase() 
-                                                            }))}
-                                                            onChange={val => setNewEvent({ ...newEvent, category: val })}
-                                                            placeholder="SELECT CATEGORY..."
-                                                            className="h-16"
-                                                            accentColor="neon-blue"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Description (Short)</label>
-                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{newEvent.description.length}/120</span>
-                                                    </div>
-                                                    <textarea
-                                                        className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-[11px] font-black uppercase tracking-widest text-gray-300 focus:outline-none focus:border-neon-blue/30 transition-all h-32 resize-none shadow-inner"
-                                                        placeholder="BRIEF SUMMARY FOR HOVER DETAILS..."
-                                                        value={newEvent.description}
-                                                        maxLength={120}
-                                                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Section 2: Media & CTAs */}
-                                            <div className="space-y-8">
-                                                <h3 className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-green/20" /> IMAGES & LINKS
-                                                </h3>
-                                                <div className="space-y-6">
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Event Image</label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                            <div className="md:col-span-2">
-                                                                <Input placeholder="PASTE ASSET URL" value={newEvent.image} onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
-                                                            </div>
-                                                            <div className="relative group">
-                                                                <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-blue/30 transition-all">
-                                                                    <Upload className="text-gray-500 group-hover:text-neon-blue" size={18} />
-                                                                    <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                    <form onSubmit={handleSubmit} className="space-y-16">
+                                                        {/* Section 1: Identity */}
+                                                        <div className="space-y-8">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Title</label>
+                                                                    <Input placeholder="E.G. SUMMER MUSIC FESTIVAL..." value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} required className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Date & Time</label>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <StudioDatePicker
+                                                                            value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : (typeof newEvent.date === 'string' ? newEvent.date : '')}
+                                                                            onChange={(val) => {
+                                                                                const timePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00';
+                                                                                setNewEvent({ ...newEvent, date: `${val}T${timePart}` });
+                                                                            }}
+                                                                            className="h-16"
+                                                                        />
+                                                                        <StudioTimePicker
+                                                                            value={(typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[1] : '20:00'}
+                                                                            onChange={(val) => {
+                                                                                const datePart = (typeof newEvent.date === 'string' && newEvent.date.includes('T')) ? newEvent.date.split('T')[0] : new Date().toISOString().split('T')[0];
+                                                                                setNewEvent({ ...newEvent, date: `${datePart}T${val}` });
+                                                                            }}
+                                                                            className="h-16"
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
 
-                                                        {/* Visual Calibration */}
-                                                        <div className="bg-white/5 p-8 rounded-3xl border border-white/5 space-y-6">
-                                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-blue mb-4">Image Adjustment</h4>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Location</label>
+                                                                    <Input placeholder="E.G. MAINLAND INDIA, VENUE NAME..." value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Category</label>
+                                                                    <StudioSelect
+                                                                        value={newEvent.category}
+                                                                        options={portfolioCategories.map(cat => ({ value: cat.id, label: cat.label.toUpperCase() }))}
+                                                                        onChange={val => setNewEvent({ ...newEvent, category: val })}
+                                                                        placeholder="SELECT CATEGORY..."
+                                                                        className="h-16"
+                                                                        accentColor="neon-blue"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Artists Lineup</label>
+                                                                    <Input placeholder="E.G. ARTIST 1, ARTIST 2..." value={artistsInput} onChange={(e) => { const val = e.target.value; setArtistsInput(val); setNewEvent({ ...newEvent, artists: val.split(',').map(s => s.trim()).filter(s => s !== '') }); }} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Performance Type</label>
+                                                                    <Input placeholder="E.G. LIVE SHOW, DJ SET..." value={newEvent.performanceType} onChange={(e) => setNewEvent({ ...newEvent, performanceType: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                            </div>
+
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                                 <div className="space-y-3">
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Scale</span>
-                                                                        <span className="text-[8px] font-black text-white">{(newEvent.imageTransform?.scale || 1).toFixed(2)}x</span>
-                                                                    </div>
-                                                                    <input 
-                                                                        type="range" min="0.5" max="2" step="0.01"
-                                                                        value={newEvent.imageTransform?.scale || 1}
-                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, scale: parseFloat(e.target.value) } })}
-                                                                        className="w-full accent-neon-blue bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
-                                                                    />
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Doors Open</label>
+                                                                    <Input placeholder="E.G. 7:00 PM" value={newEvent.doorsOpen} onChange={(e) => setNewEvent({ ...newEvent, doorsOpen: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                 </div>
                                                                 <div className="space-y-3">
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">X-Position</span>
-                                                                        <span className="text-[8px] font-black text-white">{newEvent.imageTransform?.x || 0}%</span>
-                                                                    </div>
-                                                                    <input 
-                                                                        type="range" min="-100" max="100" step="1"
-                                                                        value={newEvent.imageTransform?.x || 0}
-                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, x: parseInt(e.target.value) } })}
-                                                                        className="w-full accent-neon-green bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
-                                                                    />
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Age Limit</label>
+                                                                    <Input placeholder="E.G. 18+, ALL AGES" value={newEvent.ageLimit} onChange={(e) => setNewEvent({ ...newEvent, ageLimit: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                 </div>
                                                                 <div className="space-y-3">
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Y-Position</span>
-                                                                        <span className="text-[8px] font-black text-white">{newEvent.imageTransform?.y || 0}%</span>
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Accent Color</label>
+                                                                    <div className="flex gap-2">
+                                                                        <Input type="color" value={newEvent.highlightColor} onChange={(e) => setNewEvent({ ...newEvent, highlightColor: e.target.value })} className="h-16 w-20 bg-black/50 border-white/5 rounded-2xl cursor-pointer p-2" />
+                                                                        <Input placeholder="#000000" value={newEvent.highlightColor} onChange={(e) => setNewEvent({ ...newEvent, highlightColor: e.target.value })} className="h-16 flex-1 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
                                                                     </div>
-                                                                    <input 
-                                                                        type="range" min="-100" max="100" step="1"
-                                                                        value={newEvent.imageTransform?.y || 0}
-                                                                        onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, y: parseInt(e.target.value) } })}
-                                                                        className="w-full accent-neon-pink bg-white/10 h-1 rounded-full appearance-none cursor-pointer"
-                                                                    />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Venue Layout / Seat Map</label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <Input placeholder="LAYOUT IMAGE URL" value={newEvent.venueLayout} onChange={(e) => setNewEvent({ ...newEvent, venueLayout: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
-                                                            <div className="relative group">
-                                                                <input type="file" onChange={(e) => setVenueLayoutFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                                <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-2 bg-black/20 group-hover:border-neon-blue/30 transition-all">
-                                                                    <Upload className="text-gray-500" size={14} />
-                                                                    <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{venueLayoutFile ? 'UPLOAD READY' : 'UPLOAD MAP'}</span>
+                                                        {/* Section 2: Media */}
+                                                        <div className="pt-16 border-t border-white/5 space-y-12">
+                                                            <div className="space-y-4">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Image Asset</label>
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                    <div className="md:col-span-2">
+                                                                        <Input placeholder="PASTE ASSET URL" value={newEvent.image} onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest px-6" />
+                                                                    </div>
+                                                                    <div className="relative group">
+                                                                        <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                                        <div className="h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-blue/30 transition-all">
+                                                                            <Upload className="text-gray-500 group-hover:text-neon-blue" size={18} />
+                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="bg-white/5 p-8 rounded-3xl border border-white/5 space-y-6">
+                                                                <div className="flex justify-between items-center mb-4">
+                                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neon-blue">Visual Calibration</h4>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setNewEvent({ 
+                                                                            ...newEvent, 
+                                                                            imageTransform: { scale: 1, x: 0, y: 0 } 
+                                                                        })}
+                                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[8px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:bg-neon-blue/5 hover:border-neon-blue/20 transition-all"
+                                                                    >
+                                                                        <RotateCcw size={10} />
+                                                                        Reset
+                                                                    </button>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                                    {[
+                                                                        { label: 'Scale', key: 'scale', min: 1, max: 3, step: 0.01, unit: 'x', color: 'accent-neon-blue' },
+                                                                        { label: 'X-Position', key: 'x', min: -100, max: 100, step: 1, unit: '%', color: 'accent-neon-green' },
+                                                                        { label: 'Y-Position', key: 'y', min: -100, max: 100, step: 1, unit: '%', color: 'accent-neon-pink' }
+                                                                    ].map(adjust => (
+                                                                        <div key={adjust.key} className="space-y-3">
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{adjust.label}</span>
+                                                                                <span className="text-[8px] font-black text-white">{(newEvent.imageTransform?.[adjust.key] || (adjust.key === 'scale' ? 1 : 0)).toFixed(adjust.step < 1 ? 2 : 0)}{adjust.unit}</span>
+                                                                            </div>
+                                                                            <input type="range" min={adjust.min} max={adjust.max} step={adjust.step} value={newEvent.imageTransform?.[adjust.key] || (adjust.key === 'scale' ? 1 : 0)} onChange={(e) => setNewEvent({ ...newEvent, imageTransform: { ...newEvent.imageTransform, [adjust.key]: parseFloat(e.target.value) } })} className={cn("w-full h-1 rounded-full appearance-none cursor-pointer bg-white/10", adjust.color)} />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Action Button Text</label>
+                                                                    <Input placeholder="E.G. GET TICKETS" value={newEvent.buttonText} onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Link (Optional)</label>
+                                                                    <Input placeholder="HTTPS://..." value={newEvent.link} onChange={(e) => setNewEvent({ ...newEvent, link: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                        <div className="space-y-3">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Action Button Text</label>
-                                                            <Input
-                                                                placeholder="E.G. GET TICKETS"
-                                                                value={newEvent.buttonText}
-                                                                onChange={(e) => setNewEvent({ ...newEvent, buttonText: e.target.value })}
-                                                                className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6"
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Target Link (Optional)</label>
-                                                            <Input
-                                                                placeholder="HTTPS://..."
-                                                                value={newEvent.link}
-                                                                onChange={(e) => setNewEvent({ ...newEvent, link: e.target.value })}
-                                                                className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Section 3: Ticketing & Guestlist Config */}
-                                            <div className="space-y-8">
-                                                <h3 className="text-[10px] font-black text-neon-pink uppercase tracking-[0.4em] flex items-center gap-3">
-                                                    <div className="w-8 h-px bg-neon-pink/20" /> TICKETING & ACCESS
-                                                </h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center gap-6 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, isTicketed: !newEvent.isTicketed })}>
-                                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent.isTicketed ? "bg-neon-green text-black" : "bg-black text-gray-500 border border-white/10")}>
-                                                            <Ticket size={20} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-[11px] font-black uppercase tracking-widest text-white">ENABLE TICKETING</p>
-                                                            <p className="text-[9px] font-medium text-gray-500">Allow users to purchase tickets.</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center gap-6 group hover:bg-white/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, isGuestlistEnabled: !newEvent.isGuestlistEnabled })}>
-                                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent.isGuestlistEnabled ? "bg-neon-pink text-black" : "bg-black text-gray-500 border border-white/10")}>
-                                                            <Sparkles size={20} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-[11px] font-black uppercase tracking-widest text-white">ENABLE GUESTLIST</p>
-                                                            <p className="text-[9px] font-medium text-gray-500">Allow users to RSVP via Guestlist.</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {newEvent.isTicketed && (
-                                                    <div className="space-y-6 bg-black/30 p-8 rounded-[2rem] border border-white/5">
-                                                        <div className="space-y-3">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Ticketing Mode</label>
-                                                            <div className="flex gap-4">
-                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketMode: 'qr'})} className={cn("flex-1 h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", newEvent.ticketMode === 'qr' ? "bg-neon-green text-black border-neon-green" : "bg-black/50 border-white/10 text-gray-400 hover:text-white")}>
-                                                                    QR PASSES (AUTOMATED)
-                                                                </button>
-                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketMode: 'pdf'})} className={cn("flex-1 h-12 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all", newEvent.ticketMode === 'pdf' ? "bg-neon-blue text-black border-neon-blue" : "bg-black/50 border-white/10 text-gray-400 hover:text-white")}>
-                                                                    PDF TICKETS (OFFLINE MAPPED)
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-center">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Ticket Categories / Tiers</label>
-                                                                <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest hover:text-white flex items-center gap-1"><Plus size={12}/> Add Tier</button>
-                                                            </div>
-                                                            <div className="space-y-3">
-                                                                {(newEvent.ticketCategories || []).map((cat, idx) => (
-                                                                    <div key={cat.id} className="flex flex-wrap md:flex-nowrap gap-4 items-center bg-white/5 p-4 rounded-xl border border-white/10">
-                                                                        <Input placeholder="TIER NAME (E.G. VIP)" value={cat.name} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].name = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10" />
-                                                                        <Input type="number" placeholder="PRICE" value={cat.price} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].price = parseFloat(e.target.value) || 0; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 w-32 bg-black/50 border-white/10" />
-                                                                        <Input placeholder="DESCRIPTION..." value={cat.description} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].description = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10" />
-                                                                        <button type="button" onClick={() => { const newCats = newEvent.ticketCategories.filter((_, i) => i !== idx); setNewEvent({...newEvent, ticketCategories: newCats}) }} className="p-3 text-red-500 hover:bg-white/5 rounded-lg"><Trash2 size={16}/></button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                        </div>
-
-                                        {!editingId && (
-                                            <div className="p-6 bg-neon-pink/5 rounded-[2rem] border border-neon-pink/10 flex items-center gap-6 group hover:bg-neon-pink/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, alsoPostToAnnouncements: !newEvent.alsoPostToAnnouncements })}>
-                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent.alsoPostToAnnouncements ? "bg-neon-pink text-black" : "bg-white/5 text-gray-500")}>
-                                                    <Zap size={20} />
+                                                        {/* Section 3: Access */}
+                                                        <div className="pt-16 border-t border-white/5 space-y-12">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[
+                                            { key: 'isTicketed', label: 'ENABLE TICKETING', desc: 'Allow ticket sales.', icon: Ticket, color: 'neon-green', defaultText: 'GET TICKETS' },
+                                            { key: 'isGuestlistEnabled', label: 'ENABLE GUESTLIST', desc: 'Allow RSVP access.', icon: Sparkles, color: 'neon-pink', defaultText: 'RSVP NOW' }
+                                        ].map(opt => (
+                                            <div key={opt.key} className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center gap-6 group hover:bg-white/10 transition-all cursor-pointer" 
+                                                onClick={() => {
+                                                    const newState = !newEvent[opt.key];
+                                                    const updates = { [opt.key]: newState };
+                                                    if (newState && (!newEvent.buttonText || newEvent.buttonText === 'VIEW DETAILS' || newEvent.buttonText === 'GET TICKETS' || newEvent.buttonText === 'RSVP NOW')) {
+                                                        updates.buttonText = opt.defaultText;
+                                                    }
+                                                    setNewEvent({ ...newEvent, ...updates });
+                                                }}>
+                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", newEvent[opt.key] ? `bg-${opt.color} text-black` : "bg-black text-gray-500 border border-white/10")}>
+                                                    <opt.icon size={20} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-[11px] font-black uppercase tracking-widest text-white">SITE ANNOUNCEMENT</p>
-                                                    <p className="text-[9px] font-medium text-gray-500">Cross-post this event to the Announcements section.</p>
-                                                </div>
-                                                <div className={cn("w-6 h-6 rounded-lg border flex items-center justify-center transition-all", newEvent.alsoPostToAnnouncements ? "bg-neon-pink border-neon-pink text-black" : "border-white/10")}>
-                                                    {newEvent.alsoPostToAnnouncements && <Plus size={14} className="rotate-45" />}
+                                                    <p className="text-[11px] font-black uppercase tracking-widest text-white">{opt.label}</p>
+                                                    <p className="text-[9px] font-medium text-gray-500">{opt.desc}</p>
                                                 </div>
                                             </div>
-                                        )}
+                                        ))}
+                                    </div>
 
-                                        <div className="flex gap-4 pt-10 border-t border-white/10">
-                                            <Button type="button" variant="outline" onClick={resetForm} className="h-16 px-10 flex-1 rounded-2xl border-white/10 text-gray-400 font-black uppercase tracking-widest text-[11px]">Cancel</Button>
-                            <Button type="submit" disabled={uploading} className="h-16 px-10 flex-[2] bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-xl text-[11px] hover:scale-105 active:scale-95 transition-all">
-                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'UPDATE EVENT' : 'SAVE EVENT')}
-                            </Button>
-                                        </div>
-                                    </form>
-                                </Card>
+                                                            {newEvent.isTicketed && (
+                                                                <div className="space-y-8 bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
+                                                                    <div className="space-y-4">
+                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticketing Infrastructure</label>
+                                                                        <div className="flex gap-4 p-1.5 bg-black/40 rounded-2xl border border-white/10">
+                                                                            {[
+                                                                                { id: 'qr', label: 'QR PASSES (AUTOMATED)', color: 'neon-green' },
+                                                                                { id: 'pdf', label: 'PDF TICKETS (OFFLINE)', color: 'neon-blue' }
+                                                                            ].map(mode => (
+                                                                                <button key={mode.id} type="button" onClick={() => setNewEvent({...newEvent, ticketMode: mode.id})} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", newEvent.ticketMode === mode.id ? `bg-${mode.color} text-black` : "text-gray-500 hover:text-white")}>
+                                                                                        {mode.label}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <div className="space-y-4 pt-6 border-t border-white/5">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Inventory Tiers</label>
+                                                                            <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest flex items-center gap-1"><Plus size={12}/> New Tier</button>
+                                                                        </div>
+                                                                        <div className="space-y-4">
+                                                                            {(newEvent.ticketCategories || []).map((cat, idx) => (
+                                                                                <div key={cat.id} className="flex flex-wrap md:flex-nowrap gap-4 items-center bg-black/50 p-5 rounded-2xl border border-white/5">
+                                                                                    <Input placeholder="TIER NAME" value={cat.name} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].name = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10 uppercase text-[10px] font-black tracking-widest" />
+                                                                                    <div className="relative w-32 shrink-0"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-green font-black text-[10px]">₹</span><Input type="number" placeholder="0" value={cat.price} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].price = parseFloat(e.target.value) || 0; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 pl-8 bg-black/50 border-white/10 text-xs font-black" /></div>
+                                                                                    <Input placeholder="BENEFITS..." value={cat.description} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].description = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10 text-[10px] font-medium" />
+                                                                                    <button type="button" onClick={() => { const newCats = newEvent.ticketCategories.filter((_, i) => i !== idx); setNewEvent({...newEvent, ticketCategories: newCats}) }} className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16}/></button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {!editingId && (
+                                                                <div className="p-8 bg-neon-blue/5 rounded-[2.5rem] border border-neon-blue/10 flex items-center gap-6 group hover:bg-neon-blue/10 transition-all cursor-pointer" onClick={() => setNewEvent({ ...newEvent, alsoPostToAnnouncements: !newEvent.alsoPostToAnnouncements })}>
+                                                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all", newEvent.alsoPostToAnnouncements ? "bg-neon-blue text-black" : "bg-white/5 text-gray-500")}>
+                                                                        <Zap size={24} />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-xs font-black uppercase tracking-widest text-white">CROSS-POST TO BROADCASTS</p>
+                                                                        <p className="text-[10px] font-medium text-gray-500">Cross-post this event to the Announcements stream.</p>
+                                                                    </div>
+                                                                    <div className={cn("w-6 h-6 rounded-lg border flex items-center justify-center transition-all", newEvent.alsoPostToAnnouncements ? "bg-neon-blue border-neon-blue text-black" : "border-white/10")}>
+                                                                        {newEvent.alsoPostToAnnouncements && <CheckCircle size={14} />}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-white/10">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={resetForm} 
+                                                                className="h-16 px-12 rounded-2xl bg-white/5 border border-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] flex-1"
+                                                            >
+                                                                Abort
+                                                            </button>
+                                                            <Button type="submit" disabled={uploading} className="h-16 px-12 sm:px-24 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(0,255,255,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
+                                                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'COMMIT CHANGES' : 'DEPLOY EVENT')}
+                                                            </Button>
+                                                        </div>
+                                                    </form>
+                                                </Card>
+                                            </div>
+
+
+                                            <div className="xl:col-span-4 hidden xl:block sticky top-12">
+                                                <LivePreview type="event" data={{ ...newEvent, image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image }} />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    ) : (
+                        <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            {/* Stats bar */}
+                            <div className="flex items-center gap-6 mb-10">
+                                <div className="text-center">
+                                    <p className="text-3xl font-black text-white font-heading">{upcomingEvents.length}</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Total Events</p>
+                                </div>
+                                <div className="w-px h-10 bg-white/5" />
+                                <div className="text-center">
+                                    <p className="text-3xl font-black text-neon-blue font-heading">{upcomingEvents.filter(e => e.isTicketed).length}</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Ticketed</p>
+                                </div>
+                                <div className="w-px h-10 bg-white/5" />
+                                <div className="text-center">
+                                    <p className="text-3xl font-black text-neon-pink font-heading">{upcomingEvents.filter(e => e.isGuestlistEnabled).length}</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Guestlist</p>
+                                </div>
                             </div>
 
-                            {/* Preview Column */}
-                            <div className="lg:col-span-4 hidden lg:block sticky top-12">
-                                <LivePreview type="event" data={{ ...newEvent, image: selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image }} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                                <AnimatePresence mode="popLayout">
+                                {upcomingEvents.map((item, index) => (
+                                    <motion.div
+                                        key={item.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.92 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.92 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-neon-blue/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+                                    >
+                                        {/* Full-bleed image */}
+                                        <div className="absolute inset-0 z-0">
+                                            {item.image ? (
+                                                <div
+                                                    className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
+                                                    style={{
+                                                        backgroundImage: `url(${item.image})`,
+                                                        transform: `scale(${item.imageTransform?.scale || 1})`,
+                                                        backgroundPosition: `calc(50% + ${(item.imageTransform?.x || 0)}%) calc(50% + ${(item.imageTransform?.y || 0)}%)`
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                                                    <Calendar size={40} className="text-gray-800" />
+                                                </div>
+                                            )}
+                                            {/* Gradient layers */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10 z-10" />
+                                            {/* Neon accent glow on hover */}
+                                            <div className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                                                style={{ background: `radial-gradient(ellipse at bottom, ${item.highlightColor || '#2ebfff'}12 0%, transparent 70%)` }} />
+                                        </div>
+
+                                        {/* Top toolbar — slides down on hover */}
+                                        <div className="absolute top-5 left-5 right-5 z-30 flex justify-between items-start opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-400">
+                                            <div className="flex gap-2">
+                                                <button onClick={() => moveItem(index, 'up')} disabled={index === 0}
+                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
+                                                    <ChevronUp size={16} />
+                                                </button>
+                                                <button onClick={() => moveItem(index, 'down')} disabled={index === upcomingEvents.length - 1}
+                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
+                                                    <ChevronDown size={16} />
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const params = new URLSearchParams({ subject: `UPDATE: ${item.title}`, header: item.title, body: item.description, heroImage: item.image, ctaText: 'See Details', ctaUrl: `${window.location.origin}/concertzone` });
+                                                        window.location.href = `/admin/mailing?${params.toString()}`;
+                                                    }}
+                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-green hover:text-black transition-all"
+                                                    title="Mailing List"
+                                                >
+                                                    <Mail size={15} />
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm(`Broadcast "${item.title}" to all users?`)) {
+                                                            await notifyAllUsers(item.title, item.description, `/concertzone`, item.image);
+                                                            addNotification({ title: 'Announcement Sent', content: `Users notified about "${item.title}".`, type: 'message' });
+                                                        }
+                                                    }}
+                                                    className="w-9 h-9 rounded-xl bg-neon-blue/20 backdrop-blur-md border border-neon-blue/30 flex items-center justify-center text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
+                                                    title="Broadcast"
+                                                >
+                                                    <Sparkles size={15} />
+                                                </button>
+                                                <button onClick={() => handleEdit(item)}
+                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all">
+                                                    <Edit size={15} />
+                                                </button>
+                                                <button onClick={() => deleteUpcomingEvent(item.id)}
+                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-all">
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom content slab */}
+                                        <div className="absolute inset-x-6 bottom-6 z-20 space-y-3">
+                                            {/* Badges row */}
+                                            <div className="flex flex-wrap gap-2">
+                                                <span
+                                                    className="px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md"
+                                                    style={{
+                                                        backgroundColor: `${item.highlightColor || '#2ebfff'}11`,
+                                                        borderColor: `${item.highlightColor || '#2ebfff'}33`,
+                                                        color: item.highlightColor || '#2ebfff'
+                                                    }}
+                                                >
+                                                    {item.performanceType || 'EVENT'}
+                                                </span>
+                                                <span className="px-2.5 py-1 bg-white/5 border border-white/10 text-white/50 text-[7px] font-black uppercase tracking-widest rounded-full backdrop-blur-md">
+                                                    {(typeof item.date === 'string' && item.date.includes('T'))
+                                                        ? item.date.split('T')[0]
+                                                        : (item.date?.seconds ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'TBD')}
+                                                </span>
+                                            </div>
+
+                                            {/* Title */}
+                                            <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-blue transition-colors duration-500 leading-tight line-clamp-2">
+                                                {item.title}
+                                            </h3>
+
+                                            {/* Artists + access indicators */}
+                                            <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                                                {item.artists?.length > 0 ? (
+                                                    <p className="text-[8px] font-black text-white/40 uppercase tracking-widest truncate">
+                                                        {item.artists.slice(0, 2).join(' • ')}{item.artists.length > 2 ? ` +${item.artists.length - 2}` : ''}
+                                                    </p>
+                                                ) : <span />}
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    {item.isTicketed && (
+                                                        <span className="flex items-center gap-1 text-[7px] font-black text-neon-green uppercase tracking-widest">
+                                                            <Ticket size={9} /> TKT
+                                                        </span>
+                                                    )}
+                                                    {item.isGuestlistEnabled && (
+                                                        <span className="flex items-center gap-1 text-[7px] font-black text-neon-pink uppercase tracking-widest">
+                                                            <Sparkles size={9} /> RSVP
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                                </AnimatePresence>
+
+                                {upcomingEvents.length === 0 && (
+                                    <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
+                                        <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                                            <Calendar size={28} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">No events scheduled.</p>
+                                        <Button onClick={() => setIsAdding(true)} className="h-12 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl">
+                                            Add First Event
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
-                    ) : (
-                        <div className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-8 md:pb-0">
-                            <AnimatePresence mode="popLayout">
-                            {upcomingEvents.map((item, index) => (
-                                <motion.div 
-                                    key={item.id} 
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/20 transition-all duration-500 flex flex-col h-full"
-                                >
-                                    <div className="aspect-[3/4] relative overflow-hidden bg-black/50">
-                                        <img src={item.image} alt={item.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-between">
-                                            <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 translate-y-[-10px] group-hover:translate-y-0 transition-all duration-500">
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => moveItem(index, 'up')} disabled={index === 0} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all disabled:opacity-0"><ChevronUp size={18} /></button>
-                                                    <button onClick={() => moveItem(index, 'down')} disabled={index === upcomingEvents.length - 1} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-blue transition-all disabled:opacity-0"><ChevronDown size={18} /></button>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button 
-                                                        onClick={() => {
-                                                            const params = new URLSearchParams({
-                                                                subject: `UPDATE: ${item.title}`,
-                                                                header: item.title,
-                                                                body: item.description,
-                                                                heroImage: item.image,
-                                                                ctaText: 'See Details',
-                                                                ctaUrl: `${window.location.origin}/concertzone`
-                                                            });
-                                                            window.location.href = `/admin/mailing?${params.toString()}`;
-                                                        }}
-                                                        className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green transition-all"
-                                                        title="Broadcast via Email"
-                                                    >
-                                                        <Mail size={18} />
-                                                    </button>
-                                                     <button
-                                                        onClick={async () => {
-                                                            if (window.confirm(`Send announcement for "${item.title}" to all users?`)) {
-                                                                await notifyAllUsers(
-                                                                    item.title,
-                                                                    item.description,
-                                                                    `/concertzone`,
-                                                                    item.image
-                                                                );
-                                                                addNotification({
-                                                                    title: "Announcement Sent Successfully",
-                                                                    content: `Users have been notified about "${item.title}".`,
-                                                                    type: 'message'
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="w-10 h-10 rounded-xl bg-neon-blue/20 backdrop-blur-md flex items-center justify-center text-neon-blue border border-neon-blue/30 hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,255,0.1)]"
-                                                        title="Direct Broadcast"
-                                                    >
-                                                        <Sparkles size={18} />
-                                                    </button>
-                                                    <button onClick={() => handleEdit(item)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-neon-green transition-all"><Edit size={18} /></button>
-                                                    <button onClick={() => deleteUpcomingEvent(item.id)} className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 transition-all"><Trash2 size={18} /></button>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                                                <div className="flex items-center gap-3 mb-4">
-                                                    <span className="px-3 py-1 bg-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest border border-neon-blue/30 rounded-full">
-                                                        {(typeof item.date === 'string' && item.date.includes('T')) ? item.date.split('T')[0] : (item.date && item.date.seconds ? new Date(item.date.seconds * 1000).toLocaleDateString() : 'TBD')}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl md:text-3xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-green transition-colors">{item.title}</h3>
-                                                    <div className="flex flex-wrap items-center gap-4 md:gap-6 mt-2 md:mt-4">
-                                                        <p className="text-[10px] font-medium text-gray-400 line-clamp-2 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">{item.description}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                            </AnimatePresence>
-
-                            {upcomingEvents.length === 0 && (
-                                <div className="col-span-full py-40 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
-                                    <Clock size={48} className="text-gray-700" />
-                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">NO NEWBI EVENTS PLANNED.</p>
-                                    <Button onClick={() => setIsAdding(true)} className="h-14 px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl">ADD FIRST EVENT</Button>
-                                </div>
-                            )}
-                        </div>
                     )}
                 </AnimatePresence>
             </div>

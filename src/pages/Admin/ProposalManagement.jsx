@@ -155,25 +155,25 @@ const ProposalManagement = () => {
         >
             <div className="relative z-10">
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
+                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
                         <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} md={20} />
                         <input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search client or ID..."
+                            placeholder="Search proposals..."
                             className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 md:pr-8 rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                            <div className="flex min-w-max md:min-w-0">
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex flex-1">
                                 {['All', 'Draft', 'Sent', 'Accepted'].map((s) => (
                                     <button
                                         key={s}
                                         onClick={() => setStatusFilter(s)}
                                         className={cn(
-                                            "px-4 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] sm:min-w-[100px] md:min-w-[120px]",
+                                            "flex-1 px-3 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
                                             statusFilter === s 
                                                 ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
                                                 : "text-gray-500 hover:text-white hover:bg-white/5"
@@ -186,11 +186,11 @@ const ProposalManagement = () => {
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
-                                    "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
+                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
                                     viewMode === 'grid' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
@@ -199,7 +199,7 @@ const ProposalManagement = () => {
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={cn(
-                                    "flex-1 sm:flex-none p-3 sm:p-3.5 rounded-xl transition-all duration-300 flex justify-center",
+                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
                                     viewMode === 'table' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
@@ -323,21 +323,21 @@ const ProposalManagement = () => {
                             exit={{ opacity: 0, y: -20 }}
                             className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
                         >
-                            <Card className="min-w-[800px] md:min-w-0 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-3xl md:rounded-[2.5rem] p-0 border overflow-hidden">
+                            <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                            <th className="p-8">Document</th>
-                                            <th className="p-8">Client</th>
-                                            <th className="p-8">Created</th>
-                                            <th className="p-8">Status</th>
-                                            <th className="p-8 text-right">Actions</th>
+                                            <th className="p-6 md:p-8">Document</th>
+                                            <th className="p-6 md:p-8">Client</th>
+                                            <th className="p-6 md:p-8">Created</th>
+                                            <th className="p-6 md:p-8">Status</th>
+                                            <th className="p-6 md:p-8 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
                                         {filteredProposals.map((proposal) => (
                                             <tr key={proposal.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green group-hover:scale-110 transition-transform">
                                                             <FileSpreadsheet size={20} />
@@ -348,15 +348,15 @@ const ProposalManagement = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
                                                     <div className="text-sm font-black uppercase tracking-tight text-white">{proposal.clientName}</div>
                                                 </td>
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
                                                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                                         {new Date(proposal.createdAt).toLocaleDateString()}
                                                     </div>
                                                 </td>
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
                                                     <div className={cn(
                                                         "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
                                                         proposal.status === 'Accepted' ? 'bg-neon-green/10 text-neon-green' : 
@@ -366,7 +366,7 @@ const ProposalManagement = () => {
                                                         {proposal.status}
                                                     </div>
                                                 </td>
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <a href={`/proposal/${proposal.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
                                                         {user?.role !== 'editor' && (
@@ -400,32 +400,31 @@ const ProposalManagement = () => {
                     {selectedAnalytics && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedAnalytics(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2.5rem] overflow-hidden">
-                                <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
+                                <div className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center shrink-0">
                                     <div>
-                                        <h3 className="text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Access Logs for {selectedAnalytics.clientName}</p>
+                                        <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.clientName}</p>
                                     </div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-3 hover:bg-white/5 rounded-full transition-colors"><X size={20} /></button>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full transition-colors"><X size={18} md={20} /></button>
                                 </div>
-                                <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6 scrollbar-hide">
+                                <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
                                     {selectedAnalytics.status === 'Accepted' && selectedAnalytics.approvalMetadata && (
-                                        <div className="space-y-4">
-                                            <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-start gap-4">
-                                                <ShieldCheck className="text-neon-green shrink-0" size={24} />
+                                        <div className="space-y-3 md:space-y-4">
+                                            <div className="p-4 md:p-6 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-start gap-3 md:gap-4">
+                                                <ShieldCheck className="text-neon-green shrink-0" size={20} md={24} />
                                                 <div>
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
-                                                    <p className="text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
-                                                    <div className="flex flex-wrap gap-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                                    <p className="text-[9px] md:text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
+                                                    <p className="text-[11px] md:text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
+                                                    <div className="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                                                         <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(selectedAnalytics.approvalMetadata.signedAt).toLocaleString()}</span>
                                                         <span className="flex items-center gap-1"><Globe size={10} /> {selectedAnalytics.approvalMetadata.ip}</span>
-                                                        <span className="flex items-center gap-1"><Smartphone size={10} /> {selectedAnalytics.approvalMetadata.device?.platform || 'Unknown Device'}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <button 
                                                 onClick={() => handleRevokeSignature(selectedAnalytics.id)}
-                                                className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-red-500/10 transition-all"
+                                                className="w-full py-3 md:py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl border border-red-500/10 transition-all"
                                             >
                                                 Revoke Authorization
                                             </button>

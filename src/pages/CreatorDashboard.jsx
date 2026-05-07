@@ -22,6 +22,14 @@ const PLATFORMS = {
     other: { label: 'Other', icon: Globe },
 };
 
+const scrollContainer = (id, direction) => {
+    const container = document.getElementById(id);
+    if (container) {
+        const scrollAmount = direction === 'left' ? -300 : 300;
+        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+};
+
 // --- Helper: get submission status ---
 const getSubmissionStatus = (task, uid) => {
     const sub = task.submissions?.[uid];
@@ -79,17 +87,17 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
             
             <motion.div 
                 initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl bg-[#0a0a0a] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+                className="relative w-full max-w-4xl bg-[#0a0a0a] border md:border-white/10 rounded-none md:rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row h-[100dvh] md:h-auto md:max-h-[90vh]"
             >
                 {/* Left Side: Creative & Guidelines */}
-                <div className="flex-1 md:w-1/2 p-8 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-white/10">
+                <div className="flex-1 md:w-1/2 p-6 md:p-12 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-white/10">
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-blue shadow-[0_0_30px_rgba(46,191,255,0.1)]">
-                            <TypeInfo.icon size={28} />
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-blue shadow-[0_0_30px_rgba(46,191,255,0.1)]">
+                            <TypeInfo.icon size={24} className="md:size-[28px]" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em]">Deliverable Segment</span>
-                            <h2 className="text-3xl font-black font-heading uppercase text-white tracking-tighter leading-none mt-1">{task.title}</h2>
+                            <span className="text-[8px] md:text-[10px] font-black text-neon-blue uppercase tracking-[0.3em]">Deliverable Segment</span>
+                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase text-white tracking-tighter leading-none mt-1">{task.title}</h2>
                         </div>
                     </div>
 
@@ -168,25 +176,25 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                 </div>
 
                 {/* Right Side: Execution & Progress */}
-                <div className="flex-1 md:w-1/2 p-8 md:p-12 overflow-y-auto bg-gradient-to-br from-white/[0.02] to-transparent relative">
-                    <button onClick={onClose} className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                <div className="flex-1 md:w-1/2 p-6 md:p-12 overflow-y-auto bg-gradient-to-br from-white/[0.02] to-transparent relative">
+                    <button onClick={onClose} className="absolute top-6 md:top-8 right-6 md:right-8 w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/5">
                         <X size={18} />
                     </button>
 
                     <div className="h-full flex flex-col">
-                        <div className="mb-12">
-                            <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter mb-2">Task Verification</h3>
-                            <p className="text-[12px] text-gray-500 font-medium tracking-tight uppercase">Status: 
+                        <div className="mb-8 md:mb-12">
+                            <h3 className="text-xl md:text-2xl font-black font-heading uppercase italic tracking-tighter mb-2">Task Verification</h3>
+                            <p className="text-[10px] md:text-[12px] text-gray-500 font-medium tracking-tight uppercase">Status: 
                                 <span className={cn(
-                                    "ml-2",
-                                    status === 'approved' ? 'text-neon-green' :
-                                    status === 'submitted' ? 'text-yellow-500' :
-                                    status === 'rejected' ? 'text-red-500' :
-                                    'text-gray-400'
-                                )}>
-                                    {status === 'not_started' ? 'Pending Action' : 
-                                     status === 'submitted' ? 'Verification In-Progress' :
-                                     status === 'approved' ? 'Mission Verified' : 'Action Required'}
+                                     "ml-2",
+                                     status === 'approved' ? 'text-neon-green' :
+                                     status === 'submitted' ? 'text-yellow-500' :
+                                     status === 'rejected' ? 'text-red-500' :
+                                     'text-gray-400'
+                                 )}>
+                                     {status === 'not_started' ? 'Pending Action' : 
+                                      status === 'submitted' ? 'Verification In-Progress' :
+                                      status === 'approved' ? 'Mission Verified' : 'Action Required'}
                                 </span>
                             </p>
                         </div>
@@ -259,20 +267,38 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
     );
 };
 
-// --- Creator Settings Modal ---
-const CreatorSettingsModal = ({ profile, onClose }) => {
+// --- Creator Settings Panel (Embedded) ---
+const CreatorSettingsPanel = ({ profile, onClose }) => {
     const { updateCreator, deleteCreator, logout } = useStore();
     const navigate = useNavigate();
     const [isSaving, setIsSaving] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [form, setForm] = useState({
         name: profile.name || '',
         phone: profile.phone || '',
         city: profile.city || '',
         specializations: (profile.specializations || profile.niches || []).join(', '),
-        bio: profile.bio || ''
+        bio: profile.bio || '',
+        profilePicture: profile.profilePicture || ''
     });
 
     const handleChange = (e) => setForm({...form, [e.target.name]: e.target.value});
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setIsSaving(true);
+        try {
+            const url = await useStore.getState().uploadToCloudinary(file);
+            setForm(prev => ({ ...prev, profilePicture: url }));
+            useStore.getState().addToast("Profile picture updated!", 'success');
+        } catch (error) {
+            useStore.getState().addToast("Upload failed: " + error.message, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -282,66 +308,131 @@ const CreatorSettingsModal = ({ profile, onClose }) => {
                 ...form,
                 specializations: form.specializations.split(',').map(s => s.trim())
             });
-            onClose();
+            useStore.getState().addToast("Profile synchronized successfully.", 'success');
         } catch (err) {
-            useStore.getState().addToast("Failed to update profile.", 'error');
+            useStore.getState().addToast("Protocol interruption: " + err.message, 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (window.confirm("Are you sure you want to permanently delete your creator profile? This action is irreversible.")) {
-            try {
-                await deleteCreator(profile.uid);
-                await logout();
-                navigate('/');
-            } catch (err) {
-                useStore.getState().addToast("Failed to delete profile.", 'error');
-            }
+    const handleDeleteProfile = async () => {
+        setIsSaving(true);
+        try {
+            await deleteCreator(profile.uid);
+            await logout();
+            navigate('/');
+        } catch (err) {
+            useStore.getState().addToast("Failed to delete profile.", 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
     return (
         <div className="fixed inset-0 z-[200] flex justify-end">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }} className="relative w-full max-w-md bg-[#0a0a0a] border-l border-white/10 h-full overflow-y-auto custom-scrollbar flex flex-col p-8">
-                <div className="flex items-center justify-between mb-10">
-                    <h3 className="text-2xl font-black font-heading uppercase tracking-tighter text-white">Studio Settings</h3>
-                    <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
-                        <X size={18} />
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/90 backdrop-blur-sm"
+                onClick={onClose}
+            />
+            <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="relative w-full max-w-xl bg-[#0a0a0a] lg:border-l border-white/10 h-[100dvh] lg:h-full overflow-y-auto custom-scrollbar flex flex-col p-8 md:p-12 shadow-[-50px_0_100px_rgba(0,0,0,0.5)]"
+            >
+                <div className="flex items-center justify-between mb-12">
+                    <div className="space-y-2">
+                        <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Studio Settings</h3>
+                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-80">Refine your professional parameters</p>
+                    </div>
+                    <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/10">
+                        <X size={20} />
                     </button>
                 </div>
                 
-                <form onSubmit={handleSave} className="space-y-6 flex-1">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                        <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                {showDeleteConfirm ? (
+                    <div className="flex-1 flex flex-col justify-center space-y-8">
+                        <div className="text-center space-y-4">
+                            <AlertCircle size={48} className="text-red-500 mx-auto" />
+                            <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-white">Deactivate Profile?</h4>
+                            <p className="text-[12px] font-bold text-gray-500 uppercase tracking-wide leading-relaxed">
+                                Warning: This will permanently remove your artist profile and eligibility for upcoming gigs. This cannot be undone.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-6">
+                            <button 
+                                onClick={handleDeleteProfile}
+                                disabled={isSaving}
+                                className="h-20 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
+                            >
+                                {isSaving ? <Loader2 className="animate-spin" /> : 'YES, DELETE PROFILE'}
+                            </button>
+                            <button 
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="h-20 w-full bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-white/10 transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Phone</label>
-                        <input required name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                    </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">City</label>
-                        <input required name="city" value={form.city} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                    </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
-                        <input required name="specializations" value={form.specializations} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                    </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Bio</label>
-                        <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-blue transition-all resize-none" />
-                    </div>
-                    <Button type="submit" disabled={isSaving} className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all">
-                        {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
-                    </Button>
-                </form>
+                ) : (
+                    <form onSubmit={handleSave} className="space-y-6">
+                        {/* Profile Picture Upload */}
+                        <div className="flex flex-col items-center gap-6 mb-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-neon-blue/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative">
+                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] md:rounded-[2.5rem] bg-black border border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40 shadow-2xl">
+                                    {form.profilePicture ? (
+                                        <img src={form.profilePicture} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Camera size={32} className="text-gray-700 group-hover:text-neon-blue transition-colors" />
+                                    )}
+                                </div>
+                                <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-neon-blue text-black rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                    <Upload size={18} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                </label>
+                            </div>
+                            <div className="text-center space-y-1 relative z-10">
+                                <h4 className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Identity Asset</h4>
+                                <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Update your professional profile</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                            <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Phone</label>
+                            <input required name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">City</label>
+                            <input required name="city" value={form.city} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
+                            <input required name="specializations" value={form.specializations} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Bio</label>
+                            <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-blue transition-all resize-none" />
+                        </div>
+                        <Button type="submit" disabled={isSaving} className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all">
+                            {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
+                        </Button>
+                    </form>
+                )}
 
                 <div className="pt-8 mt-8 border-t border-red-500/20 mb-8">
                     <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4">Danger Zone</h4>
-                    <button onClick={handleDelete} type="button" className="w-full p-4 rounded-xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 transition-all flex items-center justify-center gap-2">
+                    <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full p-4 rounded-xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 transition-all flex items-center justify-center gap-2">
                         <AlertCircle size={14} /> Deactivate Creator Profile
                     </button>
                 </div>
@@ -378,36 +469,36 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-xl bg-[#0a0a0a] border-l border-white/10 h-full overflow-hidden flex flex-col"
+                className="relative w-full max-w-xl bg-[#0a0a0a] lg:border-l border-white/10 h-[100dvh] lg:h-full overflow-hidden flex flex-col shadow-[-50px_0_100px_rgba(0,0,0,0.5)]"
             >
                 {/* Panel Header */}
-                <div className="px-8 pt-8 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
-                    <div className="flex items-start justify-between gap-6 mb-6">
+                <div className="px-6 md:px-10 pt-8 md:pt-12 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
+                    <div className="flex items-start justify-between gap-6 mb-8">
                         <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Creator Workspace</span>
-                            <h2 className="text-2xl font-black font-heading uppercase tracking-tight text-white mt-1 italic leading-tight">
+                            <span className="text-[9px] md:text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-60">Creator Workspace</span>
+                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tight text-white mt-1.5 italic leading-none">
                                 {campaign.title}
                             </h2>
-                            <div className="mt-3">
+                            <div className="mt-4">
                                 <div className={cn(
-                                    "text-[11px] font-medium uppercase tracking-wider leading-relaxed transition-all duration-300 overflow-hidden relative",
-                                    !isExpanded && "max-h-[60px]"
+                                    "text-[10px] md:text-xs font-bold uppercase tracking-wider leading-relaxed transition-all duration-300 overflow-hidden relative text-gray-500",
+                                    !isExpanded && "max-h-[60px] md:max-h-[80px]"
                                 )}>
                                     {campaign.description ? (
                                         <div className="article-content" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                                     ) : (
-                                        <span className="text-gray-600">No tactical briefing provided for this operation.</span>
+                                        <span>No tactical briefing provided for this operation.</span>
                                     )}
                                     
-                                    {!isExpanded && campaign.description && campaign.description.length > 100 && (
+                                    {!isExpanded && campaign.description && campaign.description.length > 80 && (
                                         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
                                     )}
                                 </div>
                                 
-                                {campaign.description && (campaign.description.split('\n').length > 3 || campaign.description.length > 100) && (
+                                {campaign.description && (campaign.description.split('\n').length > 3 || campaign.description.length > 80) && (
                                     <button 
                                         onClick={() => setIsExpanded(!isExpanded)}
-                                        className="text-[9px] font-black text-neon-blue/60 hover:text-white uppercase tracking-[0.3em] mt-2 transition-colors flex items-center gap-2 group"
+                                        className="text-[9px] font-black text-neon-blue/80 hover:text-white uppercase tracking-[0.3em] mt-3 transition-colors flex items-center gap-2 group"
                                     >
                                         {isExpanded ? 'MINIMIZE BRIEF' : 'VIEW FULL SPECS'}
                                         <div className="w-4 h-px bg-neon-blue/20 group-hover:w-8 transition-all" />
@@ -415,8 +506,8 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                 )}
                             </div>
                         </div>
-                        <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all shrink-0">
-                            <X size={18} />
+                        <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all shrink-0 border border-white/10">
+                            <X size={20} />
                         </button>
                     </div>
 
@@ -596,10 +687,11 @@ const CreatorDashboard = () => {
     const { user, authInitialized, creators, campaigns, uploadToCloudinary } = useStore();
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
+    const [activeDashboardTab, setActiveDashboardTab] = useState('workspace'); // 'workspace' or 'settings'
     const [activeTab, setActiveTab] = useState('opportunities');
-    const [missionCampaign, setMissionCampaign] = useState(null);
-    const [selectedTask, setSelectedTask] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [missionCampaign, setMissionCampaign] = useState(null);
     const [isApplying, setIsApplying] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -697,30 +789,144 @@ const CreatorDashboard = () => {
                 <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '80px 80px' }}></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
-                               {/* Command Bar Header */}
-                <div className="flex flex-col lg:flex-row justify-between items-end mb-12 gap-8 relative border-b border-white/5 pb-8">
-                    <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="space-y-4"
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+                {/* STUDIO NAVIGATION TABS */}
+                <div className="flex items-center gap-2 mb-12 bg-white/5 p-2 rounded-[2.5rem] w-fit border border-white/5 backdrop-blur-xl">
+                    <button 
+                        onClick={() => setActiveDashboardTab('workspace')}
+                        className={cn(
+                            "px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                            activeDashboardTab === 'workspace' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                        )}
                     >
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter leading-none text-white italic uppercase">
-                                HELLO, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue not-italic">{profile.name.split(' ')[0]}.</span>
-                            </h1>
+                        WORKSPACE
+                    </button>
+                    <button 
+                        onClick={() => setActiveDashboardTab('settings')}
+                        className={cn(
+                            "px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                            activeDashboardTab === 'settings' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                        )}
+                    >
+                        STUDIO SETTINGS
+                    </button>
+                </div>
+
+                <AnimatePresence mode="wait">
+                    {activeDashboardTab === 'workspace' ? (
+                        <motion.div
+                            key="workspace"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-12"
+                        >
+                               {/* Command Bar Header */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 md:mb-16 gap-6 md:gap-8 relative border-b border-white/5 pb-8">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full space-y-12"
+                    >
+                        {/* STUDIO WORKSPACE BANNER */}
+                        <div className="relative group overflow-hidden p-1 bg-gradient-to-r from-neon-blue/20 via-white/5 to-transparent rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)]">
+                            <div className="absolute inset-0 bg-[#0A0A0A] rounded-[2.9rem] z-0" />
+                            <div className="relative z-10 px-10 py-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                                <div className="flex items-center gap-8">
+                                    <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center text-neon-blue shadow-[inset_0_0_20px_rgba(46,191,255,0.1)]">
+                                        <LayoutDashboard size={40} strokeWidth={1.5} />
+                                    </div>
+                                    <div className="space-y-1 text-center md:text-left">
+                                        <h2 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tighter text-white leading-none">STUDIO WORKSPACE</h2>
+                                        <p className="text-neon-blue text-[10px] md:text-xs font-black uppercase tracking-[0.4em] opacity-80">ACCESS YOUR COMMAND CENTER</p>
+                                    </div>
+                                </div>
+                                <button className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group shadow-2xl active:scale-95">
+                                    <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div className="flex flex-wrap gap-3">
-                            <span className={cn(
-                                "px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border transition-all flex items-center justify-center",
-                                profile.profileStatus === 'approved' ? "bg-neon-green/10 text-neon-green border-neon-green/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/10"
-                            )}>
-                                {profile.profileStatus === 'approved' ? 'Verified Partner' : 'Pending'}
-                            </span>
-                            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
-                                <MapPin size={10} className="text-neon-blue" />
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{profile.city}</span>
+
+                        {/* PROFILE & STATS HUD */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* CREATOR PROFILE CARD */}
+                            <div className="relative group bg-[#0A0A0A] border border-white/10 rounded-[3.5rem] p-10 md:p-12 overflow-hidden shadow-2xl">
+                                <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+                                    <Briefcase size={160} strokeWidth={1} />
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                
+                                <div className="flex items-center gap-6 mb-12 relative z-10">
+                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10">
+                                        <img src={profile.profilePicture || '/api/placeholder/100/100'} alt={profile.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-black text-white group-hover:text-neon-green transition-colors">{profile.name}</p>
+                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">
+                                            Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-12 mb-16 relative z-10">
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] opacity-60">BASE OPERATION</p>
+                                        <p className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">{profile.city || 'GLOBAL'}</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] opacity-60">VERIFIED REACH</p>
+                                        <p className="text-2xl md:text-3xl font-black text-white italic tracking-tighter tabular-nums">
+                                            {Math.max(Number(profile.instagramFollowers || 0), Number(profile.youtubeSubscribers || 0)).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <button 
+                                        onClick={() => window.open(profile.instagram ? `https://instagram.com/${profile.instagram.replace('@', '')}` : '#', '_blank')}
+                                        className="flex-1 h-20 bg-white text-black rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] md:text-[11px] flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_60px_rgba(255,255,255,0.1)]"
+                                    >
+                                        <Instagram size={20} />
+                                        VERIFY IMPACT
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsSettingsOpen(true)}
+                                        className="w-20 h-20 bg-zinc-900 border border-white/10 rounded-3xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-zinc-800 transition-all active:scale-90"
+                                    >
+                                        <Settings size={28} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* RECENT ACTIVITY LIST */}
+                            <div className="bg-[#0A0A0A] border border-white/5 rounded-[3.5rem] p-10 md:p-12 space-y-8">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-4">
+                                        <History size={20} className="text-gray-600" />
+                                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em]">RECENT ACTIVITY</h3>
+                                    </div>
+                                    <button className="text-[10px] font-black text-neon-blue uppercase tracking-widest hover:text-white transition-colors">VIEW ALL</button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {[
+                                        { title: 'SUCCESS', date: '5/6/2026', tag: 'SYSTEM', icon: <AlertCircle size={18} /> },
+                                        { title: 'SECURITY LINK DISPATCHED', date: '4/30/2026', tag: 'UPDATE', icon: <AlertCircle size={18} /> },
+                                        { title: 'TASK APPROVED', date: '4/17/2026', tag: 'SYSTEM', icon: <AlertCircle size={18} /> }
+                                    ].map((act, i) => (
+                                        <div key={i} className="group p-6 bg-white/[0.02] border border-white/5 rounded-3xl flex items-center gap-6 hover:bg-white/[0.04] transition-all">
+                                            <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center text-gray-700 group-hover:text-neon-blue transition-colors">
+                                                {act.icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-[12px] font-black text-white tracking-tight uppercase">{act.title}</h4>
+                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
+                                                    {act.date} • {act.tag}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -730,29 +936,33 @@ const CreatorDashboard = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-stretch gap-2"
+                        className="grid grid-cols-2 sm:flex items-stretch gap-2.5 w-full lg:w-auto"
                     >
-                        <div className="bg-zinc-950/60 backdrop-blur-3xl px-6 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[140px]">
-                            <span className="text-3xl font-black text-white italic tracking-tighter leading-none">
+                        <div className="bg-zinc-950/60 backdrop-blur-3xl px-6 py-5 rounded-[2rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[150px] col-span-2 sm:col-span-1 shadow-2xl">
+                            <span className="text-3xl md:text-4xl font-black text-white italic tracking-tighter leading-none tabular-nums">
                                 {joinedCampaignsList.length}
                             </span>
-                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-[0.3em] mt-1">Active Missions</span>
+                            <span className="text-[8px] md:text-[9px] font-black text-neon-blue uppercase tracking-[0.3em] mt-2 text-center">Active Missions</span>
                         </div>
                         
-                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-4 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
-                            <span className="text-xl font-black text-white">{approvedTasks}</span>
-                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-1">Deliverables</span>
+                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-5 py-5 rounded-[1.5rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[110px] shadow-xl">
+                            <span className="text-xl md:text-2xl font-black text-white tabular-nums">{approvedTasks}</span>
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest mt-1.5">Deliverables</span>
                         </div>
                         
-                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-4 py-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
-                            <span className="text-xl font-black text-white">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
-                            <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-1">Efficiency</span>
+                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-5 py-5 rounded-[1.5rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[110px] shadow-xl">
+                            <span className="text-xl md:text-2xl font-black text-white tabular-nums">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest mt-1.5">Efficiency</span>
                         </div>
+                        
+                        <button onClick={() => setIsSettingsOpen(true)} className="hidden lg:flex bg-white/5 hover:bg-white hover:text-black w-16 rounded-[1.5rem] border border-white/10 items-center justify-center transition-all shadow-xl group">
+                            <Settings size={22} className="group-hover:rotate-90 transition-transform duration-500" />
+                        </button>
                     </motion.div>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="space-y-32">
+                <div className="space-y-24 md:space-y-32">
                     {/* Priority Section */}
                     {shortlistedCampaignsList.length > 0 && (
                         <motion.section 
@@ -789,28 +999,42 @@ const CreatorDashboard = () => {
                         className="space-y-12"
                     >
                         <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-white/5 pb-10">
-                            <div className="flex items-center gap-12">
-                                {['opportunities', 'active'].map((tab) => (
-                                    <button 
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        className={cn(
-                                            "text-3xl font-black font-heading uppercase tracking-tighter transition-all relative pb-4",
-                                            activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
-                                        )}
-                                    >
-                                        {tab === 'opportunities' ? 'New Openings' : 'Performance History'}
-                                        {activeTab === tab && (
-                                            <motion.div 
-                                                layoutId="tab-underline" 
-                                                className="absolute bottom-0 left-0 w-full h-1 bg-neon-blue shadow-[0_4px_20px_rgba(46,191,255,0.4)]" 
-                                            />
-                                        )}
+                            <div className="flex items-center gap-4 w-full md:w-auto relative group/nav">
+                                {/* Navigation Arrows */}
+                                <div className="absolute -left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover/nav:opacity-100 transition-opacity z-20 pointer-events-none md:hidden">
+                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'left'); }} className="w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                        <ChevronRight className="rotate-180" size={16} />
                                     </button>
-                                ))}
+                                </div>
+                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover/nav:opacity-100 transition-opacity z-20 pointer-events-none md:hidden">
+                                    <button onClick={(e) => { e.stopPropagation(); scrollContainer('nav-tabs', 'right'); }} className="w-8 h-8 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+
+                                <div id="nav-tabs" className="flex items-center gap-6 md:gap-12 w-full overflow-x-auto scrollbar-hide snap-x">
+                                    {['opportunities', 'active'].map((tab) => (
+                                        <button 
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={cn(
+                                                "text-2xl sm:text-3xl font-black font-heading uppercase tracking-tighter transition-all relative pb-4 shrink-0 snap-start",
+                                                activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
+                                            )}
+                                        >
+                                            {tab === 'opportunities' ? 'New Openings' : 'Performance History'}
+                                            {activeTab === tab && (
+                                                <motion.div 
+                                                    layoutId="tab-underline" 
+                                                    className="absolute bottom-0 left-0 w-full h-1 bg-neon-blue shadow-[0_4px_20px_rgba(46,191,255,0.4)]" 
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
                                 <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400">
                                     <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
                                     {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'MISSIONS TRACKED'}
@@ -850,7 +1074,32 @@ const CreatorDashboard = () => {
                         )}
                     </motion.div>
                 </div>
-            </div>
+            </motion.div>
+        ) : (
+                    <motion.div
+                        key="settings"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="space-y-12"
+                    >
+                        <div className="py-20 text-center">
+                            <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
+                                <Settings size={40} />
+                            </div>
+                            <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600">Settings Workspace</h4>
+                            <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">Configure your professional creator identity and notification preferences.</p>
+                            <button 
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="mt-12 h-16 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all"
+                            >
+                                Open Studio Settings
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
 
             {/* Overlays */}
             <AnimatePresence mode="wait">
@@ -875,7 +1124,7 @@ const CreatorDashboard = () => {
                     />
                 )}
                 {isSettingsOpen && (
-                    <CreatorSettingsModal 
+                    <CreatorSettingsPanel
                         profile={profile}
                         onClose={() => setIsSettingsOpen(false)}
                     />
