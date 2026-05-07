@@ -31,6 +31,7 @@ const BlogManager = () => {
     const { posts, deletePost, updatePost, subscribers } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [selectedStatus, setSelectedStatus] = useState('All');
     const navigate = useNavigate();
 
     const coreContentTabs = [

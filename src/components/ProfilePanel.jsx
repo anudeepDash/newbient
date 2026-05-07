@@ -176,7 +176,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                         </span>
                                         <div className="flex items-center gap-1.5 text-[8px] text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                                             <Sparkles size={8} className="text-yellow-500" />
-                                            Joined Oct 2024
+                                            Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                         </div>
                                     </div>
                                 </div>

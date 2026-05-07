@@ -281,6 +281,7 @@ const UpcomingEvents = () => {
 
 const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
     const accentColor = event.highlightColor || '#2ebfff';
+    const [showAllArtists, setShowAllArtists] = useState(false);
     
     return (
         <div 
@@ -291,16 +292,17 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                 '--accent-solid': accentColor
             }}
         >
-            {/* Full Image Background Overlay */}
+            {/* Background elements */}
             <div className="absolute inset-0 z-0 overflow-hidden bg-black">
                 {event.image ? (
                     <img
                         src={event.image}
                         alt=""
                         crossOrigin="anonymous"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-50 group-hover:opacity-70"
                         style={{ 
-                            transform: `scale(${event.imageTransform?.scale || 1}) translate(${(event.imageTransform?.x || 0)}%, ${(event.imageTransform?.y || 0)}%)`,
+                            transform: `scale(${event.imageTransform?.scale || 1})`,
+                            objectPosition: `${50 + (event.imageTransform?.x || 0)}% ${50 + (event.imageTransform?.y || 0)}%`,
                             transformOrigin: 'center'
                         }}
                     />
@@ -309,100 +311,110 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                         SIGNAL_BUFFERING
                     </div>
                 )}
-                {/* Immersive Glass Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
                 <div 
-                    className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                    style={{ background: `radial-gradient(circle at bottom, ${accentColor}11 0%, transparent 70%)` }}
+                    className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"
+                    style={{ background: `radial-gradient(circle at bottom right, ${accentColor}11 0%, transparent 60%)` }}
                 />
             </div>
             
-            {/* Front Badge: Category/Status */}
-            <div className="absolute top-8 left-8 z-30">
-                <div className="px-5 py-2.5 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] flex items-center gap-2 group-hover:border-[var(--accent-glow)] transition-colors">
-                    <div 
-                        className="w-1.5 h-1.5 rounded-full animate-pulse" 
-                        style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }}
-                    />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                        {event.date ? (event.date === 'TBD' ? 'TBD' : new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) : 'MANIFEST'}
-                    </span>
+            {/* Top Badges */}
+            <div className="absolute top-8 left-8 right-8 z-30 flex justify-between items-start">
+                <div className="flex flex-col gap-2">
+                    <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/5 flex items-center gap-2 group-hover:border-white/20 transition-colors">
+                        <div 
+                            className="w-1 h-1 rounded-full animate-pulse" 
+                            style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }}
+                        />
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80">
+                            {event.date ? (event.date === 'TBD' ? 'TBD' : new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) : 'TBA'}
+                        </span>
+                    </div>
+                    {event.performanceType && (
+                        <span className="text-[7px] font-black uppercase tracking-[0.3em] text-white/30 pl-1">
+                            {event.performanceType}
+                        </span>
+                    )}
                 </div>
-            </div>
 
-            {/* Status Icons (Top-Right) */}
-            <div className="absolute top-8 right-8 flex flex-col gap-3 z-30 items-end">
                 {event.isTicketed && (
-                    <div className="w-11 h-11 rounded-2xl bg-neon-green/90 text-black flex items-center justify-center shadow-[0_0_30px_rgba(46,255,144,0.3)] border border-neon-green/20 backdrop-blur-xl">
-                        <Ticket size={20} />
-                    </div>
-                )}
-                {event.isGiveaway && (
-                    <div className="w-11 h-11 rounded-2xl bg-purple-600/90 backdrop-blur-xl border border-purple-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-                        <Gift size={20} className="text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/40 group-hover:text-neon-green group-hover:border-neon-green/30 transition-all">
+                        <Ticket size={18} />
                     </div>
                 )}
             </div>
 
-            {/* Content Slab */}
-            <div className="absolute inset-0 p-10 flex flex-col justify-end z-20">
-                <div className="space-y-6">
-                    <div className="space-y-4">
+            {/* Content Body */}
+            <div className="absolute inset-x-8 bottom-8 z-20">
+                <div className="space-y-4">
+                    <div className="space-y-2">
                         {event.artists && event.artists.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {event.artists.slice(0, 3).map((artist, i) => (
-                                    <span key={i} className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40 border border-white/5 px-2 py-0.5 rounded-lg bg-white/5 flex items-center justify-center">
-                                        {artist}
-                                    </span>
-                                ))}
-                                {event.artists.length > 3 && <span className="text-[8px] font-black text-white/20">+{event.artists.length - 3}</span>}
+                            <div className="flex flex-wrap gap-2 items-center opacity-60 group-hover:opacity-100 transition-opacity duration-500 min-h-[12px]">
+                                {showAllArtists ? (
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                        {event.artists.map((artist, i) => (
+                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < event.artists.length - 1 ? ' •' : ''}</span>
+                                        ))}
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(false); }}
+                                            className="text-[8px] font-black text-neon-blue uppercase tracking-widest ml-1 hover:underline"
+                                        >
+                                            LESS
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {event.artists.slice(0, 2).map((artist, i) => (
+                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < 1 && event.artists.length > 1 ? ' •' : ''}</span>
+                                        ))}
+                                        {event.artists.length > 2 && (
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(true); }}
+                                                className="text-[8px] font-black text-white/40 uppercase tracking-widest hover:text-white transition-colors"
+                                            >
+                                                + {event.artists.length - 2} MORE
+                                            </button>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
-                        <h3 
-                            className="event-title text-3xl md:text-4xl font-black text-white leading-none tracking-tighter uppercase italic transition-colors duration-500"
-                            style={{ '--hover-color': accentColor }}
-                        >
-                            <span className="group-hover:text-[var(--accent-solid)] transition-colors">{event.title}</span>
+                        <h3 className="text-2xl md:text-3xl font-black font-heading text-white leading-[1.1] tracking-tighter uppercase italic group-hover:text-neon-blue transition-all duration-500">
+                            {event.title}
                         </h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 backdrop-blur-md">
-                                <MapPin size={12} style={{ color: accentColor }} />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/60">{event.location || 'TBA'}</span>
-                            </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2">
+                        <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/40">
+                            <MapPin size={10} className="group-hover:text-white transition-colors" />
+                            <span>{event.location || 'TBA'}</span>
                         </div>
+                        {event.doorsOpen && (
+                            <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/20">
+                                <Clock size={10} />
+                                <span>{event.doorsOpen}</span>
+                            </div>
+                        )}
+                        {event.ageLimit && (
+                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/10 px-1.5 py-0.5 rounded border border-white/5">{event.ageLimit}</span>
+                        )}
                     </div>
 
-                    <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                        <div className="flex flex-col gap-2">
-                            {event.isTicketed ? (
-                                <div className="text-neon-green font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]">
-                                    {event.buttonText || "GET TICKETS"}
-                                    <ArrowRight size={16} />
-                                </div>
-                            ) : event.isGuestlistEnabled ? (
+                    <div className="pt-6 mt-2 border-t border-white/5 flex items-center justify-between">
+                        <div className="flex flex-col gap-1.5">
                                 <div 
-                                    className="font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]"
-                                    style={{ color: accentColor }}
+                                    className="font-black tracking-[0.3em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[9px]"
+                                    style={{ 
+                                        color: event.isTicketed ? '#2eff90' : (event.isGuestlistEnabled ? '#ff2ebf' : accentColor) 
+                                    }}
                                 >
-                                    JOIN GUESTLIST
-                                    <ArrowRight size={16} />
+                                    {event.buttonText || (event.isTicketed ? "GET TICKETS" : (event.isGuestlistEnabled ? "RSVP NOW" : "VIEW DETAILS"))}
+                                    <ArrowRight size={14} className="opacity-40 group-hover:opacity-100" />
                                 </div>
-                            ) : (
-                                <div className="text-white/40 font-black tracking-[0.2em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[10px]">
-                                    LEARN MORE
-                                    <ArrowRight size={16} />
-                                </div>
-                            )}
-                            
                             {linkedGiveaway && (
-                                <Link 
-                                    to={`/giveaway/${linkedGiveaway.slug}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-purple-400 font-black tracking-[0.2em] flex items-center gap-2 uppercase text-[9px] hover:text-white transition-colors"
-                                >
-                                    <Gift size={14} /> EXCLUSIVE GIVEAWAY ACTIVE
-                                </Link>
+                                <span className="text-purple-400 text-[7px] font-black uppercase tracking-widest flex items-center gap-1 opacity-60">
+                                    <Gift size={10} /> GIVEAWAY ACTIVE
+                                </span>
                             )}
                         </div>
                         
@@ -412,9 +424,9 @@ const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
                                 e.stopPropagation();
                                 handleShare(e, event);
                             }}
-                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all shadow-xl backdrop-blur-xl"
+                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all backdrop-blur-xl"
                         >
-                            <Share2 size={16} />
+                            <Share2 size={14} />
                         </button>
                     </div>
                 </div>

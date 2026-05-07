@@ -6,7 +6,7 @@ import {
     Globe, Terminal, Award, BarChart3, Clock, Sparkles, Trash2, AlertTriangle,
     User, Settings, ExternalLink, Mail, Phone, MapPinIcon, LayoutDashboard, Zap,
     Music, Users, Disc, Mic2, Star, PartyPopper, Wand2, Guitar, Lock, Cpu, HeartHandshake,
-    Trophy, Ticket, ArrowLeft, ChevronDown, Rocket
+    Trophy, Ticket, ArrowLeft, ChevronDown, Rocket, Camera, Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -83,7 +83,10 @@ const ECOSYSTEM_FEATURES = [
 ];
 
 const ArtistAnt = () => {
-    const { user, authInitialized, setAuthModal, artists, addArtist, addClientRequest, deleteArtist, updateArtist } = useStore();
+    const { 
+        user, authInitialized, setAuthModal, artists, addArtist, 
+        addClientRequest, deleteArtist, updateArtist, uploadToCloudinary, addToast 
+    } = useStore();
     const navigate = useNavigate();
 
     const [view, setView] = useState('gateway');
@@ -96,7 +99,8 @@ const ArtistAnt = () => {
 
     const [artistData, setArtistData] = useState({
         name: '', phone: '', city: '', categories: '', bio: '',
-        instagram: '', instagramFollowers: '', youtube: '', portfolio: ''
+        instagram: '', instagramFollowers: '', youtube: '', portfolio: '',
+        image: '', experienceYears: ''
     });
 
     const [clientData, setClientData] = useState({
@@ -116,6 +120,26 @@ const ArtistAnt = () => {
         }
     }, [user, artists, view]);
 
+    const handleImageUpload = async (e, isSettings = false) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setIsSubmitting(true);
+        try {
+            const url = await uploadToCloudinary(file);
+            if (isSettings) {
+                setArtistProfile(prev => ({ ...prev, image: url }));
+            } else {
+                setArtistData(prev => ({ ...prev, image: url }));
+            }
+            addToast("Profile picture uploaded!", 'success');
+        } catch (error) {
+            addToast("Upload failed: " + error.message, 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleArtistSubmit = async (e) => {
         e.preventDefault();
         if (!user) { setAuthModal(true); return; }
@@ -129,10 +153,13 @@ const ArtistAnt = () => {
                 isVerified: false,
                 categories: artistData.categories.split(',').map(c => c.trim().toUpperCase())
             });
-            setSuccessMessage("Application received! Our scouts are on it.");
+            setSuccessMessage({
+                title: "ENLISTMENT RECEIVED",
+                body: "Our talent scouts are now reviewing your professional specs. Your profile will be activated upon verification of your impact parameters."
+            });
             setView('dashboard');
         } catch (error) {
-            useStore.getState().addToast("Error: " + error.message, 'error');
+            useStore.getState().addToast("Protocol failure: " + error.message, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -144,7 +171,10 @@ const ArtistAnt = () => {
         setIsSubmitting(true);
         try {
             await updateArtist(user.uid, artistProfile);
-            setSuccessMessage("Profile updated successfully.");
+            setSuccessMessage({
+                title: "PROFILE SYNCHRONIZED",
+                body: "Your professional data has been updated across the Artistant ecosystem."
+            });
             setView('dashboard');
         } catch (error) {
             useStore.getState().addToast("Update failed: " + error.message, 'error');
@@ -162,7 +192,10 @@ const ArtistAnt = () => {
                 status: 'pending',
                 createdAt: new Date().toISOString()
             });
-            setSuccessMessage("Request submitted! Expect a call soon.");
+            setSuccessMessage({
+                title: "STRATEGIC REQUEST LOGGED",
+                body: "Our scouting division is now curating the optimal profiles for your requirements. We will transmit the talent dossier to your inbox shortly."
+            });
             setView('gateway');
             setStep(1);
             setClientData({ name: '', org: '', email: '', city: '', category: '', budget: '', date: '', requirement: '' });
@@ -228,6 +261,35 @@ const ArtistAnt = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            <AnimatePresence>
+                {successMessage && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/80"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-[3rem] p-10 text-center space-y-8 shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-b from-neon-blue/5 to-transparent pointer-events-none" />
+                            <div className="w-24 h-24 rounded-full bg-neon-green/20 border border-neon-green/20 flex items-center justify-center mx-auto relative z-10">
+                                <CheckCircle2 size={44} className="text-neon-green" />
+                            </div>
+                            <div className="space-y-3 relative z-10">
+                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">{successMessage.title}</h3>
+                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">{successMessage.body}</p>
+                            </div>
+                            <button 
+                                onClick={() => setSuccessMessage(null)}
+                                className="w-full h-20 bg-white text-black rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-neon-blue hover:text-white transition-all shadow-xl active:scale-95 relative z-10"
+                            >
+                                ACKNOWLEDGE
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
                 {view === 'gateway' && (
@@ -546,11 +608,35 @@ const ArtistAnt = () => {
                                         {view === 'artist_form' ? (
                                             <motion.div key={`artist-step-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
                                                 {step === 1 && (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8 md:gap-y-12">
-                                                        <FormField label="Professional Name" value={artistData.name} onChange={(e) => setArtistData({...artistData, name: e.target.value})} placeholder="e.g. DJ Shadow" />
-                                                        <FormField label="Direct Phone" value={artistData.phone} onChange={(e) => setArtistData({...artistData, phone: e.target.value})} placeholder="+91 XXXX XXXX" />
-                                                        <FormSelect label="Current Base" value={artistData.city} onChange={(e) => setArtistData({...artistData, city: e.target.value})} options={PREDEFINED_CITIES} />
-                                                        <FormSelect label="Performance Vertical" value={artistData.categories} onChange={(e) => setArtistData({...artistData, categories: e.target.value})} options={TALENT_CATEGORIES.map(c => c.label)} />
+                                                    <div className="space-y-12">
+                                                        {/* Profile Picture Upload Section */}
+                                                        <div className="flex flex-col items-center gap-8 bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 md:p-12 mb-8">
+                                                            <div className="relative group">
+                                                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#FF6B6B]/40">
+                                                                    {artistData.image ? (
+                                                                        <img src={artistData.image} alt="Preview" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Camera size={40} className="text-gray-700 group-hover:text-[#FF6B6B] transition-colors" />
+                                                                    )}
+                                                                </div>
+                                                                <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-[#FF6B6B] text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                                                    <Upload size={20} />
+                                                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                                                </label>
+                                                            </div>
+                                                            <div className="text-center space-y-1">
+                                                                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">Profile Identity</h4>
+                                                                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Upload your professional headshot</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8 md:gap-y-12">
+                                                            <FormField label="Professional Name" value={artistData.name} onChange={(e) => setArtistData({...artistData, name: e.target.value})} placeholder="e.g. DJ Shadow" />
+                                                            <FormField label="Direct Phone" value={artistData.phone} onChange={(e) => setArtistData({...artistData, phone: e.target.value})} placeholder="+91 XXXX XXXX" />
+                                                            <FormField label="Years of Experience" type="number" value={artistData.experienceYears} onChange={(e) => setArtistData({...artistData, experienceYears: e.target.value})} placeholder="e.g. 5" />
+                                                            <FormSelect label="Current Base" value={artistData.city} onChange={(e) => setArtistData({...artistData, city: e.target.value})} options={PREDEFINED_CITIES} />
+                                                            <FormSelect label="Performance Vertical" value={artistData.categories} onChange={(e) => setArtistData({...artistData, categories: e.target.value})} options={TALENT_CATEGORIES.map(c => c.label)} />
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {step === 2 && (
@@ -713,6 +799,27 @@ const ArtistAnt = () => {
                         </div>
 
                         <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] p-10 md:p-16 shadow-2xl space-y-12">
+                            {/* Profile Picture in Settings */}
+                            <div className="flex flex-col items-center gap-8 pb-12 border-b border-white/5">
+                                <div className="relative group">
+                                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#FF6B6B]/40">
+                                        {artistProfile.image ? (
+                                            <img src={artistProfile.image} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Camera size={40} className="text-gray-700 group-hover:text-[#FF6B6B] transition-colors" />
+                                        )}
+                                    </div>
+                                    <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-[#FF6B6B] text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                        <Upload size={20} />
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, true)} />
+                                    </label>
+                                </div>
+                                <div className="text-center space-y-1">
+                                    <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">Update Portrait</h4>
+                                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Recommended: Square headshot (800x800px)</p>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 <div className="space-y-8">
                                     <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[#FF6B6B] flex items-center gap-3">
@@ -721,6 +828,7 @@ const ArtistAnt = () => {
                                     <div className="space-y-4">
                                         <FormField label="Full Name" value={artistProfile.name} onChange={(e) => setArtistProfile({...artistProfile, name: e.target.value})} />
                                         <FormField label="Phone Number" value={artistProfile.phone} onChange={(e) => setArtistProfile({...artistProfile, phone: e.target.value})} />
+                                        <FormField label="Years of Experience" type="number" value={artistProfile.experienceYears} onChange={(e) => setArtistProfile({...artistProfile, experienceYears: e.target.value})} />
                                         <FormSelect label="Base City" value={artistProfile.city} onChange={(e) => setArtistProfile({...artistProfile, city: e.target.value})} options={PREDEFINED_CITIES} />
                                     </div>
                                 </div>

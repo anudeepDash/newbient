@@ -20,8 +20,16 @@ import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
 import UnifiedGuestlistModal from '../components/community/UnifiedGuestlistModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import { ChevronRight } from 'lucide-react';
 
 const CommunityJoin = () => {
+    const scrollContainer = (id, direction) => {
+        const container = document.getElementById(id);
+        if (container) {
+            const scrollAmount = direction === 'left' ? -300 : 300;
+            container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
     const { 
         forms = [], 
         siteDetails, 
@@ -192,7 +200,20 @@ const CommunityJoin = () => {
 
     const sections = [
         { id: 'volunteer-gigs', title: 'VOLUNTEER GIGS', icon: Users, accent: 'neon-green', items: (volunteerGigs || []), type: 'gig', label: null, show: siteSettings?.showVolunteerGigs !== false, subtitleText: 'field opportunities' },
-        { id: 'guestlists', title: 'EXCLUSIVE GUESTLISTS', icon: ShieldCheck, accent: 'neon-blue', items: (guestlists || []), type: 'gl', label: null, show: true, subtitleText: 'verified entry' },
+        { 
+            id: 'guestlists', 
+            title: 'EXCLUSIVE GUESTLISTS', 
+            icon: ShieldCheck, 
+            accent: 'neon-blue', 
+            items: [
+                ...(guestlists || []).map(gl => ({ ...gl, type: 'gl' })),
+                ...(volunteerGigs || []).filter(gig => gig.guestlistEnabled).map(gig => ({ ...gig, type: 'gl_embed' }))
+            ].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)), 
+            type: 'gl', 
+            label: null, 
+            show: true, 
+            subtitleText: 'verified entry' 
+        },
         { id: 'community-pulse', title: 'COMMUNITY FORMS', icon: FileText, accent: 'neon-pink', items: (forms || []), type: 'form', label: null, show: true, subtitleText: 'active entry portals' }
     ].filter(s => s.show);
 
@@ -204,18 +225,18 @@ const CommunityJoin = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-pink/5 rounded-full blur-[150px] opacity-10" />
             </div>
 
-            <div className="max-w-7xl mx-auto relative z-10 px-4 md:px-8">
+            <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 md:px-8">
                 {/* Immersive Header */}
-                <div className="text-center relative overflow-hidden mb-20">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-pink/8 blur-[100px] pointer-events-none rounded-full" />
+                <div className="text-center relative overflow-hidden mb-12 md:mb-20">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 md:w-64 h-48 md:h-64 bg-neon-pink/8 blur-[80px] md:blur-[100px] pointer-events-none rounded-full" />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 md:mb-8 backdrop-blur-md"
                     >
-                        <Sparkles size={16} className="text-neon-pink" />
-                        <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
+                        <Sparkles size={14} className="text-neon-pink" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                             {user ? 'Access Unlocked' : 'The Tribe'}
                         </span>
                     </motion.div>
@@ -224,7 +245,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-6xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink mb-6 tracking-tight leading-none uppercase text-center italic"
+                        className="text-5xl sm:text-7xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink mb-4 md:mb-6 tracking-tight leading-none uppercase text-center italic"
                     >
                         {user ? (
                             <>HELLO, {user.displayName?.split(' ')[0]}</>
@@ -237,7 +258,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-base md:text-xl font-bold leading-relaxed uppercase tracking-widest"
+                        className="text-gray-500 max-w-xl mx-auto text-sm md:text-lg font-bold leading-relaxed uppercase tracking-[0.2em] px-4"
                     >
                         {user ? "Exclusive opportunities await." : "Join India's most disruptive youth community."}
                     </motion.p>
@@ -249,15 +270,15 @@ const CommunityJoin = () => {
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="p-12 md:p-20 bg-zinc-900/40 border border-white/10 rounded-[3rem] backdrop-blur-[20px] text-center max-w-2xl shadow-2xl relative overflow-hidden group"
+                            className="p-8 md:p-20 bg-zinc-900/40 border border-white/10 rounded-[2.5rem] md:rounded-[3rem] backdrop-blur-[20px] text-center max-w-2xl shadow-2xl relative overflow-hidden group"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Users className="w-24 h-24 text-neon-blue mx-auto mb-12 relative z-10" />
-                            <h3 className="text-4xl font-black font-heading mb-6 relative z-10 italic uppercase">GET STARTED.</h3>
-                            <p className="text-gray-500 mb-12 relative z-10 text-lg font-medium tracking-tight">Join the ranks to access exclusive gigs, VIP guestlists, and more.</p>
+                            <Users className="w-16 h-16 md:w-24 md:h-24 text-neon-blue mx-auto mb-8 md:mb-12 relative z-10" />
+                            <h3 className="text-2xl md:text-4xl font-black font-heading mb-4 md:mb-6 relative z-10 italic uppercase">GET STARTED.</h3>
+                            <p className="text-gray-500 mb-8 md:mb-12 relative z-10 text-base md:text-lg font-medium tracking-tight">Join the ranks to access exclusive gigs, VIP guestlists, and more.</p>
                             <Button
                                 onClick={() => setAuthModal(true)}
-                                className="w-full h-20 text-xl rounded-2xl font-black font-heading tracking-widest bg-white text-black hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
+                                className="w-full h-16 md:h-20 text-lg md:text-xl rounded-2xl font-black font-heading tracking-widest bg-white text-black hover:scale-[1.02] transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
                             >
                                 IDENTITY VERIFICATION
                             </Button>
@@ -272,8 +293,8 @@ const CommunityJoin = () => {
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[3.5rem] blur-2xl opacity-10 group-hover:opacity-30 transition duration-1000" />
-                                <div className="relative w-full aspect-[4/5] md:aspect-[3/2] bg-zinc-900 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+                                <div className="absolute -inset-2 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-green rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-10 group-hover:opacity-30 transition duration-1000" />
+                                <div className="relative w-full aspect-[4/5] md:aspect-[3/2] bg-zinc-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
                                     <iframe
                                         src="https://docs.google.com/forms/d/e/1FAIpQLScQv55cT-hPBqTtw7PFqOZND6QfPkmjzT8_4Sf4G53_UYwSQg/viewform?embedded=true"
                                         className="w-full h-full border-0"
@@ -283,14 +304,14 @@ const CommunityJoin = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-20 p-12 bg-zinc-900/60 border border-white/10 rounded-[2.5rem] backdrop-blur-[20px] text-center relative overflow-hidden shadow-2xl">
+                            <div className="mt-12 md:mt-20 p-8 md:p-12 bg-zinc-900/60 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] backdrop-blur-[20px] text-center relative overflow-hidden shadow-2xl">
                                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-neon-green blur-[80px] opacity-10" />
-                                <h3 className="text-3xl font-black font-heading text-white mb-4 uppercase italic">SUBMITTED THE FORM?</h3>
-                                <p className="text-gray-500 mb-10 max-w-sm mx-auto font-medium tracking-tight">Click below to finalize your entry and unlock the hub.</p>
+                                <h3 className="text-2xl md:text-3xl font-black font-heading text-white mb-4 uppercase italic">SUBMITTED THE FORM?</h3>
+                                <p className="text-gray-400 mb-8 md:mb-10 max-w-sm mx-auto font-medium tracking-tight text-sm">Click below to finalize your entry and unlock the hub.</p>
                                 <Button
                                     onClick={handleJoinedConfirm}
                                     disabled={confirming}
-                                    className="h-20 px-16 rounded-2xl font-black font-heading tracking-widest bg-neon-green text-black shadow-[0_10px_30px_rgba(46,255,144,0.2)]"
+                                    className="h-16 md:h-20 px-12 md:px-16 rounded-2xl font-black font-heading tracking-widest bg-neon-green text-black shadow-[0_10px_30px_rgba(46,255,144,0.2)]"
                                 >
                                     {confirming ? <Loader2 className="animate-spin" /> : 'SUBMIT APPLICATION'}
                                 </Button>
@@ -336,24 +357,38 @@ const CommunityJoin = () => {
                                          </div>
                                      </div>
 
-                                     <div className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                                             {featuredItems.map((item) => (
-                                                 <motion.div 
-                                                     key={`featured-${item.id}`}
-                                                     id={`${item.type}-${item.id}`}
-                                                     initial={{ opacity: 0, y: 30 }}
-                                                 whileInView={{ opacity: 1, y: 0 }}
-                                                 viewport={{ once: true }}
-                                                 className="relative w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
-                                             >
-                                                 <CommunityCard 
-                                                     item={item} 
-                                                     type={item.type} 
-                                                     handleShare={handleShare} 
-                                                     onAction={handleCardAction}
-                                                 />
-                                             </motion.div>
-                                         ))}
+                                     <div className="relative group/carousel">
+                                         {/* Navigation Arrows */}
+                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
+                                             <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'left'); }} className="w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                                 <ChevronRight className="rotate-180" size={20} />
+                                             </button>
+                                         </div>
+                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/carousel:opacity-100 transition-opacity pointer-events-none">
+                                             <button onClick={(e) => { e.stopPropagation(); scrollContainer('featured-scroll', 'right'); }} className="w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                                 <ChevronRight size={20} />
+                                             </button>
+                                         </div>
+
+                                         <div id="featured-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                                                 {featuredItems.map((item) => (
+                                                     <motion.div 
+                                                         key={`featured-${item.id}`}
+                                                         id={`${item.type}-${item.id}`}
+                                                         initial={{ opacity: 0, y: 30 }}
+                                                     whileInView={{ opacity: 1, y: 0 }}
+                                                     viewport={{ once: true }}
+                                                     className="relative w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
+                                                 >
+                                                     <CommunityCard 
+                                                         item={item} 
+                                                         type={item.type} 
+                                                         handleShare={handleShare} 
+                                                         onAction={handleCardAction}
+                                                     />
+                                                 </motion.div>
+                                             ))}
+                                         </div>
                                      </div>
                                  </div>
                              </section>
@@ -466,35 +501,49 @@ const CommunityJoin = () => {
                                         </div>
                                     </div>
 
-                                    {section.items?.length > 0 ? (
-                                        <div className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                                            {section.items.map((item) => (
-                                                <motion.div 
-                                                    key={`${section.id}-${item.id}`}
-                                                    id={`${item.type || section.type}-${item.id}`}
-                                                    initial={{ opacity: 0, y: 30 }}
-                                                    whileInView={{ opacity: 1, y: 0 }}
-                                                    viewport={{ once: true }}
-                                                    className="w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
-                                                >
-                                                    <CommunityCard 
-                                                        item={item} 
-                                                        type={item.type || section.type} 
-                                                        handleShare={handleShare} 
-                                                        onAction={handleCardAction}
-                                                    />
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="py-24 bg-white/[0.02] rounded-[3rem] border border-dashed border-white/5 text-center flex flex-col items-center gap-6">
-                                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
-                                                <section.icon size={30} />
-                                            </div>
-                                            <p className="text-gray-600 font-bold uppercase tracking-widest text-xs">No active {section.title.toLowerCase()} at the moment.</p>
-                                        </div>
-                                    )}
-                                </section>
+                                    <div className="relative group/section-carousel">
+                                         {/* Navigation Arrows */}
+                                         <div className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/section-carousel:opacity-100 transition-opacity pointer-events-none">
+                                             <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'left'); }} className="w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                                 <ChevronRight className="rotate-180" size={20} />
+                                             </button>
+                                         </div>
+                                         <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 flex opacity-0 group-hover/section-carousel:opacity-100 transition-opacity pointer-events-none">
+                                             <button onClick={(e) => { e.stopPropagation(); scrollContainer(`scroll-${section.id}`, 'right'); }} className="w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white pointer-events-auto shadow-2xl">
+                                                 <ChevronRight size={20} />
+                                             </button>
+                                         </div>
+
+                                         {section.items?.length > 0 ? (
+                                             <div id={`scroll-${section.id}`} className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                                                 {section.items.map((item) => (
+                                                     <motion.div 
+                                                         key={`${section.id}-${item.id}`}
+                                                         id={`${item.type || section.type}-${item.id}`}
+                                                         initial={{ opacity: 0, y: 30 }}
+                                                         whileInView={{ opacity: 1, y: 0 }}
+                                                         viewport={{ once: true }}
+                                                         className="w-[300px] md:w-full flex-shrink-0 snap-center md:snap-none"
+                                                     >
+                                                         <CommunityCard 
+                                                             item={item} 
+                                                             type={item.type || section.type} 
+                                                             handleShare={handleShare} 
+                                                             onAction={handleCardAction}
+                                                         />
+                                                     </motion.div>
+                                                 ))}
+                                             </div>
+                                         ) : (
+                                             <div className="py-24 bg-white/[0.02] rounded-[3rem] border border-dashed border-white/5 text-center flex flex-col items-center gap-6">
+                                                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
+                                                     <section.icon size={30} />
+                                                 </div>
+                                                 <p className="text-gray-600 font-bold uppercase tracking-widest text-xs">No active {section.title.toLowerCase()} at the moment.</p>
+                                             </div>
+                                         )}
+                                     </div>
+                                 </section>
                             ))}
                         </div>
                     </motion.div>

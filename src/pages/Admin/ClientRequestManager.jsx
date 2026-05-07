@@ -24,7 +24,7 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
     const [filterStatus, setFilterStatus] = useState('All');
     const [viewMode, setViewMode] = useState('grid');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 12;
     const [selectedRequest, setSelectedRequest] = useState(null);
 
 

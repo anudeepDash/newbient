@@ -13,7 +13,7 @@ import {
     Clock, LayoutGrid, FileSpreadsheet, Music, Mic2, 
     Video, Star, ChevronRight, ChevronLeft, Calendar, Target,
     Check, Instagram, SlidersHorizontal, ShieldCheck, ShieldAlert,
-    TrendingUp, Award, Layers, LayoutDashboard
+    TrendingUp, Award, Layers, LayoutDashboard, Download, AlertTriangle
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +25,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
     const { artists, upcomingEvents, updateArtist, deleteArtist, castArtistToGig } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 12;
 
     const [filterCity, setFilterCity] = useState('All');
     const [filterCategory, setFilterCategory] = useState('All');
@@ -33,6 +33,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
     const [selectedArtist, setSelectedArtist] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
     const [isCastingMode, setIsCastingMode] = useState(false);
+    const [showDeleteConfirmId, setShowDeleteConfirmId] = useState(null);
 
     const cities = ['All', ...PREDEFINED_CITIES];
     const categories = ['All', ...ARTIST_CATEGORIES];
@@ -87,13 +88,13 @@ const ArtistManager = ({ isEmbedded = false }) => {
     };
 
     const handleDeleteArtist = async (id) => {
-        if (window.confirm("Permanently delete this artist profile?")) {
-            try {
-                await deleteArtist(id);
-                setSelectedArtist(null);
-            } catch (error) {
-                useStore.getState().addToast("Deletion failed.", 'error');
-            }
+        try {
+            await deleteArtist(id);
+            setSelectedArtist(null);
+            setShowDeleteConfirmId(null);
+            useStore.getState().addToast("Artist profile deleted successfully.", 'success');
+        } catch (error) {
+            useStore.getState().addToast("Deletion failed: " + error.message, 'error');
         }
     };
 
@@ -119,14 +120,40 @@ const ArtistManager = ({ isEmbedded = false }) => {
         }
     };
 
+    const exportToCSV = () => {
+        const headers = ['NAME', 'EMAIL', 'PHONE', 'CITY', 'CATEGORY', 'EXP_YEARS', 'BASE_PRICE', 'STATUS'];
+        const csvRows = [
+            headers.join(','),
+            ...filteredArtists.map(a => [
+                `"${(a.name || '').replace(/"/g, '""')}"`,
+                `"${(a.email || '').replace(/"/g, '""')}"`,
+                `"${(a.phone || '').replace(/"/g, '""')}"`,
+                `"${(a.city || '').replace(/"/g, '""')}"`,
+                `"${(a.category || '').replace(/"/g, '""')}"`,
+                `"${a.experienceYears || 0}"`,
+                `"${a.basePrice || 0}"`,
+                `"${a.profileStatus || 'pending'}"`
+            ].join(','))
+        ];
+        
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `ARTISTANT_TALENT_EXPORT_${filterCity.toUpperCase()}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
 
     const renderContent = () => (
         <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             {/* Header Section */}
             <div className={cn(
-                "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10 mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-32 px-6 md:px-12"
+                "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12",
+                isEmbedded ? "pt-8 px-0" : "pt-24 md:pt-32 px-4 md:px-12"
             )}>
                 {!isEmbedded ? (
                     <div className="space-y-4">
@@ -153,7 +180,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
                     <StatCard compact={isEmbedded} icon={<Users size={24} />} label="ACTIVE ROSTER" value={stats.total} color="blue" description={`${stats.approved} Verified Members`} />
                     <StatCard compact={isEmbedded} icon={<Clock size={24} />} label="IN PIPELINE" value={stats.pending} color="yellow" description="Pending Authorization" />
                 </div>
@@ -162,9 +189,9 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
             </div>
 
-            <div className={cn("px-6 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
+            <div className={cn("px-4 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
                 {/* Futuristic Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-2 md:p-2.5 mb-12 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:items-center gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
 
 
                     {/* Search Engine */}
@@ -182,41 +209,41 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* Filter Cluster */}
-                    <div className="flex flex-wrap md:flex-nowrap items-center gap-2 shrink-0 w-full md:w-auto pr-2">
-                        <div className="flex-1 md:w-[150px] min-w-[140px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex items-center gap-2 shrink-0 w-full xl:w-auto pr-0 md:pr-2">
+                        <div className="w-full xl:w-[150px]">
                             <StudioSelect 
                                 value={filterCategory} 
-                                options={categories.map(c => ({ value: c, label: c === 'All' ? 'ANY CATEGORY' : c.toUpperCase() }))} 
+                                options={categories.map(c => ({ value: c, label: c === 'All' ? 'CATEGORY' : c.toUpperCase() }))} 
                                 onChange={setFilterCategory} 
-                                className="h-14 rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-pink" 
                             />
                         </div>
-                        <div className="flex-1 md:w-[150px] min-w-[140px]">
+                        <div className="w-full xl:w-[150px]">
                             <StudioSelect 
                                 value={filterCity} 
-                                options={cities.map(c => ({ value: c, label: c === 'All' ? 'GLOBAL LOC' : c.toUpperCase() }))} 
+                                options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
                                 onChange={setFilterCity} 
-                                className="h-14 rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-blue" 
                             />
                         </div>
-                        <div className="flex-1 md:w-[150px] min-w-[140px]">
+                        <div className="w-full xl:w-[150px] col-span-2 sm:col-span-1">
                             <StudioSelect 
                                 value={filterStatus} 
                                 options={[
-                                    { value: 'All', label: 'ANY STATUS' }, 
+                                    { value: 'All', label: 'STATUS' }, 
                                     { value: 'approved', label: 'VERIFIED' }, 
                                     { value: 'pending', label: 'PENDING' }, 
                                     { value: 'rejected', label: 'REJECTED' }
                                 ]} 
                                 onChange={setFilterStatus} 
-                                className="h-14 rounded-full border-white/10 bg-black/60" 
+                                className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-green" 
                             />
                         </div>
 
-                        <div className="w-px h-8 bg-white/5 mx-1 hidden md:block" />
+                        <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
 
                         <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0">
                             <button 
@@ -241,12 +268,22 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
                         <button 
                             onClick={() => setIsCastingMode(true)}
-                            className="group relative h-14 px-8 bg-white text-black rounded-full font-black uppercase tracking-[0.2em] text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full md:w-auto shrink-0"
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-zinc-900 text-white border border-white/10 rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2 sm:col-span-3 xl:col-span-1"
+                        >
+                            <div className="relative z-10 flex items-center gap-3">
+                                <Target size={16} className="text-neon-blue" />
+                                CASTING BOARD
+                            </div>
+                        </button>
+
+                        <button 
+                            onClick={exportToCSV}
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2 sm:col-span-3 xl:col-span-1"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
-                                <Target size={16} />
-                                CASTING BOARD
+                                <Download size={16} />
+                                EXPORT CSV
                             </div>
                         </button>
                     </div>
@@ -413,8 +450,40 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         artist={selectedArtist} 
                         onClose={() => setSelectedArtist(null)} 
                         onUpdateStatus={handleUpdateStatus}
-                        onDelete={handleDeleteArtist}
+                        onDelete={(id) => setShowDeleteConfirmId(id)}
                     />
+                )}
+                {showDeleteConfirmId && (
+                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/80">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                            className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-[3rem] p-12 text-center space-y-8 shadow-[0_50px_100px_rgba(0,0,0,0.5)]"
+                        >
+                            <div className="w-24 h-24 rounded-full bg-red-500/20 border border-red-500/20 flex items-center justify-center mx-auto">
+                                <AlertTriangle size={44} className="text-red-500" />
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Security Protocol</h3>
+                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                                    Are you certain you want to decommission this artist profile? This action is irreversible and will remove all associated deployment records.
+                                </p>
+                            </div>
+                            <div className="flex flex-col gap-4">
+                                <button 
+                                    onClick={() => handleDeleteArtist(showDeleteConfirmId)}
+                                    className="w-full h-20 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95"
+                                >
+                                    DECOMMISSION PROFILE
+                                </button>
+                                <button 
+                                    onClick={() => setShowDeleteConfirmId(null)}
+                                    className="w-full h-20 bg-white/5 text-gray-400 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-white/10 transition-all active:scale-95"
+                                >
+                                    ABORT OPERATION
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </>
@@ -601,8 +670,12 @@ const ArtistListItem = ({ artist, onSelect }) => (
 
     >
         <div className="w-16">
-            <div className="w-14 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-blue/40 transition-colors group-hover:scale-105 transition-transform">
-                {artist.name.charAt(0)}
+            <div className="w-14 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center font-black text-white group-hover:border-neon-blue/40 overflow-hidden transition-colors group-hover:scale-105 transition-transform">
+                {artist.image ? (
+                    <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
+                ) : (
+                    artist.name.charAt(0)
+                )}
             </div>
         </div>
         <div className="flex-1 w-full sm:w-auto">
@@ -694,7 +767,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
                 exit={{ scale: 0.9, opacity: 0, y: 100 }}
                 transition={{ type: "spring", damping: 30, stiffness: 200 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[2.5rem] sm:rounded-[4rem] w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_150px_rgba(0,0,0,1)] z-10"
+                className="relative bg-[#050505] border border-white/10 rounded-none sm:rounded-[4rem] w-full max-w-6xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_150px_rgba(0,0,0,1)] z-10"
 
             >
 
@@ -716,7 +789,11 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
                     <div className="relative shrink-0">
                         <div className="w-32 h-32 sm:w-48 sm:h-48 bg-black border-2 border-white/10 rounded-[2.5rem] sm:rounded-[4rem] flex items-center justify-center text-5xl sm:text-7xl font-black text-white shadow-[0_30px_60px_rgba(0,0,0,0.8)] relative overflow-hidden group">
                             <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="relative z-10">{artist.name.charAt(0)}</span>
+                            {artist.image ? (
+                                <img src={artist.image} alt={artist.name} className="w-full h-full object-cover relative z-10" />
+                            ) : (
+                                <span className="relative z-10">{artist.name.charAt(0)}</span>
+                            )}
                         </div>
                         {artist.profileStatus === 'approved' && (
                             <div className="absolute -bottom-3 -right-3 sm:-bottom-6 sm:-right-6 bg-neon-green text-black w-10 h-10 sm:w-16 sm:h-16 rounded-[1rem] sm:rounded-[2rem] flex items-center justify-center border-4 sm:border-8 border-[#050505] shadow-[0_0_40px_rgba(57,255,20,0.3)] animate-float">
@@ -731,7 +808,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
                             <div className="flex flex-wrap justify-center lg:justify-start gap-3 items-center mb-2">
                                 <StatusPill status={artist.profileStatus} />
                                 <span className="px-5 py-2 bg-white/5 border border-white/5 rounded-full text-[9px] font-black text-gray-500 tracking-[0.3em] uppercase">
-                                    Member since 2024
+                                    Member since {new Date(artist.createdAt || Date.now()).getFullYear()}
                                 </span>
                             </div>
                             <h2 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white">
@@ -757,6 +834,19 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
                                 <Zap size={14} /> ₹{Number(artist.basePrice).toLocaleString()} / PERF
                             </div>
                         </div>
+                        
+                        <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
+
+                        <button 
+                            onClick={exportToCSV}
+                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
+                                <Download size={16} />
+                                EXPORT CSV
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -1163,7 +1253,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
             </div>,
             document.body
         );
-    };
+};
 
 
 export default ArtistManager;

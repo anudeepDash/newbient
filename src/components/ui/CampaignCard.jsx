@@ -50,16 +50,16 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
             )}
 
-            <div className="p-8 flex flex-col flex-1 relative">
+            <div className="p-6 md:p-8 flex flex-col flex-1 relative">
                 {/* Header Row */}
-                <div className="flex items-start justify-between mb-8">
+                <div className="flex items-start justify-between mb-6 md:mb-8">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-blue group-hover:bg-neon-blue/10 transition-colors">
-                            <Instagram size={18} />
+                        <div className="p-2 md:p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-blue group-hover:bg-neon-blue/10 transition-colors">
+                            <Instagram size={16} md={18} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">{campaign.targetCity || 'Universal'}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{Number(campaign.minInstagramFollowers || 0).toLocaleString()} Followers</span>
+                            <span className="text-[8px] md:text-[9px] font-black text-white/40 uppercase tracking-widest">{campaign.targetCity || 'Universal'}</span>
+                            <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">{Number(campaign.minInstagramFollowers || 0).toLocaleString()} Followers</span>
                         </div>
                     </div>
                     
@@ -69,14 +69,14 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                                 initial={{ scale: 0.8 }} 
                                 animate={{ scale: [0.8, 1.1, 1] }} 
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[7px] font-black uppercase tracking-widest text-yellow-500 flex items-center justify-center"
+                                className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[6px] md:text-[7px] font-black uppercase tracking-widest text-yellow-500 flex items-center justify-center"
                             >
                                 New Deliverables
                             </motion.span>
                         )}
                         {isJoined && (
                             <div className={cn(
-                                "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm flex items-center justify-center",
+                                "px-2.5 md:px-3 py-1 rounded-lg text-[7px] md:text-[8px] font-black uppercase tracking-widest border backdrop-blur-md shadow-sm flex items-center justify-center",
                                 isFullyComplete ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
                                 isShortlisted ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : 
                                 "bg-zinc-800 text-gray-400 border-white/5"
@@ -89,31 +89,31 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
 
                 {/* Title */}
                 <div className="flex-1">
-                    <h3 className="text-2xl font-black font-heading mb-3 text-white tracking-tight uppercase group-hover:text-neon-blue transition-colors italic">
+                    <h3 className="text-xl md:text-2xl font-black font-heading mb-2 md:mb-3 text-white tracking-tight uppercase group-hover:text-neon-blue transition-colors italic">
                         {campaign.title}
                     </h3>
-                    <p className="text-gray-400 text-[12px] line-clamp-2 leading-relaxed font-medium mb-8 pr-4">
+                    <p className="text-gray-400 text-[11px] md:text-[12px] line-clamp-2 leading-relaxed font-medium mb-6 md:mb-8 pr-4">
                         {(campaign.description || '').replace(/<[^>]*>/g, ' ')}
                     </p>
                     
-                    <div className="flex items-center gap-6 mt-auto">
+                    <div className="flex items-center gap-4 md:gap-6 mt-auto">
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">BOUNTY</span>
-                            <span className="text-neon-green text-sm font-black italic">{campaign.reward || 'Barter'}</span>
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">BOUNTY</span>
+                            <span className="text-neon-green text-xs md:text-sm font-black italic">{campaign.reward || 'Barter'}</span>
                         </div>
-                        <div className="w-px h-8 bg-white/10" />
+                        <div className="w-px h-6 md:h-8 bg-white/10" />
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">DELIVERABLES</span>
-                            <span className="text-white text-sm font-black">
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">DELIVERABLES</span>
+                            <span className="text-white text-xs md:text-sm font-black">
                                 {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Segments`}
                             </span>
                         </div>
                         {isJoined && isShortlisted && (
                             <>
-                                <div className="w-px h-8 bg-white/10" />
+                                <div className="w-px h-6 md:h-8 bg-white/10" />
                                 <div className="flex flex-col">
-                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">STATUS</span>
-                                    <span className={cn("text-sm font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>{Math.round(progress)}%</span>
+                                    <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">STATUS</span>
+                                    <span className={cn("text-xs md:text-sm font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>{Math.round(progress)}%</span>
                                 </div>
                             </>
                         )}
@@ -121,12 +121,12 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
-                        <FileText size={14} className="group-hover:text-neon-blue transition-colors" /> 
+                <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-white/5 flex items-center justify-between">
+                    <div className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
+                        <FileText size={12} md={14} className="group-hover:text-neon-blue transition-colors" /> 
                         {isJoined && isShortlisted ? 'Open Mission Panel' : 'View Campaign Brief'}
                     </div>
-                    <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={18} />
+                    <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={16} md={18} />
                 </div>
             </div>
         </motion.div>

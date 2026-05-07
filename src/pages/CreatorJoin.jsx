@@ -4,12 +4,12 @@ import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw, Zap } from 'lucide-react';
+import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw, Zap, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const CreatorJoin = () => {
-    const { user, authInitialized, setAuthModal, addCreator, creators } = useStore();
+    const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary } = useStore();
     const navigate = useNavigate();
 
     // Form State
@@ -25,7 +25,8 @@ const CreatorJoin = () => {
         youtube: '',
         youtubeSubscribers: '',
         twitter: '',
-        portfolioInfo: ''
+        portfolioInfo: '',
+        profilePicture: ''
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +43,22 @@ const CreatorJoin = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setIsSubmitting(true);
+        try {
+            const url = await uploadToCloudinary(file);
+            setFormData(prev => ({ ...prev, profilePicture: url }));
+            useStore.getState().addToast("Profile picture uploaded!", 'success');
+        } catch (error) {
+            useStore.getState().addToast("Upload failed: " + error.message, 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
@@ -201,6 +218,29 @@ const CreatorJoin = () => {
                                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Legitimacy Verification</p>
                                             </div>
                                         </div>
+
+                                        {/* Profile Picture Upload */}
+                                        <div className="flex flex-col items-center gap-8 bg-black/30 border border-white/5 rounded-[2.5rem] p-10 mb-8 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-neon-blue/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="relative">
+                                                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3.5rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40">
+                                                    {formData.profilePicture ? (
+                                                        <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Camera size={40} className="text-gray-700 group-hover:text-neon-blue transition-colors" />
+                                                    )}
+                                                </div>
+                                                <label className="absolute -bottom-2 -right-2 w-12 h-12 bg-neon-blue text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                                    <Upload size={20} />
+                                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                                </label>
+                                            </div>
+                                            <div className="text-center space-y-1 relative z-10">
+                                                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">Profile Identity</h4>
+                                                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Upload your professional headshot</p>
+                                            </div>
+                                        </div>
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>

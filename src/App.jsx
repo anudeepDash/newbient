@@ -61,6 +61,8 @@ import Privacy from './pages/Privacy';
 import NeuralToast from './components/ui/NeuralToast';
 import EventScanner from './pages/Admin/EventScanner';
 import TicketingManagement from './pages/Admin/TicketingManagement';
+import GuestlistManager from './pages/Admin/GuestlistManager';
+import CreatorHub from './pages/Admin/CreatorHub';
 import DigitalTicket from './pages/DigitalTicket';
 
 
@@ -158,9 +160,10 @@ function App() {
           <Route path="admin/client-requests" element={<AdminGuard><ClientRequestManager /></AdminGuard>} />
           <Route path="admin/artistant" element={<AdminGuard><ArtistantHub /></AdminGuard>} />
           <Route path="admin/volunteer-gigs" element={<AdminGuard><MaintenanceGuard featureId="forms"><VolunteerGigManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/guestlists" element={<AdminGuard><MaintenanceGuard featureId="community"><GuestlistManager /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/upcoming-events" element={<AdminGuard><MaintenanceGuard featureId="upcoming_events"><UpcomingEventsManager /></MaintenanceGuard></AdminGuard>} />
-          <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorManager /></MaintenanceGuard></AdminGuard>} />
-          <Route path="admin/campaigns" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CampaignManager /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/creators" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorHub /></MaintenanceGuard></AdminGuard>} />
+          <Route path="admin/campaigns" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorHub /></MaintenanceGuard></AdminGuard>} />
           <Route path="admin/giveaways" element={<AdminGuard><GiveawayManager /></AdminGuard>} />
           <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><GiveawayParticipants /></AdminGuard>} />
           <Route path="admin/blog" element={<AdminGuard><BlogManager /></AdminGuard>} />

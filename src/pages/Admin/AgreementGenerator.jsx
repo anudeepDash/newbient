@@ -47,6 +47,7 @@ const ContractGenerator = () => {
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
     const [generatingSection, setGeneratingSection] = useState(null);
+    const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const previewContainerRef = useRef(null);
 
     const toggleFieldVisibility = (field) => {
@@ -232,7 +233,6 @@ const ContractGenerator = () => {
     };
 
     const tabs = [
-        { id: '0', label: 'Briefing', icon: Layers, desc: 'Project Source Data' },
         { id: '1', label: 'Entities', icon: Users, desc: 'Legal Parties' },
         { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework', visibilityKey: 'mission' },
         { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms', visibilityKey: 'commercials' },
@@ -281,6 +281,13 @@ const ContractGenerator = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
+                    <button 
+                        onClick={() => setShowPreviewMobile(!showPreviewMobile)} 
+                        className="lg:hidden h-10 px-3 bg-[#A855F7]/10 rounded-xl border border-[#A855F7]/20 text-[#A855F7] flex items-center gap-2 active:scale-95 transition-all"
+                    >
+                        <Eye size={14} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Preview</span>
+                    </button>
                     <button onClick={handleSave} disabled={isSaving} className="h-10 md:h-12 px-3 md:px-8 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] rounded-xl border border-white/10 transition-all flex items-center gap-2">
                         {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} 
                         <span className="hidden sm:inline">Save Draft</span>
@@ -327,17 +334,22 @@ const ContractGenerator = () => {
                         <AIPromptBox onGenerate={handleGenerateContract} isGenerating={isGenerating} type="contract" forceClear={promptBoxClear} />
 
                         {/* Minimalist Section Header */}
-                        <div className="flex flex-col md:flex-row items-end justify-between mb-8 pb-6 border-b border-white/5 group/header">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em] opacity-80 mb-1">
-                                    Step {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
-                                </p>
-                                <h2 className="text-4xl font-black uppercase tracking-tighter italic text-white leading-none">
-                                    {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
-                                </h2>
-                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest pt-1">
-                                    {tabs.find(t => t.id === activeTab)?.desc}
-                                </p>
+                        <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-[2px] bg-[#A855F7]/40" />
+                                    <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em] opacity-80">
+                                        Step {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                        {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
+                                    </h2>
+                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
+                                        {tabs.find(t => t.id === activeTab)?.desc}
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex flex-col items-end gap-4 w-full md:w-auto">
@@ -382,78 +394,6 @@ const ContractGenerator = () => {
 
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                                {activeTab === '0' && (
-                                    <div className="space-y-12">
-                                        <div className="bg-zinc-900/40 border border-white/5 rounded-[40px] p-10 space-y-10">
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Paste Contract Brief / Raw Data</label>
-                                                    <span className="text-[10px] font-black text-[#A855F7] bg-[#A855F7]/10 px-3 py-1 rounded-full uppercase">Newbi Agent Active</span>
-                                                </div>
-                                                <textarea 
-                                                    value={bulkRawText} 
-                                                    onChange={e => setBulkRawText(e.target.value)} 
-                                                    className="w-full bg-black/40 border border-white/5 p-8 rounded-[32px] font-bold text-sm outline-none focus:border-[#A855F7]/40 transition-all min-h-[300px] leading-relaxed scrollbar-hide text-white placeholder:text-gray-700" 
-                                                    placeholder="Paste meeting notes, emails, or raw requirements here... The AI will extract parties, scope, and commercial terms automatically." 
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Reference Assets</label>
-                                                    <div className="group relative h-48 rounded-[32px] border-2 border-dashed border-white/10 hover:border-neon-purple/50 hover:bg-neon-purple/[0.02] transition-all flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden">
-                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" multiple />
-                                                        <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-[#A855F7] group-hover:text-black transition-all">
-                                                            <Upload size={24} />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-xs font-black text-white uppercase tracking-widest">Drop Supporting Docs</p>
-                                                            <p className="text-[9px] font-bold text-gray-500 uppercase mt-1">AI will parse for context</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col justify-end space-y-4">
-                                                    <div className="p-4 bg-[#A855F7]/5 rounded-2xl border border-[#A855F7]/10 space-y-1.5">
-                                                        <div className="flex items-center gap-2 text-[#A855F7]">
-                                                            <Zap size={12} />
-                                                            <span className="text-[8px] font-black uppercase tracking-widest">Intelligent Extraction</span>
-                                                        </div>
-                                                        <p className="text-[8px] font-bold text-gray-600 leading-relaxed uppercase">The Newbi Agent maps legal entities, financial terms, and specialized clauses directly into your contract.</p>
-                                                    </div>
-                                                    <Button 
-                                                        onClick={async () => {
-                                                            if (!bulkRawText.trim()) return;
-                                                            await handleGenerateContract(bulkRawText);
-                                                            setActiveTab('1'); 
-                                                        }} 
-                                                        disabled={isGenerating || !bulkRawText.trim()}
-                                                        className="h-14 rounded-xl bg-[#A855F7] text-black text-[10px] font-black uppercase tracking-[0.2em] gap-2 shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:scale-[1.02] transition-all w-full"
-                                                    >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                                                        Initialize Contract Build
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 opacity-30 hover:opacity-100 transition-opacity">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <h3 className="text-sm font-black uppercase tracking-tighter italic text-gray-400">Developer Console (JSON)</h3>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => navigator.clipboard.writeText(JSON.stringify(formData, null, 2))} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-gray-500">Copy State</button>
-                                                </div>
-                                            </div>
-                                            <textarea 
-                                                id="bulk-data-input"
-                                                value={JSON.stringify(formData, null, 2)}
-                                                readOnly
-                                                className="w-full h-32 bg-black/60 border border-white/10 rounded-2xl p-4 font-mono text-[10px] text-zinc-500 outline-none scrollbar-hide"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
 
                                 {activeTab === '1' && (
                                     <div className="space-y-10">
@@ -723,9 +663,16 @@ const ContractGenerator = () => {
                 </main>
 
                 {/* Preview Panel - Optimized width for better doc visibility */}
-                <aside className="w-[400px] 2xl:w-[600px] border-l border-white/5 bg-zinc-900/40 flex flex-col overflow-hidden shrink-0">
-                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                <aside className={cn(
+                    "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
+                    "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+                )}>
+                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20 shrink-0">
                         <div className="flex items-center gap-3">
+                            <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5 mr-2">
+                                <ArrowLeft size={18} />
+                            </button>
                             <Eye size={16} className="text-neon-purple" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Preview</span>
                         </div>

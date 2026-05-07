@@ -174,37 +174,60 @@ const InvoiceManagement = () => {
             }
         >
             <div className="relative z-10">
-                {/* Filters Bar */}
-                <div className="bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-4">
+                {/* Dynamic Command Center - Optimized for Mobile */}
+                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
+                    {/* Search Field */}
                     <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
+                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-blue transition-colors" size={20} />
                         <input 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search client or invoice #..."
-                            className="w-full bg-transparent h-16 pl-20 pr-8 rounded-2xl text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
+                            placeholder="Search invoices..."
+                            className="w-full bg-transparent h-14 md:h-16 pl-16 md:pl-20 pr-6 md:pr-8 rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-widest outline-none transition-all placeholder:text-gray-600"
                         />
                     </div>
+
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto">
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
-                            {['All', 'Pending', 'Paid'].map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setFilter(s)}
-                                    className={cn(
-                                        "flex-1 md:flex-none px-6 md:px-10 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[80px] md:min-w-[120px]",
-                                        filter === s 
-                                            ? "bg-neon-blue text-black shadow-[0_10px_25px_rgba(0,255,255,0.3)] scale-[1.02]" 
-                                            : "text-gray-500 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    {s}
-                                </button>
-                            ))}
+                        {/* Status Filter Toggles */}
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex min-w-max md:min-w-0 flex-1">
+                                {['All', 'Pending', 'Paid'].map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => setFilter(s)}
+                                        className={cn(
+                                            "flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
+                                            filter === s 
+                                                ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" 
+                                                : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5">
-                            <button onClick={() => setViewMode('grid')} className={cn("p-3.5 rounded-xl transition-all", viewMode === 'grid' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}><LayoutGrid size={18} /></button>
-                            <button onClick={() => setViewMode('table')} className={cn("p-3.5 rounded-xl transition-all", viewMode === 'table' ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white")}><FileText size={18} /></button>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={cn(
+                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
+                                    viewMode === 'grid' ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={cn(
+                                    "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
+                                    viewMode === 'table' ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                <FileText size={18} />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -278,48 +301,71 @@ const InvoiceManagement = () => {
                             ))}
                         </motion.div>
                     ) : (
-                        <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            <Card className="min-w-[800px] md:min-w-0 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-3xl md:rounded-[2.5rem] p-0 border overflow-hidden">
+                        <motion.div 
+                            key="table"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
+                        >
+                            <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border overflow-hidden">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                            <th className="p-8">Document</th>
-                                            <th className="p-8">Client</th>
-                                            <th className="p-8 text-right">Value</th>
-                                            <th className="p-8 text-center">Status</th>
-                                            <th className="p-8 text-right">Actions</th>
+                                            <th className="p-6 md:p-8">Reference</th>
+                                            <th className="p-6 md:p-8">Client</th>
+                                            <th className="p-6 md:p-8">Amount</th>
+                                            <th className="p-6 md:p-8">Created</th>
+                                            <th className="p-6 md:p-8">Status</th>
+                                            <th className="p-6 md:p-8 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {filteredInvoices.map((inv) => (
-                                            <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                <td className="p-8">
+                                        {filteredInvoices.map((invoice) => (
+                                            <tr key={invoice.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                <td className="p-6 md:p-8">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform"><DollarSign size={20} /></div>
+                                                        <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center text-neon-blue group-hover:scale-110 transition-transform">
+                                                            <Receipt size={20} />
+                                                        </div>
                                                         <div>
-                                                            <div className="text-xs font-black uppercase tracking-widest text-white">{inv.invoiceNumber || 'NEWBI-INV'}</div>
-                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">{new Date(inv.createdAt || inv.issueDate).toLocaleDateString()}</div>
+                                                            <div className="text-xs font-black uppercase tracking-widest text-white">{invoice.invoiceNumber || 'NEWBI-INV'}</div>
+                                                            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">FINANCIAL DOC</div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-8"><div className="text-sm font-black uppercase tracking-tight text-white">{inv.clientName}</div></td>
-                                                <td className="p-8 text-right"><div className="text-xs font-black text-neon-blue font-mono">₹{(inv.total || inv.amount || 0).toLocaleString()}</div></td>
-                                                <td className="p-8 text-center">
-                                                    <div className={cn("inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]", inv.status === 'Paid' ? 'bg-neon-green/10 text-neon-green' : 'bg-yellow-500/10 text-yellow-500')}>{inv.status}</div>
+                                                <td className="p-6 md:p-8">
+                                                    <div className="text-sm font-black uppercase tracking-tight text-white">{invoice.clientName}</div>
                                                 </td>
-                                                <td className="p-8">
+                                                <td className="p-6 md:p-8">
+                                                    <div className="text-sm font-black text-white tabular-nums">₹{Number(invoice.total || invoice.amount || 0).toLocaleString()}</div>
+                                                </td>
+                                                <td className="p-6 md:p-8">
+                                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                                        {new Date(invoice.createdAt || invoice.issueDate).toLocaleDateString()}
+                                                    </div>
+                                                </td>
+                                                <td className="p-6 md:p-8">
+                                                    <div className={cn(
+                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em]",
+                                                        invoice.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-500' : 
+                                                        (invoice.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-600/10 text-gray-600')
+                                                    )}>
+                                                        {invoice.status}
+                                                    </div>
+                                                </td>
+                                                <td className="p-6 md:p-8">
                                                     <div className="flex justify-end gap-2">
-                                                        <a href={`/invoice/${inv.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
+                                                        <a href={`/invoice/${invoice.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
                                                         {user?.role !== 'editor' && (
                                                             <>
-                                                                <button onClick={() => setSelectedAnalytics(inv)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
-                                                                <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                                <button onClick={() => handleDelete(inv.id, inv)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                                <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
+                                                                <button onClick={() => handleDelete(invoice.id, invoice)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                                                             </>
                                                         )}
-                                                        {user?.role === 'editor' && (
-                                                            <Link to={`/admin/edit-invoice/${inv.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                        )}
+                                                        <button onClick={() => handleDuplicate(invoice)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
+                                                        <button onClick={() => handleNativeShare(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Share2 size={18} /></button>
+                                                        <Link to={`/admin/edit-invoice/${invoice.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
                                                     </div>
                                                 </td>
                                             </tr>
