@@ -3,7 +3,18 @@ import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Gift, Search, Download, CheckCircle2, Trophy, Users, ArrowLeft, Filter, Trash2, Star, Shuffle, Mail } from 'lucide-react';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Shuffle from 'lucide-react/dist/esm/icons/shuffle';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
@@ -100,13 +111,13 @@ const GiveawayParticipants = () => {
                 <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
                     <div className="space-y-4">
-                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic pr-4">
                             {giveaway.name} <span className="text-purple-500">PORTAL.</span>
                         </h1>
+                        <AdminDashboardLink className="mt-4" />
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest pl-1">
                             {campaignEntries.length} Active Participants • {campaignEntries.filter(e => e.isWinner).length} Winners Selected
                         </p>

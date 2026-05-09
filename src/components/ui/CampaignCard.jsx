@@ -37,7 +37,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => onOpenMission(campaign)}
-            className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 hover:border-neon-blue/40 shadow-xl rounded-[2.5rem] overflow-hidden flex flex-col group transition-all duration-500 h-full relative cursor-pointer active:scale-[0.98]"
+            className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 hover:border-neon-blue/40 shadow-xl rounded-[2rem] overflow-hidden flex flex-col group transition-all duration-500 h-full relative cursor-pointer active:scale-[0.98]"
         >
             {/* Progress Strip */}
             {isJoined && (
@@ -50,9 +50,9 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
             )}
 
-            <div className="p-6 md:p-8 flex flex-col flex-1 relative">
+            <div className="p-5 md:p-6 flex flex-col flex-1 relative">
                 {/* Header Row */}
-                <div className="flex items-start justify-between mb-6 md:mb-8">
+                <div className="flex items-start justify-between mb-4 md:mb-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2 md:p-2.5 rounded-xl bg-white/5 border border-white/5 text-neon-blue group-hover:bg-neon-blue/10 transition-colors">
                             <Instagram size={16} md={18} />
@@ -89,10 +89,10 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
 
                 {/* Title */}
                 <div className="flex-1">
-                    <h3 className="text-xl md:text-2xl font-black font-heading mb-2 md:mb-3 text-white tracking-tight uppercase group-hover:text-neon-blue transition-colors italic">
+                    <h3 className="text-lg md:text-xl font-black font-heading mb-1 md:mb-2 text-white tracking-tight uppercase group-hover:text-neon-blue transition-colors italic">
                         {campaign.title}
                     </h3>
-                    <p className="text-gray-400 text-[11px] md:text-[12px] line-clamp-2 leading-relaxed font-medium mb-6 md:mb-8 pr-4">
+                    <p className="text-gray-400 text-[10px] md:text-[11px] line-clamp-2 leading-relaxed font-medium mb-5 md:mb-6 pr-4">
                         {(campaign.description || '').replace(/<[^>]*>/g, ' ')}
                     </p>
                     
@@ -121,12 +121,12 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-white/5 flex items-center justify-between">
-                    <div className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
-                        <FileText size={12} md={14} className="group-hover:text-neon-blue transition-colors" /> 
-                        {isJoined && isShortlisted ? 'Open Mission Panel' : 'View Campaign Brief'}
+                <div className="mt-5 md:mt-6 pt-4 md:pt-5 border-t border-white/5 flex items-center justify-between">
+                    <div className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
+                        <FileText size={12} className="group-hover:text-neon-blue transition-colors" /> 
+                        {isJoined && isShortlisted ? 'Open Mission' : 'View Brief'}
                     </div>
-                    <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={16} md={18} />
+                    <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={14} md={16} />
                 </div>
             </div>
         </motion.div>

@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'framer-motion';
-import { 
-    Clock, 
-    User, 
-    Calendar, 
-    ArrowLeft, 
-    Share2, 
-    MessageCircle, 
-    Twitter, 
-    Linkedin,
-    ExternalLink,
-    Tag,
-    ChevronRight,
-    ArrowUp,
-    Heart
-} from 'lucide-react';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import User from 'lucide-react/dist/esm/icons/user';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Tag from 'lucide-react/dist/esm/icons/tag';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import Heart from 'lucide-react/dist/esm/icons/heart';
 import { useStore } from '../lib/store';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import BlogCard from '../components/blog/BlogCard';

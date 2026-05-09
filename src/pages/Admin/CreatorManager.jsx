@@ -1,14 +1,40 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
-import { 
-    Users, Search, MapPin, Instagram, Mail, Phone, ExternalLink, 
-    CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, 
-    Ban, Sparkles, Filter, Globe, Youtube, Zap, X, 
-    Clock, LayoutGrid, FileSpreadsheet, Download, FileText, 
-    ChevronDown, ChevronLeft, ChevronRight, TrendingUp, Star,
-    Mic2, Layers, Target, Check, Calendar
-} from 'lucide-react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Search from 'lucide-react/dist/esm/icons/search';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Ban from 'lucide-react/dist/esm/icons/ban';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import X from 'lucide-react/dist/esm/icons/x';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Download from 'lucide-react/dist/esm/icons/download';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -69,7 +95,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
             total: creators.length,
             approved: approvedCount,
             pending: creators.filter(c => !c.profileStatus || c.profileStatus === 'pending').length,
-            reach: totalFollowers
+            followers: totalFollowers
         };
     }, [creators]);
 
@@ -128,7 +154,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
             {/* Header Section */}
             <div className={cn(
                 "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-24 md:pt-32 px-4 md:px-12"
+                isEmbedded ? "pt-8 px-0" : "pt-32 md:pt-48 px-4 md:px-12"
             )}>
                 {!isEmbedded ? (
                     <div className="space-y-4">
@@ -140,8 +166,11 @@ const CreatorManager = ({ isEmbedded = false }) => {
                             TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue">NETWORK.</span>
                         </h1>
                         <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            Monitor and moderate your global network of content creators. Filter by reach, location, and specialization to deploy the right talent.
+                            Monitor and moderate your global network of content creators. Filter by followers, location, and specialization to deploy the right talent.
                         </p>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
                 ) : (
                     <div className="flex items-center gap-6">
@@ -149,15 +178,15 @@ const CreatorManager = ({ isEmbedded = false }) => {
                             <Users size={24} className="text-neon-pink" />
                         </div>
                         <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">NETWORK <span className="text-neon-pink">INTELLIGENCE</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Real-time creator demographics & engagement metrics</p>
+                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">CREATOR <span className="text-neon-pink">NETWORK</span></h2>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Analyze and manage your creator community</p>
                         </div>
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
                     <StatCard compact={isEmbedded} icon={<Users size={24} />} label="ACTIVE NETWORK" value={stats.total} color="purple" description={`${stats.approved} Verified Creators`} />
-                    <StatCard compact={isEmbedded} icon={<TrendingUp size={24} />} label="GROSS REACH" value={`${(stats.reach / 1000000).toFixed(1)}M`} color="pink" description="Aggregated Social Capital" />
+                    <StatCard compact={isEmbedded} icon={<TrendingUp size={24} />} label="GROSS FOLLOWERS" value={`${(stats.followers / 1000000).toFixed(1)}M`} color="pink" description="Aggregated Social Capital" />
                 </div>
             </div>
 
@@ -184,11 +213,11 @@ const CreatorManager = ({ isEmbedded = false }) => {
                             <StudioSelect 
                                 value={filterFollowers} 
                                 options={[
-                                    { value: 'All', label: 'REACH (%)' },
-                                    { value: '10k+', label: '10K+ REACH' },
-                                    { value: '50k+', label: '50K+ REACH' },
-                                    { value: '100k+', label: '100K+ REACH' },
-                                    { value: '500k+', label: '500K+ REACH' }
+                                    { value: 'All', label: 'FOLLOWERS (%)' },
+                                    { value: '10k+', label: '10K+ FOLLOWERS' },
+                                    { value: '50k+', label: '50K+ FOLLOWERS' },
+                                    { value: '100k+', label: '100K+ FOLLOWERS' },
+                                    { value: '500k+', label: '500K+ FOLLOWERS' }
                                 ]} 
                                 onChange={setFilterFollowers} 
                                 className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
@@ -515,7 +544,7 @@ const CreatorBadgeCard = ({ creator, onSelect }) => (
                 </div>
                 <div className="flex items-center gap-2 text-neon-blue/80 text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 px-4 py-2.5 rounded-2xl border border-neon-blue/10 shadow-inner w-fit">
                     <TrendingUp size={12} className="animate-pulse" />
-                    <span>{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()} REACH</span>
+                    <span>{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()} FOLLOWERS</span>
                 </div>
             </div>
 
@@ -570,7 +599,7 @@ const CreatorListItem = ({ creator, onSelect }) => (
         </div>
 
         <div className="w-40 hidden lg:block text-right pr-10">
-            <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest mb-1">AGGREGATE REACH</p>
+            <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest mb-1">AGGREGATE FOLLOWERS</p>
             <p className="text-lg font-black text-white font-mono">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()}</p>
         </div>
 

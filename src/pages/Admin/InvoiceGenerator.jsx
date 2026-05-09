@@ -1,6 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileText, FileSpreadsheet, Users, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, DollarSign, CheckCircle, Smartphone, Globe, MoreVertical, MessageCircle, Upload } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Save from 'lucide-react/dist/esm/icons/save';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Download from 'lucide-react/dist/esm/icons/download';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import X from 'lucide-react/dist/esm/icons/x';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import MoreVertical from 'lucide-react/dist/esm/icons/more-vertical';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -349,7 +382,7 @@ const InvoiceGenerator = () => {
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Intelligence</p>
+                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Financial Summary</p>
                     </div>
                 </div>
 

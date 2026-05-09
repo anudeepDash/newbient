@@ -38,7 +38,7 @@ const NeuralToast = () => {
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 opacity-50 flex items-center gap-2">
                                 {toast.type === 'error' ? "System Error" : 
                                  toast.type === 'success' ? "Operation Success" :
-                                 "Neural Intelligence"}
+                                 "System Notification"}
                                 {toast.code && <span className="px-1.5 py-0.5 bg-white/10 rounded-md text-[8px] font-black">{toast.code}</span>}
                             </p>
                             <p className="text-[13px] font-bold leading-tight">{toast.message}</p>

@@ -34,7 +34,7 @@ const LoadingSpinner = ({ size = "md", color = "#2bd93e", className = "" }) => {
                     className={`${s.box} rounded-[1rem] flex items-center justify-center shadow-2xl relative z-10`}
                     style={{ backgroundColor: color }}
                 >
-                    <span className={`${s.text} font-black text-white tracking-tighter italic select-none`}>NB</span>
+
                 </motion.div>
             </div>
         </div>

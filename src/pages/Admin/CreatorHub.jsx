@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Target, Sparkles, LayoutDashboard } from 'lucide-react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';

@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
-    Save, 
-    X, 
-    Image, 
-    Type, 
-    Link as LinkIcon, 
-    Bold, 
-    Italic, 
-    Heading2, 
-    Heading3, 
-    List,
-    Eye,
-    ChevronLeft,
-    Loader2,
-    Calendar,
-    User,
-    Mail,
-    Star,
-    Settings,
-    Upload
-} from 'lucide-react';
+import Save from 'lucide-react/dist/esm/icons/save';
+import X from 'lucide-react/dist/esm/icons/x';
+import Image from 'lucide-react/dist/esm/icons/image';
+import Type from 'lucide-react/dist/esm/icons/type';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import Bold from 'lucide-react/dist/esm/icons/bold';
+import Italic from 'lucide-react/dist/esm/icons/italic';
+import Heading2 from 'lucide-react/dist/esm/icons/heading-2';
+import Heading3 from 'lucide-react/dist/esm/icons/heading-3';
+import List from 'lucide-react/dist/esm/icons/list';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import User from 'lucide-react/dist/esm/icons/user';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Upload from 'lucide-react/dist/esm/icons/upload';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';

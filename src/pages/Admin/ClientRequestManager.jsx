@@ -1,15 +1,39 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../lib/store';
-import { 
-    Users, Search, MapPin, Mail, Phone, ExternalLink, 
-    CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, 
-    Sparkles, Filter, Globe, Zap, X, 
-    Clock, LayoutGrid, Music, Mic2, 
-    Calendar, Target, Check, ChevronRight, ChevronLeft,
-    MessageSquare, Briefcase, DollarSign,
-    ClipboardList, TrendingUp, Inbox, Layers, LayoutDashboard
-} from 'lucide-react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Search from 'lucide-react/dist/esm/icons/search';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import X from 'lucide-react/dist/esm/icons/x';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Check from 'lucide-react/dist/esm/icons/check';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Inbox from 'lucide-react/dist/esm/icons/inbox';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,22 +126,20 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                             MISSION INQUIRIES & BOOKING OPERATIONAL HUB
                         </p>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                            <Layers size={24} className="text-neon-green" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">PIPELINE <span className="text-neon-green">ANALYSIS</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Real-time engagement metrics for client inquiries</p>
-                        </div>
-                    </div>
-                )}
+                ) : null}
 
-                <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
-                    <StatCard compact={isEmbedded} icon={<Briefcase size={24} />} label="TOTAL INQUIRIES" value={stats.total} color="green" description={`${stats.pending} Pending Analysis`} />
-                    <StatCard compact={isEmbedded} icon={<CheckCircle2 size={24} />} label="FULFILLED" value={stats.fulfilled} color="blue" description="Successful Deployments" />
-                    <StatCard compact={isEmbedded} icon={<TrendingUp size={24} />} label="CONVERSION" value={`${stats.total ? Math.round((stats.fulfilled / stats.total) * 100) : 0}%`} color="purple" description="Request Success Rate" />
+                <div className="w-full">
+                    <StatCard 
+                        compact={isEmbedded} 
+                        icon={<Layers size={24} />} 
+                        label={isEmbedded ? "PIPELINE OVERVIEW" : "ENGAGEMENT OVERVIEW"} 
+                        value={stats.total} 
+                        color="green" 
+                        description={isEmbedded 
+                            ? `TOTAL INQUIRIES | ${stats.fulfilled} FULFILLED • ${stats.total ? Math.round((stats.fulfilled / stats.total) * 100) : 0}% CONVERSION`
+                            : `${stats.pending} Pending Analysis • ${stats.fulfilled} Successful Deployments`
+                        } 
+                    />
                 </div>
 
 

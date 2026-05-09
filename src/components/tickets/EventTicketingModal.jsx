@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    X, Ticket, Calendar, MapPin, Users, CheckCircle2, 
+    X, Ticket, Calendar, MapPin, Users, 
     ArrowRight, Loader2, Minus, Plus, ShieldCheck, 
-    ChevronLeft, QrCode, Info, Map as MapIcon
+    ChevronLeft, QrCode, Info, Map as MapIcon, Download, ExternalLink,
+    User, Mail, Phone
 } from 'lucide-react';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { notifyAdmins } from '../../lib/notificationTriggers';
 import { Button } from '../ui/Button';
@@ -43,6 +45,7 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
     const [paymentRef, setPaymentRef] = useState('');
     const [loading, setLoading] = useState(false);
     const [bookingRef, setBookingRef] = useState('');
+    const [isDownloading, setIsDownloading] = useState(false);
 
     useEffect(() => {
         if (isOpen && event) {
@@ -119,6 +122,8 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                 guestlistId: event.id,
                 title: event.title,
                 date: event.date,
+                location: event.location || 'Venue',
+                image: event.image || '',
                 userId: user?.uid || null,
                 customerName: formData.name,
                 customerEmail: formData.email,
@@ -135,6 +140,36 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
             useStore.getState().addToast("Registration failed.", 'error');
         }
         setLoading(false);
+    };
+
+    const handleDownloadTicket = async () => {
+        const ticket = document.getElementById('ticket-download-surface');
+        if (!ticket) return;
+
+        setIsDownloading(true);
+        try {
+            const canvas = await html2canvas(ticket, {
+                scale: 2,
+                backgroundColor: '#000000',
+                useCORS: true,
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 800,
+                windowHeight: ticket.offsetHeight || 1200
+            });
+            
+            const image = canvas.toDataURL("image/png", 1.0);
+            const link = document.createElement('a');
+            link.download = `NEWBI-TICKET-${bookingRef}.png`;
+            link.href = image;
+            link.click();
+        } catch (err) {
+            console.error("handleDownloadTicket failed:", err);
+            useStore.getState().addToast("Failed to save image. Please try taking a screenshot.", 'error');
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     const submitTickets = async () => {
@@ -182,6 +217,24 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center overflow-hidden">
+                {/* Generating Overlay */}
+                <AnimatePresence>
+                    {isDownloading && (
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-2xl flex flex-col items-center justify-center gap-6"
+                        >
+                            <LoadingSpinner size="md" color="#2bd93e" className="mb-4" />
+                            <div className="text-center space-y-2">
+                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">STABILIZING ASSETS</p>
+                                <p className="text-[12px] font-black text-white uppercase italic tracking-tighter">GENERATING YOUR ACCESS PASS...</p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -199,12 +252,12 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={cn(
                         "relative w-full overflow-hidden bg-zinc-950 border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] flex flex-col md:flex-row",
-                        "md:max-w-4xl md:h-[650px] md:rounded-3xl md:border", 
+                        "md:max-w-3xl md:h-[480px] md:rounded-3xl md:border", 
                         "h-[95%] rounded-t-3xl border-t"
                     )}
                 >
                     {/* Left Banner / Sidebar */}
-                    <div className="relative w-full md:w-[40%] h-48 md:h-auto bg-black border-b md:border-b-0 md:border-r border-white/10 shrink-0 overflow-hidden">
+                    <div className="relative w-full md:w-[384px] h-48 md:h-auto bg-black border-b md:border-b-0 md:border-r border-white/10 shrink-0 overflow-hidden">
                         {event.image && (
                             <img 
                                 src={event.image} 
@@ -261,10 +314,10 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('guestlist')}
-                                    className={cn("pb-4 px-4 text-xs font-black uppercase tracking-widest transition-colors relative", activeTab === 'guestlist' ? "text-neon-pink" : "text-gray-500 hover:text-white")}
+                                    className={cn("pb-4 px-4 text-xs font-black uppercase tracking-widest transition-colors relative", activeTab === 'guestlist' ? "text-neon-blue" : "text-gray-500 hover:text-white")}
                                 >
                                     Guestlist
-                                    {activeTab === 'guestlist' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-pink" />}
+                                    {activeTab === 'guestlist' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-blue" />}
                                 </button>
                             </div>
                         )}
@@ -278,10 +331,20 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                         <h3 className="text-2xl font-black font-heading italic uppercase text-white">
                                             {activeTab === 'tickets' ? "Secure Your Access." : "Join The List."}
                                         </h3>
-                                        <p className="text-sm text-gray-400">
-                                            {event.description || "Get ready for an unforgettable experience. Secure your spots now before they sell out."}
-                                        </p>
-                                        <Button onClick={handleNext} className={cn("w-full h-14 rounded-xl font-black uppercase tracking-widest text-black flex items-center justify-center gap-2", activeTab === 'tickets' ? 'bg-neon-green hover:bg-neon-green/80' : 'bg-neon-pink hover:bg-neon-pink/80')}>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-gray-400 leading-relaxed">
+                                                {event.ticketingDescription || event.description || "Get ready for an unforgettable experience. Secure your spots now before they sell out."}
+                                            </p>
+                                            
+                                            {event.ticketingRules && (
+                                                <div className="pt-4 border-t border-white/5">
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Event Information</p>
+                                                    <p className="text-[11px] text-gray-500 whitespace-pre-wrap">{event.ticketingRules}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <Button onClick={handleNext} className={cn("w-full h-14 rounded-xl font-black uppercase tracking-widest text-black flex items-center justify-center gap-2 mt-4", activeTab === 'tickets' ? 'bg-neon-green hover:bg-neon-green/80' : 'bg-neon-blue hover:bg-neon-blue/80')}>
                                             {activeTab === 'tickets' ? "BUY TICKETS" : "REGISTER NOW"} <ArrowRight size={18} />
                                         </Button>
                                     </motion.div>
@@ -290,9 +353,9 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 {/* LAYOUT (Tickets Only) */}
                                 {step === 'layout' && (
                                     <motion.div key="layout" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 h-full flex flex-col">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setStep('overview')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><ChevronLeft size={18}/></button>
                                             <h3 className="text-xl font-black font-heading italic uppercase text-white">Venue Map</h3>
-                                            <button onClick={() => setStep('overview')} className="text-gray-500 hover:text-white"><ChevronLeft size={20}/></button>
                                         </div>
                                         <div className="flex-1 bg-black/50 rounded-2xl border border-white/5 p-2 overflow-hidden">
                                             <img src={event.venueLayout} alt="Venue Map" className="w-full h-full object-contain" />
@@ -306,21 +369,34 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 {/* SELECTION */}
                                 {step === 'selection' && (
                                     <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 h-full flex flex-col">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setStep('overview')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><ChevronLeft size={18}/></button>
                                             <h3 className="text-xl font-black font-heading italic uppercase text-white">
                                                 Select Spots
                                             </h3>
-                                            <button onClick={() => setStep('overview')} className="text-gray-500 hover:text-white"><ChevronLeft size={20}/></button>
                                         </div>
 
                                         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                                             {activeTab === 'guestlist' ? (
-                                                <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-6">
-                                                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Number of Guests</div>
-                                                    <div className="flex items-center gap-8">
-                                                        <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full bg-black border border-white/10 flex items-center justify-center hover:bg-white/10 text-white"><Minus size={20}/></button>
-                                                        <span className="text-5xl font-black tabular-nums">{guestCount}</span>
-                                                        <button onClick={() => setGuestCount(g => Math.min(5, g + 1))} className="w-14 h-14 rounded-full bg-neon-pink/20 text-neon-pink border border-neon-pink/30 flex items-center justify-center hover:bg-neon-pink hover:text-black"><Plus size={20}/></button>
+                                                <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-8">
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Number of Guests</div>
+                                                    <div className="flex items-center gap-10">
+                                                        <button 
+                                                            onClick={() => setGuestCount(g => Math.max(1, g - 1))} 
+                                                            className={cn("w-16 h-16 rounded-full flex items-center justify-center border transition-all", guestCount > 1 ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-transparent border-white/5 text-gray-800 cursor-not-allowed")}
+                                                        >
+                                                            <Minus size={24}/>
+                                                        </button>
+                                                        <div className="text-center">
+                                                            <span className="text-7xl font-black italic tracking-tighter tabular-nums">{guestCount}</span>
+                                                            <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest leading-none block -mt-1">GUESTS</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => setGuestCount(g => Math.min(5, g + 1))} 
+                                                            className={cn("w-16 h-16 rounded-full flex items-center justify-center border transition-all", guestCount < 5 ? "bg-neon-blue/10 border-neon-blue/20 text-neon-blue hover:bg-neon-blue hover:text-black" : "bg-transparent border-white/5 text-gray-800 cursor-not-allowed")}
+                                                        >
+                                                            <Plus size={24}/>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -369,9 +445,9 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 {/* DETAILS */}
                                 {step === 'details' && (
                                     <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 h-full flex flex-col">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-xl font-black font-heading italic uppercase text-white">Your Details</h3>
-                                            <button onClick={() => setStep('selection')} className="text-gray-500 hover:text-white"><ChevronLeft size={20}/></button>
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => setStep('selection')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors"><ChevronLeft size={18}/></button>
+                                            <h3 className="text-xl font-black font-heading italic uppercase text-white">Enter Details</h3>
                                         </div>
                                         
                                         <div className="flex-1 space-y-4">
@@ -387,9 +463,29 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2 block">Phone</label>
                                                 <Input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-14 bg-white/5" placeholder="+91 98765 43210" />
                                             </div>
+
+                                            {activeTab === 'guestlist' && guestCount > 1 && (
+                                                <div className="space-y-4 pt-4">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-neon-blue mb-2 block">Plus-One Identities</label>
+                                                    {[...Array(guestCount - 1)].map((_, i) => (
+                                                        <div key={i}>
+                                                            <Input 
+                                                                value={formData.plusOneNames[i] || ''} 
+                                                                onChange={e => {
+                                                                    const newNames = [...formData.plusOneNames];
+                                                                    newNames[i] = e.target.value;
+                                                                    setFormData({...formData, plusOneNames: newNames});
+                                                                }} 
+                                                                className="h-12 bg-white/5" 
+                                                                placeholder={`Guest ${i + 2} Name`} 
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <Button onClick={handleNext} className={cn("w-full h-14 rounded-xl font-black uppercase tracking-widest text-black flex items-center justify-center", activeTab === 'tickets' ? 'bg-neon-green' : 'bg-neon-pink')}>
+                                        <Button onClick={handleNext} className={cn("w-full h-14 rounded-xl font-black uppercase tracking-widest text-black flex items-center justify-center", activeTab === 'tickets' ? 'bg-neon-green' : 'bg-neon-blue')}>
                                             {activeTab === 'tickets' ? `PAY ₹${totalAmount}` : 'CONFIRM GUESTLIST'}
                                         </Button>
                                     </motion.div>
@@ -434,7 +530,7 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 {/* SUCCESS */}
                                 {step === 'success' && (
                                     <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-6">
-                                        <div className={cn("w-24 h-24 rounded-full flex items-center justify-center text-black mb-2", activeTab === 'tickets' ? "bg-neon-green" : "bg-neon-pink")}>
+                                        <div className={cn("w-24 h-24 rounded-full flex items-center justify-center text-black mb-2 shadow-[0_0_15px_rgba(0,0,0,0.1)]", activeTab === 'tickets' ? "bg-neon-green" : "bg-neon-blue")}>
                                             <CheckCircle2 size={48} />
                                         </div>
                                         <div>
@@ -449,15 +545,25 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full mt-4">
                                             <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mb-2">Booking Reference</p>
                                             <p className="text-xl font-black font-mono tracking-widest text-white mb-6">{bookingRef}</p>
-                                            {activeTab === 'tickets' && event.ticketMode === 'pdf' ? (
-                                                <div className="w-full h-14 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                    PDF PASS WILL BE EMAILED
-                                                </div>
-                                            ) : (
-                                                <a href={`/ticket/${bookingRef}`} target="_blank" rel="noopener noreferrer" className="w-full h-14 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white transition-all">
+                                            
+                                            <div className="flex flex-col gap-3">
+                                                {activeTab === 'tickets' && event.ticketMode === 'pdf' ? (
+                                                    <div className="w-full h-14 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                        PDF PASS WILL BE EMAILED
+                                                    </div>
+                                                ) : (
+                                                    <Button 
+                                                        onClick={handleDownloadTicket} 
+                                                        className={cn("w-full h-14 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? 'bg-neon-green text-black' : 'bg-neon-pink text-black')}
+                                                    >
+                                                        <Download size={16} /> DOWNLOAD PASS
+                                                    </Button>
+                                                )}
+                                                
+                                                <a href={`/ticket/${bookingRef}?event=${event.id}`} target="_blank" rel="noopener noreferrer" className="w-full h-14 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white transition-all">
                                                     <QrCode size={16} /> VIEW DIGITAL PASS
                                                 </a>
-                                            )}
+                                            </div>
                                         </div>
 
                                         <Button onClick={onClose} variant="ghost" className="w-full h-14 mt-2 text-gray-500 hover:text-white">
@@ -469,6 +575,72 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* Hidden Ticket Surface for Download */}
+                <div className="fixed -left-[2000px] top-0">
+                    <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-white/10">
+                        {/* Logo Header */}
+                        <div className="flex items-center justify-between">
+                            <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className={activeTab === 'tickets' ? 'text-neon-green' : 'text-neon-pink'}>ENT.</span></div>
+                            <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">{activeTab === 'tickets' ? 'OFFICIAL_TICKET' : 'GUESTLIST_PASS'}</div>
+                        </div>
+
+                        {/* Event Header */}
+                        <div className="space-y-4">
+                            <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
+                                {event.title}
+                            </h1>
+                            <div className="flex gap-8">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
+                                    <p className="text-xl font-bold text-white uppercase italic">
+                                        {event.date ? new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'To Be Announced'}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
+                                    <p className="text-xl font-bold text-white uppercase italic">{event.location || 'Special Venue'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* QR and Code */}
+                        <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
+                            <div className="bg-white p-8 rounded-[3rem]">
+                                <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} 
+                                    alt="QR" 
+                                    crossOrigin="anonymous"
+                                    className="w-48 h-48 mix-blend-multiply" 
+                                />
+                            </div>
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
+                                    <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                </div>
+                                <div className="flex gap-8">
+                                    <div>
+                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{activeTab === 'tickets' ? 'ITEMS' : 'GUESTS'}</p>
+                                        <p className={cn("text-2xl font-bold italic", activeTab === 'tickets' ? 'text-neon-green' : 'text-neon-pink')}>
+                                            {activeTab === 'tickets' ? cartTotalCount : guestCount}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
+                                        <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em]">www.newbi.in</p>
+                            <p className={cn("text-[9px] font-black uppercase tracking-[0.3em] opacity-50", activeTab === 'tickets' ? 'text-neon-green' : 'text-neon-pink')}>#AUTHENTIC_ACCESS_ONLY</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </AnimatePresence>
     );

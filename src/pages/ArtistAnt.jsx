@@ -1,13 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { 
-    FileText, Briefcase, UserCheck, Shield, ChevronRight, ChevronLeft, ArrowRight, 
-    Loader2, Search, MapPin, Calendar, Wallet, Activity, Home, 
-    Globe, Terminal, Award, BarChart3, Clock, Sparkles, Trash2, AlertTriangle,
-    User, Settings, ExternalLink, Mail, Phone, MapPinIcon, LayoutDashboard, Zap,
-    Music, Users, Disc, Mic2, Star, PartyPopper, Wand2, Guitar, Lock, Cpu, HeartHandshake,
-    Trophy, Ticket, ArrowLeft, ChevronDown, Rocket, Camera, Upload
-} from 'lucide-react';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Search from 'lucide-react/dist/esm/icons/search';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import MapPinIcon from 'lucide-react/dist/esm/icons/map-pin';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Wallet from 'lucide-react/dist/esm/icons/wallet';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import Home from 'lucide-react/dist/esm/icons/home';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Terminal from 'lucide-react/dist/esm/icons/terminal';
+import Award from 'lucide-react/dist/esm/icons/award';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import User from 'lucide-react/dist/esm/icons/user';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Disc from 'lucide-react/dist/esm/icons/disc';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Star from 'lucide-react/dist/esm/icons/star';
+import PartyPopper from 'lucide-react/dist/esm/icons/party-popper';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
+import Guitar from 'lucide-react/dist/esm/icons/guitar';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Cpu from 'lucide-react/dist/esm/icons/cpu';
+import HeartHandshake from 'lucide-react/dist/esm/icons/heart-handshake';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Rocket from 'lucide-react/dist/esm/icons/rocket';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useNavigate, Link } from 'react-router-dom';
@@ -154,8 +195,8 @@ const ArtistAnt = () => {
                 categories: artistData.categories.split(',').map(c => c.trim().toUpperCase())
             });
             setSuccessMessage({
-                title: "ENLISTMENT RECEIVED",
-                body: "Our talent scouts are now reviewing your professional specs. Your profile will be activated upon verification of your impact parameters."
+                title: "APPLICATION RECEIVED",
+                body: "We're reviewing your profile. We'll contact you once your account is verified and ready for gigs."
             });
             setView('dashboard');
         } catch (error) {
@@ -172,8 +213,8 @@ const ArtistAnt = () => {
         try {
             await updateArtist(user.uid, artistProfile);
             setSuccessMessage({
-                title: "PROFILE SYNCHRONIZED",
-                body: "Your professional data has been updated across the Artistant ecosystem."
+                title: "PROFILE UPDATED",
+                body: "Your profile information has been saved successfully."
             });
             setView('dashboard');
         } catch (error) {
@@ -193,8 +234,8 @@ const ArtistAnt = () => {
                 createdAt: new Date().toISOString()
             });
             setSuccessMessage({
-                title: "STRATEGIC REQUEST LOGGED",
-                body: "Our scouting division is now curating the optimal profiles for your requirements. We will transmit the talent dossier to your inbox shortly."
+                title: "REQUEST RECEIVED",
+                body: "Our team is finding the best artists for your requirements. We'll contact you with a shortlist of top picks shortly."
             });
             setView('gateway');
             setStep(1);

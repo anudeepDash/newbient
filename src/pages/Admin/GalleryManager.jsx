@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LayoutGrid, Plus, Trash2, Upload, Loader, Image as ImageIcon, Sparkles, Filter, X } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -51,14 +59,16 @@ const GalleryManager = () => {
                 <div className="absolute bottom-[10%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
                     <div className="space-y-4">
-                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             VISUAL <span className="text-neon-blue">ARCHIVE.</span>
                         </h1>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
                 </div>
 

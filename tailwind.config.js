@@ -19,8 +19,8 @@ export default {
         heading: ['Outfit', 'sans-serif'],
       },
       boxShadow: {
-        'neon-green': '0 0 10px #39FF14, 0 0 20px #39FF14',
-        'neon-pink': '0 0 10px #FF4F8B, 0 0 20px #FF4F8B',
+        'neon-green': '0 0 5px #39FF14, 0 0 12px rgba(57, 255, 20, 0.5)',
+        'neon-pink': '0 0 5px #FF4F8B, 0 0 12px rgba(255, 79, 139, 0.5)',
       },
       animation: {
         'glow-pulse': 'glow-pulse 2s infinite',

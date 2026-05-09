@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 
 const Button = React.forwardRef(({ className, variant = 'primary', size = 'md', children, as: Component = 'button', ...props }, ref) => {
     const variants = {
-        primary: 'bg-neon-pink text-white hover:bg-neon-pink/80 shadow-neon-pink',
-        secondary: 'bg-neon-green text-dark hover:bg-neon-green/80 shadow-neon-green',
+        primary: 'bg-neon-pink text-white hover:bg-neon-pink/80',
+        secondary: 'bg-neon-green text-dark hover:bg-neon-green/80',
         outline: 'border-2 border-neon-blue text-neon-blue hover:bg-neon-blue/10',
         ghost: 'text-white hover:bg-white/10',
     };

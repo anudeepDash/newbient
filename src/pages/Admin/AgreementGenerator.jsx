@@ -1,15 +1,47 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { 
-    Plus, Minus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, 
-    Send, FileText, ArrowLeft, ArrowRight, 
-    ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, 
-    CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, 
-    Layers, Image as ImageIcon, ClipboardList, Undo2, Scale,
-    ChevronDown, ChevronUp, CheckCircle2, 
-    Stamp, Gavel, Lock, History, MessageCircle, Share2,
-    Shield, Upload, Sparkles
-} from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Minus from 'lucide-react/dist/esm/icons/minus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Save from 'lucide-react/dist/esm/icons/save';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Download from 'lucide-react/dist/esm/icons/download';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import X from 'lucide-react/dist/esm/icons/x';
+import Send from 'lucide-react/dist/esm/icons/send';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import Scale from 'lucide-react/dist/esm/icons/scale';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import Stamp from 'lucide-react/dist/esm/icons/stamp';
+import Gavel from 'lucide-react/dist/esm/icons/gavel';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import History from 'lucide-react/dist/esm/icons/history';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';

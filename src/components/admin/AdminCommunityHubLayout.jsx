@@ -9,27 +9,25 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     const location = useLocation();
 
     const defaultTabs = [
-        { name: 'Volunteer Gigs', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
-        { name: 'Guestlists', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
-        { name: 'Community Forms', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
+        { name: 'GIGS', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
+        { name: 'GUESTLISTS', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
+        { name: 'FORMS', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
     ];
 
     const tabs = customTabs || defaultTabs;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-16 md:pt-24 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 md:pt-48 pb-20 relative overflow-hidden">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className={cn("absolute top-0 right-0 w-[50%] h-[50%] rounded-full blur-[120px] animate-pulse", `bg-${accentColor}/5`)} />
                 <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
+            <div className="relative z-10 max-w-[1700px] mx-auto px-4 md:px-12">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-6 md:gap-8">
-                    <div className="space-y-4 md:space-y-6 w-full md:w-auto">
-                        <AdminDashboardLink className="mb-2" />
-                        
+                    <div className="space-y-4 md:space-y-8 w-full md:w-auto">
                         {studioHeader ? (
                             <div className="space-y-1 md:space-y-2">
                                 <div className="flex items-center gap-2 md:gap-3">
@@ -52,6 +50,8 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                 <p className="text-gray-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mt-2">Management & Engagement Systems</p>
                             </div>
                         )}
+                        
+                        <AdminDashboardLink />
                     </div>
 
                     {/* Navigation Tabs (Header - Responsive) */}
@@ -125,7 +125,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
 
                     >
                         <LayoutGrid size={16} className="text-neon-blue group-hover:rotate-90 transition-transform duration-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-white transition-colors">Return to Hub</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 group-hover:text-white transition-colors">RETURN TO DASHBOARD</span>
                     </Link>
                 </div>
             </div>

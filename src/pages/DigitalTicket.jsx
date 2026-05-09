@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Ticket, Calendar, MapPin, User, CheckCircle2, ShieldCheck, Download, AlertTriangle } from 'lucide-react';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import User from 'lucide-react/dist/esm/icons/user';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Download from 'lucide-react/dist/esm/icons/download';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
@@ -22,17 +29,29 @@ const DigitalTicket = () => {
                 let snapshot = await getDocs(q);
                 
                 let fetchedData = null;
+                const urlParams = new URLSearchParams(window.location.search);
+                const eventIdParam = urlParams.get('event') || urlParams.get('gl');
 
                 if (!snapshot.empty) {
-                    fetchedData = { ...snapshot.docs[0].data(), type: 'ticket' };
-                } else {
+                    fetchedData = { ...snapshot.docs[0].data(), id: snapshot.docs[0].id, type: 'ticket' };
+                } else if (eventIdParam) {
+                    // Optimized direct lookup if event context is provided
+                    const directRef = query(collection(db, 'guestlists', eventIdParam, 'entries'), where('bookingRef', '==', id));
+                    const directSnap = await getDocs(directRef);
+                    if (!directSnap.empty) {
+                        fetchedData = { ...directSnap.docs[0].data(), id: directSnap.docs[0].id, type: 'guestlist' };
+                    }
+                }
+
+                if (!fetchedData) {
+                    // Fallback to collection group search
                     const entriesQuery = query(collectionGroup(db, 'entries'), where('bookingRef', '==', id));
                     const entriesSnapshot = await getDocs(entriesQuery);
                     
                     if (!entriesSnapshot.empty) {
-                        fetchedData = { ...entriesSnapshot.docs[0].data(), type: 'guestlist' };
+                        fetchedData = { ...entriesSnapshot.docs[0].data(), id: entriesSnapshot.docs[0].id, type: 'guestlist' };
                     } else {
-                        setError("Ticket not found or has been revoked.");
+                        setError("Ticket could not be found. Please check your reference code or contact support.");
                         setLoading(false);
                         return;
                     }

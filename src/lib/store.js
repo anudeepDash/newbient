@@ -97,6 +97,9 @@ export const useStore = create((set, get) => ({
             }
         }, 2500);
 
+        const loadedKeys = new Set();
+        const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices', 'creators', 'campaigns'];
+
         // Helper for collections
         const sub = (colName, stateKey) => {
             const q = query(collection(db, colName));
@@ -137,16 +140,19 @@ export const useStore = create((set, get) => ({
                 console.log(`Updated ${stateKey}:`, data.length);
                 set({ [stateKey]: data });
 
-                // Set loading false once core public data is ready
-                const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices'];
+                // Set loading false once ALL core public data is ready
                 if (criticalKeys.includes(stateKey)) {
-                    set({ loading: false });
+                    loadedKeys.add(stateKey);
+                    if (criticalKeys.every(key => loadedKeys.has(key))) {
+                        set({ loading: false });
+                    }
                 }
             }, (error) => {
                 console.error(`Error fetching ${stateKey}:`, error);
-                // Fail-safe: if a critical sub fails, don't let it block the app
-                const criticalKeys = ['announcements', 'upcomingEvents', 'siteSettings', 'invoices'];
-                if (criticalKeys.includes(stateKey)) set({ loading: false });
+                if (criticalKeys.includes(stateKey)) {
+                    loadedKeys.add(stateKey);
+                    if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+                }
             });
         };
 
@@ -184,7 +190,13 @@ export const useStore = create((set, get) => ({
                 const initialSettings = { showUpcomingEvents: true };
                 set({ siteSettings: initialSettings });
             }
-        }, (error) => console.error("Error fetching site settings:", error));
+            loadedKeys.add('siteSettings');
+            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+        }, (error) => {
+            console.error("Error fetching site settings:", error);
+            loadedKeys.add('siteSettings');
+            if (criticalKeys.every(key => loadedKeys.has(key))) set({ loading: false });
+        });
 
         // Site Details (Contact Info) Subscription
         const unsub10 = onSnapshot(doc(db, 'site_settings', 'contact_info'), (docSnap) => {
@@ -309,6 +321,23 @@ export const useStore = create((set, get) => ({
 
         const docRef = await addDoc(collection(db, 'upcoming_events'), cleanedEvent);
 
+        // Ensure Guestlist doc exists if enabled
+        if (event.isGuestlistEnabled) {
+            const glRef = doc(db, 'guestlists', docRef.id);
+            const glSnap = await getDoc(glRef);
+            if (!glSnap.exists()) {
+                await setDoc(glRef, {
+                    id: docRef.id,
+                    title: event.title,
+                    date: event.date,
+                    status: 'Open',
+                    createdAt: new Date().toISOString(),
+                    isEmbedded: true,
+                    eventId: docRef.id
+                });
+            }
+        }
+
         if (alsoAddToAnnouncements) {
              const announcementData = {
                 title: event.title || 'New Upcoming Event',
@@ -341,6 +370,29 @@ export const useStore = create((set, get) => ({
         delete cleanedUpdates.id;
 
         await updateDoc(doc(db, 'upcoming_events', id), cleanedUpdates);
+
+        // Ensure Guestlist doc exists if newly enabled or title changed
+        if (updates.isGuestlistEnabled) {
+            const glRef = doc(db, 'guestlists', id);
+            const glSnap = await getDoc(glRef);
+            if (!glSnap.exists()) {
+                await setDoc(glRef, {
+                    id: id,
+                    title: updates.title,
+                    date: updates.date,
+                    status: 'Open',
+                    createdAt: new Date().toISOString(),
+                    isEmbedded: true,
+                    eventId: id
+                }, { merge: true });
+            } else {
+                // Update basic info if it exists
+                await updateDoc(glRef, {
+                    title: updates.title,
+                    date: updates.date
+                });
+            }
+        }
 
         // Sync mirrored Announcement
         const announcementQ = query(collection(db, 'announcements'), where('linkedEventId', '==', id));
@@ -389,13 +441,18 @@ export const useStore = create((set, get) => ({
         const defaultCategory = portfolioCategories.length > 0 ? portfolioCategories[0].id : 'music';
 
         for (const event of eventsToArchive) {
-            // 1. Add to Portfolio
-            await addPortfolioItem({
+            // 1. Add to Portfolio (using setDoc to preserve ID for ticketing link)
+            await setDoc(doc(db, 'portfolio', event.id), {
                 title: event.title,
                 image: event.image,
-                category: event.category || defaultCategory, // Use event's category if present
-                highlightUrl: '', // Do not carry over link automatically
-                date: event.date // Preserve date if useful
+                category: event.category || defaultCategory,
+                highlightUrl: '',
+                date: event.date,
+                wasEvent: true,
+                isTicketed: event.isTicketed || false,
+                isGuestlistEnabled: event.isGuestlistEnabled || false,
+                ticketCategories: event.ticketCategories || [],
+                archivedAt: new Date().toISOString()
             });
 
             // 2. Remove from Upcoming
@@ -846,7 +903,7 @@ export const useStore = create((set, get) => ({
             const data = docSnap.data();
 
             if (data.attended) {
-                return { valid: true, scanned: true, data: { code: refId, name: data.name, type: 'Guestlist' } };
+                return { valid: true, scanned: true, data: { code: refId, name: data.customerName || data.name, type: 'Guestlist' } };
             }
 
             // Mark as attended
@@ -855,10 +912,23 @@ export const useStore = create((set, get) => ({
                 attendedAt: new Date().toISOString()
             });
 
-            return { valid: true, scanned: false, data: { code: refId, name: data.name, type: 'Guestlist', guestsCount: data.guestsCount } };
+            return { valid: true, scanned: false, data: { code: refId, name: data.customerName || data.name, type: 'Guestlist', guestsCount: data.guestsCount } };
         }
 
-        return { valid: false, message: 'INVALID PASS OR WRONG EVENT' };
+        // 3. Fallback: Global check to see if it's the WRONG EVENT
+        const globalTicket = query(collection(db, 'ticket_orders'), where('bookingRef', '==', refId));
+        const globalTicketSnap = await getDocs(globalTicket);
+        if (!globalTicketSnap.empty) {
+            return { valid: false, message: `WRONG EVENT: Valid for "${globalTicketSnap.docs[0].data().eventTitle}"` };
+        }
+
+        const globalGuest = query(collectionGroup(db, 'entries'), where('bookingRef', '==', refId));
+        const globalGuestSnap = await getDocs(globalGuest);
+        if (!globalGuestSnap.empty) {
+            return { valid: false, message: `WRONG EVENT: Valid for "${globalGuestSnap.docs[0].data().title || 'Another Event'}"` };
+        }
+
+        return { valid: false, message: 'INVALID PASS: CODE NOT FOUND' };
     },
     updateTicketOrderStatus: async (orderId, status) => {
         await updateDoc(doc(db, 'ticket_orders', orderId), { status });

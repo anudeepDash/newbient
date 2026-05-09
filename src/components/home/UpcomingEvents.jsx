@@ -6,6 +6,7 @@ import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight
 import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import EventTicketingModal from '../tickets/EventTicketingModal';
+import CommunityCard from '../community/CommunityCard';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
@@ -254,11 +255,17 @@ const UpcomingEvents = () => {
 
                             return (
                                 <div key={event.id} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
-                                    <div 
-                                        onClick={handleCardClick} 
-                                        className="block w-full h-full relative cursor-pointer group"
-                                    >
-                                        <EventTicket event={event} handleShare={handleShare} linkedGiveaway={linkedGiveaway} />
+                                    <div className="block w-full h-full relative cursor-default group">
+                                        <CommunityCard 
+                                            type="event"
+                                            item={{
+                                                ...event,
+                                                isTicketed: event.isTicketed,
+                                                isGuestlistEnabled: event.isGuestlistEnabled
+                                            }}
+                                            handleShare={(type, id) => handleShare({ preventDefault: () => {}, stopPropagation: () => {} }, event)}
+                                            onAction={() => handleCardClick(event)}
+                                        />
                                     </div>
                                 </div>
                             );
@@ -279,160 +286,5 @@ const UpcomingEvents = () => {
     );
 };
 
-const EventTicket = ({ event, handleShare, linkedGiveaway }) => {
-    const accentColor = event.highlightColor || '#2ebfff';
-    const [showAllArtists, setShowAllArtists] = useState(false);
-    
-    return (
-        <div 
-            id={`event-card-${event.id}`} 
-            className="relative bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 hover:border-white/20 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full"
-            style={{ 
-                '--accent-glow': `${accentColor}33`,
-                '--accent-solid': accentColor
-            }}
-        >
-            {/* Background elements */}
-            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
-                {event.image ? (
-                    <img
-                        src={event.image}
-                        alt=""
-                        crossOrigin="anonymous"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-50 group-hover:opacity-70"
-                        style={{ 
-                            transform: `scale(${event.imageTransform?.scale || 1})`,
-                            objectPosition: `${50 + (event.imageTransform?.x || 0)}% ${50 + (event.imageTransform?.y || 0)}%`,
-                            transformOrigin: 'center'
-                        }}
-                    />
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-black uppercase tracking-[0.3em] text-[10px]">
-                        SIGNAL_BUFFERING
-                    </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
-                <div 
-                    className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"
-                    style={{ background: `radial-gradient(circle at bottom right, ${accentColor}11 0%, transparent 60%)` }}
-                />
-            </div>
-            
-            {/* Top Badges */}
-            <div className="absolute top-8 left-8 right-8 z-30 flex justify-between items-start">
-                <div className="flex flex-col gap-2">
-                    <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/5 flex items-center gap-2 group-hover:border-white/20 transition-colors">
-                        <div 
-                            className="w-1 h-1 rounded-full animate-pulse" 
-                            style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }}
-                        />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80">
-                            {event.date ? (event.date === 'TBD' ? 'TBD' : new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })) : 'TBA'}
-                        </span>
-                    </div>
-                    {event.performanceType && (
-                        <span className="text-[7px] font-black uppercase tracking-[0.3em] text-white/30 pl-1">
-                            {event.performanceType}
-                        </span>
-                    )}
-                </div>
-
-                {event.isTicketed && (
-                    <div className="w-10 h-10 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/40 group-hover:text-neon-green group-hover:border-neon-green/30 transition-all">
-                        <Ticket size={18} />
-                    </div>
-                )}
-            </div>
-
-            {/* Content Body */}
-            <div className="absolute inset-x-8 bottom-8 z-20">
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        {event.artists && event.artists.length > 0 && (
-                            <div className="flex flex-wrap gap-2 items-center opacity-60 group-hover:opacity-100 transition-opacity duration-500 min-h-[12px]">
-                                {showAllArtists ? (
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                        {event.artists.map((artist, i) => (
-                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < event.artists.length - 1 ? ' •' : ''}</span>
-                                        ))}
-                                        <button 
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(false); }}
-                                            className="text-[8px] font-black text-neon-blue uppercase tracking-widest ml-1 hover:underline"
-                                        >
-                                            LESS
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {event.artists.slice(0, 2).map((artist, i) => (
-                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < 1 && event.artists.length > 1 ? ' •' : ''}</span>
-                                        ))}
-                                        {event.artists.length > 2 && (
-                                            <button 
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(true); }}
-                                                className="text-[8px] font-black text-white/40 uppercase tracking-widest hover:text-white transition-colors"
-                                            >
-                                                + {event.artists.length - 2} MORE
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        <h3 className="text-2xl md:text-3xl font-black font-heading text-white leading-[1.1] tracking-tighter uppercase italic group-hover:text-neon-blue transition-all duration-500">
-                            {event.title}
-                        </h3>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2">
-                        <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/40">
-                            <MapPin size={10} className="group-hover:text-white transition-colors" />
-                            <span>{event.location || 'TBA'}</span>
-                        </div>
-                        {event.doorsOpen && (
-                            <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/20">
-                                <Clock size={10} />
-                                <span>{event.doorsOpen}</span>
-                            </div>
-                        )}
-                        {event.ageLimit && (
-                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/10 px-1.5 py-0.5 rounded border border-white/5">{event.ageLimit}</span>
-                        )}
-                    </div>
-
-                    <div className="pt-6 mt-2 border-t border-white/5 flex items-center justify-between">
-                        <div className="flex flex-col gap-1.5">
-                                <div 
-                                    className="font-black tracking-[0.3em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[9px]"
-                                    style={{ 
-                                        color: event.isTicketed ? '#2eff90' : (event.isGuestlistEnabled ? '#ff2ebf' : accentColor) 
-                                    }}
-                                >
-                                    {event.buttonText || (event.isTicketed ? "GET TICKETS" : (event.isGuestlistEnabled ? "RSVP NOW" : "VIEW DETAILS"))}
-                                    <ArrowRight size={14} className="opacity-40 group-hover:opacity-100" />
-                                </div>
-                            {linkedGiveaway && (
-                                <span className="text-purple-400 text-[7px] font-black uppercase tracking-widest flex items-center gap-1 opacity-60">
-                                    <Gift size={10} /> GIVEAWAY ACTIVE
-                                </span>
-                            )}
-                        </div>
-                        
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleShare(e, event);
-                            }}
-                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all backdrop-blur-xl"
-                        >
-                            <Share2 size={14} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 export default UpcomingEvents;

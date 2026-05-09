@@ -6,15 +6,45 @@ import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES, ARTIST_CATEGORIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { 
-    Users, Search, MapPin, Mail, Phone, ExternalLink, 
-    CheckCircle2, XCircle, Activity, ArrowLeft, Trash2, 
-    Ban, Sparkles, Filter, Globe, Youtube, Zap, X, 
-    Clock, LayoutGrid, FileSpreadsheet, Music, Mic2, 
-    Video, Star, ChevronRight, ChevronLeft, Calendar, Target,
-    Check, Instagram, SlidersHorizontal, ShieldCheck, ShieldAlert,
-    TrendingUp, Award, Layers, LayoutDashboard, Download, AlertTriangle
-} from 'lucide-react';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Search from 'lucide-react/dist/esm/icons/search';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Ban from 'lucide-react/dist/esm/icons/ban';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import X from 'lucide-react/dist/esm/icons/x';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Video from 'lucide-react/dist/esm/icons/video';
+import Star from 'lucide-react/dist/esm/icons/star';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Check from 'lucide-react/dist/esm/icons/check';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Award from 'lucide-react/dist/esm/icons/award';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -168,21 +198,20 @@ const ArtistManager = ({ isEmbedded = false }) => {
                             Orchestrate your global roster of verified talent. Monitor performance, manage certifications, and deploy artists to active missions.
                         </p>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                            <Layers size={24} className="text-neon-blue" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">ROSTER <span className="text-neon-blue">INTELLIGENCE</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Real-time operational metrics for talent deployment</p>
-                        </div>
-                    </div>
-                )}
+                ) : null}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
-                    <StatCard compact={isEmbedded} icon={<Users size={24} />} label="ACTIVE ROSTER" value={stats.total} color="blue" description={`${stats.approved} Verified Members`} />
-                    <StatCard compact={isEmbedded} icon={<Clock size={24} />} label="IN PIPELINE" value={stats.pending} color="yellow" description="Pending Authorization" />
+                <div className="w-full">
+                        <StatCard 
+                            compact={isEmbedded} 
+                            icon={<Layers size={24} />} 
+                            label={isEmbedded ? "TALENT ROSTER" : "TALENT OVERVIEW"} 
+                            value={stats.total} 
+                            color="blue" 
+                            description={isEmbedded 
+                                ? `TOTAL ACTIVE ROSTER | ${stats.approved} VERIFIED • ${stats.pending} PENDING`
+                                : `${stats.approved} Verified • ${stats.pending} Pending Authorization`
+                            } 
+                        />
                 </div>
 
 
@@ -191,11 +220,11 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
             <div className={cn("px-4 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
                 {/* Futuristic Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-4 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
 
 
                     {/* Search Engine */}
-                    <div className="relative flex-1 min-w-[280px] group">
+                    <div className="relative flex-1 min-w-[200px] group">
                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue/10 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full pointer-events-none" />
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-blue transition-colors" size={16} />
                         <input
@@ -209,8 +238,8 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* Filter Cluster */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex items-center gap-2 shrink-0 w-full xl:w-auto pr-0 md:pr-2">
-                        <div className="w-full xl:w-[150px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex items-center gap-2 shrink-0 w-full xl:w-auto">
+                        <div className="w-full xl:w-[135px]">
                             <StudioSelect 
                                 value={filterCategory} 
                                 options={categories.map(c => ({ value: c, label: c === 'All' ? 'CATEGORY' : c.toUpperCase() }))} 
@@ -219,7 +248,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 accentColor="neon-pink" 
                             />
                         </div>
-                        <div className="w-full xl:w-[150px]">
+                        <div className="w-full xl:w-[135px]">
                             <StudioSelect 
                                 value={filterCity} 
                                 options={cities.map(c => ({ value: c, label: c === 'All' ? 'LOCATION' : c.toUpperCase() }))} 
@@ -228,7 +257,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 accentColor="neon-blue" 
                             />
                         </div>
-                        <div className="w-full xl:w-[150px] col-span-2 sm:col-span-1">
+                        <div className="w-full xl:w-[135px] col-span-2 sm:col-span-1">
                             <StudioSelect 
                                 value={filterStatus} 
                                 options={[
@@ -451,6 +480,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         onClose={() => setSelectedArtist(null)} 
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={(id) => setShowDeleteConfirmId(id)}
+                        onExport={exportToCSV}
                     />
                 )}
                 {showDeleteConfirmId && (
@@ -589,67 +619,71 @@ const ArtistBadgeCard = ({ artist, onSelect }) => (
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2rem] sm:rounded-[3.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:h-[520px]"
-
-
+        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] sm:rounded-[3rem] p-4 sm:p-5 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:min-h-[460px]"
     >
         {/* Cinematic Backdrop */}
         <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
-        {/* Avatar / Image Section */}
-        <div className="relative mb-6 group-hover:scale-[1.01] transition-transform duration-700">
-            <div className="aspect-[1/1] rounded-[2.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+        {/* Avatar / Image Section - REDUCED SIZE */}
+        <div className="relative mb-5 group-hover:scale-[1.01] transition-transform duration-700">
+            <div className="aspect-[4/3] rounded-[2rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
                 {artist.image ? (
                     <img src={artist.image} alt={artist.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 ) : (
-                    <div className="text-7xl font-black text-white/[0.03] uppercase italic select-none">
+                    <div className="text-6xl font-black text-white/[0.03] uppercase italic select-none">
                         {artist.name.charAt(0)}
                     </div>
                 )}
                 {/* Status Indicator Over Image */}
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-3 right-3 scale-75 origin-top-right">
                     <StatusPill status={artist.profileStatus} />
                 </div>
             </div>
             
             {/* Elite Badge Overlay */}
             {artist.profileStatus === 'approved' && (
-                <div className="absolute -bottom-4 -right-2 w-12 h-12 bg-neon-green text-black rounded-2xl flex items-center justify-center border-8 border-[#0A0A0A] shadow-[0_10px_20px_rgba(57,255,20,0.3)] z-20 group-hover:rotate-12 transition-transform">
-                    <Check size={20} strokeWidth={4} />
+                <div className="absolute -bottom-3 -right-1 w-10 h-10 bg-neon-green text-black rounded-xl flex items-center justify-center border-4 border-[#0A0A0A] shadow-[0_10px_20px_rgba(57,255,20,0.3)] z-20 group-hover:rotate-12 transition-transform">
+                    <Check size={16} strokeWidth={4} />
                 </div>
             )}
-        </div>        {/* Identity & Mission Data */}
-        <div className="flex-1 flex flex-col px-2">
-            {/* Category & Name Slot (Fixed Height to prevent shifts) */}
-            <div className="h-28 mb-4">
-                <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2">{artist.category}</p>
-                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-blue transition-colors duration-500 line-clamp-2">
+        </div>
+
+        {/* Identity & Mission Data */}
+        <div className="flex-1 flex flex-col px-1">
+            <div className="mb-4">
+                <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-1.5 opacity-80">{artist.category}</p>
+                <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-neon-blue transition-colors duration-500 line-clamp-2 break-words">
                     {artist.name}
                 </h3>
             </div>
 
-            {/* Operational Meta (Pills) */}
-            <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
-                    <MapPin size={12} className="text-neon-pink animate-pulse" />
-                    <span>{artist.city || 'GLOBAL'}</span>
+            {/* Operational Meta (Grid for better layout) */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="flex items-center gap-2 text-gray-500 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.03] px-3 py-2 rounded-xl border border-white/5 shadow-inner">
+                    <MapPin size={10} className="text-neon-pink shrink-0" />
+                    <span className="truncate">{artist.city || 'GLOBAL'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-yellow-500/80 text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/5 px-4 py-2.5 rounded-2xl border border-yellow-500/10 shadow-inner w-fit">
-                    <Star size={12} className="fill-yellow-500/20" />
-                    <span>{artist.experienceYears || '0'}Y EXPERIENCE</span>
+                <div className="flex items-center gap-2 text-yellow-500/80 text-[9px] font-black uppercase tracking-[0.15em] bg-yellow-500/5 px-3 py-2 rounded-xl border border-yellow-500/10 shadow-inner">
+                    <Award size={10} className="shrink-0" />
+                    <span className="truncate">{artist.experienceYears || '0'}Y EXP</span>
+                </div>
+                {/* Added Phone/Contact info */}
+                <div className="col-span-2 flex items-center gap-2 text-white/40 text-[9px] font-black uppercase tracking-[0.15em] bg-white/[0.02] px-3 py-2 rounded-xl border border-white/5">
+                    <Phone size={10} className="text-neon-blue shrink-0" />
+                    <span className="truncate">{artist.phone || 'SECURE LINE N/A'}</span>
                 </div>
             </div>
 
             {/* Commercial Baseline */}
-            <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
+            <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                 <div>
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">BASE PREMIUM</p>
-                    <p className="text-2xl font-black text-white tracking-tighter tabular-nums">₹{Number(artist.basePrice).toLocaleString()}</p>
+                    <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest mb-1">BASE PREMIUM</p>
+                    <p className="text-xl font-black text-white tracking-tighter tabular-nums">₹{Number(artist.basePrice).toLocaleString()}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     {artist.instagram && (
-                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-pink hover:border-neon-pink/30 hover:bg-neon-pink/10 transition-all">
-                            <Instagram size={16} />
+                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-pink hover:border-neon-pink/30 hover:bg-neon-pink/10 transition-all">
+                            <Instagram size={14} />
                         </div>
                     )}
                 </div>
@@ -750,7 +784,7 @@ const safeOpen = (url) => {
     window.open(`${protocol}${url}`, '_blank');
 };
 
-const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
+const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport }) => {
 
 
     const youtubeId = getYoutubeId(artist?.youtube);
@@ -838,7 +872,7 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete }) => {
                         <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
 
                         <button 
-                            onClick={exportToCSV}
+                            onClick={onExport}
                             className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1086,7 +1120,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                    {/* Event Intelligence Sidebar */}
+                    {/* Event Summary Sidebar */}
                     <div className="w-[450px] border-r border-white/5 overflow-y-auto custom-scrollbar p-10 bg-[#080808]/30">
                         <div className="flex items-center gap-4 mb-10">
                             <Calendar size={18} className="text-neon-pink" />
@@ -1241,9 +1275,9 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                                         <Calendar size={64} className="text-gray-700" />
                                     </div>
                                 </div>
-                                <h3 className="text-5xl font-black uppercase tracking-tighter text-gray-500 italic mb-6">AWAITING MISSION DATA</h3>
+                                <h3 className="text-5xl font-black uppercase tracking-tighter text-gray-500 italic mb-6">SELECT AN EVENT</h3>
                                 <p className="text-sm font-black text-gray-800 tracking-[0.4em] uppercase max-w-md leading-relaxed">
-                                    Select an operational mission from the left tactical panel to begin talent deployment.
+                                    Select an event from the left panel to begin assigning artists.
                                 </p>
                             </div>
                         )}

@@ -5,7 +5,34 @@ import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Gift, LayoutGrid, Plus, Search, Edit, Trash2, Users, Calendar, X, ChevronRight, Globe, Info, Clock, ArrowLeft, Download, Trophy, BarChart3, Instagram, Send, Youtube, MessageCircle, Music, Ghost, Link as LinkIcon, Camera, Twitter, XCircle, Sparkles } from 'lucide-react';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import X from 'lucide-react/dist/esm/icons/x';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Info from 'lucide-react/dist/esm/icons/info';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Ghost from 'lucide-react/dist/esm/icons/ghost';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -213,10 +240,9 @@ const GiveawayManager = () => {
                 <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
                         <div className="space-y-4">
-                            <AdminDashboardLink className="mb-2" />
                             <div className="flex items-center gap-3">
                             <Sparkles size={16} className="text-purple-500" />
                             <span className="text-purple-500 text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
@@ -224,6 +250,7 @@ const GiveawayManager = () => {
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                             GIVEAWAY <span className="text-purple-500">MANAGEMENT.</span>
                         </h1>
+                        <AdminDashboardLink className="mt-4" />
                     </div>
                     
                     <Button 
