@@ -1,21 +1,47 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Trash2, Edit, Save, Loader, Calendar, MapPin, Users, ArrowUp, ArrowDown, Megaphone, ArrowLeft, Sparkles, Palette, Image as ImageIcon, X, Pin, FileText } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Palette from 'lucide-react/dist/esm/icons/palette';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import X from 'lucide-react/dist/esm/icons/x';
+import Pin from 'lucide-react/dist/esm/icons/pin';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Unlock from 'lucide-react/dist/esm/icons/unlock';
+import UserCheck from 'lucide-react/dist/esm/icons/user-check';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import LivePreview from '../../components/admin/LivePreview';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-
 import { cn } from '../../lib/utils';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioTimePicker from '../../components/ui/StudioTimePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
 const VolunteerGigManager = () => {
+    const navigate = useNavigate();
     const colorPresets = [
         { name: 'Neon Green', value: '#39FF14' },
         { name: 'Neon Pink', value: '#FF4F8B' },
@@ -64,7 +90,6 @@ const VolunteerGigManager = () => {
     };
 
     const handleEdit = (gig) => {
-        // Pre-process dates to ensure they are clean strings (yyyy-mm-dd)
         const rawDates = gig.dates || (gig.date ? [gig.date] : []);
         const cleanDates = rawDates.map(d => {
             if (!d) return null;
@@ -101,18 +126,16 @@ const VolunteerGigManager = () => {
     };
 
     const handleSave = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSaving(true);
         try {
             const gigData = { ...formData };
-            delete gigData.id;
-            delete gigData.tempDate; // Clean up internal UI state
+            delete gigData.tempDate;
 
             if (editingId) {
                 await updateVolunteerGig(editingId, gigData);
             } else {
                 await addVolunteerGig(gigData);
-                // Notify All Users about new gig
                 await notifyAllUsers(
                     'NEW VOLUNTEER GIG!',
                     `${gigData.title.toUpperCase()} IS NOW LIVE. APPLY NOW.`,
@@ -120,6 +143,7 @@ const VolunteerGigManager = () => {
                     'gig'
                 );
             }
+            useStore.getState().addToast(`Gig ${editingId ? 'updated' : 'created'} successfully!`, 'success');
             resetForm();
         } catch (error) {
             console.error(error);
@@ -171,8 +195,6 @@ const VolunteerGigManager = () => {
 
     const formatDate = (dateStr) => {
         if (!dateStr) return 'TBD';
-        
-        // Handle input format (likely yyyy-mm-dd from StudioDatePicker)
         const s = String(dateStr);
         if (s.includes('-')) {
             const parts = s.split('-');
@@ -181,513 +203,508 @@ const VolunteerGigManager = () => {
                 return `${d}-${m}-${y}`;
             }
         }
-        
-        // Final fallback for display
         try {
             const d = new Date(dateStr);
             if (!isNaN(d.getTime())) {
                 return d.toLocaleDateString('en-GB').replace(/\//g, '-');
             }
         } catch (e) {}
-        
         return s;
     };
 
     if (isAdding) {
         return (
-            <div className="min-h-screen bg-[#020202] text-white pt-24 md:pt-32 pb-20 relative overflow-x-hidden">
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
-                </div>
-                
-                <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <AdminDashboardLink />
-                                <div className="flex items-center gap-3">
-                                    <Sparkles size={16} className="text-neon-green" />
-                                    <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
-                                </div>
-                            </div>
-                            <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
-                                GIG <span className="text-neon-green">MANAGEMENT.</span>
-                            </h1>
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                            <Button type="button" onClick={resetForm} className="h-12 md:h-14 px-6 md:px-8 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest rounded-xl md:rounded-2xl hover:bg-white hover:text-black transition-all w-full sm:w-auto">
-                                Cancel
-                            </Button>
-                            <Button 
-                                onClick={handleSave} 
-                                disabled={saving}
-                                className="h-16 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 w-full sm:w-auto"
-                            >
-                                {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
-                                {saving ? 'Processing...' : 'Save Changes'}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start min-h-[700px] mb-20">
-                        {/* Editor Column */}
-                        <div className="h-full">
-                            <Card className="p-6 md:p-8 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem] shadow-2xl h-full flex flex-col">
-                                <form onSubmit={handleSave} className="space-y-10 flex-grow flex flex-col">
-                                {/* SECTION 1: IDENTITY & STATUS */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">EVENT TITLE</label>
-                                        <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required 
-                                            className="h-14 bg-black/50 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" />
+            <AdminCommunityHubLayout 
+                hideTabs 
+                studioHeader={{
+                    title: "GIG",
+                    subtitle: editingId ? "EDITOR" : "CREATOR",
+                    accentClass: "text-neon-green"
+                }}
+            >
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-start mb-20 relative z-10">
+                    {/* Editor Column */}
+                    <div className="w-full">
+                        <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                            {/* Ambient Background Glow */}
+                            <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-green/5 rounded-full blur-[100px] pointer-events-none" />
+                            
+                            <form onSubmit={handleSave} className="space-y-12 relative z-10">
+                                <div className="space-y-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">TITLE</label>
+                                            <Input 
+                                                value={formData.title} 
+                                                onChange={e => setFormData({ ...formData, title: e.target.value })} 
+                                                required 
+                                                placeholder="e.g. EVENT CREW"
+                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">STATUS</label>
+                                            <StudioSelect
+                                                value={formData.status}
+                                                options={[
+                                                    { value: 'Open', label: 'OPEN' },
+                                                    { value: 'Filling Fast', label: 'FILLING FAST' },
+                                                    { value: 'Closed', label: 'CLOSED' }
+                                                ]}
+                                                onChange={val => setFormData({ ...formData, status: val })}
+                                                className="h-14"
+                                                accentColor="neon-green"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">GIG STATUS</label>
-                                        <StudioSelect
-                                            value={formData.status}
-                                            options={[
-                                                { value: 'Open', label: 'OPEN' },
-                                                { value: 'Filling Fast', label: 'FILLING FAST' },
-                                                { value: 'Closed', label: 'CLOSED' }
-                                            ]}
-                                            onChange={val => setFormData({ ...formData, status: val })}
-                                            className="h-14"
-                                            accentColor="neon-green"
-                                        />
-                                    </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="md:col-span-2 space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">WORKING DAYS</label>
-                                        <div className="flex flex-wrap gap-2 mb-2">
+                                    <div className="space-y-6 p-8 rounded-[2rem] bg-black/40 border border-white/5">
+                                        <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">DATES</label>
+                                        <div className="flex flex-wrap gap-3">
                                             {formData.dates.map((d, index) => (
-                                                <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase">
+                                                <div key={index} className="flex items-center gap-3 bg-zinc-900 border border-white/5 px-4 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase text-white shadow-lg">
                                                     <span>{formatDate(d)}</span>
-                                                    <button type="button" onClick={() => setFormData({ ...formData, dates: formData.dates.filter((_, i) => i !== index) })} className="text-red-400 hover:text-red-300">
-                                                        <Trash2 size={14} />
+                                                    <button type="button" onClick={() => setFormData({ ...formData, dates: formData.dates.filter((_, i) => i !== index) })} className="text-red-500 hover:scale-125 transition-transform">
+                                                        <X size={14} />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-4">
                                             <StudioDatePicker 
                                                 value={formData.tempDate} 
                                                 onChange={(val) => setFormData({ ...formData, tempDate: val })} 
                                                 className="flex-1 h-14"
                                             />
-                                            <button 
+                                            <Button 
                                                 type="button" 
-                                                className="bg-neon-green/10 text-neon-green border hover:bg-neon-green hover:text-black border-neon-green/30 h-14 px-6 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all" 
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    console.log("Adding date:", formData.tempDate);
+                                                onClick={() => {
                                                     const dateVal = formData.tempDate;
-                                                    if (dateVal && dateVal !== '') {
-                                                        const currentDates = Array.isArray(formData.dates) ? formData.dates : [];
-                                                        if (!currentDates.includes(dateVal)) {
-                                                            try {
-                                                                const newDates = [...currentDates, dateVal].sort((a, b) => {
-                                                                    const dA = new Date(a).getTime();
-                                                                    const dB = new Date(b).getTime();
-                                                                    if (isNaN(dA) || isNaN(dB)) return 0;
-                                                                    return dA - dB;
-                                                                });
-                                                                setFormData(prev => ({ ...prev, dates: newDates, tempDate: '' }));
-                                                            } catch (err) {
-                                                                console.error("Sort failed:", err);
-                                                                setFormData(prev => ({ ...prev, dates: [...currentDates, dateVal], tempDate: '' }));
-                                                            }
-                                                        }
+                                                    if (dateVal && !formData.dates.includes(dateVal)) {
+                                                        setFormData(prev => ({ ...prev, dates: [...prev.dates, dateVal].sort(), tempDate: '' }));
                                                     }
                                                 }}
+                                                className="h-14 px-8 bg-neon-green/10 text-neon-green border border-neon-green/30 rounded-2xl hover:bg-neon-green hover:text-black transition-all"
                                             >
-                                                ADD DAY
-                                            </button>
+                                                <Plus size={18} />
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">TIME</label>
+                                                <StudioTimePicker 
+                                                    value={formData.time} 
+                                                    onChange={(val) => setFormData({ ...formData, time: val })} 
+                                                    className="h-14"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">LOCATION</label>
+                                                <Input 
+                                                    value={formData.location} 
+                                                    onChange={e => setFormData({ ...formData, location: e.target.value })} 
+                                                    required 
+                                                    placeholder="e.g. MAIN ARENA"
+                                                    className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" 
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">REPORTING TIME (OPTIONAL)</label>
-                                        <StudioTimePicker 
-                                            value={formData.time} 
-                                            onChange={(val) => setFormData({ ...formData, time: val })} 
-                                            className="h-14"
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">LOCATION</label>
-                                        <Input value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required 
-                                            className="h-14 bg-black/50 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40" />
-                                    </div>
-                                </div>
 
-                                {/* SECTION 3: APPLICATION CONFIGURATION */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">APPLICATION METHOD</label>
-                                        <StudioSelect
-                                            value={formData.applyType}
-                                            options={[
-                                                { value: 'link', label: 'WEBSITE LINK / FORM' },
-                                                { value: 'whatsapp', label: 'WHATSAPP DM' }
-                                            ]}
-                                            onChange={val => setFormData({ ...formData, applyType: val })}
-                                            className="h-14"
-                                            accentColor="neon-green"
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                                            {formData.applyType === 'whatsapp' ? 'WHATSAPP NUMBER' : 'LINK URL'}
-                                        </label>
-                                        <Input
-                                            value={formData.applyLink}
-                                            onChange={e => setFormData({ ...formData, applyLink: e.target.value })}
-                                            placeholder={formData.applyType === 'whatsapp' ? '919304372773' : 'HTTPS://'}
-                                            className="h-14 bg-black/50 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2 space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">COMMUNITY GROUP LINK (OPTIONAL)</label>
-                                        <Input
-                                            value={formData.whatsappLink}
-                                            onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })}
-                                            placeholder="HTTPS://CHAT.WHATSAPP.COM/..."
-                                            className="h-14 bg-black/50 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* SECTION 4: MISSION BRIEF */}
-                                <div className="space-y-4">
-                                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                        <FileText size={16} className="text-neon-green" /> BRIEF / INSTRUCTIONS
-                                    </label>
-                                    <textarea 
-                                        className="w-full bg-black/60 border border-white/5 rounded-3xl p-8 text-white focus:outline-none focus:border-neon-green/40 min-h-[200px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed shadow-inner" 
-                                        value={formData.description} 
-                                        onChange={e => setFormData({ ...formData, description: e.target.value })} 
-                                        placeholder="Specify gig details, roles, or entry conditions..." 
-                                    />
-                                </div>
-
-                                {/* PREMIUM BRANDING & MEDIA */}
-                                <div className="space-y-8 pt-6 border-t border-white/10">
-                                    <label className="text-[11px] font-black text-neon-green uppercase tracking-[0.4em] flex items-center gap-2">
-                                        <Palette size={16} /> PREMIUM BRANDING & MEDIA
-                                    </label>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2rem] bg-black/40 border border-white/5">
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">COVER ASSET</label>
-                                            <div className="flex gap-4">
-                                                <div className="relative flex-1">
-                                                    <ImageIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                                            <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">APPLY VIA</label>
+                                            <StudioSelect
+                                                value={formData.applyType}
+                                                options={[
+                                                    { value: 'link', label: 'LINK' },
+                                                    { value: 'whatsapp', label: 'WHATSAPP' }
+                                                ]}
+                                                onChange={val => setFormData({ ...formData, applyType: val })}
+                                                className="h-14"
+                                                accentColor="neon-green"
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">
+                                                {formData.applyType === 'whatsapp' ? 'PHONE NUMBER' : 'APPLY LINK'}
+                                            </label>
+                                            <Input
+                                                value={formData.applyLink}
+                                                onChange={e => setFormData({ ...formData, applyLink: e.target.value })}
+                                                placeholder={formData.applyType === 'whatsapp' ? 'e.g. 919876543210' : 'https://'}
+                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-3 pt-4">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">COMMUNITY LINK (OPTIONAL)</label>
+                                            <Input
+                                                value={formData.whatsappLink}
+                                                onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })}
+                                                placeholder="https://chat.whatsapp.com/..."
+                                                className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-green/40"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
+                                        <textarea 
+                                            className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-green/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                            value={formData.description} 
+                                            onChange={e => setFormData({ ...formData, description: e.target.value })} 
+                                            placeholder="Transmission brief details..." 
+                                        />
+                                    </div>
+
+                                    <div className="space-y-8 pt-6 border-t border-white/5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">IMAGE</label>
+                                                <div className="flex gap-4">
                                                     <Input 
                                                         value={formData.image} 
                                                         onChange={e => setFormData({ ...formData, image: e.target.value })} 
-                                                        placeholder="IMAGE_URL" 
-                                                        className="pl-14 font-mono text-[9px] h-14 bg-black/40 border-white/5 rounded-xl focus:border-neon-green/40" 
+                                                        placeholder="URL" 
+                                                        className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-green/40" 
                                                     />
-                                                </div>
-                                                <div className="relative group w-14">
-                                                    <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                                    <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center border-2 border-dashed transition-all", isUploading ? "border-neon-green bg-neon-green/10 text-neon-green" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20")}>
-                                                        {isUploading ? <Loader className="animate-spin" size={20} /> : <Plus size={20} />}
+                                                    <div className="relative group w-14 h-14 shrink-0">
+                                                        <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                        <div className={cn(
+                                                            "h-full w-full rounded-2xl flex items-center justify-center border-2 border-dashed transition-all", 
+                                                            isUploading ? "border-neon-green bg-neon-green/10 text-neon-green" : "border-white/10 bg-white/5 text-gray-500 hover:border-white/20"
+                                                        )}>
+                                                            {isUploading ? <Loader className="animate-spin" size={18} /> : <Plus size={18} />}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Theme Accent Color</label>
-                                            <div className="flex items-center gap-4 h-14 bg-black/40 border border-white/5 rounded-xl px-6">
-                                                {colorPresets.map(color => (
-                                                    <button 
-                                                        key={color.value} 
-                                                        type="button" 
-                                                        onClick={() => setFormData({ ...formData, highlightColor: color.value })} 
-                                                        className={cn(
-                                                            "w-8 h-8 rounded-full border-2 transition-all relative hover:scale-110", 
-                                                            formData.highlightColor === color.value ? "border-white shadow-[0_0_15px_rgba(57,255,20,0.4)]" : "border-black/50"
-                                                        )} 
-                                                        style={{ backgroundColor: color.value }} 
-                                                    />
-                                                ))}
-                                                <div className="w-[1px] h-6 bg-white/10 mx-2" />
-                                                <div className="relative w-8 h-8 rounded-full border-2 border-white/10 p-0.5 bg-zinc-950 flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => document.getElementById('spectrum-picker').click()}>
-                                                    <div className="w-full h-full rounded-full" style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)', transform: 'rotate(-45deg)' }} />
-                                                    <input id="spectrum-picker" type="color" value={formData.highlightColor} onChange={e => setFormData({ ...formData, highlightColor: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">HIGHLIGHT COLOR</label>
+                                                <div className="flex items-center gap-4 h-14 bg-black/60 border border-white/5 rounded-2xl px-6">
+                                                    {colorPresets.map(color => (
+                                                        <button 
+                                                            key={color.value} 
+                                                            type="button" 
+                                                            onClick={() => setFormData({ ...formData, highlightColor: color.value })} 
+                                                            className={cn(
+                                                                "w-6 h-6 rounded-full border-2 transition-all hover:scale-110", 
+                                                                formData.highlightColor === color.value ? "border-white shadow-[0_0_15px_rgba(57,255,20,0.4)]" : "border-black/50"
+                                                            )} 
+                                                            style={{ backgroundColor: color.value }} 
+                                                        />
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* IMAGE ADJUSTMENT ENGINE */}
-                                <div className="p-10 rounded-3xl bg-black/40 border border-white/5 space-y-10">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-neon-green italic">Image Positioning</h4>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setFormData({ ...formData, imageTransform: { scale: 1.05, x: 0, y: 0 } })} 
-                                            className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
-                                        >
-                                            <X size={12} /> Reset Adjustment
-                                        </button>
+                                    <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 space-y-10">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-green italic">IMAGE POSITION</h4>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFormData({ ...formData, imageTransform: { scale: 1.05, x: 0, y: 0 } })} 
+                                                className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                                            >
+                                                <X size={12} /> RESET
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-2">
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">ZOOM</label>
+                                                    <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.scale.toFixed(2)}x</span>
+                                                </div>
+                                                <input type="range" min="0.5" max="2.5" step="0.01" value={formData.imageTransform.scale} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-green" />
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">X</label>
+                                                    <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.x}%</span>
+                                                </div>
+                                                <input type="range" min="-100" max="100" step="1" value={formData.imageTransform.x} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, x: parseInt(e.target.value) } })} className="w-full accent-neon-green" />
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Y</label>
+                                                    <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.y}%</span>
+                                                </div>
+                                                <input type="range" min="-100" max="100" step="1" value={formData.imageTransform.y} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, y: parseInt(e.target.value) } })} className="w-full accent-neon-green" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-2">
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Zoom Level</label>
-                                                <span className="text-[9px] font-mono text-neon-green">{(formData.imageTransform.scale).toFixed(2)}x</span>
-                                            </div>
-                                            <input type="range" min="0.5" max="2.5" step="0.01" value={formData.imageTransform.scale} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, scale: parseFloat(e.target.value) } })} className="w-full accent-neon-green" />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Pan X (Horizontal)</label>
-                                                <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.x}%</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" step="1" value={formData.imageTransform.x} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, x: parseInt(e.target.value) } })} className="w-full accent-neon-green" />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Pan Y (Vertical)</label>
-                                                <span className="text-[9px] font-mono text-neon-green">{formData.imageTransform.y}%</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" step="1" value={formData.imageTransform.y} onChange={e => setFormData({ ...formData, imageTransform: { ...formData.imageTransform, y: parseInt(e.target.value) } })} className="w-full accent-neon-green" />
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* SPOTLIGHT PIN */}
-                                <div className={cn(
-                                    "p-10 rounded-[2.5rem] border flex items-center justify-between transition-all duration-500 mb-6", 
-                                    formData.isPinned ? "bg-neon-green/10 border-neon-green/40 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "bg-black/40 border-white/5"
-                                )}>
-                                    <div className="flex items-center gap-8">
-                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-green text-black" : "bg-white/5 text-gray-600")}>
-                                            <Pin size={28} className={cn(formData.isPinned && "fill-current")} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">SPOTLIGHT PIN BROADCAST</h4>
-                                            <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">Featured position in the Pulse Community Directory.</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
-                                        className={cn("w-16 h-9 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-black/60 border-white/10")}
-                                    >
-                                        <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
-                                    </button>
-                                </div>
-                                
-                                {/* GUESTLIST INTEGRATION */}
-                                <div className={cn(
-                                    "p-10 rounded-[2.5rem] border transition-all duration-500 mb-6", 
-                                    formData.guestlistEnabled ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
-                                )}>
-                                    <div className="flex items-center justify-between mb-8">
+                                    <div className={cn(
+                                        "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500", 
+                                        formData.isPinned ? "bg-neon-green/10 border-neon-green/40 shadow-[0_0_40px_rgba(57,255,20,0.05)]" : "bg-black/40 border-white/5"
+                                    )}>
                                         <div className="flex items-center gap-8">
-                                            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.guestlistEnabled ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
-                                                <ListChecks size={28} />
+                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-green text-black" : "bg-white/5 text-gray-600")}>
+                                                <Star size={24} className={cn(formData.isPinned && "fill-current")} />
                                             </div>
                                             <div>
-                                                <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">GUESTLIST INTEGRATION</h4>
-                                                <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">Enable verified entry signups for this gig.</p>
+                                                <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
+                                                <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
                                             </div>
                                         </div>
                                         <button 
                                             type="button" 
-                                            onClick={() => setFormData({ ...formData, guestlistEnabled: !formData.guestlistEnabled })} 
-                                            className={cn("w-16 h-9 rounded-full relative transition-all border-2", formData.guestlistEnabled ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                            onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
+                                            className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-green border-neon-green" : "bg-black/60 border-white/10")}
                                         >
-                                            <div className={cn("absolute top-1 w-6 h-6 rounded-full transition-all shadow-lg", formData.guestlistEnabled ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                            <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
                                         </button>
                                     </div>
 
-                                    {formData.guestlistEnabled && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-2">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">MAX CAPACITY</label>
-                                                <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} 
-                                                    className="h-14 bg-black/40 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                    <div className={cn(
+                                        "p-8 rounded-[2rem] border transition-all duration-500", 
+                                        formData.guestlistEnabled ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                    )}>
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div className="flex items-center gap-6">
+                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.guestlistEnabled ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                                    <ListChecks size={24} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">INTERNAL GUESTLIST</h4>
+                                                    <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">USE PLATFORM GUESTLIST LOGIC</p>
+                                                </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">PER USER LIMIT</label>
-                                                <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} 
-                                                    className="h-14 bg-black/40 border-white/5 rounded-xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
-                                            </div>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFormData({ ...formData, guestlistEnabled: !formData.guestlistEnabled })} 
+                                                className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.guestlistEnabled ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                            >
+                                                <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.guestlistEnabled ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                            </button>
                                         </div>
-                                    )}
+
+                                        {formData.guestlistEnabled && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">CAPACITY</label>
+                                                    <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} 
+                                                        className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">PER USER LIMIT</label>
+                                                    <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} 
+                                                        className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-auto border-t border-white/10">
-                                    <Button type="button" variant="outline" onClick={resetForm} className="h-12 md:h-14 rounded-xl md:rounded-2xl w-full sm:w-auto">Cancel</Button>
+                                <div className="flex flex-col sm:flex-row justify-end gap-4 pt-12 mt-12 border-t border-white/5">
+                                    <Button type="button" variant="outline" onClick={resetForm} className="h-14 rounded-2xl px-10 text-[10px] font-black uppercase tracking-widest border-white/5 hover:bg-white/5">CANCEL</Button>
                                     <Button 
-                                        type="submit" 
+                                        onClick={handleSave} 
                                         disabled={saving}
-                                        className="h-14 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] italic rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3 w-full sm:min-w-[240px]"
+                                        className="h-16 px-12 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] italic rounded-[1rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-4 min-w-[240px]"
                                     >
-                                        {saving ? <Loader className="animate-spin h-5 w-5 md:h-6 md:w-6" /> : <Save className="h-5 w-5 md:h-6 md:w-6" />}
-                                        {editingId ? 'UPDATE GIG' : 'SAVE GIG'}
+                                        {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
+                                        {editingId ? 'UPDATE' : 'CREATE'}
                                     </Button>
                                 </div>
                             </form>
                         </Card>
+                    </div>
+
+                    {/* Preview Column */}
+                    <div className="lg:sticky lg:top-32 space-y-8 w-full">
+                        <div className="flex bg-zinc-950/60 border border-white/5 p-2 rounded-2xl w-fit backdrop-blur-3xl shadow-2xl">
+                            <button 
+                                onClick={() => setPreviewType('card')}
+                                className={cn(
+                                    "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    previewType === 'card' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                CARD VIEW
+                            </button>
+                            <button 
+                                onClick={() => setPreviewType('embed')}
+                                className={cn(
+                                    "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    previewType === 'embed' ? "bg-neon-green text-black shadow-lg" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                EMBED VIEW
+                            </button>
                         </div>
 
-                        {/* Preview Column */}
-                        <div className="h-full flex flex-col gap-8 lg:sticky lg:top-32">
-                            <div className="space-y-8">
-                                {/* Tab Toggle */}
-                                <div className="flex bg-zinc-900/60 border border-white/5 p-1.5 rounded-2xl w-fit backdrop-blur-xl">
-                                    <button 
-                                        onClick={() => setPreviewType('card')}
-                                        className={cn(
-                                            "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                            previewType === 'card' ? "bg-neon-green text-black" : "text-gray-500 hover:text-white"
-                                        )}
-                                    >
-                                        Card View
-                                    </button>
-                                    <button 
-                                        onClick={() => setPreviewType('embed')}
-                                        className={cn(
-                                            "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                            previewType === 'embed' ? "bg-neon-green text-black" : "text-gray-500 hover:text-white"
-                                        )}
-                                    >
-                                        Embed View
-                                    </button>
+                        <div className="flex-grow pt-4">
+                            {previewType === 'card' ? (
+                                <LivePreview type="gig" data={formData} hideDecorations={false} />
+                            ) : (
+                                <div className="aspect-video rounded-[2rem] border border-white/5 bg-zinc-950/40 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-neon-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                    <div className="w-16 h-16 rounded-[1.5rem] bg-neon-green/10 flex items-center justify-center mb-8 relative z-10 border border-neon-green/20">
+                                        <Megaphone className="text-neon-green" size={28} />
+                                    </div>
+                                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white mb-4 relative z-10">LIVE PREVIEW</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 leading-relaxed max-w-xs relative z-10">
+                                        HOW IT WILL APPEAR TO USERS.
+                                    </p>
                                 </div>
-
-                                <div className="pt-4">
-                                    {previewType === 'card' ? (
-                                        <LivePreview type="gig" data={formData} hideDecorations={false} />
-                                    ) : (
-                                        <div className="h-[500px] rounded-[3rem] border border-white/5 bg-zinc-900/40 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center">
-                                            <div className="w-16 h-16 rounded-full bg-neon-green/10 flex items-center justify-center mb-6">
-                                                <Megaphone className="text-neon-green" size={32} />
-                                            </div>
-                                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-white mb-3">Public Deployment</h3>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 leading-relaxed max-w-xs">
-                                                This reflects how the gig will appear in the main community feed for all members.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            </div>
+            </AdminCommunityHubLayout>
         );
     }
 
     return (
         <AdminCommunityHubLayout 
             title="Volunteer Management" 
-            description="Create and manage open roles for the community members."
+            description="Manage community contributions and operational support roles."
             studioHeader={{
                 title: "GIG",
-                subtitle: "MANAGEMENT",
-                accentClass: "text-neon-green"
+                subtitle: "ENGINE",
+                accentClass: "text-neon-green",
+                icon: Briefcase
             }}
+            action={
+                <Button onClick={() => { resetForm(); setIsAdding(true); }} className="h-16 px-12 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[12px] rounded-[1rem] shadow-[0_15px_40px_rgba(57,255,20,0.2)] hover:scale-105 active:scale-95 transition-all border-none flex items-center justify-center gap-3">
+                    <Plus size={24} /> CREATE NEW
+                </Button>
+            }
         >
             <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
-                {/* Mode Actions */}
-                <div className="flex justify-end mb-8 md:mb-12">
-                    <Button onClick={() => {
-                        resetForm();
-                        setIsAdding(true);
-                    }} className="h-14 md:h-20 px-8 md:px-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] rounded-xl md:rounded-[1.5rem] shadow-[0_15px_40px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all outline-none border-none flex items-center justify-center gap-3 w-full sm:w-auto">
-                        <Plus size={20} /> New Assignment
-                    </Button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                        {volunteerGigs && volunteerGigs.length > 0 ? (
-                            volunteerGigs.map((gig) => (
-                                <Card key={gig.id} className="p-5 md:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] md:rounded-[2.5rem] hover:border-neon-blue/30 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,255,255,0.05)]">
-                                    <div className="w-full">
-                                        <div className="flex items-center flex-wrap gap-3 mb-2">
-                                            <h3 className="text-lg md:text-xl font-bold text-white leading-tight">{gig.title}</h3>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-2 py-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-full ${gig.status === 'Open' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                    {gig.status}
-                                                </span>
-                                                {gig.applyType === 'whatsapp' && <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded text-green-400 border border-green-400/20">WA</span>}
-                                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {volunteerGigs && volunteerGigs.length > 0 ? (
+                        volunteerGigs.map((gig) => (
+                            <Card key={gig.id} className="p-0 bg-zinc-950/40 backdrop-blur-3xl border border-white/5 rounded-[2rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col h-full">
+                                {/* Card Header Media */}
+                                <div className="h-48 relative overflow-hidden">
+                                    {gig.image ? (
+                                        <img src={gig.image} alt={gig.title} className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                                            <Briefcase size={48} className="text-white/10" />
                                         </div>
-                                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] md:text-sm text-gray-400 mt-2">
-                                            <span className="flex items-center gap-2 font-medium"><Calendar size={14} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} Days` : gig.dates[0]) : gig.date}</span>
-                                            <span className="flex items-center gap-2 font-medium"><MapPin size={14} className="text-neon-green" /> {gig.location}</span>
-                                            {gig.description && <span className="flex items-center gap-2 line-clamp-1 max-w-md italic opacity-70 italic font-medium"><FileText size={14} className="text-neon-green" /> {gig.description}</span>}
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+                                    
+                                    <div className="absolute top-6 right-6 flex gap-2">
+                                        <div className={cn(
+                                            "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5",
+                                            gig.status === 'Open' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+                                        )}>
+                                            <div className="w-1 h-1 rounded-full bg-current animate-pulse" />
+                                            {gig.status || 'ACTIVE'}
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-none border-white/5">
-                                        <div className="flex items-center bg-white/5 rounded-xl px-1">
-                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-2.5 hover:text-white text-gray-500 disabled:opacity-30 transition-colors">
-                                                <ArrowUp size={16} />
-                                            </button>
-                                            <div className="w-px h-4 bg-white/10" />
-                                            <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-2.5 hover:text-white text-gray-500 disabled:opacity-30 transition-colors">
-                                                <ArrowDown size={16} />
-                                            </button>
+
+                                    <div className="absolute bottom-6 left-8 right-8">
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gig.title}</h3>
+                                        <div className="flex items-center gap-4 mt-2 opacity-60">
+                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <Calendar size={10} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} DAYS` : formatDate(gig.dates[0])) : gig.date || 'TBD'}
+                                            </span>
+                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <MapPin size={10} className="text-neon-green" /> {gig.location || 'GLOBAL'}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2 ml-auto lg:ml-0">
+                                    </div>
+                                </div>
+
+                                {/* Card Content */}
+                                <div className="p-8 flex-grow flex flex-col justify-between">
+                                    <p className="text-[11px] font-medium text-gray-500 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
+                                        {gig.description || "EMPTY."}
+                                    </p>
+
+                                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex bg-white/5 rounded-xl p-1 border border-white/5">
+                                                <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-2.5 hover:text-white text-gray-400 disabled:opacity-20 transition-all">
+                                                    <ArrowUp size={16} />
+                                                </button>
+                                                <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-2.5 hover:text-white text-gray-400 disabled:opacity-20 transition-all">
+                                                    <ArrowDown size={16} />
+                                                </button>
+                                            </div>
                                             <Button 
                                                 variant="outline" 
                                                 onClick={async () => {
-                                                    if (window.confirm(`Transmit broadcast update for "${gig.title}"?`)) {
-                                                        await notifyAllUsers(
-                                                            `Volunteers Needed: ${gig.title}`,
-                                                            `Join the Newbi squad for ${gig.title} at ${gig.location}. Apply now!`,
-                                                            `/community`,
-                                                            ''
-                                                        );
-                                                        useStore.getState().addToast("BROADCAST_COMPLETE.", 'error');
+                                                    if (confirm(`Transmit broadcast for "${gig.title}"?`)) {
+                                                        await notifyAllUsers(`Volunteers Needed: ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now!`, `/community`, '');
+                                                        useStore.getState().addToast("BROADCAST_SENT.", 'success');
                                                     }
                                                 }}
-                                                className="p-3 h-12 w-12 rounded-xl text-neon-pink border-neon-pink/20 hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center" 
-                                                title="Direct Broadcast"
+                                                className="flex-1 h-12 rounded-xl border-white/5 bg-neon-pink/5 text-neon-pink hover:bg-neon-pink hover:text-black transition-all flex items-center justify-center gap-2"
                                             >
-                                                <Sparkles size={18} />
+                                                <Sparkles size={14} />
+                                                <span className="text-[9px] font-black uppercase tracking-widest">NOTIFY</span>
                                             </Button>
-                                            <Button variant="outline" onClick={() => handlePushAnnouncement(gig)} className="p-3 h-12 w-12 rounded-xl text-neon-blue border-neon-blue/20 hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center" title="Post to Announcements">
-                                                <Megaphone size={18} />
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => handlePushAnnouncement(gig)}
+                                                className="w-12 h-12 rounded-xl border-white/5 bg-neon-blue/5 text-neon-blue hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center"
+                                            >
+                                                <Megaphone size={16} />
                                             </Button>
-                                            <Button variant="outline" onClick={() => handleEdit(gig)} className="p-3 h-12 w-12 rounded-xl border-white/10 hover:bg-white hover:text-black transition-all flex items-center justify-center">
-                                                <Edit size={18} />
+                                        </div>
+
+                                         <div className="flex items-center gap-3">
+                                            {gig.guestlistEnabled && (
+                                                <Button 
+                                                    variant="outline" 
+                                                    onClick={() => navigate(`/admin/ticketing?eventId=${gig.id}`)}
+                                                    className="h-14 rounded-2xl border-white/5 bg-white/5 hover:bg-neon-blue hover:text-black transition-all flex items-center justify-center gap-2 group px-6"
+                                                >
+                                                    <UserCheck size={20} />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">ENTRIES</span>
+                                                </Button>
+                                            )}
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => {
+                                                    const newStatus = gig.status === 'Open' ? 'Closed' : 'Open';
+                                                    updateVolunteerGig(gig.id, { ...gig, status: newStatus });
+                                                }}
+                                                className={cn(
+                                                    "w-14 h-14 rounded-2xl border-white/5 transition-all flex items-center justify-center",
+                                                    gig.status === 'Open' ? "bg-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
+                                                )}
+                                                title={gig.status === 'Open' ? "Close Entries" : "Open Entries"}
+                                            >
+                                                {gig.status === 'Open' ? <Unlock size={22} /> : <Lock size={22} />}
                                             </Button>
-                                            <Button variant="outline" onClick={() => deleteVolunteerGig(gig.id)} className="p-3 h-12 w-12 rounded-xl text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center">
-                                                <Trash2 size={18} />
+                                            <Button variant="outline" onClick={() => handleEdit(gig)} className="flex-1 h-14 rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2">
+                                                <Edit size={20} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">EDIT</span>
+                                            </Button>
+                                            <Button 
+                                                variant="outline" 
+                                                onClick={() => { if(confirm('Delete this gig?')) deleteVolunteerGig(gig.id); }}
+                                                className="w-14 h-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0"
+                                            >
+                                                <Trash2 size={24} />
                                             </Button>
                                         </div>
                                     </div>
-                                </Card>
-                            ))
-                        ) : (
-                            <div className="col-span-full py-16 text-center text-gray-500 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-                                <p className="mb-2">No volunteer opportunities posted.</p>
-                                <Button 
-                                    variant="link" 
-                                    onClick={() => setIsAdding(true)} 
-                                    className="text-neon-green p-0 h-auto font-black uppercase tracking-widest text-[10px]"
-                                >
-                                    Create the first gig
-                                </Button>
+                                </div>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="col-span-full py-40 text-center">
+                            <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
+                                <Briefcase size={32} className="text-white/20" />
                             </div>
-                        )}
-                    </div>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">EMPTY.</h3>
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
+                        </div>
+                    )}
                 </div>
-            </AdminCommunityHubLayout>
-        );
-    };
-    
+            </div>
+        </AdminCommunityHubLayout>
+
+    );
+};
+
 export default VolunteerGigManager;

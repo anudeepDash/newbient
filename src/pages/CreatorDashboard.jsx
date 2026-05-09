@@ -2,7 +2,45 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ArrowRight, CheckCircle2, ExternalLink, Sparkles, MessageCircle, FileText, Target, ShieldCheck, Zap, Settings, Instagram, LayoutDashboard, Clock, History, X, Upload, Link2, Camera, Video, Eye, Star, Globe, Youtube, Twitter, Calendar, Copy, ChevronRight, AlertCircle, XCircle, Image as ImageIcon, Clipboard, Loader2, Award, TrendingUp, Briefcase } from 'lucide-react';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Target from 'lucide-react/dist/esm/icons/target';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import History from 'lucide-react/dist/esm/icons/history';
+import X from 'lucide-react/dist/esm/icons/x';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Video from 'lucide-react/dist/esm/icons/video';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Award from 'lucide-react/dist/esm/icons/award';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import CampaignCard from '../components/ui/CampaignCard';
@@ -122,7 +160,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
 
                         {/* Brief */}
                         <div className="space-y-3">
-                            <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Mission Brief</h4>
+                            <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Campaign Brief</h4>
                             <div className="article-content text-[14px] text-gray-400 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />
                         </div>
 
@@ -194,7 +232,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                                  )}>
                                      {status === 'not_started' ? 'Pending Action' : 
                                       status === 'submitted' ? 'Verification In-Progress' :
-                                      status === 'approved' ? 'Mission Verified' : 'Action Required'}
+                                      status === 'approved' ? 'Verified' : 'Action Required'}
                                 </span>
                             </p>
                         </div>
@@ -205,7 +243,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                                     <div className="w-20 h-20 bg-neon-green/20 rounded-full flex items-center justify-center text-neon-green shadow-[0_0_50px_rgba(57,255,20,0.2)]">
                                         <CheckCircle2 size={40} />
                                     </div>
-                                    <h4 className="text-xl font-black font-heading uppercase tracking-tighter italic">Mission Accomplished</h4>
+                                    <h4 className="text-xl font-black font-heading uppercase tracking-tighter italic">Task Completed</h4>
                                     <p className="text-[11px] text-gray-500 uppercase tracking-widest font-black">Points & Reward Unlocked</p>
                                 </div>
                             ) : (
@@ -268,7 +306,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
 };
 
 // --- Creator Settings Panel (Embedded) ---
-const CreatorSettingsPanel = ({ profile, onClose }) => {
+const CreatorSettingsView = ({ profile }) => {
     const { updateCreator, deleteCreator, logout } = useStore();
     const navigate = useNavigate();
     const [isSaving, setIsSaving] = useState(false);
@@ -330,113 +368,129 @@ const CreatorSettingsPanel = ({ profile, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex justify-end">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/90 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-xl bg-[#0a0a0a] lg:border-l border-white/10 h-[100dvh] lg:h-full overflow-y-auto custom-scrollbar flex flex-col p-8 md:p-12 shadow-[-50px_0_100px_rgba(0,0,0,0.5)]"
-            >
-                <div className="flex items-center justify-between mb-12">
-                    <div className="space-y-2">
-                        <h3 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white">Studio Settings</h3>
-                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-80">Refine your professional parameters</p>
+        <div className="max-w-4xl mx-auto">
+            {showDeleteConfirm ? (
+                <div className="py-20 flex flex-col items-center justify-center space-y-8 bg-red-500/5 border border-red-500/10 rounded-[3rem] p-12">
+                    <div className="text-center space-y-4">
+                        <AlertCircle size={64} className="text-red-500 mx-auto" />
+                        <h4 className="text-4xl font-black font-heading uppercase italic tracking-tighter text-white">Security Protocol: Deactivation</h4>
+                        <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto">
+                            Warning: This will permanently remove your creator profile and eligibility for upcoming missions. This action is irreversible.
+                        </p>
                     </div>
-                    <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/10">
-                        <X size={20} />
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                        <button 
+                            onClick={handleDeleteProfile}
+                            disabled={isSaving}
+                            className="h-16 flex-1 bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" /> : 'Confirm Deletion'}
+                        </button>
+                        <button 
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className="h-16 flex-1 bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-white/10 transition-all"
+                        >
+                            Abort
+                        </button>
+                    </div>
                 </div>
-                
-                {showDeleteConfirm ? (
-                    <div className="flex-1 flex flex-col justify-center space-y-8">
-                        <div className="text-center space-y-4">
-                            <AlertCircle size={48} className="text-red-500 mx-auto" />
-                            <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-white">Deactivate Profile?</h4>
-                            <p className="text-[12px] font-bold text-gray-500 uppercase tracking-wide leading-relaxed">
-                                Warning: This will permanently remove your artist profile and eligibility for upcoming gigs. This cannot be undone.
-                            </p>
-                        </div>
-                        <div className="flex flex-col gap-6">
-                            <button 
-                                onClick={handleDeleteProfile}
-                                disabled={isSaving}
-                                className="h-20 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
-                            >
-                                {isSaving ? <Loader2 className="animate-spin" /> : 'YES, DELETE PROFILE'}
-                            </button>
-                            <button 
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="h-20 w-full bg-white/5 text-gray-500 font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-white/10 transition-all"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <form onSubmit={handleSave} className="space-y-6">
-                        {/* Profile Picture Upload */}
-                        <div className="flex flex-col items-center gap-6 mb-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-neon-blue/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="relative">
-                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] md:rounded-[2.5rem] bg-black border border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40 shadow-2xl">
-                                    {form.profilePicture ? (
-                                        <img src={form.profilePicture} alt="Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Camera size={32} className="text-gray-700 group-hover:text-neon-blue transition-colors" />
-                                    )}
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                    {/* Left Column: Identity & Bio */}
+                    <div className="lg:col-span-7 space-y-8">
+                        <form onSubmit={handleSave} className="space-y-8">
+                            <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+                                
+                                <div className="flex items-center gap-6 mb-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue">
+                                        <Users size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Identity Profile</h3>
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Public Commercial Identity</p>
+                                    </div>
                                 </div>
-                                <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-neon-blue text-black rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
-                                    <Upload size={18} />
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                </label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                                        <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/60 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
+                                        <input required name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
+                                        <input required name="city" value={form.city} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
+                                        <input required name="specializations" value={form.specializations} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
+                                    <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-40 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-blue transition-all resize-none shadow-inner leading-relaxed" />
+                                </div>
+
+                                <button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all shadow-xl flex items-center justify-center gap-3">
+                                    {isSaving ? <Loader2 className="animate-spin" /> : <><RefreshCw size={18} /> Synchronize Profile</>}
+                                </button>
                             </div>
-                            <div className="text-center space-y-1 relative z-10">
-                                <h4 className="text-[9px] font-black uppercase tracking-[0.4em] text-white">Identity Asset</h4>
-                                <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Update your professional profile</p>
+                        </form>
+                    </div>
+
+                    {/* Right Column: Identity Assets & Danger Zone */}
+                    <div className="lg:col-span-5 space-y-8">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                             <div className="flex items-center gap-6">
+                                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white">
+                                    <ImageIcon size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Identity Asset</h3>
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Profile Visuals</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-center gap-8 py-4">
+                                <div className="relative group">
+                                    <div className="w-48 h-48 rounded-[3.5rem] bg-black border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-neon-blue/40 shadow-2xl">
+                                        {form.profilePicture ? (
+                                            <img src={form.profilePicture} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Camera size={48} className="text-gray-700" />
+                                        )}
+                                    </div>
+                                    <label className="absolute -bottom-2 -right-2 w-14 h-14 bg-neon-blue text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
+                                        <Upload size={24} />
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                    </label>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Verification Status</p>
+                                    <div className="mt-3 px-6 py-2 bg-neon-green/10 text-neon-green border border-neon-green/20 rounded-full text-[10px] font-black tracking-widest inline-block">
+                                        {profile.profileStatus?.toUpperCase() || 'ACTIVE'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                            <input required name="name" value={form.name} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                        <div className="bg-red-500/5 border border-red-500/10 rounded-[3rem] p-10 space-y-6">
+                            <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-4 text-center">DANGER ZONE</h4>
+                            <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full h-16 rounded-2xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3">
+                                <AlertCircle size={16} /> Deactivate Creator Profile
+                            </button>
                         </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Phone</label>
-                            <input required name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">City</label>
-                            <input required name="city" value={form.city} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
-                            <input required name="specializations" value={form.specializations} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Bio</label>
-                            <textarea required name="bio" value={form.bio} onChange={handleChange} className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-neon-blue transition-all resize-none" />
-                        </div>
-                        <Button type="submit" disabled={isSaving} className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl hover:bg-white transition-all">
-                            {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
-                        </Button>
-                    </form>
-                )}
-
-                <div className="pt-8 mt-8 border-t border-red-500/20 mb-8">
-                    <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4">Danger Zone</h4>
-                    <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full p-4 rounded-xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 transition-all flex items-center justify-center gap-2">
-                        <AlertCircle size={14} /> Deactivate Creator Profile
-                    </button>
+                    </div>
                 </div>
-            </motion.div>
+            )}
         </div>
     );
 };
@@ -476,7 +530,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                     <div className="flex items-start justify-between gap-6 mb-8">
                         <div className="flex-1 min-w-0">
                             <span className="text-[9px] md:text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-60">Creator Workspace</span>
-                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tight text-white mt-1.5 italic leading-none">
+                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tight text-white mt-1.5 italic leading-none pr-4">
                                 {campaign.title}
                             </h2>
                             <div className="mt-4">
@@ -487,7 +541,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                     {campaign.description ? (
                                         <div className="article-content" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                                     ) : (
-                                        <span>No tactical briefing provided for this operation.</span>
+                                        <span>No additional details provided for this campaign.</span>
                                     )}
                                     
                                     {!isExpanded && campaign.description && campaign.description.length > 80 && (
@@ -500,7 +554,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                         onClick={() => setIsExpanded(!isExpanded)}
                                         className="text-[9px] font-black text-neon-blue/80 hover:text-white uppercase tracking-[0.3em] mt-3 transition-colors flex items-center gap-2 group"
                                     >
-                                        {isExpanded ? 'MINIMIZE BRIEF' : 'VIEW FULL SPECS'}
+                                        {isExpanded ? 'MINIMIZE DESCRIPTION' : 'VIEW FULL DETAILS'}
                                         <div className="w-4 h-px bg-neon-blue/20 group-hover:w-8 transition-all" />
                                     </button>
                                 )}
@@ -529,7 +583,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                    {approvedTotal}/{campaignTasks.length} DELIVERABLES SECURED
+                                    {approvedTotal}/{campaignTasks.length} DELIVERABLES COMPLETED
                                 </span>
                                 <span className={cn("text-[12px] font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
                                     {Math.round(progress)}%
@@ -558,9 +612,9 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                         <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
                             <ShieldCheck size={40} className="text-neon-blue mx-auto animate-pulse" />
                             <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Identity Review</h4>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Identity Review</h4>
                                 <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    OUR TALENT SCOUTS ARE VERIFYING YOUR PROFESSIONAL SPECS. ACCESS TO MISSIONS WILL BE UNLOCKED UPON APPROVAL.
+                                    WE ARE VERIFYING YOUR PROFILE. ACCESS TO CAMPAIGNS WILL BE UNLOCKED UPON APPROVAL.
                                 </p>
                             </div>
                         </div>
@@ -570,7 +624,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
                                     <div className="h-[1px] w-6 bg-neon-blue/40" />
-                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em]">Tactical Specs // Full Brief</h3>
+                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em]">Campaign Details // Full Brief</h3>
                                 </div>
                                 
                                 <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 relative overflow-hidden backdrop-blur-2xl">
@@ -587,9 +641,9 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                         <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
                             <Clock size={40} className="text-yellow-500 mx-auto animate-pulse" />
                             <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Selection Phase</h4>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Selection Phase</h4>
                                 <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    APPLICATION RECEIVED. YOU ARE CURRENTLY IN THE POOL FOR FINAL MISSION SHORTLISTING.
+                                    APPLICATION RECEIVED. WE WILL NOTIFY YOU ONCE YOU ARE SHORTLISTED.
                                 </p>
                             </div>
                         </div>
@@ -597,9 +651,9 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                         <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
                             <Zap size={40} className="text-neon-blue mx-auto animate-pulse" />
                             <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white">Deployment Pending</h4>
+                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Application Approved</h4>
                                 <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    YOU ARE SELECTED! TASKS FOR THIS MISSION WILL BE UPDATED SOON. ENABLE NOTIFICATIONS TO STAY UPDATED.
+                                    YOU ARE SELECTED! TASKS FOR THIS CAMPAIGN WILL BE UPDATED SOON.
                                 </p>
                             </div>
                         </div>
@@ -684,7 +738,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
 
 
 const CreatorDashboard = () => {
-    const { user, authInitialized, creators, campaigns, uploadToCloudinary } = useStore();
+    const { user, authInitialized, creators, campaigns, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [activeDashboardTab, setActiveDashboardTab] = useState('workspace'); // 'workspace' or 'settings'
@@ -693,20 +747,20 @@ const CreatorDashboard = () => {
     const [selectedTask, setSelectedTask] = useState(null);
     const [missionCampaign, setMissionCampaign] = useState(null);
     const [isApplying, setIsApplying] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isWorkspacePanelOpen, setIsWorkspacePanelOpen] = useState(false);
 
     useEffect(() => {
-        if (authInitialized && user) {
+        if (authInitialized && !loading && user) {
             const existingProfile = creators.find(c => c.uid === user.uid);
             if (existingProfile) {
                 setProfile(existingProfile);
             } else {
                 navigate('/creator');
             }
-        } else if (authInitialized && !user) {
+        } else if (authInitialized && !loading && !user) {
             navigate('/creator');
         }
-    }, [user, authInitialized, creators, navigate]);
+    }, [user, authInitialized, loading, creators, navigate]);
 
     // Keep mission and task synced with latest data
     useEffect(() => {
@@ -780,7 +834,7 @@ const CreatorDashboard = () => {
     const shortlistedCampaignsList = joinedCampaignsList.filter(c => (profile.shortlistedCampaigns || []).includes(c.id));
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-24 pb-20 relative overflow-hidden">
             {/* Cinematic Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/10 rounded-full blur-[150px] animate-pulse" />
@@ -791,25 +845,39 @@ const CreatorDashboard = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
                 {/* STUDIO NAVIGATION TABS */}
-                <div className="flex items-center gap-2 mb-12 bg-white/5 p-2 rounded-[2.5rem] w-fit border border-white/5 backdrop-blur-xl">
-                    <button 
-                        onClick={() => setActiveDashboardTab('workspace')}
-                        className={cn(
-                            "px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                            activeDashboardTab === 'workspace' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                        )}
-                    >
-                        WORKSPACE
-                    </button>
-                    <button 
-                        onClick={() => setActiveDashboardTab('settings')}
-                        className={cn(
-                            "px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                            activeDashboardTab === 'settings' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                        )}
-                    >
-                        STUDIO SETTINGS
-                    </button>
+                {/* STUDIO NAVIGATION TABS */}
+                <div className="flex items-center justify-between mb-16">
+                    <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-[2rem] border border-white/5 backdrop-blur-2xl shadow-2xl">
+                        <button 
+                            onClick={() => setActiveDashboardTab('workspace')}
+                            className={cn(
+                                "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group",
+                                activeDashboardTab === 'workspace' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                            )}
+                        >
+                            <span className="relative z-10">Workspace</span>
+                        </button>
+                        <button 
+                            onClick={() => setActiveDashboardTab('settings')}
+                            className={cn(
+                                "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all group",
+                                activeDashboardTab === 'settings' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
+                            )}
+                        >
+                            Studio Settings
+                        </button>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setIsWorkspacePanelOpen(true)}
+                            className="h-12 px-6 rounded-full bg-white/[0.03] border border-white/5 flex items-center gap-3 text-gray-500 hover:text-neon-blue hover:bg-white/5 transition-all group shadow-xl"
+                        >
+                            <LayoutDashboard size={16} className="group-hover:rotate-12 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Hub</span>
+                            <div className="w-1.5 h-1.5 bg-neon-blue rounded-full animate-pulse shadow-[0_0_8px_rgba(46,191,255,0.6)]" />
+                        </button>
+                    </div>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -822,147 +890,80 @@ const CreatorDashboard = () => {
                             className="space-y-12"
                         >
                                {/* Command Bar Header */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 md:mb-16 gap-6 md:gap-8 relative border-b border-white/5 pb-8">
+                {/* Redesigned Command Header */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end mb-24 relative">
                     <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="w-full space-y-12"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-7 space-y-8"
                     >
-                        {/* STUDIO WORKSPACE BANNER */}
-                        <div className="relative group overflow-hidden p-1 bg-gradient-to-r from-neon-blue/20 via-white/5 to-transparent rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)]">
-                            <div className="absolute inset-0 bg-[#0A0A0A] rounded-[2.9rem] z-0" />
-                            <div className="relative z-10 px-10 py-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                                <div className="flex items-center gap-8">
-                                    <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center text-neon-blue shadow-[inset_0_0_20px_rgba(46,191,255,0.1)]">
-                                        <LayoutDashboard size={40} strokeWidth={1.5} />
-                                    </div>
-                                    <div className="space-y-1 text-center md:text-left">
-                                        <h2 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tighter text-white leading-none">STUDIO WORKSPACE</h2>
-                                        <p className="text-neon-blue text-[10px] md:text-xs font-black uppercase tracking-[0.4em] opacity-80">ACCESS YOUR COMMAND CENTER</p>
-                                    </div>
-                                </div>
-                                <button className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group shadow-2xl active:scale-95">
-                                    <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* PROFILE & STATS HUD */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* CREATOR PROFILE CARD */}
-                            <div className="relative group bg-[#0A0A0A] border border-white/10 rounded-[3.5rem] p-10 md:p-12 overflow-hidden shadow-2xl">
-                                <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
-                                    <Briefcase size={160} strokeWidth={1} />
-                                </div>
-                                <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                                
-                                <div className="flex items-center gap-6 mb-12 relative z-10">
-                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10">
-                                        <img src={profile.profilePicture || '/api/placeholder/100/100'} alt={profile.name} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-[11px] font-black text-white group-hover:text-neon-green transition-colors">{profile.name}</p>
-                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">
-                                            Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-12 mb-16 relative z-10">
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] opacity-60">BASE OPERATION</p>
-                                        <p className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">{profile.city || 'GLOBAL'}</p>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] opacity-60">VERIFIED REACH</p>
-                                        <p className="text-2xl md:text-3xl font-black text-white italic tracking-tighter tabular-nums">
-                                            {Math.max(Number(profile.instagramFollowers || 0), Number(profile.youtubeSubscribers || 0)).toLocaleString()}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 relative z-10">
-                                    <button 
-                                        onClick={() => window.open(profile.instagram ? `https://instagram.com/${profile.instagram.replace('@', '')}` : '#', '_blank')}
-                                        className="flex-1 h-20 bg-white text-black rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] md:text-[11px] flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_60px_rgba(255,255,255,0.1)]"
-                                    >
-                                        <Instagram size={20} />
-                                        VERIFY IMPACT
-                                    </button>
-                                    <button 
-                                        onClick={() => setIsSettingsOpen(true)}
-                                        className="w-20 h-20 bg-zinc-900 border border-white/10 rounded-3xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-zinc-800 transition-all active:scale-90"
-                                    >
-                                        <Settings size={28} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* RECENT ACTIVITY LIST */}
-                            <div className="bg-[#0A0A0A] border border-white/5 rounded-[3.5rem] p-10 md:p-12 space-y-8">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-4">
-                                        <History size={20} className="text-gray-600" />
-                                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em]">RECENT ACTIVITY</h3>
-                                    </div>
-                                    <button className="text-[10px] font-black text-neon-blue uppercase tracking-widest hover:text-white transition-colors">VIEW ALL</button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {[
-                                        { title: 'SUCCESS', date: '5/6/2026', tag: 'SYSTEM', icon: <AlertCircle size={18} /> },
-                                        { title: 'SECURITY LINK DISPATCHED', date: '4/30/2026', tag: 'UPDATE', icon: <AlertCircle size={18} /> },
-                                        { title: 'TASK APPROVED', date: '4/17/2026', tag: 'SYSTEM', icon: <AlertCircle size={18} /> }
-                                    ].map((act, i) => (
-                                        <div key={i} className="group p-6 bg-white/[0.02] border border-white/5 rounded-3xl flex items-center gap-6 hover:bg-white/[0.04] transition-all">
-                                            <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center text-gray-700 group-hover:text-neon-blue transition-colors">
-                                                {act.icon}
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-[12px] font-black text-white tracking-tight uppercase">{act.title}</h4>
-                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">
-                                                    {act.date} • {act.tag}
-                                                </p>
-                                            </div>
+                        <div className="flex items-center gap-6">
+                            <div className="relative">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-neon-blue to-neon-purple rounded-[2rem] blur opacity-20" />
+                                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-[2rem] bg-zinc-900 border border-white/10 overflow-hidden shadow-2xl">
+                                    {profile?.profilePicture ? (
+                                        <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white italic">
+                                            {profile?.name?.charAt(0) || 'C'}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
+                                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#020202] rounded-full flex items-center justify-center border border-white/5">
+                                    <div className="w-5 h-5 bg-neon-green rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(57,255,20,0.4)]">
+                                        <CheckCircle2 size={12} className="text-black" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
+                                    <Zap size={14} className="animate-pulse" />
+                                    Active Workspace
+                                </div>
+                                <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible">
+                                    Hello, <span className="inline-block pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
+                                </h2>
+                                <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest mt-4 flex items-center gap-3">
+                                    <span className="w-8 h-px bg-white/10" />
+                                    Command center synchronized
+                                </p>
                             </div>
                         </div>
                     </motion.div>
                     
-                    {/* Compact Command Stats */}
                     <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="grid grid-cols-2 sm:flex items-stretch gap-2.5 w-full lg:w-auto"
+                        className="lg:col-span-5"
                     >
-                        <div className="bg-zinc-950/60 backdrop-blur-3xl px-6 py-5 rounded-[2rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[150px] col-span-2 sm:col-span-1 shadow-2xl">
-                            <span className="text-3xl md:text-4xl font-black text-white italic tracking-tighter leading-none tabular-nums">
-                                {joinedCampaignsList.length}
-                            </span>
-                            <span className="text-[8px] md:text-[9px] font-black text-neon-blue uppercase tracking-[0.3em] mt-2 text-center">Active Missions</span>
+                        <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-2 flex items-center shadow-2xl overflow-hidden group">
+                            <div className="flex-1 grid grid-cols-3 divide-x divide-white/5 py-4">
+                                <div className="flex flex-col items-center justify-center px-4">
+                                    <span className="text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
+                                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Campaigns</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center px-4">
+                                    <span className="text-2xl font-black text-white italic leading-none">{approvedTasks}</span>
+                                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Deliverables</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center px-4">
+                                    <span className="text-2xl font-black text-neon-blue italic leading-none">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
+                                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mt-2">Efficiency</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setActiveDashboardTab('settings')}
+                                className="w-16 h-16 bg-white/5 hover:bg-white hover:text-black rounded-2xl flex items-center justify-center transition-all m-1 group/btn border border-white/5 shadow-inner"
+                            >
+                                <Settings size={20} className="group-hover/btn:rotate-90 transition-transform duration-500" />
+                            </button>
                         </div>
-                        
-                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-5 py-5 rounded-[1.5rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[110px] shadow-xl">
-                            <span className="text-xl md:text-2xl font-black text-white tabular-nums">{approvedTasks}</span>
-                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest mt-1.5">Deliverables</span>
-                        </div>
-                        
-                        <div className="bg-zinc-950/40 backdrop-blur-2xl px-5 py-5 rounded-[1.5rem] border border-white/10 flex flex-col items-center justify-center min-w-0 sm:min-w-[110px] shadow-xl">
-                            <span className="text-xl md:text-2xl font-black text-white tabular-nums">{totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0}%</span>
-                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest mt-1.5">Efficiency</span>
-                        </div>
-                        
-                        <button onClick={() => setIsSettingsOpen(true)} className="hidden lg:flex bg-white/5 hover:bg-white hover:text-black w-16 rounded-[1.5rem] border border-white/10 items-center justify-center transition-all shadow-xl group">
-                            <Settings size={22} className="group-hover:rotate-90 transition-transform duration-500" />
-                        </button>
                     </motion.div>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="space-y-24 md:space-y-32">
+                <div className="space-y-16 md:space-y-24">
                     {/* Priority Section */}
                     {shortlistedCampaignsList.length > 0 && (
                         <motion.section 
@@ -977,13 +978,13 @@ const CreatorDashboard = () => {
                                         <Briefcase className="text-neon-blue" size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter">Priority Missions</h3>
+                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter pr-4">Priority Campaigns</h3>
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Executive fulfillment required</p>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 {shortlistedCampaignsList.map(c => 
                                     <CampaignCard key={c.id} campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
                                 )}
@@ -1018,7 +1019,7 @@ const CreatorDashboard = () => {
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
                                             className={cn(
-                                                "text-2xl sm:text-3xl font-black font-heading uppercase tracking-tighter transition-all relative pb-4 shrink-0 snap-start",
+                                                "text-lg md:text-xl font-black font-heading uppercase tracking-tighter transition-all relative pb-3 shrink-0 snap-start",
                                                 activeTab === tab ? "text-white" : "text-gray-700 hover:text-gray-500"
                                             )}
                                         >
@@ -1037,12 +1038,12 @@ const CreatorDashboard = () => {
                             <div className="flex items-center gap-4 w-full md:w-auto justify-end">
                                 <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400">
                                     <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
-                                    {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'MISSIONS TRACKED'}
+                                    {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'CAMPAIGNS TRACKED'}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             <AnimatePresence mode="popLayout">
                                 {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).map(c => (
                                     <motion.div
@@ -1068,7 +1069,7 @@ const CreatorDashboard = () => {
                                 <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
                                     <Sparkles size={40} />
                                 </div>
-                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600">Nothing discovered yet.</h4>
+                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">Nothing discovered yet.</h4>
                                 <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">Keep your impact high. New opportunities are unlocked based on your specialized ranking.</p>
                             </div>
                         )}
@@ -1081,21 +1082,14 @@ const CreatorDashboard = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="space-y-12"
+                        className="space-y-16"
                     >
-                        <div className="py-20 text-center">
-                            <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
-                                <Settings size={40} />
-                            </div>
-                            <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600">Settings Workspace</h4>
-                            <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">Configure your professional creator identity and notification preferences.</p>
-                            <button 
-                                onClick={() => setIsSettingsOpen(true)}
-                                className="mt-12 h-16 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all"
-                            >
-                                Open Studio Settings
-                            </button>
+                        <div className="flex items-center gap-4 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase mb-12">
+                            <Settings size={14} className="animate-spin-slow" />
+                            Security & Identity Parameters
                         </div>
+                        
+                        <CreatorSettingsView profile={profile} />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1123,13 +1117,177 @@ const CreatorDashboard = () => {
                         onSubmit={handleTaskSubmit}
                     />
                 )}
-                {isSettingsOpen && (
-                    <CreatorSettingsPanel
+                {isWorkspacePanelOpen && (
+                    <WorkspaceOverviewPanel 
                         profile={profile}
-                        onClose={() => setIsSettingsOpen(false)}
+                        stats={{
+                            approvedTasks,
+                            totalTasks,
+                            activeCampaigns: joinedCampaignsList.length,
+                            efficiency: totalTasks > 0 ? Math.round((approvedTasks / totalTasks) * 100) : 0
+                        }}
+                        onClose={() => setIsWorkspacePanelOpen(false)}
                     />
                 )}
             </AnimatePresence>
+        </div>
+    );
+};
+
+/* --- Redesigned Components --- */
+
+const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
+    const status = profile?.profileStatus || 'pending';
+    
+    const getStatusConfig = () => {
+        switch(status) {
+            case 'approved': return { label: 'VERIFIED', color: 'text-neon-green', icon: ShieldCheck, bg: 'bg-neon-green/10' };
+            case 'blocked': return { label: 'BLOCKED', color: 'text-red-500', icon: XCircle, bg: 'bg-red-500/10' };
+            case 'rejected': return { label: 'REJECTED', color: 'text-red-400', icon: AlertCircle, bg: 'bg-red-400/5' };
+            case 'removed': return { label: 'DEACTIVATED', color: 'text-gray-500', icon: Trash2, bg: 'bg-white/5' };
+            default: return { label: 'UNDER REVIEW', color: 'text-yellow-500', icon: Clock, bg: 'bg-yellow-500/10' };
+        }
+    };
+
+    const statusConfig = getStatusConfig();
+
+    return (
+        <div className="fixed inset-0 z-[200] flex justify-end">
+            <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="fixed inset-0 bg-black/80 backdrop-blur-md" 
+                onClick={onClose} 
+            />
+            <motion.div 
+                initial={{ x: '100%' }} 
+                animate={{ x: 0 }} 
+                exit={{ x: '100%' }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="relative w-full max-w-md h-full bg-[#050505] border-l border-white/10 flex flex-col shadow-[-20px_0_100px_rgba(0,0,0,0.8)]"
+            >
+                <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                            <LayoutDashboard size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black uppercase tracking-tighter italic pr-2">Workspace Hub</h3>
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Global Status & Logs</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-12 h-12 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                    {/* Workspace Banner - Redesigned for Side Panel */}
+                    <div className="relative group overflow-hidden p-8 bg-white/[0.03] border border-white/5 rounded-[3rem]">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/5 blur-3xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex flex-col gap-8">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_#38b6ff]" />
+                                    <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Operational Parameters</p>
+                                </div>
+                                <h4 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Command Center</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {/* Identity Status Card */}
+                                <div className={cn("p-6 rounded-[2rem] border flex items-center justify-between group/status transition-all", statusConfig.bg, "border-white/5")}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5", statusConfig.color, "bg-black/40")}>
+                                            <statusConfig.icon size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Identity Protocol</p>
+                                            <p className={cn("text-sm font-black uppercase tracking-wider", statusConfig.color)}>{statusConfig.label}</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover/status:bg-white/40 transition-colors" />
+                                </div>
+
+                                {/* Efficiency & Metrics */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-6 bg-black/60 rounded-[2rem] border border-white/5 flex flex-col gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-blue">
+                                            <Zap size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Efficiency</p>
+                                            <p className="text-xl font-black text-white italic">{stats.efficiency}%</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-6 bg-black/60 rounded-[2rem] border border-white/5 flex flex-col gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-green">
+                                            <Briefcase size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Missions</p>
+                                            <p className="text-xl font-black text-white italic">{stats.activeCampaigns}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Deliverables Progress */}
+                                <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Deliverables Sync</p>
+                                        <p className="text-[9px] font-black text-white uppercase tracking-widest">{stats.approvedTasks}/{stats.totalTasks}</p>
+                                    </div>
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div 
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${stats.efficiency}%` }}
+                                            className="h-full bg-gradient-to-r from-neon-blue to-neon-purple shadow-[0_0_10px_rgba(56,182,255,0.3)]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RECENT ACTIVITY LIST */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center gap-3">
+                                <History size={16} className="text-gray-600" />
+                                <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">ACTIVITY LOGS</h3>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            {[
+                                { title: 'ACCOUNT VERIFIED', date: '5/6/2026', tag: 'SYSTEM', icon: <ShieldCheck size={16} />, color: 'text-neon-green' },
+                                { title: 'SECURITY ALERT', date: '4/30/2026', tag: 'AUTH', icon: <AlertCircle size={16} />, color: 'text-neon-blue' },
+                                { title: 'TASK UPDATED', date: '4/17/2026', tag: 'DATA', icon: <CheckCircle2 size={16} />, color: 'text-neon-green' }
+                            ].map((act, i) => (
+                                <div key={i} className="group p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4 hover:bg-white/[0.04] transition-all">
+                                    <div className={cn("w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center group-hover:bg-white/5 transition-all shrink-0", act.color)}>
+                                        {act.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-[11px] font-black text-white tracking-tight uppercase truncate">{act.title}</h4>
+                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">
+                                            {act.date} • {act.tag}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-8 border-t border-white/5 bg-black/40">
+                    <button onClick={() => window.location.reload()} className="w-full h-14 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:bg-neon-blue transition-all flex items-center justify-center gap-3 shadow-xl">
+                        <RefreshCw size={14} /> Refresh Workspace
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 };

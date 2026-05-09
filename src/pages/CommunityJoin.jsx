@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Users, 
-    Sparkles, 
-    Gift, 
-    ArrowRight, 
-    CheckCircle2, 
-    Loader2,
-    ShieldCheck,
-    FileText,
-    Zap,
-    LayoutGrid,
-    Layout
-} from 'lucide-react';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Layout from 'lucide-react/dist/esm/icons/layout';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import CommunityCard from '../components/community/CommunityCard';
-import UnifiedGuestlistModal from '../components/community/UnifiedGuestlistModal';
+import EventTicketingModal from '../components/tickets/EventTicketingModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import { ChevronRight } from 'lucide-react';
 
 const CommunityJoin = () => {
     const scrollContainer = (id, direction) => {
@@ -157,7 +155,13 @@ const CommunityJoin = () => {
             setAuthModal(true);
             return;
         }
-        setSelectedGL(gl);
+        // Map guestlist to event structure for the unified modal
+        const mappedEvent = {
+            ...gl,
+            isGuestlistEnabled: true,
+            isTicketed: false // Standalone guestlists are not ticketed by default
+        };
+        setSelectedGL(mappedEvent);
         setIsGLModalOpen(true);
     };
 
@@ -245,7 +249,7 @@ const CommunityJoin = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-5xl sm:text-7xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink mb-4 md:mb-6 tracking-tight leading-none uppercase text-center italic"
+                        className="text-5xl sm:text-7xl md:text-8xl font-black font-heading text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-neon-blue to-neon-pink mb-4 md:mb-6 tracking-tight leading-tight uppercase text-center italic px-10 overflow-visible"
                     >
                         {user ? (
                             <>HELLO, {user.displayName?.split(' ')[0]}</>
@@ -346,12 +350,12 @@ const CommunityJoin = () => {
                                          </div>
                                          <div>
                                              <h2 className="text-4xl md:text-7xl font-black font-heading tracking-tighter text-white uppercase italic leading-none">
-                                                 FEATURED SPOTLIGHT
+                                                 FEATURED
                                              </h2>
                                              <div className="flex items-center gap-3 mt-2">
                                                  <div className="h-[1px] w-8 transition-all duration-700" style={{ backgroundColor: featuredItems[0]?.highlightColor || '#2ebfff' }} />
                                                  <p className="text-[10px] md:text-sm font-black text-gray-500 uppercase tracking-[0.4em]">
-                                                     ELITE TRIBE EXCLUSIVES
+                                                     SPOTLIGHT SELECTIONS
                                                  </p>
                                              </div>
                                          </div>
@@ -370,7 +374,7 @@ const CommunityJoin = () => {
                                              </button>
                                          </div>
 
-                                         <div id="featured-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                                         <div id="featured-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                                                  {featuredItems.map((item) => (
                                                      <motion.div 
                                                          key={`featured-${item.id}`}
@@ -403,7 +407,7 @@ const CommunityJoin = () => {
                                         <CheckCircle2 size={40} />
                                     </div>
                                     <div className="flex-1 text-center md:text-left relative z-10">
-                                        <h3 className="text-4xl font-black font-heading text-white mb-4 uppercase italic leading-tight">YOUR TRIBE ACCESS IS ACTIVE.</h3>
+                                        <h3 className="text-4xl font-black font-heading text-white mb-4 uppercase italic leading-tight pr-4">YOUR TRIBE ACCESS IS ACTIVE.</h3>
                                         <p className="text-gray-500 text-lg font-medium leading-relaxed tracking-tight uppercase">Join the primary communication channel below for instant updates.</p>
                                     </div>
                                     {!clickedWhatsApp ? (
@@ -491,7 +495,7 @@ const CommunityJoin = () => {
                                                 )}
                                             </div>
                                             <div>
-                                                <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter text-white uppercase italic leading-none pb-2">
+                                                <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter text-white uppercase italic leading-none pb-2 pr-4">
                                                     {section.title}
                                                 </h2>
                                                 <p className="text-xs font-black text-gray-500 uppercase tracking-[0.3em] pl-1">
@@ -515,7 +519,7 @@ const CommunityJoin = () => {
                                          </div>
 
                                          {section.items?.length > 0 ? (
-                                             <div id={`scroll-${section.id}`} className="flex overflow-x-auto md:grid md:grid-cols-2 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                                             <div id={`scroll-${section.id}`} className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 pb-12 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                                                  {section.items.map((item) => (
                                                      <motion.div 
                                                          key={`${section.id}-${item.id}`}
@@ -550,13 +554,13 @@ const CommunityJoin = () => {
                 )}
             </div>
 
-            <UnifiedGuestlistModal 
+            <EventTicketingModal 
                 isOpen={isGLModalOpen} 
                 onClose={() => {
                     setIsGLModalOpen(false);
                     setSelectedGL(null);
                 }} 
-                guestlist={selectedGL} 
+                event={selectedGL} 
             />
 
             {/* Share Success Toast */}

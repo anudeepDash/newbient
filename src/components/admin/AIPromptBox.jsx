@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Zap, Sparkles, RefreshCw, Shield, X, Cpu, ChevronDown, Lightbulb, Wand2, CheckCircle2 } from 'lucide-react';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import X from 'lucide-react/dist/esm/icons/x';
+import Cpu from 'lucide-react/dist/esm/icons/cpu';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Lightbulb from 'lucide-react/dist/esm/icons/lightbulb';
+import Wand2 from 'lucide-react/dist/esm/icons/wand-2';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 

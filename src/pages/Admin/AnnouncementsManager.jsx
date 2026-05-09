@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone, Calendar, Radio, FileText, Music, RotateCcw } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Pin from 'lucide-react/dist/esm/icons/pin';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import X from 'lucide-react/dist/esm/icons/x';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Music from 'lucide-react/dist/esm/icons/music';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -38,10 +56,10 @@ const AnnouncementsManager = () => {
     });
 
     const coreContentTabs = [
-        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
-        { name: 'Announcements', path: '/admin/announcements', icon: Radio },
-        { name: 'Blog', path: '/admin/blog', icon: FileText },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
+        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
+        { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
+        { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
     ];
 
     const handleSubmit = async (e) => {
@@ -382,7 +400,7 @@ const AnnouncementsManager = () => {
                                                                             setActiveEditorTab(tabs[currentIndex + 1]);
                                                                         }
                                                                     }}
-                                                                    className="h-16 px-12 sm:px-24 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(255,46,144,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
+                                                                    className="h-14 px-12 sm:px-24 bg-neon-pink text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(255,46,144,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
                                                                 >
                                                                     {activeEditorTab === 'deployment' ? (editingId ? 'COMMIT CHANGES' : 'DEPLOY BROADCAST') : 'Next Component'}
                                                                 </Button>

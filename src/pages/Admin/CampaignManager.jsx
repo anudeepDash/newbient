@@ -6,17 +6,58 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import { 
-    Megaphone, Plus, Search, MapPin, Edit, Trash2, Users, 
-    IndianRupee, Download, Upload, CheckCircle2, Sparkles, 
-    LayoutGrid, LayoutDashboard, Target, X, Filter, Globe, 
-    Zap, Clock, ChevronRight, ChevronLeft, Share2, Copy, Image as ImageIcon, 
-    GripVertical, Calendar, Star, Link2, FileText, Video, 
-    Camera, Eye, ChevronDown, ChevronUp, AlertCircle, XCircle, 
-    ExternalLink, Instagram, Youtube, Twitter, Clipboard, 
-    ArrowUp, ArrowDown, ArrowLeft, Mic2, Layers, TrendingUp, Check,
-    FileSpreadsheet
-} from 'lucide-react';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Search from 'lucide-react/dist/esm/icons/search';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Users from 'lucide-react/dist/esm/icons/users';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Target from 'lucide-react/dist/esm/icons/target';
+import X from 'lucide-react/dist/esm/icons/x';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Video from 'lucide-react/dist/esm/icons/video';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Check from 'lucide-react/dist/esm/icons/check';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Unlock from 'lucide-react/dist/esm/icons/unlock';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
@@ -152,6 +193,20 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, onCopyLink })
                     <p className="text-xl font-black text-white tracking-tighter truncate max-w-[180px]">{campaign.reward}</p>
                 </div>
                 <div className="flex gap-2">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
+                            useStore.getState().updateCampaign(campaign.id, { ...campaign, status: newStatus });
+                        }}
+                        className={cn(
+                            "w-10 h-10 rounded-xl border transition-all flex items-center justify-center",
+                            campaign.status === 'Open' ? "bg-white/5 border-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                        )}
+                        title={campaign.status === 'Open' ? "Close Mission" : "Open Mission"}
+                    >
+                        {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
+                    </button>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all">
                         <ChevronRight size={16} />
                     </div>
@@ -260,7 +315,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
         whatsappLink: '',
         minInstagramFollowers: 0,
         thumbnail: '',
-        tasks: []
+        tasks: [],
+        isPinned: false
     });
 
     const [isProcessingCSV, setIsProcessingCSV] = useState(false);
@@ -311,7 +367,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
             whatsappLink: '', 
             minInstagramFollowers: 0,
             thumbnail: '',
-            tasks: [] 
+            tasks: [],
+            isPinned: false
         });
         setIsCreating(false);
         setEditingId(null);
@@ -368,7 +425,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 order: t.order ?? i,
             })),
             minInstagramFollowers: campaign.minInstagramFollowers || 0,
-            thumbnail: campaign.thumbnail || ''
+            thumbnail: campaign.thumbnail || '',
+            isPinned: campaign.isPinned || false
         });
         setEditingId(campaign.id);
         setIsCreating(true);
@@ -457,7 +515,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             {/* Header Section */}
             <div className={cn(
                 "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-24 md:pt-32 px-4 md:px-12"
+                isEmbedded ? "pt-8 px-0" : "pt-32 md:pt-48 px-4 md:px-12"
             )}>
                 {!isEmbedded ? (
                     <div className="space-y-4">
@@ -469,8 +527,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             MISSION <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">OPERATIONS.</span>
                         </h1>
                         <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            Deploy and manage strategic creator missions. Monitor real-time task submissions, verify content, and orchestrate global reach.
+                            Deploy and manage strategic creator missions. Monitor real-time task submissions, verify content, and orchestrate global followers.
                         </p>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
                 ) : (
                     <div className="flex items-center gap-6">
@@ -478,8 +539,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             <Target size={24} className="text-neon-blue" />
                         </div>
                         <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">MISSION <span className="text-neon-blue">INTELLIGENCE</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Global operational metrics for active deployments</p>
+                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">CAMPAIGN <span className="text-neon-blue">OVERVIEW</span></h2>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Monitor and manage your active mission performance</p>
                         </div>
                     </div>
                 )}
@@ -625,7 +686,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                     <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MIN REACH (FOLLOWERS)</label>
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MIN FOLLOWERS</label>
                                                     <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                                 </div>
                                             </div>
@@ -633,6 +694,28 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">COMMUNICATION HUB (WHATSAPP)</label>
                                                 <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="h-14 bg-black/50 border-white/10 rounded-2xl" />
+                                            </div>
+
+                                            <div className={cn(
+                                                "p-8 rounded-[2rem] border flex items-center justify-between transition-all duration-500", 
+                                                formData.isPinned ? "bg-neon-blue/10 border-neon-blue/40 shadow-[0_0_40px_rgba(46,191,255,0.05)]" : "bg-black/40 border-white/5"
+                                            )}>
+                                                <div className="flex items-center gap-8">
+                                                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl", formData.isPinned ? "bg-neon-blue text-black" : "bg-white/5 text-gray-600")}>
+                                                        <Star size={24} className={cn(formData.isPinned && "fill-current")} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
+                                                        <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })} 
+                                                    className={cn("w-14 h-8 rounded-full relative transition-all border-2", formData.isPinned ? "bg-neon-blue border-neon-blue" : "bg-black/60 border-white/10")}
+                                                >
+                                                    <div className={cn("absolute top-1 w-5 h-5 rounded-full transition-all shadow-lg", formData.isPinned ? "right-1 bg-black" : "left-1 bg-gray-600")} />
+                                                </button>
                                             </div>
                                         </Card>
                                     </div>
@@ -931,7 +1014,7 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                                                 </div>
                                                 <h4 className="text-xl font-black text-white uppercase italic tracking-tight mb-2">{creator.name}</h4>
                                                 <div className="flex items-center gap-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                                    <Instagram size={14} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} REACH
+                                                    <Instagram size={14} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} FOLLOWERS
                                                 </div>
                                             </div>
                                         );

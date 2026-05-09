@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-    Download, Printer, ArrowLeft, ShieldCheck, 
-    Zap, RefreshCw, Globe, CheckCircle2, Eye, EyeOff, Trash2, Upload, X, PenTool
-} from 'lucide-react';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Printer from 'lucide-react/dist/esm/icons/printer';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import X from 'lucide-react/dist/esm/icons/x';
+import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';

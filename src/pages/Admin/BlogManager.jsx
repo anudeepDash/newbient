@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Plus, 
-    Search, 
-    Filter, 
-    Edit2, 
-    Trash2, 
-    Eye, 
-    MoreVertical, 
-    ArrowLeft,
-    Newspaper,
-    CheckCircle2,
-    Clock,
-    Star,
-    ExternalLink,
-    Mail,
-    Send,
-    Sparkles
-} from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Edit2 from 'lucide-react/dist/esm/icons/edit-2';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import MoreVertical from 'lucide-react/dist/esm/icons/more-vertical';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Star from 'lucide-react/dist/esm/icons/star';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
@@ -38,7 +36,7 @@ const BlogManager = () => {
         { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
         { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
         { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-pink' },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
     ];
 
     const categories = ['All', 'Live Events', 'Artists', 'Guides', 'Buzz'];

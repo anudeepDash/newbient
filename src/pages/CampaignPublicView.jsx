@@ -4,7 +4,26 @@ import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Instagram, MapPin, Users, Zap, CheckCircle2, ArrowRight, Sparkles, Loader2, ShieldCheck, Trophy, Target, Ban, Camera, Video, Eye, Star, Globe, Youtube, Twitter, Calendar } from 'lucide-react';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Ban from 'lucide-react/dist/esm/icons/ban';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Video from 'lucide-react/dist/esm/icons/video';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { cn } from '../lib/utils';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
@@ -172,7 +191,7 @@ const CampaignPublicView = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
-                    {/* Left Column: Mission Content */}
+                    {/* Left Column: Campaign Content */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
                         <div className="space-y-6">
                             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
@@ -204,7 +223,7 @@ const CampaignPublicView = () => {
                         {campaignTasks.length > 0 && (
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Mission Deliverables</h3>
+                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Deliverables</h3>
                                     <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">
                                         {requiredTasks.length} Required · {campaignTasks.length - requiredTasks.length} Optional
                                     </span>
@@ -351,7 +370,7 @@ const CampaignPublicView = () => {
                                                 <CheckCircle2 className="text-neon-blue" size={40} />
                                             </div>
                                             <h2 className="text-3xl font-black font-heading text-white uppercase tracking-tight">Application Sent</h2>
-                                            <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this mission. We will review your analytics and notify you via email.</p>
+                                            <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this campaign. We will review your analytics and notify you via email.</p>
                                             <Button onClick={() => navigate('/creator-dashboard')} className="w-full h-14 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all text-[10px] mt-8">
                                                 Go to Dashboard
                                             </Button>

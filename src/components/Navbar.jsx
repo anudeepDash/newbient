@@ -112,21 +112,25 @@ const Navbar = () => {
                         {/* Desktop Menu */}
                         <div className="hidden md:block">
                             <div className="flex items-center space-x-1">
-                                {links.map((link) => {
+                                {allLinks.map((link) => {
                                     const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
                                     const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
+                                    const isClickable = !isUnderMaintenance || user?.role === 'developer';
                                     
                                     return (
                                         <Link
                                             key={link.name}
-                                            to={link.path}
+                                            to={isClickable ? link.path : '#'}
                                             className={cn(
-                                                'px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group',
+                                                'px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-full relative group flex items-center gap-2',
                                                 isActive ? 'text-white' : 'text-gray-400 hover:text-white',
-                                                isUnderMaintenance && 'opacity-50 grayscale'
+                                                isUnderMaintenance && !isClickable && 'opacity-60 cursor-not-allowed grayscale'
                                             )}
                                         >
                                             {link.name}
+                                            {isUnderMaintenance && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" title="Under Maintenance" />
+                                            )}
                                             {isActive && (
                                                 <motion.div 
                                                     layoutId="nav-active"
@@ -165,7 +169,7 @@ const Navbar = () => {
                     <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
                     <div className="flex items-center h-14 gap-4 relative z-10">
                         {user && ['developer', 'super_admin'].includes(user.role) && (
-                            <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                            <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
                                 <Settings size={14} />
                             </Link>
                         )}
@@ -222,6 +226,8 @@ const Navbar = () => {
                         {mobilePrimaryLinks.map((link) => {
                             const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                             const Icon = link.icon;
+                            const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                            const isClickable = !isUnderMaintenance || user?.role === 'developer';
 
                             if (link.action) {
                                 return (
@@ -239,13 +245,19 @@ const Navbar = () => {
                             return (
                                 <Link
                                     key={link.name}
-                                    to={link.path}
+                                    to={isClickable ? link.path : '#'}
                                     className={cn(
                                         "flex flex-col items-center gap-1 p-2 transition-all relative",
-                                        isActive ? "text-neon-green" : "text-gray-400 hover:text-white"
+                                        isActive ? "text-neon-green" : "text-gray-400 hover:text-white",
+                                        isUnderMaintenance && !isClickable && "opacity-50 grayscale cursor-not-allowed"
                                     )}
                                 >
-                                    <Icon size={20} />
+                                    <div className="relative">
+                                        <Icon size={20} />
+                                        {isUnderMaintenance && (
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-black animate-pulse" />
+                                        )}
+                                    </div>
                                     <span className="text-[8px] font-black uppercase tracking-tighter">{link.name}</span>
                                     {isActive && (
                                         <motion.div 
@@ -280,9 +292,12 @@ const Navbar = () => {
 
                         <div className="w-full space-y-2 mb-auto shrink-0 pb-12">
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 text-center">Navigation</p>
-                            {links.map((link, idx) => {
+                            {allLinks.map((link, idx) => {
                                 const isActive = link.matchPaths ? link.matchPaths.includes(location.pathname) : location.pathname === link.path;
                                 const Icon = link.icon;
+                                const isUnderMaintenance = link.featureId && (maintenanceState.global || maintenanceState.pages?.[link.featureId]);
+                                const isClickable = !isUnderMaintenance || user?.role === 'developer';
+
                                 return (
                                     <motion.div
                                         key={link.name}
@@ -291,22 +306,33 @@ const Navbar = () => {
                                         transition={{ delay: idx * 0.05 }}
                                     >
                                         <Link
-                                            to={link.path}
-                                            onClick={() => setIsOpen(false)}
+                                            to={isClickable ? link.path : '#'}
+                                            onClick={() => isClickable && setIsOpen(false)}
                                             className={cn(
                                                 "flex items-center gap-6 p-6 rounded-3xl border border-transparent transition-all group",
                                                 isActive 
                                                     ? "bg-white/5 border-white/10 text-neon-green" 
-                                                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                    : "text-gray-400 hover:text-white hover:bg-white/5",
+                                                isUnderMaintenance && !isClickable && "opacity-40 grayscale cursor-not-allowed"
                                             )}
                                         >
                                             <div className={cn(
-                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative",
                                                 isActive ? "bg-neon-green/10 text-neon-green" : "bg-white/5 text-gray-500 group-hover:text-white"
                                             )}>
                                                 <Icon size={22} />
+                                                {isUnderMaintenance && (
+                                                    <div className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-[8px] font-black text-white rounded-md animate-pulse">
+                                                        OFFLINE
+                                                    </div>
+                                                )}
                                             </div>
-                                            <span className="text-2xl font-black uppercase italic tracking-tighter">{link.name}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-2xl font-black uppercase italic tracking-tighter">{link.name}</span>
+                                                {isUnderMaintenance && (
+                                                    <span className="text-[10px] font-black uppercase text-red-500/80 tracking-[0.2em]">Maintenance in progress</span>
+                                                )}
+                                            </div>
                                         </Link>
                                     </motion.div>
                                 );

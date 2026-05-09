@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Ticket, CheckCircle2, XCircle, Search, Upload, 
-    Download, AlertTriangle, FileText, Check, X, QrCode, ArrowLeft, Send, Users
-} from 'lucide-react';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Download from 'lucide-react/dist/esm/icons/download';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Check from 'lucide-react/dist/esm/icons/check';
+import X from 'lucide-react/dist/esm/icons/x';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Users from 'lucide-react/dist/esm/icons/users';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,11 +22,13 @@ import { Input } from '../../components/ui/Input';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import EntryTerminal from '../../components/admin/EntryTerminal';
 
 const TicketingManagement = () => {
-    const { upcomingEvents, ticketOrders = [], updateTicketOrderStatus, user } = useStore();
+    const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user } = useStore();
     const isScanner = user?.role === 'scanner';
     
+    const [searchParams] = useSearchParams();
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, dispatch, sheets
     const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +36,21 @@ const TicketingManagement = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('');
 
-    const ticketedEvents = upcomingEvents?.filter(e => e.isTicketed) || [];
+    useEffect(() => {
+        const eventId = searchParams.get('eventId');
+        if (eventId) {
+            setSelectedEventId(eventId);
+        }
+    }, [searchParams]);
+
+    const operationalEvents = [
+        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled) || []),
+        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled)) || [])
+    ].sort((a, b) => {
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return new Date(b.date) - new Date(a.date);
+    });
 
     // If no event selected, show event cards
     if (!selectedEventId) {
@@ -33,19 +60,21 @@ const TicketingManagement = () => {
                     <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px]" />
                     <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
                 </div>
-                <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-40 md:pt-48">
+                <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                     <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8">
                         <div className="space-y-4 max-w-full">
-                            <AdminDashboardLink className="mb-4" />
                             <h1 className="text-3xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1] pr-12">
                                 TICKET <span className="text-neon-green">OPERATIONS.</span>
                             </h1>
                             <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Select an event to manage ticketing operations.</p>
+                            <div className="pt-4">
+                                <AdminDashboardLink />
+                            </div>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {ticketedEvents.map(event => {
+                        {operationalEvents.map(event => {
                             const eventOrders = ticketOrders.filter(o => o.eventId === event.id);
                             const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
                             const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
@@ -58,6 +87,12 @@ const TicketingManagement = () => {
                                             <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate">{event.title}</h3>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
                                         </div>
+                                        {event.date && new Date(event.date) < new Date() && (
+                                            <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Completed</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-6 grid grid-cols-2 gap-4 bg-black/40">
                                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
@@ -78,7 +113,7 @@ const TicketingManagement = () => {
         );
     }
 
-    const event = ticketedEvents.find(e => e.id === selectedEventId);
+    const event = operationalEvents.find(e => e.id === selectedEventId);
     let eventOrders = ticketOrders.filter(o => o.eventId === selectedEventId);
     
     // Filtering logic
@@ -146,7 +181,36 @@ const TicketingManagement = () => {
     };
 
     const downloadSheets = () => {
-        useStore.getState().addToast("Downloading CSV Sheets...", 'error');
+        // Simple CSV generation for ticket orders
+        if (eventOrders.length === 0) {
+            useStore.getState().addToast("No data to export.", 'error');
+            return;
+        }
+
+        const headers = ["Customer Name", "Email", "Phone", "Status", "Items", "Total Amount", "Payment Ref", "Booking Ref", "Created At"];
+        const rows = eventOrders.map(o => [
+            o.customerName,
+            o.customerEmail,
+            o.customerPhone,
+            o.status,
+            o.items?.map(i => `${i.count}x ${i.name}`).join(' | '),
+            o.totalAmount,
+            o.paymentRef,
+            o.bookingRef,
+            o.createdAt
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${event.title.replace(/\s+/g, '_')}_Ticketing_Report.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        useStore.getState().addToast("Ticketing CSV Downloaded.", 'success');
     };
 
     return (
@@ -172,8 +236,9 @@ const TicketingManagement = () => {
 
                 <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
                     <div className="flex gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
-                        {['buyers', 'dispatch', 'sheets'].map((tab) => {
+                        {['buyers', 'dispatch', 'attendance', 'sheets'].map((tab) => {
                             if (isScanner && (tab === 'buyers' || tab === 'dispatch')) return null; 
+                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch')) return null;
                             return (
                                 <button
                                     key={tab}
@@ -185,7 +250,7 @@ const TicketingManagement = () => {
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    {tab === 'buyers' ? 'Buyers List' : tab === 'dispatch' ? 'Dispatch Center' : 'Sheets & Analytics'}
+                                    {tab === 'buyers' ? 'Buyers List' : tab === 'dispatch' ? 'Dispatch Center' : tab === 'attendance' ? 'Attendance' : 'Sheets & Analytics'}
                                 </button>
                             );
                         })}
@@ -364,6 +429,13 @@ const TicketingManagement = () => {
                                     </Button>
                                 </Card>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* ATTENDANCE TAB */}
+                    {activeTab === 'attendance' && (
+                        <motion.div key="attendance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                            <EntryTerminal eventId={selectedEventId} />
                         </motion.div>
                     )}
 

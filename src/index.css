@@ -199,40 +199,17 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
-/* Loading Screen Animations */
-@keyframes glitch {
-  0% { transform: translate(0); text-shadow: -2px 0 #2eff90, 2px 0 #2ebfff; }
-  25% { transform: translate(-1px, 1px); text-shadow: -2px 0 #2eff90, 2px 0 #2ebfff; }
-  50% { transform: translate(1px, -1px); text-shadow: 2px 0 #2eff90, -2px 0 #2ebfff; }
-  75% { transform: translate(-1px, -1px); text-shadow: -2px 0 #2eff90, 2px 0 #2ebfff; }
-  100% { transform: translate(0); text-shadow: -2px 0 #2eff90, 2px 0 #2ebfff; }
-}
-
-@keyframes scan {
-  0% { transform: translateY(-100%); opacity: 0; }
-  50% { opacity: 0.5; }
-  100% { transform: translateY(300%); opacity: 0; }
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { opacity: 0.5; }
-  100% { transform: scale(1.2); opacity: 0; }
-}
-
+/* Global Utilities */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
 
-.animate-glitch { animation: glitch 0.2s infinite; }
-.animate-scan { animation: scan 2s linear infinite; }
-.animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-.animate-float { animation: float 3s ease-in-out infinite; }
-.animate-spin-slow { animation: spin 3s linear infinite; }
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-spin-slow { animation: spin 3s linear infinite; }
 

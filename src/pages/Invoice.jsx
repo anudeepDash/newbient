@@ -1,7 +1,15 @@
 import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Printer, ArrowLeft, Mail, MessageCircle, DollarSign, LayoutGrid, Settings, LogOut } from 'lucide-react';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Printer from 'lucide-react/dist/esm/icons/printer';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -451,7 +459,7 @@ const Invoice = () => {
 
                                     <div className="h-4 w-px bg-white/10 relative z-10" />
 
-                                    <Link to="/admin/site-settings" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Site Settings">
+                                    <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all relative z-10" title="Site Settings">
                                         <Settings size={14} />
                                     </Link>
                                     

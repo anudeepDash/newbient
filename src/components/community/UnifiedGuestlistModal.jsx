@@ -4,7 +4,6 @@ import {
     X, 
     Ticket, 
     ArrowRight, 
-    CheckCircle2, 
     Loader2, 
     AlertTriangle,
     User,
@@ -19,6 +18,7 @@ import {
     Download,
     ExternalLink
 } from 'lucide-react';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import html2canvas from 'html2canvas';
 import { useStore } from '../../lib/store';
 import { Button } from '../ui/Button';
@@ -201,12 +201,12 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                         transition={{ type: "spring", stiffness: 250, damping: 30 }}
                         className={cn(
                             "relative w-full overflow-hidden bg-black/40 border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.9)] backdrop-blur-3xl flex flex-col sm:flex-row",
-                            "md:max-w-4xl md:h-[600px] md:rounded-[4rem] md:border", // Desktop: Balanced 16:9 proportional card
-                            "h-[92%] rounded-t-[3.5rem] border-t" // Mobile: High bottom sheet
+                            "md:max-w-3xl md:h-[480px] md:rounded-[2.5rem] md:border", // desktop: Balanced 4:5 card
+                            "h-[92%] rounded-t-[3.5rem] border-t" // mobile: High bottom sheet
                         )}
                     >
                         {/* High-Impact Visual Sidebar / Header Image */}
-                        <div className="relative w-full sm:w-[38%] h-48 sm:h-auto bg-[#0a0a0a] border-b sm:border-b-0 sm:border-r border-white/10 overflow-hidden shrink-0">
+                        <div className="relative w-full sm:w-[384px] h-48 sm:h-auto bg-[#0a0a0a] border-b sm:border-b-0 sm:border-r border-white/10 overflow-hidden shrink-0">
                             {guestlist.image ? (
                                 <div className="absolute inset-0">
                                     <img 
@@ -324,7 +324,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                             <Button 
                                                 disabled={isFull} 
                                                 onClick={() => setStep('details')} 
-                                                className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-white text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.15)] flex items-center justify-center gap-4 group"
+                                                className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-white text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group"
                                             >
                                                 {isFull ? 'FULL' : 'ENTER DETAILS'} <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                             </Button>
@@ -333,34 +333,34 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                     {step === 'details' && (
                                         <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 sm:space-y-10">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-3xl sm:text-4xl font-black font-heading text-white italic tracking-tighter uppercase leading-[0.9]">
-                                                    YOUR <br /><span className="text-neon-pink">DETAILS.</span>
-                                                </h3>
-                                                <button onClick={() => setStep('selection')} className="text-gray-600 hover:text-white transition-colors">
-                                                    <ChevronLeft size={24} />
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={() => setStep('selection')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
+                                                    <ChevronLeft size={20} />
                                                 </button>
+                                                <h3 className="text-3xl sm:text-4xl font-black font-heading text-white italic tracking-tighter uppercase leading-[0.9]">
+                                                    YOUR <br /><span className="text-neon-blue">DETAILS.</span>
+                                                </h3>
                                             </div>
 
                                             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                                                 <div className="grid grid-cols-1 gap-5">
                                                     <div className="space-y-2">
                                                         <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Full Legal Identity</label>
-                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-white/5 border border-white/5 rounded-[2rem] px-8 text-xs font-black uppercase tracking-widest focus:border-neon-pink/40 focus:bg-white/10 outline-none transition-all placeholder:text-gray-800 italic" />
+                                                        <input required name="name" value={formData.name} onChange={handleInputChange} placeholder="ALEX_WAYNE" className="w-full h-16 sm:h-20 bg-white/5 border border-white/5 rounded-[2rem] px-8 text-xs font-black uppercase tracking-widest focus:border-neon-blue/40 focus:bg-white/10 outline-none transition-all placeholder:text-gray-800 italic" />
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                                         <div className="space-y-2">
                                                             <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Digital Mail</label>
-                                                            <input required type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="ADDR@DOMAIN.COM" className="w-full h-14 sm:h-16 bg-white/5 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-800" />
+                                                            <input required type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="ADDR@DOMAIN.COM" className="w-full h-14 sm:h-16 bg-white/5 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800" />
                                                         </div>
                                                         <div className="space-y-2">
                                                             <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-3">Contact Signal</label>
-                                                            <input required name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 XXX XXX XXXX" className="w-full h-14 sm:h-16 bg-white/5 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-pink/40 outline-none transition-all placeholder:text-gray-800" />
+                                                            <input required name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 XXX XXX XXXX" className="w-full h-14 sm:h-16 bg-white/5 border border-white/5 rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/40 outline-none transition-all placeholder:text-gray-800" />
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <Button type="submit" className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-neon-pink text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,79,139,0.2)] flex items-center justify-center gap-4 group">
+                                                <Button type="submit" className="w-full h-20 sm:h-24 rounded-[2.5rem] bg-neon-blue text-black font-black uppercase italic tracking-[0.3em] text-[10px] sm:text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(0,255,255,0.2)] flex items-center justify-center gap-4 group">
                                                     REGISTER NOW <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                                                 </Button>
                                             </form>
@@ -379,7 +379,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                     {step === 'success' && (
                                         <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-10">
-                                            <div className="w-20 h-20 bg-neon-green rounded-3xl flex items-center justify-center text-black shadow-[0_0_40px_#00E6A880]">
+                                            <div className="w-20 h-20 bg-neon-green rounded-3xl flex items-center justify-center text-black shadow-[0_0_20px_rgba(0,230,168,0.3)]">
                                                 <CheckCircle2 size={36} />
                                             </div>
                                             
@@ -416,6 +416,15 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                 >
                                                     <ExternalLink size={16} /> VIEW IN ACCOUNT
                                                 </Button>
+
+                                                <a 
+                                                    href={`/ticket/${bookingRef}?gl=${guestlist.id}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    className="w-full h-14 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white transition-all mt-2"
+                                                >
+                                                    <QrCode size={16} /> VIEW DIGITAL PASS
+                                                </a>
                                             </div>
 
                                             {/* Hidden Ticket Surface for Download */}

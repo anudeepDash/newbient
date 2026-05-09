@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Trash2, CheckCircle, LayoutGrid, Clock, User, AlertCircle, Sparkles, Filter, Search, X } from 'lucide-react';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import User from 'lucide-react/dist/esm/icons/user';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Search from 'lucide-react/dist/esm/icons/search';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -50,14 +60,16 @@ const MessageManager = () => {
                 <div className="absolute bottom-[5%] right-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
                     <div className="space-y-4">
-                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             MESSAGE <span className="text-neon-pink">STREAM.</span>
                         </h1>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
                     
                     {unreadCount > 0 && (

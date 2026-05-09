@@ -1,6 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, FileText, Scale, Clock, AlertCircle, CreditCard, ExternalLink, Gavel, RefreshCw } from 'lucide-react';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Scale from 'lucide-react/dist/esm/icons/scale';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import Gavel from 'lucide-react/dist/esm/icons/gavel';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 
 const Terms = () => {
     const termsList = [
@@ -86,7 +94,7 @@ const Terms = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-16 text-center"
                 >
-                    <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mb-6 uppercase">
+                    <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mb-6 uppercase pr-4">
                         Terms & <span className="text-neon-blue">Conditions</span>
                     </h1>
                     <p className="text-gray-400 text-lg md:text-xl font-medium tracking-tight">

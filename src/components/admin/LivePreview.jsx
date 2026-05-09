@@ -74,10 +74,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
             )}
             <div className={cn(
                 "w-full transition-all mx-auto overflow-hidden",
-                hideDecorations ? "p-0 rounded-none bg-transparent border-none shadow-none" : cn(
-                    "p-8 rounded-[3.5rem] border border-white/5 bg-zinc-900/20 backdrop-blur-3xl shadow-2xl relative flex flex-col items-center justify-center",
-                    type === 'event' || type === 'portfolio' ? "aspect-[4/5]" : "aspect-[3/2]"
-                )
+                hideDecorations ? "p-0 rounded-none bg-transparent border-none shadow-none" : "p-8 rounded-[3.5rem] border border-white/5 bg-zinc-900/20 backdrop-blur-3xl shadow-2xl relative flex flex-col items-center justify-center min-h-[420px]"
             )}>
                 <div className="w-full h-full flex flex-col items-center justify-center">
                     {/* ANNOUNCEMENT PREVIEW */}
@@ -159,143 +156,54 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                         </div>
                     )}
 
-
-                    {/* EVENT PREVIEW */}
-                    {type === 'event' && (
-                        <div className="relative bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden aspect-[4/5] transition-all duration-500 hover:border-white/20 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full max-w-[380px] mx-auto">
-                            {/* Background elements */}
-                            <div className="absolute inset-0 z-0 overflow-hidden bg-black">
-                                {data.image ? (
-                                    <img
-                                        src={data.image}
-                                        alt=""
-                                        crossOrigin="anonymous"
-                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-50 group-hover:opacity-70"
-                                        style={{ 
-                                            transform: `scale(${data.imageTransform?.scale || 1})`,
-                                            objectPosition: `${50 + (data.imageTransform?.x || 0)}% ${50 + (data.imageTransform?.y || 0)}%`,
-                                            transformOrigin: 'center'
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-black uppercase tracking-[0.3em] text-[10px]">
-                                        SIGNAL_BUFFERING
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10" />
-                                <div 
-                                    className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"
-                                    style={{ background: `radial-gradient(circle at bottom right, ${(data.highlightColor || '#2ebfff')}11 0%, transparent 60%)` }}
+                    {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST, EVENT) */}
+                    {(type === 'gig' || type === 'form' || type === 'guestlist' || type === 'gl' || type === 'event') && (
+                        <div className="w-full flex justify-center h-full">
+                            <div className="w-full h-full flex flex-col justify-center max-w-[380px]">
+                                <CommunityCard 
+                                    type={type === 'gl' ? 'gl' : type}
+                                    item={{
+                                        ...data,
+                                        id: 'preview'
+                                    }}
+                                    handleShare={() => {}}
+                                    onAction={() => {}}
                                 />
                             </div>
-                            
-                            {/* Top Badges */}
-                            <div className="absolute top-8 left-8 right-8 z-30 flex justify-between items-start">
-                                <div className="flex flex-col gap-2 text-left">
-                                    <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/5 flex items-center gap-2">
-                                        <div 
-                                            className="w-1 h-1 rounded-full animate-pulse" 
-                                            style={{ backgroundColor: data.highlightColor || '#2ebfff', boxShadow: `0 0 10px ${data.highlightColor || '#2ebfff'}` }}
-                                        />
-                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80">
-                                            {formatDate(data.dates || data.date)}
-                                        </span>
-                                    </div>
-                                    {data.performanceType && (
-                                        <span className="text-[7px] font-black uppercase tracking-[0.3em] text-white/30 pl-1">
-                                            {data.performanceType}
-                                        </span>
-                                    )}
-                                </div>
+                        </div>
+                    )}
 
-                                {data.isTicketed && (
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/40 group-hover:text-neon-green group-hover:border-neon-green/30 transition-all">
-                                        <Ticket size={18} />
+                    {/* FORM EMBED PREVIEW */}
+                    {type === 'form_embed' && (
+                        <div className="w-full h-[500px] bg-black/40 rounded-[2.5rem] border border-white/10 overflow-hidden relative group">
+                            {data.formUrl ? (
+                                <iframe 
+                                    src={data.formUrl} 
+                                    className="w-full h-full border-none opacity-80 group-hover:opacity-100 transition-opacity"
+                                    title="Form Preview"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-12 text-center">
+                                    <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                                        <ClipboardList size={32} />
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Content Body */}
-                            <div className="absolute inset-x-8 bottom-8 z-20 text-left">
-                                <div className="space-y-4">
                                     <div className="space-y-2">
-                                        {data.artists && data.artists.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 items-center opacity-60 group-hover:opacity-100 transition-opacity duration-500 min-h-[12px]">
-                                                {showAllArtists ? (
-                                                    <div className="flex flex-wrap gap-2 items-center">
-                                                        {data.artists.map((artist, i) => (
-                                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < data.artists.length - 1 ? ' •' : ''}</span>
-                                                        ))}
-                                                        <button 
-                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(false); }}
-                                                            className="text-[8px] font-black text-neon-blue uppercase tracking-widest ml-1 hover:underline"
-                                                        >
-                                                            LESS
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {data.artists.slice(0, 2).map((artist, i) => (
-                                                            <span key={i} className="text-[8px] font-black text-white uppercase tracking-widest">{artist}{i < 1 && data.artists.length > 1 ? ' •' : ''}</span>
-                                                        ))}
-                                                        {data.artists.length > 2 && (
-                                                            <button 
-                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowAllArtists(true); }}
-                                                                className="text-[8px] font-black text-white/40 uppercase tracking-widest hover:text-white transition-colors"
-                                                            >
-                                                                + {data.artists.length - 2} MORE
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-                                        <h3 className="text-2xl md:text-3xl font-black font-heading text-white leading-[1.1] tracking-tighter uppercase italic group-hover:text-neon-blue transition-all duration-500">
-                                            {data.title || 'UNTITLED PROTOCOL'}
-                                        </h3>
-                                    </div>
-                                    
-                                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2">
-                                        <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/40">
-                                            <MapPin size={10} className="group-hover:text-white transition-colors" />
-                                            <span>{data.location || 'TBA'}</span>
-                                        </div>
-                                        {data.doorsOpen && (
-                                            <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/20">
-                                                <Clock size={10} />
-                                                <span>{data.doorsOpen}</span>
-                                            </div>
-                                        )}
-                                        {data.ageLimit && (
-                                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/10 px-1.5 py-0.5 rounded border border-white/5">{data.ageLimit}</span>
-                                        )}
-                                    </div>
-
-                                    <div className="pt-6 mt-2 border-t border-white/5 flex items-center justify-between">
-                                        <div className="flex flex-col gap-1.5">
-                                            <div 
-                                                className="font-black tracking-[0.3em] flex items-center gap-3 group-hover:gap-5 transition-all uppercase text-[9px]"
-                                                style={{ 
-                                                    color: data.isTicketed ? '#2eff90' : (data.isGuestlistEnabled ? '#ff2ebf' : (data.highlightColor || '#2ebfff')) 
-                                                }}
-                                            >
-                                                {data.buttonText || (data.isTicketed ? "GET TICKETS" : (data.isGuestlistEnabled ? "RSVP NOW" : "VIEW DETAILS"))}
-                                                <ArrowRight size={14} className="opacity-40 group-hover:opacity-100" />
-                                            </div>
-                                        </div>
-                                        
-                                        <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all backdrop-blur-xl">
-                                            <Share2 size={14} />
-                                        </button>
+                                        <h4 className="text-lg font-black uppercase tracking-widest text-white/40">No URL Defined</h4>
+                                        <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest leading-relaxed max-w-[200px]">Enter a valid Google Forms URL to preview the interactive experience.</p>
                                     </div>
                                 </div>
-                            </div>
+                            )}
+                            {data.requiresExternal && (
+                                <div className="absolute top-6 right-6 px-4 py-2 bg-neon-pink text-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-2xl">
+                                    External Redirect Active
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* PORTFOLIO PREVIEW */}
                     {type === 'portfolio' && (
-                        <div className="relative bg-zinc-950 border border-white/5 rounded-[2.5rem] overflow-hidden aspect-[4/5] transition-all duration-700 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full max-w-[380px] mx-auto">
+                        <div className="relative bg-zinc-950 border border-white/5 rounded-[2.5rem] overflow-hidden transition-all duration-700 group shadow-[0_30px_100px_rgba(0,0,0,0.5)] w-full max-w-[380px] mx-auto">
                             {/* Glow Halo */}
                             <div className="absolute -inset-px rounded-[2.5rem] bg-gradient-to-br from-neon-green/10 to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl" />
 
@@ -387,23 +295,6 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-20"
                                 style={{ background: 'linear-gradient(135deg, rgba(46,255,144,0.03) 0%, transparent 50%, rgba(46,191,255,0.03) 100%)' }}
                             />
-                        </div>
-                    )}
-
-                    {/* SHARED COMMUNITY CARD PREVIEW (GIG, FORM, GUESTLIST) */}
-                    {(type === 'gig' || type === 'form' || type === 'guestlist' || type === 'gl') && (
-                        <div className="w-full flex justify-center h-full">
-                            <div className="w-full h-full flex flex-col justify-center">
-                                <CommunityCard 
-                                    type={type === 'gl' ? 'gl' : type}
-                                    item={{
-                                        ...data,
-                                        id: 'preview'
-                                    }}
-                                    handleShare={() => {}}
-                                    className="w-full h-full"
-                                />
-                            </div>
                         </div>
                     )}
 

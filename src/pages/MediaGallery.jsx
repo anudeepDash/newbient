@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Image as ImageIcon, Camera } from 'lucide-react';
+import X from 'lucide-react/dist/esm/icons/x';
+import Play from 'lucide-react/dist/esm/icons/play';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import Camera from 'lucide-react/dist/esm/icons/camera';
 import { useStore } from '../lib/store';
 
 const MediaGallery = () => {

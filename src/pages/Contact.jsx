@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Send, Instagram, Mail, Phone, Globe, MessageSquare, Zap, Sparkles, MapPin } from 'lucide-react';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -33,7 +41,7 @@ const Contact = () => {
             // Notify Admins
             await notifyAdmins(
                 'NEW INBOUND MESSAGE',
-                `RECEIVED A TRANSMISSION FROM ${formData.name.toUpperCase()}. MESSAGE DETAILS ATTACHED.`,
+                `RECEIVED A MESSAGE FROM ${formData.name.toUpperCase()}. MESSAGE DETAILS ATTACHED.` ,
                 '/admin/messages',
                 'message'
             );
@@ -201,7 +209,7 @@ const Contact = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Tell us about your mission</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Tell us about your project</label>
                                     <textarea
                                         className="w-full h-48 bg-white/5 border border-white/10 rounded-[2rem] p-8 font-medium text-white focus:outline-none focus:border-neon-blue transition-all resize-none"
                                         placeholder="Tell us about your project requirements..."

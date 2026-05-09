@@ -1,40 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    DollarSign, 
-    Users, 
-    Calendar, 
-    Plus, 
-    FileText, 
-    Megaphone, 
-    Music, 
-    Mic2,
-    Mail, 
-    Shield, 
-    Clock, 
-    Radio, 
-    Star, 
-    Target, 
-    Image, 
-    Ticket, 
-    LayoutDashboard, 
-    Settings, 
-    LogOut, 
-    Search, 
-    Bell, 
-    Zap, 
-    FileSpreadsheet, 
-    Sparkles, 
-    TrendingUp, 
-    Gift,
-    ClipboardList,
-    ListChecks,
-    Scale,
-    Briefcase,
-    ChevronLeft,
-    ChevronRight
-} from 'lucide-react';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Mic2 from 'lucide-react/dist/esm/icons/mic-2';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Image from 'lucide-react/dist/esm/icons/image';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Gift from 'lucide-react/dist/esm/icons/gift';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
+import Scale from 'lucide-react/dist/esm/icons/scale';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 
 import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
@@ -249,7 +246,7 @@ const Dashboard = () => {
         artists, clientRequests, upcomingEvents, ticketOrders,
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
-    const cards = maintenanceState?.cards || {};
+    const cards = maintenanceState?.features || {};
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -353,7 +350,7 @@ const Dashboard = () => {
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
             </div>
 
-            <div className="relative z-10 max-w-[1500px] mx-auto px-4 md:px-10 pt-20 md:pt-32">
+            <div className="relative z-10 max-w-[1500px] mx-auto px-4 md:px-10 pt-32 md:pt-48">
                 {/* Advanced Command Header */}
                 <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-10 md:mb-24 gap-8 md:gap-12 relative">
                     <motion.div 
@@ -398,7 +395,7 @@ const Dashboard = () => {
                     >
                         <div className="flex items-center gap-1">
                             {user.role === 'developer' && (
-                                <Link to="/admin/site-settings" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all group relative overflow-hidden">
+                                <Link to="/admin/system-command" className="p-3.5 hover:bg-white/10 rounded-2xl transition-all group relative overflow-hidden">
                                     <Settings size={20} className="text-gray-400 group-hover:text-white transition-colors relative z-10" />
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </Link>
@@ -488,38 +485,36 @@ const Dashboard = () => {
                     {user?.role !== 'scanner' && (
                         <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
                             <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
-                            <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.proposals} />
-                            <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} />
+                            <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
+                            <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
                         </DashboardSection>
                     )}
 
                     {user?.role !== 'scanner' && (
                         <DashboardSection title="Core Content Infrastructure" gradient="from-neon-pink via-purple-500 to-white" icon={<LayoutDashboard size={20} />}>
-                            <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-pink" link="/admin/upcoming-events" isHidden={cards.upcoming} />
-                            <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="yellow-400" link="/admin/announcements" isHidden={cards.announcements} />
-                            <ControlCard title="Blog" desc="Public-facing thought leadership logs." icon={FileText} color="neon-blue" link="/admin/blog" isNew />
-                            <ControlCard title="Portfolio" desc="Concert catalogue and past event archive." icon={Image} color="neon-green" link="/admin/concertzone" count={portfolio?.length || 0} />
+                            <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-green" link="/admin/upcoming-events" isHidden={cards.upcoming_events} />
+                            <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="neon-pink" link="/admin/announcements" isHidden={cards.blog_announcements} />
+                            <ControlCard title="Blog" desc="Public-facing thought leadership logs." icon={FileText} color="neon-blue" link="/admin/blog" isNew isHidden={cards.blog_announcements} />
+                            <ControlCard title="Portfolio" desc="Concert catalogue and past event archive." icon={Music} color="neon-purple" link="/admin/concertzone" count={portfolio?.length || 0} isHidden={cards.concerts} />
                         </DashboardSection>
                     )}
 
                     <DashboardSection title="Event & Ticketing Operations" gradient="from-yellow-400 via-neon-green to-white" icon={<Ticket size={20} />}>
-                        <ControlCard title="Ticketing Ops" desc="Sales, UPI Verification & Offline Sync." icon={Ticket} color="neon-green" link="/admin/ticketing" isNew />
-                        <ControlCard title="QR Scanner" desc="Gate entry validation system." icon={Zap} color="yellow-400" link="/admin/scanner" isNew />
+                        <ControlCard title="Ticketing Ops" desc="Sales, UPI Verification & Offline Sync." icon={Ticket} color="neon-green" link="/admin/ticketing" isNew isHidden={cards.ticketing} />
+                        <ControlCard title="QR Scanner" desc="Gate entry validation system." icon={Zap} color="yellow-400" link="/admin/scanner" isNew isHidden={cards.ticketing} />
                     </DashboardSection>
 
                     {user?.role !== 'scanner' && (
                         <DashboardSection title="Personnel & Community Ops" gradient="from-neon-blue via-neon-green to-white" icon={<Users size={20} />}>
-                            <ControlCard title="Community Hub" desc="Volunteer coordination and gig ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.volunteer_gigs} />
-                            <ControlCard title="Guestlists" desc="Verified entry lists and VIP access management." icon={ListChecks} color="neon-blue" link="/admin/guestlists" isNew />
-                            <ControlCard title="Creators" desc="Influencer validation and reach metrics." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.creators} />
-                            <ControlCard title="Campaigns" desc="Social takeovers and marketing missions." icon={Target} color="neon-pink" link="/admin/campaigns" isHidden={cards.campaigns} />
+                            <ControlCard title="Community Hub" desc="Volunteer coordination and gig ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.community} />
+                            <ControlCard title="Creator Studio" desc="Influencer validation and mission management." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.influencer} />
                             <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
-                            <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew />
-                            <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew />
+                            <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew isHidden={cards.artists} />
+                            <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew isHidden={cards.mailing} />
                             {user.role !== 'editor' && (
-                                <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.members} />
+                                <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.admins} />
                             )}
-                            <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.inbox} />
+                            <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.messages} />
                         </DashboardSection>
                     )}
                 </div>

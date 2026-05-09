@@ -1,6 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Eye, Database, Bell } from 'lucide-react';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import Database from 'lucide-react/dist/esm/icons/database';
+import Bell from 'lucide-react/dist/esm/icons/bell';
 
 const Privacy = () => {
     return (
@@ -11,7 +14,7 @@ const Privacy = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-16 text-center"
                 >
-                    <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mb-6 uppercase">
+                    <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mb-6 uppercase pr-4">
                         Privacy <span className="text-neon-pink">Policy</span>
                     </h1>
                     <p className="text-gray-400 text-lg md:text-xl font-medium tracking-tight">

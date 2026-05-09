@@ -13,8 +13,9 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
     const typedRef = useRef(null);
 
     const handleSave = () => {
+        if (!typedName.trim()) return;
+
         if (activeTab === 'type') {
-            if (!typedName.trim()) return;
             // Convert typed text to image (simple canvas approach)
             const canvas = document.createElement('canvas');
             canvas.width = 600;
@@ -29,10 +30,10 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
             onSave(canvas.toDataURL('image/png'), typedName);
         } else if (activeTab === 'draw') {
             if (!drawnSignature) return;
-            onSave(drawnSignature, initialName);
+            onSave(drawnSignature, typedName);
         } else if (activeTab === 'upload') {
             if (!uploadedImage) return;
-            onSave(uploadedImage, initialName);
+            onSave(uploadedImage, typedName);
         }
         onClose();
     };
@@ -50,26 +51,41 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md">
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+                    className="w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
                 >
+                    <div className="overflow-y-auto">
                     {/* Header */}
-                    <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                    <div className="p-6 sm:p-8 border-b border-white/5 flex items-center justify-between">
                         <div className="space-y-1">
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">Digital Signature.</h3>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Select your preferred signing method</p>
+                            <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter italic">Digital Signature.</h3>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Authorize and execute this instrument</p>
                         </div>
-                        <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-full text-gray-500 hover:text-white transition-all">
-                            <X size={24} />
+                        <button onClick={onClose} className="p-2 sm:p-3 hover:bg-white/5 rounded-full text-gray-500 hover:text-white transition-all">
+                            <X size={20} className="sm:w-6 sm:h-6" />
                         </button>
                     </div>
 
+                    {/* Name Input - Always Visible */}
+                    <div className="px-6 sm:px-10 pt-4 sm:pt-8">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-neon-green uppercase tracking-[0.3em] pl-1">Signatory Full Name</label>
+                            <input
+                                type="text"
+                                value={typedName}
+                                onChange={(e) => setTypedName(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 h-12 sm:h-14 rounded-xl px-4 sm:px-6 text-lg sm:text-xl font-bold text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-white/10"
+                                placeholder="Legal name for record..."
+                            />
+                        </div>
+                    </div>
+
                     {/* Tabs */}
-                    <div className="flex border-b border-white/5">
+                    <div className="flex border-b border-white/5 mt-2 sm:mt-4">
                         {[
                             { id: 'type', label: 'Type', icon: Type },
                             { id: 'draw', label: 'Draw', icon: PenTool },
@@ -79,11 +95,11 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={cn(
-                                    "flex-1 py-6 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
+                                    "flex-1 py-4 sm:py-6 flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative",
                                     activeTab === tab.id ? "text-neon-green" : "text-gray-500 hover:text-gray-300"
                                 )}
                             >
-                                <tab.icon size={16} />
+                                <tab.icon size={14} className="sm:w-4 sm:h-4" />
                                 {tab.label}
                                 {activeTab === tab.id && (
                                     <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-neon-green" />
@@ -93,28 +109,20 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                     </div>
 
                     {/* Content */}
-                    <div className="p-10 min-h-[300px] flex flex-col justify-center">
+                    <div className="p-6 sm:p-10 min-h-[180px] sm:min-h-[250px] flex flex-col justify-center">
                         {activeTab === 'type' && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="space-y-4 text-center">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Type your full name</p>
-                                    <input
-                                        type="text"
-                                        value={typedName}
-                                        onChange={(e) => setTypedName(e.target.value)}
-                                        className="w-full bg-transparent border-b-2 border-white/10 h-20 text-center text-4xl sm:text-6xl font-signature text-white outline-none focus:border-neon-green/40 transition-all placeholder:text-white/5"
-                                        placeholder="John Doe"
-                                        autoFocus
-                                    />
-                                </div>
-                                <p className="text-center text-[10px] text-gray-500 italic">This will generate a secure digital signature in script font.</p>
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
+                                <p className="text-3xl sm:text-6xl font-signature text-white min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
+                                    {typedName || "Preview"}
+                                </p>
+                                <p className="text-[10px] text-gray-500 italic">This font style will be used for your signature.</p>
                             </div>
                         )}
 
                         {activeTab === 'draw' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <SignaturePad onSave={(sig) => setDrawnSignature(sig)} onClear={() => setDrawnSignature(null)} />
-                                <p className="text-center text-[10px] text-gray-500 italic mt-6">Use your mouse or touch screen to draw your signature.</p>
+                                <p className="text-center text-[10px] text-gray-500 italic mt-6">Draw within the pad above.</p>
                             </div>
                         )}
 
@@ -147,19 +155,20 @@ const SignatureModal = ({ isOpen, onClose, onSave, initialName = '' }) => {
                             </div>
                         )}
                     </div>
-
+                    </div>
+                    
                     {/* Footer */}
-                    <div className="p-8 border-t border-white/5 flex gap-4">
+                    <div className="p-6 sm:p-8 border-t border-white/5 flex gap-3 sm:gap-4 bg-[#0a0a0a]">
                         <button 
                             onClick={onClose}
-                            className="flex-1 h-16 bg-white/5 text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all"
+                            className="flex-1 h-12 sm:h-16 bg-white/5 text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all"
                         >
                             Cancel
                         </button>
                         <Button 
                             onClick={handleSave}
-                            disabled={(activeTab === 'type' && !typedName.trim()) || (activeTab === 'draw' && !drawnSignature) || (activeTab === 'upload' && !uploadedImage)}
-                            className="flex-[2] h-16 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.2)] disabled:opacity-30"
+                            disabled={!typedName.trim() || (activeTab === 'draw' && !drawnSignature) || (activeTab === 'upload' && !uploadedImage)}
+                            className="flex-[2] h-12 sm:h-16 bg-neon-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.2)] disabled:opacity-30"
                         >
                             Confirm Signature
                         </Button>

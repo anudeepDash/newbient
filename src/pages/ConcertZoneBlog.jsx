@@ -1,19 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Search, 
-    ChevronRight, 
-    TrendingUp, 
-    Calendar, 
-    ArrowRight,
-    Play,
-    Newspaper,
-    Users,
-    BookOpen,
-    Music,
-    Zap
-} from 'lucide-react';
+import Search from 'lucide-react/dist/esm/icons/search';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Play from 'lucide-react/dist/esm/icons/play';
+import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
+import Users from 'lucide-react/dist/esm/icons/users';
+import BookOpen from 'lucide-react/dist/esm/icons/book-open';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 import { useStore } from '../lib/store';
 import BlogCard from '../components/blog/BlogCard';
 import BlogNewsletter from '../components/blog/BlogNewsletter';

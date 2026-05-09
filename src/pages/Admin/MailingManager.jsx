@@ -1,6 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { LayoutGrid, Send, Sparkles, Mail, Users, Monitor, Smartphone, Image as ImageIcon, ExternalLink, X, Upload, Loader, Link as LinkIcon } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Send from 'lucide-react/dist/esm/icons/send';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Monitor from 'lucide-react/dist/esm/icons/monitor';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import X from 'lucide-react/dist/esm/icons/x';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import LinkIcon from 'lucide-react/dist/esm/icons/link';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -97,10 +109,9 @@ const MailingManager = () => {
                 <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
+            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
                     <div className="space-y-4">
-                        <AdminDashboardLink className="mb-2" />
                         <div className="flex items-center gap-3">
                             <Sparkles size={16} className="text-neon-green" />
                             <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
@@ -108,6 +119,9 @@ const MailingManager = () => {
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
                             MAILING <span className="text-neon-green">MANAGEMENT.</span>
                         </h1>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 rounded-[2.5rem]">

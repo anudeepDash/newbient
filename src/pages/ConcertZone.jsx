@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Music, Instagram, Zap } from 'lucide-react';
+import Music from 'lucide-react/dist/esm/icons/music';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 
 const ConcertZone = () => {
     useEffect(() => {

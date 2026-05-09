@@ -4,12 +4,25 @@ import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Users, ArrowRight, Instagram, Youtube, Twitter, Globe, Camera, Activity, CheckCircle2, Loader2, RefreshCw, Zap, Upload } from 'lucide-react';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Camera from 'lucide-react/dist/esm/icons/camera';
+import Activity from 'lucide-react/dist/esm/icons/activity';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 const CreatorJoin = () => {
-    const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary } = useStore();
+    const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
 
     // Form State
@@ -33,13 +46,17 @@ const CreatorJoin = () => {
     const [hasJoined, setHasJoined] = useState(false);
 
     useEffect(() => {
-        if (user && creators) {
+        if (user && creators && !loading) {
             const existingProfile = creators.find(c => c.uid === user.uid);
             if (existingProfile) {
-                setHasJoined(true);
+                if (existingProfile.profileStatus === 'approved') {
+                    navigate('/creator-dashboard');
+                } else {
+                    setHasJoined(true);
+                }
             }
         }
-    }, [user, creators]);
+    }, [user, creators, loading, navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -92,7 +109,7 @@ const CreatorJoin = () => {
         }
     };
 
-    if (!authInitialized) {
+    if (!authInitialized || loading) {
         return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-blue" size={48} /></div>;
     }
 
@@ -108,7 +125,7 @@ const CreatorJoin = () => {
                     <div className="w-24 h-24 bg-neon-blue rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(46,191,255,0.3)]">
                         <CheckCircle2 size={48} className="text-black" />
                     </div>
-                    <h2 className="text-5xl font-black font-heading tracking-tighter uppercase mb-6 italic italic">APPLICATION SENT.</h2>
+                    <h2 className="text-5xl font-black font-heading tracking-tighter uppercase mb-6 italic pr-4">APPLICATION SENT.</h2>
                     <p className="text-gray-400 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Your creator profile is being analyzed by our team. You can now access your studio workspace.</p>
                     <button onClick={() => navigate('/creator-dashboard')} className="w-full h-20 rounded-2xl font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(255,255,255,0.1)] group">
                         Enter Creator Studio <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
@@ -145,7 +162,7 @@ const CreatorJoin = () => {
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white"
+                        className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white pr-4"
                     >
                         STUDIO <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">CERTIFICATION.</span>
                     </motion.h1>
@@ -276,7 +293,7 @@ const CreatorJoin = () => {
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue"><Instagram size={24} /></div>
                                             <div>
                                                 <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic text-neon-blue">Social Impact</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Analytics & Reach</p>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Analytics & Followers</p>
                                             </div>
                                         </div>
                                         <div className="space-y-10">

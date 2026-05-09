@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, User, Shield, Briefcase, Ticket, LogOut, ExternalLink, Settings, 
     Sparkles, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
-    Edit2, Loader2, Info, Instagram, ShieldCheck, CheckCircle2, 
+    Edit2, Loader2, Info, Instagram, ShieldCheck, 
     LayoutDashboard, CreditCard, History, ChevronRight, Image as ImageIcon
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -81,28 +81,6 @@ const ProfilePanel = ({ isOpen, onClose }) => {
         }
     };
 
-    const handleVerifySocials = async () => {
-        setIsUpdating(true);
-        try {
-            const token = await loginWithMeta();
-            const result = await verifyInstagramFollowers(user.uid, token);
-            if (result.success) {
-                addNotification({
-                    title: "Impact Synchronized",
-                    content: `Verified ${Number(result.followers).toLocaleString()} followers.`,
-                    type: 'message'
-                });
-            }
-        } catch (err) {
-            addNotification({
-                title: "Protocol Interrupted",
-                content: err.message || "Social verification failed.",
-                type: 'default'
-            });
-        } finally {
-            setIsUpdating(false);
-        }
-    };
 
     return (
         <AnimatePresence>
@@ -441,60 +419,6 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     </div>
                                                 </div>
 
-                                                {/* Creator Profile Specs */}
-                                                {isCreator && (
-                                                    <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-neon-blue/10 to-transparent border border-neon-blue/10 space-y-6 relative overflow-hidden">
-                                                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                                                            <Briefcase size={80} className="text-neon-blue" />
-                                                        </div>
-                                                        
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-xl bg-neon-blue/20 flex items-center justify-center text-neon-blue">
-                                                                <Sparkles size={18} />
-                                                            </div>
-                                                            <h4 className="text-[11px] font-black text-white uppercase tracking-widest italic">Creator Profile</h4>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-6 relative z-10">
-                                                            <div className="space-y-1.5">
-                                                                <span className="text-[8px] font-black text-neon-blue/60 uppercase tracking-widest">Base Operation</span>
-                                                                <p className="text-sm font-black text-white uppercase italic">{creatorProfile.city || 'UNDEFINED'}</p>
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <span className="text-[8px] font-black text-neon-blue/60 uppercase tracking-widest">Verified Reach</span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <p className="text-sm font-black text-white uppercase italic">
-                                                                        {Number(creatorProfile.instagramFollowers || 0).toLocaleString()}
-                                                                    </p>
-                                                                    {creatorProfile.instagramVerified && <CheckCircle2 size={12} className="text-neon-blue" />}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-3 pt-2">
-                                                            <button 
-                                                                onClick={handleVerifySocials}
-                                                                disabled={isUpdating || creatorProfile.instagramVerified}
-                                                                className={cn(
-                                                                    "flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg",
-                                                                    creatorProfile.instagramVerified 
-                                                                        ? "bg-neon-blue/20 text-neon-blue border border-neon-blue/30 cursor-default" 
-                                                                        : "bg-white text-black hover:bg-neon-blue hover:shadow-[0_0_20px_rgba(56,182,255,0.4)]"
-                                                                )}
-                                                            >
-                                                                {isUpdating ? <Loader2 size={14} className="animate-spin" /> : creatorProfile.instagramVerified ? <ShieldCheck size={16} /> : <Instagram size={16} />}
-                                                                {creatorProfile.instagramVerified ? 'Verified Account' : 'Verify Impact'}
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => { navigate('/creator'); onClose(); }}
-                                                                className="w-12 h-12 rounded-xl bg-black/40 border border-white/5 text-gray-500 hover:text-white transition-all flex items-center justify-center"
-                                                                title="Edit Profile"
-                                                            >
-                                                                <Edit2 size={18} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
                                                 {/* Logout Section */}
                                                 <div className="pt-8 border-t border-white/5">
                                                     <button 

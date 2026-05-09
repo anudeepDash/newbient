@@ -1,16 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCode, CheckCircle2, XCircle, AlertTriangle, ScanLine, ArrowLeft, Loader2, Users, Search, Maximize, Ticket } from 'lucide-react';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import ScanLine from 'lucide-react/dist/esm/icons/scan-line';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Maximize from 'lucide-react/dist/esm/icons/maximize';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { Html5Qrcode } from 'html5-qrcode';
-import { RefreshCw } from 'lucide-react';
 
 const EventScanner = () => {
-    const { upcomingEvents, scanTicket, user } = useStore();
+    const { upcomingEvents, portfolio = [], guestlists = [], scanTicket, user } = useStore();
+    const allOperationalEvents = [
+        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled) || []),
+        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled)) || []),
+        ...(guestlists || []).map(g => ({ ...g, isGuestlist: true }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
     const navigate = useNavigate();
     const [selectedEventId, setSelectedEventId] = useState('');
     const [scanResult, setScanResult] = useState(null); // { status: 'GREEN'|'RED'|'YELLOW', message: '', data: {} }
@@ -21,7 +36,7 @@ const EventScanner = () => {
     const scannerRef = useRef(null);
     const isTransitioning = useRef(false);
 
-    const activeEvent = upcomingEvents?.find(e => e.id === selectedEventId);
+    const activeEvent = allOperationalEvents.find(e => e.id === selectedEventId);
 
     useEffect(() => {
         let mounted = true;
@@ -209,7 +224,7 @@ const EventScanner = () => {
                     <div className="flex-1 flex flex-col gap-3 min-h-[300px]">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target Event</label>
                         <div className="flex flex-col gap-3">
-                            {upcomingEvents?.map(e => (
+                            {allOperationalEvents.map(e => (
                                 <button 
                                     key={e.id}
                                     onClick={() => { setSelectedEventId(e.id); setIsScanning(false); setScanResult(null); }}
@@ -220,10 +235,15 @@ const EventScanner = () => {
                                             : "bg-white/5 border-white/5 hover:bg-white/10"
                                     )}
                                 >
-                                    <h4 className={cn(
-                                        "text-sm font-black uppercase italic tracking-widest truncate",
-                                        selectedEventId === e.id ? "text-white" : "text-gray-400"
-                                    )}>{e.title}</h4>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h4 className={cn(
+                                            "text-sm font-black uppercase italic tracking-widest truncate",
+                                            selectedEventId === e.id ? "text-white" : "text-gray-400"
+                                        )}>{e.title}</h4>
+                                        {e.date && new Date(e.date) < new Date() && (
+                                            <span className="shrink-0 text-[7px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">Past</span>
+                                        )}
+                                    </div>
                                     <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mt-1">{new Date(e.date).toLocaleDateString()}</p>
                                     
                                     {selectedEventId === e.id && (

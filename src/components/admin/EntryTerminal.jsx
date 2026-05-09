@@ -1,11 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { 
-    QrCode, CheckCircle, XCircle, Loader, ShieldAlert, 
-    Zap, User, Ticket as TicketIcon, Search, 
-    Filter, Users, CheckCircle2, LayoutGrid, X, 
-    ArrowRight, Info, HardDrive, Lock
-} from 'lucide-react';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import XCircle from 'lucide-react/dist/esm/icons/x-circle';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import User from 'lucide-react/dist/esm/icons/user';
+import TicketIcon from 'lucide-react/dist/esm/icons/ticket';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import Users from 'lucide-react/dist/esm/icons/users';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import X from 'lucide-react/dist/esm/icons/x';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import Info from 'lucide-react/dist/esm/icons/info';
+import HardDrive from 'lucide-react/dist/esm/icons/hard-drive';
+import Lock from 'lucide-react/dist/esm/icons/lock';
+import Download from 'lucide-react/dist/esm/icons/download';
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -26,22 +39,23 @@ const EntryTerminal = ({ eventId }) => {
     
     // Find linked guestlist
     const gl = guestlists.find(g => g.eventId === eventId || g.linkedEventId === eventId);
+    const glId = gl?.id || eventId;
 
     // Fetch entries in real-time
     useEffect(() => {
-        if (!gl?.id) {
+        if (!glId) {
             setLoading(false);
             return;
         }
 
-        const q = query(collection(db, 'guestlists', gl.id, 'entries'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'guestlists', glId, 'entries'), orderBy('createdAt', 'desc'));
         const unsub = onSnapshot(q, (snap) => {
             const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             setEntries(data);
             setLoading(false);
         });
         return unsub;
-    }, [gl?.id]);
+    }, [glId]);
 
     // Filter ticket orders for this event from global store
     const tickets = React.useMemo(() => {
@@ -106,6 +120,30 @@ const EntryTerminal = ({ eventId }) => {
         }
     };
 
+    const handleDownloadAttendeeList = () => {
+        const allEntries = [
+            ...entries.map(e => ({ name: e.customerName, email: e.customerEmail, type: 'Guestlist', ref: e.bookingRef, status: e.attended ? 'Attended' : 'Registered' })),
+            ...tickets.map(t => ({ name: t.customerName, email: t.customerEmail, type: 'Ticket', ref: t.bookingRef, status: t.attended ? 'Attended' : 'Paid' }))
+        ];
+
+        if (allEntries.length === 0) {
+            useStore.getState().addToast("No data to export.", 'error');
+            return;
+        }
+
+        const headers = ["Name", "Email", "Type", "Reference", "Status"];
+        const rows = allEntries.map(e => [e.name, e.email, e.type, e.ref, e.status]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Attendee_List_${eventId}.csv`);
+        link.click();
+        useStore.getState().addToast("Attendee list downloaded.", 'success');
+    };
+
     const filteredEntries = entries.filter(e => 
         e.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -160,7 +198,7 @@ const EntryTerminal = ({ eventId }) => {
         <div className="space-y-10 py-8">
             {/* TERMINAL HEADER & STATS */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-                <Card className="lg:col-span-2 p-10 bg-zinc-900/40 border-white/5 rounded-[3rem] flex flex-col justify-center space-y-6">
+                <Card className="lg:col-span-2 p-10 bg-zinc-900/40 border-white/5 rounded-[3rem] flex flex-col md:flex-row items-center justify-between gap-8">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
                             <HardDrive size={24} />
@@ -170,6 +208,9 @@ const EntryTerminal = ({ eventId }) => {
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{gl?.title || 'GENERAL ACCESS'}</p>
                         </div>
                     </div>
+                    <Button onClick={handleDownloadAttendeeList} variant="outline" className="h-14 px-8 rounded-2xl border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <Download size={16} /> DOWNLOAD LIST
+                    </Button>
                 </Card>
 
                 <Card className="p-10 bg-black/40 border-white/10 rounded-[3rem] flex justify-between items-center group overflow-hidden relative">

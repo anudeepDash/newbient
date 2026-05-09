@@ -1,6 +1,34 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Loader, Sparkles, Clock, MapPin, IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music, RotateCcw } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Edit from 'lucide-react/dist/esm/icons/edit';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Loader from 'lucide-react/dist/esm/icons/loader';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import X from 'lucide-react/dist/esm/icons/x';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Ticket from 'lucide-react/dist/esm/icons/ticket';
+import Link2 from 'lucide-react/dist/esm/icons/link-2';
+import Copy from 'lucide-react/dist/esm/icons/copy';
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Radio from 'lucide-react/dist/esm/icons/radio';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import Music from 'lucide-react/dist/esm/icons/music';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -47,15 +75,17 @@ const UpcomingEventsManager = () => {
         doorsOpen: '',
         performanceType: 'LIVE SHOW',
         highlightColor: '#2ebfff',
+        ticketingDescription: '',
+        ticketingRules: '',
     });
     const [artistsInput, setArtistsInput] = useState('');
     const [venueLayoutFile, setVenueLayoutFile] = useState(null);
 
     const coreContentTabs = [
-        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar },
-        { name: 'Announcements', path: '/admin/announcements', icon: Radio },
-        { name: 'Blog', path: '/admin/blog', icon: FileText },
-        { name: 'Portfolio', path: '/admin/concertzone', icon: Music },
+        { name: 'Upcoming', path: '/admin/upcoming-events', icon: Calendar, color: 'text-neon-green' },
+        { name: 'Announcements', path: '/admin/announcements', icon: Radio, color: 'text-neon-pink' },
+        { name: 'Blog', path: '/admin/blog', icon: FileText, color: 'text-neon-blue' },
+        { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
     ];
 
     const resetForm = () => {
@@ -63,7 +93,8 @@ const UpcomingEventsManager = () => {
             title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
             isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
-            artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff'
+            artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff',
+            ticketingDescription: '', ticketingRules: ''
         });
         setArtistsInput('');
         setActiveEditorTab('basics');
@@ -431,6 +462,27 @@ const UpcomingEventsManager = () => {
                                                                             ))}
                                                                         </div>
                                                                     </div>
+                                                                    
+                                                                    <div className="space-y-6 pt-8 border-t border-white/5">
+                                                                        <div className="space-y-3">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticketing Overview Description</label>
+                                                                            <textarea 
+                                                                                placeholder="Custom message for the first page of the ticketing modal..." 
+                                                                                value={newEvent.ticketingDescription} 
+                                                                                onChange={e => setNewEvent({...newEvent, ticketingDescription: e.target.value})}
+                                                                                className="w-full min-h-[100px] bg-black/50 border border-white/5 rounded-2xl p-6 text-[10px] font-medium text-white focus:border-neon-green/40 outline-none transition-all"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-3">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticketing Rules & Information</label>
+                                                                            <textarea 
+                                                                                placeholder="Age limits, prohibited items, cancellation policy, etc..." 
+                                                                                value={newEvent.ticketingRules} 
+                                                                                onChange={e => setNewEvent({...newEvent, ticketingRules: e.target.value})}
+                                                                                className="w-full min-h-[100px] bg-black/50 border border-white/5 rounded-2xl p-6 text-[10px] font-medium text-white focus:border-neon-green/40 outline-none transition-all"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                             
@@ -458,7 +510,7 @@ const UpcomingEventsManager = () => {
                                                             >
                                                                 Abort
                                                             </button>
-                                                            <Button type="submit" disabled={uploading} className="h-16 px-12 sm:px-24 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(0,255,255,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
+                                                            <Button type="submit" disabled={uploading} className="h-14 px-12 sm:px-24 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(0,255,255,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
                                                                 {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'COMMIT CHANGES' : 'DEPLOY EVENT')}
                                                             </Button>
                                                         </div>

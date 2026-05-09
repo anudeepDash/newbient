@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LayoutGrid, Save, Users, Globe, Settings, Bell, Shield, Sparkles, Zap, Heart, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Save from 'lucide-react/dist/esm/icons/save';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Globe from 'lucide-react/dist/esm/icons/globe';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Bell from 'lucide-react/dist/esm/icons/bell';
+import Shield from 'lucide-react/dist/esm/icons/shield';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import Mail from 'lucide-react/dist/esm/icons/mail';
+import Phone from 'lucide-react/dist/esm/icons/phone';
+import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -39,14 +54,16 @@ const SiteContentManager = () => {
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div className="space-y-2">
-                        <AdminDashboardLink className="mb-4" />
                         <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
                             SITE <span className="text-neon-green">CONFIG.</span>
                         </h1>
+                        <div className="pt-4">
+                            <AdminDashboardLink />
+                        </div>
                     </div>
                 </div>
 
@@ -106,7 +123,7 @@ const SiteContentManager = () => {
                         </Card>
                     </section>
 
-                    {/* System Intelligence */}
+                    {/* Feature Control */}
                     <section>
                         <div className="flex items-center gap-4 mb-8">
                             <h2 className="text-xl font-black font-heading tracking-tight uppercase italic text-neon-green">Feature Control</h2>

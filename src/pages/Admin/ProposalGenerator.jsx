@@ -1,6 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, LayoutGrid, Download, RefreshCw, X, FileSpreadsheet, Send, FileText, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Target, Users, Zap, Briefcase, CreditCard, ShieldCheck, Eye, EyeOff, Settings, Building2, Layers, Image as ImageIcon, ClipboardList, Undo2, Upload, Sparkles, Cpu, PenTool } from 'lucide-react';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Save from 'lucide-react/dist/esm/icons/save';
+import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
+import Download from 'lucide-react/dist/esm/icons/download';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import X from 'lucide-react/dist/esm/icons/x';
+import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
+import Send from 'lucide-react/dist/esm/icons/send';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import Target from 'lucide-react/dist/esm/icons/target';
+import Users from 'lucide-react/dist/esm/icons/users';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import Settings from 'lucide-react/dist/esm/icons/settings';
+import Building2 from 'lucide-react/dist/esm/icons/building-2';
+import Layers from 'lucide-react/dist/esm/icons/layers';
+import ImageIcon from 'lucide-react/dist/esm/icons/image';
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2';
+import Upload from 'lucide-react/dist/esm/icons/upload';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Cpu from 'lucide-react/dist/esm/icons/cpu';
+import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -406,7 +437,7 @@ const ProposalGenerator = () => {
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
-                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Strategic Command</p>
+                        <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
                     </div>
                 </div>
 
@@ -616,7 +647,7 @@ const ProposalGenerator = () => {
                                                 value={formData.primaryGoal} 
                                                 onChange={val => setFormData({...formData, primaryGoal: val})} 
                                                 className={isHidden('primaryGoal') ? 'opacity-30' : ''} 
-                                                placeholder="Strategic / Tactical Goal" 
+                                                placeholder="Project Goal" 
                                                 minHeight="120px" 
                                                 accentColor="neon-green"
                                             />
@@ -942,12 +973,12 @@ const ProposalGenerator = () => {
                                             <div className="h-full flex flex-col justify-start space-y-20 py-8">
                                                 <div className="grid grid-cols-2 gap-10">
                                                     <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{formData.clientName || 'Valued Partner'}</h2>{!isHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{formData.clientAddress || 'Client Address'}</p>}</div></div>
-                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Engagement Mission</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Mission Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
+                                                    <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{formData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {formData.campaignDuration || 'TBD'}</p></div></div>
                                                 </div>
                                                 <div className="pt-16 space-y-10">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-1 bg-black" />
-                                                        <p className="text-[11px] font-black uppercase tracking-[0.6em]">Strategic Project Memorandum</p>
+                                                        <p className="text-[11px] font-black uppercase tracking-[0.6em]">Project Overview</p>
                                                     </div>
                                                     {!isHidden('coverDescription') && (
                                                         <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
@@ -955,7 +986,7 @@ const ProposalGenerator = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                                <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{formData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Business Proposal</p></div></div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
@@ -973,7 +1004,7 @@ const ProposalGenerator = () => {
                                                     <div className="pt-16 p-12 bg-zinc-50 border border-gray-100 rounded-3xl space-y-6">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-[2px] bg-black" />
-                                                            <p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Engagement Mission</p>
+                                                            <p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Project Details</p>
                                                         </div>
                                                         <div className="text-2xl font-black text-black leading-tight italic tracking-tight">{renderContent(formData.primaryGoal)}</div>
                                                     </div>

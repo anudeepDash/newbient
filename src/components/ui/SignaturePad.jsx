@@ -34,6 +34,7 @@ const SignaturePad = ({ onSave, onClear }) => {
 
     const stopDrawing = () => {
         setIsDrawing(false);
+        save();
     };
 
     const getCoordinates = (e) => {
@@ -60,8 +61,19 @@ const SignaturePad = ({ onSave, onClear }) => {
     };
 
     const save = () => {
-        if (!hasContent) return;
-        const dataURL = canvasRef.current.toDataURL('image/png');
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        
+        // Only save if it's not empty
+        const pixelData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const isEmpty = !pixelData.some(channel => channel !== 0);
+        
+        if (isEmpty) {
+            if (onClear) onClear();
+            return;
+        }
+
+        const dataURL = canvas.toDataURL('image/png');
         onSave(dataURL);
     };
 
@@ -72,7 +84,7 @@ const SignaturePad = ({ onSave, onClear }) => {
                     ref={canvasRef}
                     width={500}
                     height={200}
-                    className="w-full h-[200px] touch-none"
+                    className="w-full h-[160px] sm:h-[200px] touch-none"
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}
@@ -91,16 +103,9 @@ const SignaturePad = ({ onSave, onClear }) => {
             <div className="flex gap-3">
                 <button 
                     onClick={clear}
-                    className="flex-1 h-12 bg-zinc-900 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all"
+                    className="w-full h-10 sm:h-12 bg-zinc-900 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all"
                 >
-                    <Eraser size={14} /> Clear
-                </button>
-                <button 
-                    onClick={save}
-                    disabled={!hasContent}
-                    className="flex-1 h-12 bg-purple-500 text-black rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
-                >
-                    <Check size={14} /> Capture Signature
+                    <Eraser size={14} /> Clear Drawing
                 </button>
             </div>
         </div>
