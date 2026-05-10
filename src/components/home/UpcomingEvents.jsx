@@ -6,7 +6,8 @@ import { Calendar, MapPin, ArrowRight, Share2, Ticket, ChevronLeft, ChevronRight
 import { Link } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import EventTicketingModal from '../tickets/EventTicketingModal';
-import CommunityCard from '../community/CommunityCard';
+import EventHubModal from '../community/EventHubModal';
+import EventCard from '../community/EventCard';
 
 const UpcomingEvents = () => {
     const { upcomingEvents, siteSettings, maintenanceState, giveaways, user, setAuthModal } = useStore();
@@ -223,47 +224,18 @@ const UpcomingEvents = () => {
                                 );
                             }
                             
-                            const handleCardClick = () => {
-                                // Unified Modal for Tickets or Guestlist
-                                if (event.isTicketed || event.isGuestlistEnabled) {
-                                    if (event.isTicketed && maintenanceState.features?.tickets) {
-                                        useStore.getState().addToast("Ticketing is currently paused for maintenance.", 'error');
-                                        return;
-                                    }
-                                    if (event.isGuestlistEnabled && !event.isTicketed && !user) {
-                                        setAuthModal(true);
-                                        return;
-                                    }
-                                    setSelectedEvent(event);
-                                    setIsModalOpen(true);
-                                    return;
-                                } 
-                                
-                                // LINK/GATEWAY FLOW: Fallback for generic links
-                                if (event.link || event.gatewayUrl) {
-                                    window.open(event.link || event.gatewayUrl, '_blank', 'noreferrer');
-                                    return;
-                                } 
-                                
-                                // FINAL FALLBACK: Giveaway or Alert
-                                if (linkedGiveaway) {
-                                    window.location.href = `/giveaway/${linkedGiveaway.slug}`;
-                                } else {
-                                    useStore.getState().addToast("No active protocol defined for this event.", 'error');
-                                }
+                             const handleCardClick = () => {
+                                // Always open the Hub Modal now
+                                setSelectedEvent(event);
+                                setIsModalOpen(true);
                             };
 
                             return (
                                 <div key={event.id} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
                                     <div className="block w-full h-full relative cursor-default group">
-                                        <CommunityCard 
-                                            type="event"
-                                            item={{
-                                                ...event,
-                                                isTicketed: event.isTicketed,
-                                                isGuestlistEnabled: event.isGuestlistEnabled
-                                            }}
-                                            handleShare={(type, id) => handleShare({ preventDefault: () => {}, stopPropagation: () => {} }, event)}
+                                        <EventCard 
+                                            item={event}
+                                            handleShare={() => handleShare({ preventDefault: () => {}, stopPropagation: () => {} }, event)}
                                             onAction={() => handleCardClick(event)}
                                         />
                                     </div>
@@ -274,7 +246,7 @@ const UpcomingEvents = () => {
                 </div>
             </div>
 
-            <EventTicketingModal
+            <EventHubModal
                 event={selectedEvent}
                 isOpen={isModalOpen}
                 onClose={() => {

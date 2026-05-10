@@ -125,6 +125,24 @@ const GiveawayManager = () => {
         }
     };
 
+    const handlePaste = (e, type) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (type === 'poster') {
+                    setSelectedFile(file);
+                    useStore.getState().addToast("POSTER_CAPTURED_FROM_CLIPBOARD", 'success');
+                } else if (type === 'venueLayout') {
+                    setVenueLayoutFile(file);
+                    useStore.getState().addToast("LAYOUT_CAPTURED_FROM_CLIPBOARD", 'success');
+                }
+                e.preventDefault();
+            }
+        }
+    };
+
     const handleExportCSV = (campaignId, campaignName) => {
         const participants = giveawayEntries.filter(e => e.campaignId === campaignId);
         if (participants.length === 0) {
@@ -485,8 +503,25 @@ const GiveawayManager = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Poster URL (Optional)</label>
-                                            <Input value={formData.posterUrl} onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} placeholder="Cloudinary Link" className="h-12 bg-black/50 border-white/5 rounded-xl" />
+                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Poster Asset (URL OR CTRL+V)</label>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="md:col-span-2">
+                                                    <Input 
+                                                        value={formData.posterUrl} 
+                                                        onChange={e => setFormData({ ...formData, posterUrl: e.target.value })} 
+                                                        onPaste={(e) => handlePaste(e, 'poster')}
+                                                        placeholder="Cloudinary Link or Paste" 
+                                                        className="h-12 bg-black/50 border-white/5 rounded-xl text-sm font-bold" 
+                                                    />
+                                                </div>
+                                                <div className="relative group">
+                                                    <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                    <div className={cn("h-12 border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-purple-500/30 transition-all", selectedFile && "border-purple-500/50 bg-purple-500/5")}>
+                                                        <Sparkles className={cn("text-gray-500 group-hover:text-purple-500", selectedFile && "text-purple-500")} size={14} />
+                                                        <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Giveaway Type</label>

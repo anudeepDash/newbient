@@ -70,6 +70,28 @@ const GuestlistManager = () => {
         externalLink: ''
     });
 
+    const handlePaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setIsUploading(true);
+                try {
+                    const url = await uploadToCloudinary(file);
+                    setFormData(prev => ({ ...prev, image: url }));
+                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                } catch (error) {
+                    console.error("Upload failed:", error);
+                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                } finally {
+                    setIsUploading(false);
+                }
+                e.preventDefault();
+            }
+        }
+    };
+
     const resetForm = () => {
         setFormData({ 
             title: '', date: '', location: '', description: '', status: 'Open', maxSpots: 100, currentSpots: 0, perUserLimit: 2,
@@ -311,7 +333,8 @@ const GuestlistManager = () => {
                                                     <Input 
                                                         value={formData.image} 
                                                         onChange={e => setFormData({ ...formData, image: e.target.value })} 
-                                                        placeholder="URL" 
+                                                        onPaste={handlePaste}
+                                                        placeholder="URL OR CTRL+V IMAGE" 
                                                         className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-blue/40" 
                                                     />
                                                     <div className="relative group w-14 h-14 shrink-0">
@@ -526,7 +549,7 @@ const GuestlistManager = () => {
                                         <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
                                             <Button 
                                                 variant="outline" 
-                                                onClick={() => navigate(`/admin/ticketing?eventId=${gl.id}`)}
+                                                onClick={() => navigate(`/admin/ticketing?eventId=${gl.id}&tab=guestlist`)}
                                                 className="w-full h-14 rounded-2xl border-white/5 bg-neon-blue/10 text-neon-blue hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4 group/btn shadow-lg"
                                             >
                                                 <UserCheck size={26} className="group-hover/btn:scale-110 transition-transform" />

@@ -525,8 +525,32 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 className="relative w-full max-w-xl bg-[#0a0a0a] lg:border-l border-white/10 h-[100dvh] lg:h-full overflow-hidden flex flex-col shadow-[-50px_0_100px_rgba(0,0,0,0.5)]"
             >
+                {/* Thumbnail */}
+                <div className="aspect-video relative overflow-hidden bg-black shrink-0">
+                    {campaign.thumbnail ? (
+                        <img 
+                            src={campaign.thumbnail} 
+                            alt={campaign.title} 
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                            <span className="text-[10px] font-black text-white/5 uppercase tracking-[0.5em] italic">Mission Asset</span>
+                        </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
+                    
+                    {/* Floating Close Button */}
+                    <button 
+                        onClick={onClose} 
+                        className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all z-10 shadow-2xl"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
                 {/* Panel Header */}
-                <div className="px-6 md:px-10 pt-8 md:pt-12 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
+                <div className="px-6 md:px-10 pt-10 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
                     <div className="flex items-start justify-between gap-6 mb-8">
                         <div className="flex-1 min-w-0">
                             <span className="text-[9px] md:text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-60">Creator Workspace</span>
@@ -560,9 +584,6 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                                 )}
                             </div>
                         </div>
-                        <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all shrink-0 border border-white/10">
-                            <X size={20} />
-                        </button>
                     </div>
 
                     {/* Quick Specs Row */}

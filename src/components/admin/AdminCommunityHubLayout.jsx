@@ -17,7 +17,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     const tabs = customTabs || defaultTabs;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 md:pt-48 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-[#020202] text-white pt-32 md:pt-48 pb-20 relative overflow-x-clip">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className={cn("absolute top-0 right-0 w-[50%] h-[50%] rounded-full blur-[120px] animate-pulse", `bg-${accentColor}/5`)} />

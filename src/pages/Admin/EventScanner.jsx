@@ -15,19 +15,23 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { Html5Qrcode } from 'html5-qrcode';
 
 const EventScanner = () => {
     const { upcomingEvents, portfolio = [], guestlists = [], scanTicket, user } = useStore();
+    const [searchParams] = useSearchParams();
+    const eventIdFromUrl = searchParams.get('eventId');
+
     const allOperationalEvents = [
         ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled) || []),
         ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled)) || []),
         ...(guestlists || []).map(g => ({ ...g, isGuestlist: true }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
     const navigate = useNavigate();
-    const [selectedEventId, setSelectedEventId] = useState('');
+    const [selectedEventId, setSelectedEventId] = useState(eventIdFromUrl || '');
     const [scanResult, setScanResult] = useState(null); // { status: 'GREEN'|'RED'|'YELLOW', message: '', data: {} }
     const [isScanning, setIsScanning] = useState(false);
     const [manualCode, setManualCode] = useState('');

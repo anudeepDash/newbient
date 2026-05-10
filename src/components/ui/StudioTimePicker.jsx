@@ -8,14 +8,24 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
     const containerRef = useRef(null);
 
     // Initial value processing (HH:mm)
-    const [hours, setHours] = useState(value ? value.split(':')[0] : '12');
-    const [minutes, setMinutes] = useState(value ? value.split(':')[1] : '00');
+    const [hours, setHours] = useState(() => {
+        if (!value || typeof value !== 'string') return '12';
+        const parts = value.split(':');
+        return parts[0] || '12';
+    });
+    const [minutes, setMinutes] = useState(() => {
+        if (!value || typeof value !== 'string') return '00';
+        const parts = value.split(':');
+        return parts[1] || '00';
+    });
 
     useEffect(() => {
-        if (value) {
-            const [h, m] = value.split(':');
-            setHours(h);
-            setMinutes(m);
+        if (value && typeof value === 'string') {
+            const parts = value.split(':');
+            if (parts.length >= 2) {
+                setHours(parts[0]);
+                setMinutes(parts[1]);
+            }
         }
     }, [value]);
 
@@ -78,11 +88,11 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
                         <div className="flex items-center justify-around">
                             {/* Hours */}
                             <div className="flex flex-col items-center gap-2">
-                                <button onClick={() => adjustValue('hours', 1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('hours', 1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronUp size={20} />
                                 </button>
                                 <span className="text-3xl font-black italic tracking-tighter text-white font-heading">{hours}</span>
-                                <button onClick={() => adjustValue('hours', -1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('hours', -1)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronDown size={20} />
                                 </button>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">HOURS</span>
@@ -92,11 +102,11 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
 
                             {/* Minutes */}
                             <div className="flex flex-col items-center gap-2">
-                                <button onClick={() => adjustValue('minutes', 5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('minutes', 5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronUp size={20} />
                                 </button>
                                 <span className="text-3xl font-black italic tracking-tighter text-white font-heading">{minutes}</span>
-                                <button onClick={() => adjustValue('minutes', -5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
+                                <button type="button" onClick={() => adjustValue('minutes', -5)} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-neon-pink transition-all">
                                     <ChevronDown size={20} />
                                 </button>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">MINS</span>
@@ -105,6 +115,7 @@ const StudioTimePicker = ({ value, onChange, placeholder = "SET TIME", className
 
                         <div className="mt-6 pt-6 border-t border-white/5 flex justify-center">
                             <button 
+                                type="button"
                                 onClick={() => setIsOpen(false)}
                                 className="h-10 px-6 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-white rounded-xl transition-all"
                             >

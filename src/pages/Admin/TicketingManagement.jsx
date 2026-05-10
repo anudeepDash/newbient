@@ -23,6 +23,8 @@ import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EntryTerminal from '../../components/admin/EntryTerminal';
+import { db } from '../../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 const TicketingManagement = () => {
     const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user } = useStore();
@@ -35,13 +37,40 @@ const TicketingManagement = () => {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [isUploading, setIsUploading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [guestlistEntries, setGuestlistEntries] = useState([]);
+    const [glLoading, setGlLoading] = useState(false);
 
     useEffect(() => {
         const eventId = searchParams.get('eventId');
         if (eventId) {
             setSelectedEventId(eventId);
+            // Default to guestlist tab if requested
+            if (searchParams.get('tab') === 'guestlist') {
+                setActiveTab('guestlist');
+            }
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (!selectedEventId) return;
+        
+        setGlLoading(true);
+        // Find if this is a standalone guestlist or linked to an event
+        const gl = (useStore.getState().guestlists || []).find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
+        const targetId = gl?.id || selectedEventId;
+
+        const q = query(collection(db, 'guestlists', targetId, 'entries'), orderBy('createdAt', 'desc'));
+        const unsub = onSnapshot(q, (snap) => {
+            const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            setGuestlistEntries(data);
+            setGlLoading(false);
+        }, (err) => {
+            console.error(err);
+            setGlLoading(false);
+        });
+
+        return unsub;
+    }, [selectedEventId]);
 
     const operationalEvents = [
         ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
@@ -183,36 +212,45 @@ const TicketingManagement = () => {
     };
 
     const downloadSheets = () => {
-        // Simple CSV generation for ticket orders
-        if (eventOrders.length === 0) {
+        // CSV generation for both tickets and guestlist
+        if (eventOrders.length === 0 && guestlistEntries.length === 0) {
             useStore.getState().addToast("No data to export.", 'error');
             return;
         }
 
-        const headers = ["Customer Name", "Email", "Phone", "Status", "Items", "Total Amount", "Payment Ref", "Booking Ref", "Created At"];
-        const rows = eventOrders.map(o => [
-            o.customerName,
-            o.customerEmail,
-            o.customerPhone,
-            o.status,
-            o.items?.map(i => `${i.count}x ${i.name}`).join(' | '),
-            o.totalAmount,
-            o.paymentRef,
-            o.bookingRef,
-            o.createdAt
-        ]);
+        const headers = ["Name", "Email", "Type", "Status", "Details", "Booking Ref", "Created At"];
+        const rows = [
+            ...eventOrders.map(o => [
+               o.customerName,
+               o.customerEmail,
+               "Ticket",
+               o.status,
+               o.items?.map(i => `${i.count}x ${i.name}`).join(' | '),
+               o.bookingRef,
+               o.createdAt
+            ]),
+            ...guestlistEntries.map(e => [
+               e.customerName || e.name,
+               e.customerEmail || e.email,
+               "Guestlist",
+               e.attended ? "Attended" : "Registered",
+               `${e.guestsCount || 1} Guest(s)`,
+               e.bookingRef,
+               e.createdAt
+            ])
+        ];
 
         const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `${event.title.replace(/\s+/g, '_')}_Ticketing_Report.csv`);
+        link.setAttribute("download", `${event?.title?.replace(/\s+/g, '_') || 'Event'}_Operations_Report.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        useStore.getState().addToast("Ticketing CSV Downloaded.", 'success');
+        useStore.getState().addToast("Operations Report Downloaded.", 'success');
     };
 
     return (
@@ -237,10 +275,11 @@ const TicketingManagement = () => {
                 </div>
 
                 <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
-                    <div className="flex gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
-                        {['buyers', 'dispatch', 'attendance', 'sheets'].map((tab) => {
-                            if (isScanner && (tab === 'buyers' || tab === 'dispatch')) return null; 
+                     <div className="flex gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
+                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'sheets'].map((tab) => {
+                            if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist')) return null; 
                             if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch')) return null;
+                            if (!(event?.isGuestlistEnabled || event?.guestlistEnabled) && tab === 'guestlist') return null;
                             return (
                                 <button
                                     key={tab}
@@ -252,7 +291,7 @@ const TicketingManagement = () => {
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    {tab === 'buyers' ? 'Buyers List' : tab === 'dispatch' ? 'Dispatch Center' : tab === 'attendance' ? 'Attendance' : 'Sheets & Analytics'}
+                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : 'Sheets'}
                                 </button>
                             );
                         })}
@@ -260,6 +299,86 @@ const TicketingManagement = () => {
                 </div>
 
                 <AnimatePresence mode="wait">
+                    {/* GUESTLIST TAB */}
+                    {activeTab === 'guestlist' && !isScanner && (
+                        <motion.div key="guestlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                            <Card className="p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
+                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-black/40">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="relative">
+                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                            <Input 
+                                                placeholder="SEARCH GUESTS..." 
+                                                value={searchQuery}
+                                                onChange={e => setSearchQuery(e.target.value)}
+                                                className="h-14 pl-14 w-64 bg-black/60 border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="px-6 py-3 bg-white/5 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase border border-white/10">
+                                        {guestlistEntries.length} Entries
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                <th className="p-8 font-medium">Guest Details</th>
+                                                <th className="p-8 font-medium">Guests</th>
+                                                <th className="p-8 font-medium">Booking Ref</th>
+                                                <th className="p-8 font-medium">Attendance</th>
+                                                <th className="p-8 font-medium text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-sm">
+                                            {guestlistEntries.length > 0 ? guestlistEntries.filter(e => 
+                                                !searchQuery || 
+                                                (e.customerName || e.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                                e.bookingRef?.includes(searchQuery)
+                                            ).map((entry) => (
+                                                <tr key={entry.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                    <td className="p-8">
+                                                        <p className="font-black text-white text-base tracking-tight">{entry.customerName || entry.name}</p>
+                                                        <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1 italic">{entry.customerEmail || entry.email}</p>
+                                                    </td>
+                                                    <td className="p-8">
+                                                        <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-4 py-2 rounded-xl border border-neon-blue/20">
+                                                            {entry.guestsCount || 1} GUEST(S)
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-8 font-mono text-[11px] text-gray-400 bg-black/20">{entry.bookingRef}</td>
+                                                    <td className="p-8">
+                                                        {entry.attended ? (
+                                                            <div className="flex items-center gap-2 text-neon-green">
+                                                                <CheckCircle2 size={14} />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest">Attended</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 text-gray-600">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest">Pending</span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-8 text-right">
+                                                        <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="5" className="p-20 text-center text-gray-500 bg-black/20">
+                                                        <Users size={64} className="mx-auto mb-6 opacity-20" />
+                                                        <p className="text-xs font-black uppercase tracking-[0.4em]">No guestlist entries yet.</p>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    )}
+
                     {/* BUYERS LIST TAB */}
                     {activeTab === 'buyers' && !isScanner && (
                         <motion.div key="buyers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>

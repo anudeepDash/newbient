@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { loginWithMeta } from '../lib/metaSDK';
 
 const ProfilePanel = ({ isOpen, onClose }) => {
-    const { user, logout, creators, addNotification, resetPassword, updateDisplayName, verifyInstagramFollowers, ticketOrders, notifications } = useStore();
+    const { user, logout, creators, artists, addNotification, resetPassword, updateDisplayName, verifyInstagramFollowers, ticketOrders, notifications } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
     const [isUpdating, setIsUpdating] = useState(false);
@@ -24,6 +24,11 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const creatorProfile = creators?.find(c => c.uid === user.uid);
     const isCreator = !!creatorProfile;
     const isApprovedCreator = creatorProfile?.profileStatus === 'approved';
+
+    const artistProfile = artists?.find(a => a.uid === user.uid);
+    const isArtist = !!artistProfile;
+    const isApprovedArtist = artistProfile?.profileStatus === 'approved';
+
     const userTickets = ticketOrders?.filter(order => order.userId === user.uid) || [];
 
     const tabs = [
@@ -141,17 +146,39 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                             {user.displayName || 'Member'}
                                         </h3>
                                         {isApprovedCreator && <ShieldCheck size={16} className="text-neon-blue" />}
+                                        {isApprovedArtist && <Sparkles size={16} className="text-[#FF6B6B]" />}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className={cn(
-                                            "text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border",
-                                            user.role === 'developer' ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                            user.role === 'super_admin' ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" :
-                                            isApprovedCreator ? "bg-neon-green/10 text-neon-green border-neon-green/20" :
-                                            "bg-white/5 text-gray-500 border-white/5"
-                                        )}>
-                                            {user.role === 'developer' ? 'DEVELOPER' : (user.role === 'super_admin' ? 'SYSTEM ADMIN' : (isApprovedCreator ? 'VERIFIED CREATOR' : 'MEMBER'))}
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {user.role === 'developer' && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-red-500/10 text-red-500 border-red-500/20">
+                                                    DEVELOPER
+                                                </span>
+                                            )}
+                                            {user.role === 'super_admin' && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
+                                                    SYSTEM ADMIN
+                                                </span>
+                                            )}
+                                            {isApprovedCreator && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-green/10 text-neon-green border-neon-green/20">
+                                                    VERIFIED CREATOR
+                                                </span>
+                                            )}
+                                            {isApprovedArtist && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FF6B6B]/10 text-[#FF6B6B] border-[#FF6B6B]/20">
+                                                    VERIFIED ARTIST
+                                                </span>
+                                            )}
+                                            {user.hasJoinedTribe && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
+                                                    TRIBE MEMBER
+                                                </span>
+                                            )}
+                                            {(!isApprovedCreator && !isApprovedArtist && !user.hasJoinedTribe && user.role !== 'developer' && user.role !== 'super_admin') && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-white/5 text-gray-500 border-white/5">
+                                                    MEMBER
+                                                </span>
+                                            )}
                                         <div className="flex items-center gap-1.5 text-[8px] text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                                             <Sparkles size={8} className="text-yellow-500" />
                                             Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -223,6 +250,16 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     <p className="text-2xl font-black text-white italic">{isCreator ? 'ACTIVE' : 'NONE'}</p>
                                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Creator Status</p>
                                                 </div>
+                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all" onClick={() => { if(isArtist) { navigate('/artistant'); onClose(); } }}>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B]">
+                                                            <Sparkles size={20} />
+                                                        </div>
+                                                        <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
+                                                    </div>
+                                                    <p className="text-2xl font-black text-white italic">{isArtist ? 'VERIFIED' : 'NONE'}</p>
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Artist Status</p>
+                                                </div>
                                             </div>
 
                                             {/* Creator Dashboard Shortcut */}
@@ -241,6 +278,26 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                         </div>
                                                     </div>
                                                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-neon-blue group-hover:text-black transition-all">
+                                                        <ArrowRight size={18} />
+                                                    </div>
+                                                </button>
+                                            )}
+
+                                            {isArtist && (
+                                                <button 
+                                                    onClick={() => { navigate('/artistant'); onClose(); }}
+                                                    className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-[#FF6B6B]/5 border border-[#FF6B6B]/10 hover:bg-[#FF6B6B]/10 hover:border-[#FF6B6B] transition-all group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B] shadow-[0_0_15px_rgba(255,107,107,0.1)]">
+                                                            <ImageIcon size={24} />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="text-sm font-black text-white uppercase tracking-widest italic">Artist Hub</p>
+                                                            <p className="text-[10px] text-[#FF6B6B]/60 font-bold uppercase tracking-tighter mt-0.5">Manage your talent profile</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FF6B6B] group-hover:text-black transition-all">
                                                         <ArrowRight size={18} />
                                                     </div>
                                                 </button>

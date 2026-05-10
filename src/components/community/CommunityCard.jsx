@@ -102,7 +102,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
         e.stopPropagation();
         if (hasExternalLink) {
             window.open(item.link || item.applyLink || item.externalLink, '_blank');
-        } else if (isInternalGL || isGig || isForm || isCampaign) {
+        } else if (isInternalGL || isGig || isForm || isCampaign || isEvent) {
             onAction?.(item);
         }
     };
@@ -121,7 +121,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
     return (
         <div 
-            className="perspective-1000 w-full h-[340px] md:h-[360px] flex group"
+            className="perspective-1000 w-full h-[400px] md:h-[420px] flex group"
             onMouseMove={handleMouseMove}
         >
             <motion.div
@@ -142,8 +142,20 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                     }}
                 >
                     {/* Background Visual */}
-                    <div className="absolute inset-0 z-0 overflow-hidden">
-                        {item.image ? (
+                    <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+                        {/* Video Layer (Priority) */}
+                        {item.videoUrl && item.enableVideoBackground && (item.videoUrl.match(/\.(mp4|webm|ogg)$/i) || item.videoUrl.includes('cloudinary.com')) ? (
+                            <motion.video 
+                                src={item.videoUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover opacity-40 group-hover:opacity-80 transition-all duration-1000 scale-105 group-hover:scale-110"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.4 }}
+                            />
+                        ) : item.image ? (
                             <motion.div 
                                 className="w-full h-full bg-cover opacity-60 group-hover:opacity-100 transition-all duration-1000" 
                                 initial={false}
@@ -182,15 +194,15 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                     {/* Content Layer */}
                     <div className="relative z-20 flex-1 flex flex-col backdrop-blur-2xl p-6 md:p-8">
                         {/* Status Bar */}
-                        <div className="flex items-center justify-between mb-auto">
+                        <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl shadow-xl">
-                                    <span className="text-[8px] font-black uppercase tracking-[0.3em] italic pl-[0.3em]" style={{ color: highlightColor }}>
+                                <div className="flex items-center justify-center px-3 h-6 rounded-full bg-white/5 border border-white/10 backdrop-blur-3xl shadow-xl">
+                                    <span className="text-[8px] font-black uppercase tracking-[0.3em] italic pl-[0.3em] leading-none" style={{ color: highlightColor }}>
                                         {isGig ? "VOLUNTEER GIG" : (isCampaign ? "CAMPAIGN" : (isForm ? "FORM" : (isEvent ? "EVENT" : "GUESTLIST")))}
                                     </span>
                                 </div>
                                 <div className={cn(
-                                    "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-3xl shadow-lg pl-[0.1em]",
+                                    "px-3 h-6 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-3xl shadow-lg",
                                     (item.status === 'Open' || item.activeLabel === 'Live' || item.status === 'Live') ? "bg-green-500/10 border-green-500/20 text-green-400" : 
                                     (item.status === 'Filling Fast' || item.activeLabel === 'Few Slots Remain' || item.status === 'Few Slots Remain') ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" : 
                                     "bg-red-500/10 border-red-500/20 text-red-400"
@@ -215,9 +227,9 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         </div>
 
                         {/* Title & Desc Area */}
-                        <div className="mt-4 space-y-4">
+                        <div className="mt-0 space-y-4">
                             <div className="space-y-1.5">
-                                <h2 className="text-3xl md:text-4xl font-black font-heading text-white tracking-tighter uppercase italic leading-[0.85] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/40 transition-all duration-700">
+                                <h2 className="text-2xl md:text-3xl font-black font-heading text-white tracking-tighter uppercase italic leading-[0.95] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/40 transition-all duration-700 line-clamp-3">
                                     {item.title}
                                 </h2>
                                 {highlightColor && <div className="h-[2px] w-12 rounded-full group-hover:w-20 transition-all duration-700" style={{ backgroundColor: highlightColor }} />}
@@ -225,7 +237,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                             <div className="relative group/desc">
                                 <div className="absolute -inset-4 bg-white/[0.03] rounded-3xl blur-2xl opacity-0 group-hover/desc:opacity-100 transition-opacity duration-700" />
-                                <p className="relative text-[12px] md:text-[13px] font-medium text-gray-400 uppercase tracking-widest leading-relaxed line-clamp-3 italic opacity-80 group-hover:opacity-100 transition-opacity">
+                                <p className="relative text-[12px] md:text-[13px] font-medium text-gray-400 uppercase tracking-widest leading-relaxed line-clamp-2 italic opacity-80 group-hover:opacity-100 transition-opacity">
                                     {item.description || ""}
                                 </p>
                             </div>
@@ -241,22 +253,22 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                         {/* Artists / Lineup */}
                         {artistsList.length > 0 && (
-                            <div className="mt-6 flex flex-wrap gap-2.5">
-                                {artistsList.slice(0, 3).map((artist, idx) => (
-                                    <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/60 uppercase tracking-widest backdrop-blur-3xl hover:bg-white/10 transition-colors">
+                            <div className="mt-4 flex items-center gap-2 overflow-hidden">
+                                {artistsList.slice(0, 2).map((artist, idx) => (
+                                    <div key={idx} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/60 uppercase tracking-widest backdrop-blur-3xl hover:bg-white/10 transition-colors truncate max-w-[120px]">
                                         {artist}
                                     </div>
                                 ))}
-                                {artistsList.length > 3 && (
-                                    <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/20 uppercase tracking-widest">
-                                        +{artistsList.length - 3}
+                                {artistsList.length > 2 && (
+                                    <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-white/20 uppercase tracking-widest shrink-0">
+                                        +{artistsList.length - 2}
                                     </div>
                                 )}
                             </div>
                         )}
 
                         {/* Footer Section */}
-                        <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between gap-4">
+                        <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-4">
                             <div className="space-y-2">
                                 {!isForm && (
                                     <div className="flex items-center gap-2.5 text-white/50 group/meta">
@@ -308,7 +320,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Back Side */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rotate-y-180 bg-[#080808] border-2 rounded-[2.5rem] pt-7 px-7 pb-4 md:pt-9 md:px-9 md:pb-5 flex flex-col shadow-2xl overflow-hidden",
+                        "absolute inset-0 backface-hidden rotate-y-180 bg-[#080808] border-2 rounded-[2.5rem] p-7 md:p-9 flex flex-col shadow-2xl overflow-hidden",
                         isFlipped ? "pointer-events-auto" : "pointer-events-none"
                     )}
                     style={{ 
@@ -318,19 +330,20 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.03),transparent)]" />
                     
+                    <div className="relative z-10 flex items-center justify-end mb-8">
+                        <button 
+                            onClick={() => setIsFlipped(false)}
+                            className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all group/close backdrop-blur-3xl"
+                        >
+                            <X size={20} className="group-hover/close:rotate-90 transition-transform duration-500" />
+                        </button>
+                    </div>
+
                     <div className="relative z-10 flex-1 overflow-y-auto pr-4 space-y-10 scrollbar-hide">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4 text-white/20">
-                                    <div className="w-10 h-[1px] bg-current" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">DESCRIPTION</span>
-                                </div>
-                                <button 
-                                    onClick={() => setIsFlipped(false)}
-                                    className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all group/close backdrop-blur-3xl"
-                                >
-                                    <X size={20} className="group-hover/close:rotate-90 transition-transform duration-500" />
-                                </button>
+                        <div className="space-y-5">
+                            <div className="flex items-center gap-4 text-white/20">
+                                <div className="w-10 h-[1px] bg-current" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.5em]">DESCRIPTION</span>
                             </div>
                             <div className="text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap pl-1">
                                 {item.description || ""}
@@ -367,14 +380,20 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         )}
                     </div>
 
-                    <div className="relative z-10 mt-auto pt-2 flex items-center justify-start">
-                        <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.5em] italic">NEWBI ENT.</span>
+                    <div className="relative z-10 pt-8 mt-auto flex items-center justify-between border-t border-white/10">
+                        <div className="flex items-center gap-3">
+                            <Sparkles size={12} style={{ color: highlightColor }} />
+                            <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.6em] italic">NEWBI ENTERTAINMENT</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                        </div>
                     </div>
                 </div>
             </motion.div>
         </div>
-
-
     );
 };
 

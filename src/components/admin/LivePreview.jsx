@@ -50,7 +50,7 @@ const formatDate = (dateValue) => {
     return String(val).toUpperCase();
 };
 
-const LivePreview = ({ type, data, categories = [], hideDecorations = false }) => {
+const LivePreview = ({ type, data, categories = [], hideDecorations = false, onAction }) => {
     return (
         <div className="h-full flex flex-col">
             {!hideDecorations && (
@@ -167,7 +167,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false }) =
                                         id: 'preview'
                                     }}
                                     handleShare={() => {}}
-                                    onAction={() => {}}
+                                    onAction={onAction}
                                 />
                             </div>
                         </div>
