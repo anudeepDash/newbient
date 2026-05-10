@@ -24,11 +24,13 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, where, getDocs, getDoc } from 'firebase/firestore';
 
 const EntryTerminal = ({ eventId }) => {
-    const { ticketOrders, guestlists, updateTicketOrder } = useStore();
+    const navigate = useNavigate();
+    const { ticketOrders, guestlists, updateTicketOrder, scanTicket } = useStore();
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -89,29 +91,14 @@ const EntryTerminal = ({ eventId }) => {
         setScanResult(null);
 
         try {
-            if (code.startsWith('NB-')) {
-                const order = tickets.find(o => o.bookingRef === code);
-                if (!order) throw new Error("INVALID TICKET REF.");
-                if (order.attended) throw new Error("ALREADY REDEEMED.");
-                
-                await updateTicketOrder(order.id, { attended: true, attendedAt: new Date().toISOString() });
-                setScanResult({ type: 'ticket', data: order });
-            } 
-            else if (code.startsWith('GL-')) {
-                const entry = entries.find(e => e.bookingRef === code);
-                if (!entry) throw new Error("GUEST NOT IN REGISTRY.");
-                if (entry.attended) throw new Error("ALREADY CHECKED IN.");
-
-                const entryRef = doc(db, 'guestlists', gl.id, 'entries', entry.id);
-                await updateDoc(entryRef, {
-                    attended: true,
-                    attendedAt: new Date().toISOString()
-                });
-
-                setScanResult({ type: 'guestlist', data: entry });
-            }
-            else {
-                throw new Error("UNRECOGNIZED ACCESS CODE.");
+            const result = await scanTicket(eventId, code);
+            if (result.valid) {
+                if (result.scanned) {
+                    throw new Error("ALREADY REDEEMED / CHECKED IN.");
+                }
+                setScanResult({ type: result.data.type, data: { customerName: result.data.name } });
+            } else {
+                throw new Error(result.message || "INVALID CODE.");
             }
         } catch (err) {
             setScanError(err.message);
@@ -251,11 +238,19 @@ const EntryTerminal = ({ eventId }) => {
                     />
                 </div>
                 <Button 
-                    onClick={() => setScanModalOpen(true)}
-                    className="h-20 px-12 bg-neon-blue text-black font-black uppercase tracking-[0.2em] italic rounded-[2rem] hover:scale-105 active:scale-95 transition-all shadow-[0_15px_40px_rgba(46,191,255,0.25)] flex items-center gap-4"
+                    onClick={() => navigate(`/admin/scanner?eventId=${eventId}`)}
+                    className="h-20 px-12 bg-white text-black font-black uppercase tracking-[0.2em] italic rounded-[2rem] hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-4 border-none"
                 >
-                    <QrCode size={24} />
-                    SCAN ENTRANCE CODE
+                    <QrCode size={24} className="text-neon-blue" />
+                    LAUNCH TICKET SCANNER
+                </Button>
+                <Button 
+                    variant="outline"
+                    onClick={() => setScanModalOpen(true)}
+                    className="h-20 px-8 bg-zinc-900/40 text-white font-black uppercase tracking-[0.2em] italic rounded-[2rem] hover:bg-white/10 transition-all border-white/10 flex items-center gap-4"
+                >
+                    <Search size={24} />
+                    MANUAL ENTRY
                 </Button>
             </div>
 

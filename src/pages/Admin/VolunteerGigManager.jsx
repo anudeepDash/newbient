@@ -40,6 +40,170 @@ import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioTimePicker from '../../components/ui/StudioTimePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return 'TBD';
+    const s = String(dateStr);
+    if (s.includes('-')) {
+        const parts = s.split('-');
+        if (parts.length === 3) {
+            const [y, m, d] = parts;
+            return `${d}-${m}-${y}`;
+        }
+    }
+    try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('en-GB').replace(/\//g, '-');
+        }
+    } catch (e) {}
+    return s;
+};
+
+const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) => {
+    const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+    const handleMouseMove = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setMousePos({ x, y });
+    };
+
+    return (
+        <Card 
+            key={gig.id} 
+            onMouseMove={handleMouseMove}
+            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col h-[480px] relative"
+            style={{ 
+                background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gig.highlightColor || '#39FF14'}10 0%, transparent 60%)`
+            }}
+        >
+            {/* Card Header Media */}
+            <div className="h-44 relative overflow-hidden">
+                {gig.image ? (
+                    <img 
+                        src={gig.image} 
+                        alt={gig.title} 
+                        className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" 
+                        style={{
+                            transform: `scale(${gig.imageTransform?.scale || 1.05})`,
+                            objectPosition: `${50 + (gig.imageTransform?.x || 0)}% ${50 + (gig.imageTransform?.y || 0)}%`
+                        }}
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                        <Zap size={48} className="text-white/10" />
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+                
+                <div className="absolute top-6 right-6 flex gap-2">
+                    <div className={cn(
+                        "px-3 h-6 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl",
+                        gig.status === 'Open' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+                    )}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                        {gig.status || 'ACTIVE'}
+                    </div>
+                    {gig.isPinned && (
+                        <div className="w-8 h-8 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 shadow-xl backdrop-blur-3xl">
+                            <Star size={14} className="fill-current" />
+                        </div>
+                    )}
+                </div>
+
+                <div className="absolute bottom-6 left-8 right-8">
+                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gig.title}</h3>
+                    <div className="flex items-center gap-4 mt-2 opacity-60">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <Calendar size={12} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} DAYS` : gig.dates[0]) : gig.date || 'TBA'}
+                        </span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <MapPin size={12} className="text-neon-green" /> {gig.location || 'GLOBAL'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Card Content */}
+            <div className="p-8 flex-grow flex flex-col justify-between">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4 text-white/20">
+                        <div className="w-10 h-[1px] bg-current" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
+                    </div>
+                    <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-3 italic leading-relaxed">
+                        {gig.description || "EMPTY."}
+                    </p>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={async () => {
+                                if (confirm(`Transmit broadcast for "${gig.title}"?`)) {
+                                    await notifyAllUsers(`Volunteers Needed: ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now!`, `/community`, '');
+                                    useStore.getState().addToast("BROADCAST_SENT.", 'success');
+                                }
+                            }}
+                            className="flex-1 h-14 rounded-2xl border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
+                        >
+                            <Megaphone size={20} className="group-hover/btn:rotate-12 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">NOTIFY</span>
+                        </Button>
+                        <div className="flex bg-white/5 rounded-2xl p-1.5 border border-white/5">
+                            <button onClick={() => onMove(index, 'up')} disabled={index === 0} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
+                                <ArrowUp size={20} />
+                            </button>
+                            <button onClick={() => onMove(index, 'down')} disabled={index === totalGigs - 1} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
+                                <ArrowDown size={20} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => onEdit(gig)} 
+                            className="h-14 flex-[2] rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                        >
+                            <Edit size={22} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT GIG</span>
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                const newStatus = gig.status === 'Open' ? 'Closed' : 'Open';
+                                onUpdate(gig.id, { ...gig, status: newStatus });
+                            }}
+                            className={cn(
+                                "h-14 w-14 rounded-2xl border-white/5 transition-all flex items-center justify-center",
+                                gig.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                            )}
+                            title={gig.status === 'Open' ? "Close Entries" : "Open Entries"}
+                        >
+                            {gig.status === 'Open' ? <Unlock size={24} /> : <Lock size={24} />}
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => { if(confirm('Permanently delete this gig?')) onDelete(gig.id); }}
+                            className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
+                        >
+                            <Trash2 size={26} />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Shimmer Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
+                style={{ background: `linear-gradient(${mousePos.x}deg, transparent 40%, ${gig.highlightColor || '#39FF14'}05 50%, transparent 60%)` }}
+            />
+        </Card>
+    );
+};
+
 const VolunteerGigManager = () => {
     const navigate = useNavigate();
     const colorPresets = [
@@ -176,6 +340,28 @@ const VolunteerGigManager = () => {
         }
     };
 
+    const handlePaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setIsUploading(true);
+                try {
+                    const url = await uploadToCloudinary(file);
+                    setFormData(prev => ({ ...prev, image: url }));
+                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                } catch (error) {
+                    console.error("Upload failed:", error);
+                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                } finally {
+                    setIsUploading(false);
+                }
+                e.preventDefault();
+            }
+        }
+    };
+
     const moveGig = async (index, direction) => {
         const newGigs = [...volunteerGigs];
         if (direction === 'up' && index > 0) {
@@ -186,24 +372,6 @@ const VolunteerGigManager = () => {
         await reorderVolunteerGigs(newGigs);
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return 'TBD';
-        const s = String(dateStr);
-        if (s.includes('-')) {
-            const parts = s.split('-');
-            if (parts.length === 3) {
-                const [y, m, d] = parts;
-                return `${d}-${m}-${y}`;
-            }
-        }
-        try {
-            const d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-                return d.toLocaleDateString('en-GB').replace(/\//g, '-');
-            }
-        } catch (e) {}
-        return s;
-    };
 
     if (isAdding) {
         return (
@@ -215,7 +383,7 @@ const VolunteerGigManager = () => {
                     accentClass: "text-neon-green"
                 }}
             >
-                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-start mb-20 relative z-10">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 mb-20 relative z-10">
                     {/* Editor Column */}
                     <div className="w-full">
                         <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
@@ -358,7 +526,8 @@ const VolunteerGigManager = () => {
                                                     <Input 
                                                         value={formData.image} 
                                                         onChange={e => setFormData({ ...formData, image: e.target.value })} 
-                                                        placeholder="URL" 
+                                                        onPaste={handlePaste}
+                                                        placeholder="URL OR CTRL+V IMAGE" 
                                                         className="flex-1 h-14 bg-black/60 border-white/5 rounded-2xl focus:border-neon-green/40" 
                                                     />
                                                     <div className="relative group w-14 h-14 shrink-0">
@@ -531,149 +700,18 @@ const VolunteerGigManager = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {volunteerGigs && volunteerGigs.length > 0 ? (
-                        volunteerGigs.map((gig) => {
-                            const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-                            const handleMouseMove = (e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                                setMousePos({ x, y });
-                            };
-
-                            return (
-                                <Card 
-                                    key={gig.id} 
-                                    onMouseMove={handleMouseMove}
-                                    className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-green/30 transition-all duration-700 shadow-2xl flex flex-col h-[480px] relative"
-                                    style={{ 
-                                        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gig.highlightColor || '#39FF14'}10 0%, transparent 60%)`
-                                    }}
-                                >
-                                    {/* Card Header Media */}
-                                    <div className="h-44 relative overflow-hidden">
-                                        {gig.image ? (
-                                            <img 
-                                                src={gig.image} 
-                                                alt={gig.title} 
-                                                className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" 
-                                                style={{
-                                                    transform: `scale(${gig.imageTransform?.scale || 1.05})`,
-                                                    objectPosition: `${50 + (gig.imageTransform?.x || 0)}% ${50 + (gig.imageTransform?.y || 0)}%`
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                                                <Zap size={48} className="text-white/10" />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                                        
-                                        <div className="absolute top-6 right-6 flex gap-2">
-                                            <div className={cn(
-                                                "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl",
-                                                gig.status === 'Open' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
-                                            )}>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                                                {gig.status || 'ACTIVE'}
-                                            </div>
-                                            {gig.isPinned && (
-                                                <div className="w-8 h-8 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 shadow-xl backdrop-blur-3xl">
-                                                    <Star size={14} className="fill-current" />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="absolute bottom-6 left-8 right-8">
-                                            <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gig.title}</h3>
-                                            <div className="flex items-center gap-4 mt-2 opacity-60">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                    <Calendar size={12} className="text-neon-green" /> {gig.dates && gig.dates.length > 0 ? (gig.dates.length > 1 ? `${gig.dates.length} DAYS` : gig.dates[0]) : gig.date || 'TBA'}
-                                                </span>
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                    <MapPin size={12} className="text-neon-green" /> {gig.location || 'GLOBAL'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card Content */}
-                                    <div className="p-8 flex-grow flex flex-col justify-between">
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-4 text-white/20">
-                                                <div className="w-10 h-[1px] bg-current" />
-                                                <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
-                                            </div>
-                                            <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-3 italic leading-relaxed">
-                                                {gig.description || "EMPTY."}
-                                            </p>
-                                        </div>
-
-                                        <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
-                                            <div className="flex items-center gap-3">
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={async () => {
-                                                        if (confirm(`Transmit broadcast for "${gig.title}"?`)) {
-                                                            await notifyAllUsers(`Volunteers Needed: ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now!`, `/community`, '');
-                                                            useStore.getState().addToast("BROADCAST_SENT.", 'success');
-                                                        }
-                                                    }}
-                                                    className="flex-1 h-14 rounded-2xl border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
-                                                >
-                                                    <Megaphone size={20} className="group-hover/btn:rotate-12 transition-transform" />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">NOTIFY</span>
-                                                </Button>
-                                                <div className="flex bg-white/5 rounded-2xl p-1.5 border border-white/5">
-                                                    <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'up')} disabled={volunteerGigs.indexOf(gig) === 0} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
-                                                        <ArrowUp size={20} />
-                                                    </button>
-                                                    <button onClick={() => moveGig(volunteerGigs.indexOf(gig), 'down')} disabled={volunteerGigs.indexOf(gig) === volunteerGigs.length - 1} className="p-3 hover:text-white text-gray-500 disabled:opacity-20 transition-all">
-                                                        <ArrowDown size={20} />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3">
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => handleEdit(gig)} 
-                                                    className="h-14 flex-[2] rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
-                                                >
-                                                    <Edit size={22} />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT GIG</span>
-                                                </Button>
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => {
-                                                        const newStatus = gig.status === 'Open' ? 'Closed' : 'Open';
-                                                        updateVolunteerGig(gig.id, { ...gig, status: newStatus });
-                                                    }}
-                                                    className={cn(
-                                                        "h-14 w-14 rounded-2xl border-white/5 transition-all flex items-center justify-center",
-                                                        gig.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
-                                                    )}
-                                                    title={gig.status === 'Open' ? "Close Entries" : "Open Entries"}
-                                                >
-                                                    {gig.status === 'Open' ? <Unlock size={24} /> : <Lock size={24} />}
-                                                </Button>
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => { if(confirm('Permanently delete this gig?')) deleteVolunteerGig(gig.id); }}
-                                                    className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
-                                                >
-                                                    <Trash2 size={26} />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Shimmer Overlay */}
-                                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
-                                        style={{ background: `linear-gradient(${mousePos.x}deg, transparent 40%, ${gig.highlightColor || '#39FF14'}05 50%, transparent 60%)` }}
-                                    />
-                                </Card>
-                            );
-                        })
+                        volunteerGigs.map((gig, idx) => (
+                            <GigCard 
+                                key={gig.id} 
+                                gig={gig} 
+                                index={idx}
+                                totalGigs={volunteerGigs.length}
+                                onEdit={handleEdit}
+                                onMove={moveGig}
+                                onUpdate={updateVolunteerGig}
+                                onDelete={deleteVolunteerGig}
+                            />
+                        ))
                     ) : (
                         <div className="col-span-full py-40 text-center">
                             <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">

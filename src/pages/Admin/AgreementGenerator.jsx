@@ -291,7 +291,7 @@ const ContractGenerator = () => {
     };
 
     return (
-        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-hidden">
+        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-x-clip">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -331,7 +331,7 @@ const ContractGenerator = () => {
                 </div>
             </nav>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-x-clip">
                 {/* Sidebar - Desktop Only */}
                 <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">

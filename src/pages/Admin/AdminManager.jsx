@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const AdminManager = () => {
-    const { user, blockUser, unblockUser, creators } = useStore();
+    const { user, blockUser, unblockUser, creators, artists } = useStore();
     const [activeTab, setActiveTab] = useState('members');
 
     // Admin State
@@ -305,6 +305,11 @@ const AdminManager = () => {
                                                                 {creators?.some(c => c.uid === member.id) && (
                                                                     <span title="CREATOR_CERTIFIED" className="p-1 px-2 bg-neon-pink/10 text-neon-pink rounded-full text-[8px] font-black border border-neon-pink/20">
                                                                         CREATOR
+                                                                    </span>
+                                                                )}
+                                                                {artists?.some(a => a.uid === member.id && a.profileStatus === 'approved') && (
+                                                                    <span title="ARTIST_CERTIFIED" className="p-1 px-2 bg-[#FF6B6B]/10 text-[#FF6B6B] rounded-full text-[8px] font-black border border-[#FF6B6B]/20">
+                                                                        ARTIST
                                                                     </span>
                                                                 )}
                                                             </div>

@@ -60,6 +60,24 @@ const BlogPostEditor = () => {
         }
     };
     
+    const handlePaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setIsUploading(true);
+                const url = await handleFileUpload(file);
+                if (url) {
+                    setFormData(prev => ({ ...prev, coverImage: url }));
+                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                }
+                setIsUploading(false);
+                e.preventDefault();
+            }
+        }
+    };
+
     const [formData, setFormData] = useState({
         title: '',
         slug: '',
@@ -257,7 +275,7 @@ const BlogPostEditor = () => {
 
                     {/* Sidebar / Sidebar Settings */}
                     <div className="space-y-8">
-                        <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2.5rem] sticky top-32">
+                        <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2.5rem] lg:sticky lg:top-32">
                             <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6 flex items-center gap-2">
                                 <Settings size={16} className="text-neon-blue" /> Post Settings
                             </h3>
@@ -282,9 +300,10 @@ const BlogPostEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        placeholder="Or paste URL https://..."
+                                        placeholder="Or paste URL https://... OR CTRL+V IMAGE"
                                         value={formData.coverImage}
                                         onChange={(e) => setFormData(prev => ({ ...prev, coverImage: e.target.value }))}
+                                        onPaste={handlePaste}
                                         className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none"
                                     />
                                     {formData.coverImage && (

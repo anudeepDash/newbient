@@ -36,6 +36,8 @@ const AnnouncementsManager = () => {
     const [editingId, setEditingId] = useState(null);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [activeEditorTab, setActiveEditorTab] = useState('content');
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         cleanupExpiredAnnouncements();
@@ -62,18 +64,51 @@ const AnnouncementsManager = () => {
         { name: 'Portfolio', path: '/admin/concertzone', icon: Music, color: 'text-neon-purple' },
     ];
 
+    const handlePaste = (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setSelectedFile(file);
+                useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                e.preventDefault();
+            }
+        }
+    };
+
+    const handleFileUpload = async (file) => {
+        if (!file) return null;
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "maw1e4ud");
+        data.append("cloud_name", "dgtalrz4n");
+
+        try {
+            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
+            const uploadedImage = await res.json();
+            return uploadedImage.secure_url;
+        } catch (error) {
+            throw new Error("Upload failed.");
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setUploading(true);
         try {
+            let imageUrl = newAnnouncement.image;
+            if (selectedFile) imageUrl = await handleFileUpload(selectedFile);
+
             if (editingId) {
-                await updateAnnouncement(editingId, newAnnouncement);
+                await updateAnnouncement(editingId, { ...newAnnouncement, image: imageUrl });
             } else {
-                await addAnnouncement(newAnnouncement);
+                await addAnnouncement({ ...newAnnouncement, image: imageUrl });
                 await notifyAllUsers(
                     `New Announcement: ${newAnnouncement.title}`,
                     newAnnouncement.content,
                     newAnnouncement.link,
-                    newAnnouncement.image
+                    imageUrl
                 );
             }
             resetForm();
@@ -87,6 +122,8 @@ const AnnouncementsManager = () => {
         setShowPreviewMobile(false);
         setIsAdding(false);
         setEditingId(null);
+        setSelectedFile(null);
+        setUploading(false);
         setNewAnnouncement({
             title: '',
             tagline: '',
@@ -196,7 +233,7 @@ const AnnouncementsManager = () => {
                 {/* Content */}
                 <div className="relative z-0">
                         {isAdding ? (
-                            <div className="flex flex-col lg:flex-row gap-10 items-start pb-32">
+                            <div className="flex flex-col lg:flex-row gap-10 items-stretch pb-32">
                                 <div className="flex-1 w-full relative">
                                     <AnimatePresence mode="wait">
                                         {showPreviewMobile ? (
@@ -204,7 +241,7 @@ const AnnouncementsManager = () => {
                                                 <LivePreview type="announcement" data={newAnnouncement} hideDecorations={true} />
                                             </motion.div>
                                         ) : (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="grid grid-cols-1 xl:grid-cols-12 gap-10">
                                                 <div className="xl:col-span-7">
                                                     <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden">
                                                         {/* Header */}
@@ -291,7 +328,24 @@ const AnnouncementsManager = () => {
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Hero Asset (URL)</label>
-                                                                                <Input placeholder="HTTPS://..." value={newAnnouncement.image} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
+                                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                                    <div className="md:col-span-2">
+                                                                                        <Input 
+                                                                                            placeholder="PASTE URL OR CTRL+V IMAGE" 
+                                                                                            value={newAnnouncement.image} 
+                                                                                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image: e.target.value })} 
+                                                                                            onPaste={handlePaste}
+                                                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="relative group">
+                                                                                        <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                                                                        <div className={cn("h-16 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center gap-3 bg-black/20 group-hover:border-neon-pink/30 transition-all", selectedFile && "border-neon-pink/50 bg-neon-pink/5")}>
+                                                                                            <Sparkles className={cn("text-gray-500 group-hover:text-neon-pink", selectedFile && "text-neon-pink")} size={18} />
+                                                                                            <span className="text-[8px] font-black text-gray-500 group-hover:text-white uppercase tracking-widest">{selectedFile ? 'READY' : 'UPLOAD'}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="space-y-3">
                                                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CTA Action Text</label>
@@ -409,7 +463,7 @@ const AnnouncementsManager = () => {
                                                     </Card>
                                                 </div>
 
-                                                <div className="xl:col-span-5 hidden xl:block sticky top-12">
+                                                <div className="xl:col-span-5 hidden xl:block lg:sticky lg:top-32">
                                                     <div className="space-y-6">
                                                         <div className="flex items-center justify-between">
                                                             <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-3">

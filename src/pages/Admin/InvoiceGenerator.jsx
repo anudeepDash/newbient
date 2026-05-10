@@ -362,7 +362,7 @@ const InvoiceGenerator = () => {
     const brandColor = currentLogo.color;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-clip flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -405,7 +405,7 @@ const InvoiceGenerator = () => {
                 </div>
             </header>
 
-            <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-x-clip">
                 {/* Sidebar */}
                 <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">

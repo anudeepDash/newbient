@@ -9,7 +9,7 @@ import { useStore } from '../lib/store';
 import logo from '../assets/logo.png';
 
 const Navbar = () => {
-    const { maintenanceState, user, siteSettings, creators, announcements } = useStore();
+    const { maintenanceState, user, siteSettings, creators, artists, announcements } = useStore();
     const pinnedAnnouncement = announcements?.find(a => a.isPinned);
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -200,7 +200,15 @@ const Navbar = () => {
                                             {user.displayName?.split(' ')[0] || 'Member'}
                                         </span>
                                         <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
-                                            {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
+                                            {(() => {
+                                                if (user.role === 'developer') return 'DEV';
+                                                if (user.role === 'super_admin') return 'ADMIN';
+                                                const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
+                                                const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
+                                                if (isApprovedArtist) return 'ARTIST';
+                                                if (isApprovedCreator) return 'CREATOR';
+                                                return 'TRIBE MEMBER';
+                                            })()}
                                         </span>
                                     </div>
                                 </div>
@@ -350,7 +358,15 @@ const Navbar = () => {
                                             <div className="flex flex-col flex-1 min-w-0">
                                                 <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
                                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
-                                                    {user.role === 'developer' ? 'DEV' : (user.role === 'super_admin' ? 'ADMIN' : (creators?.find(c => c.uid === user.uid)?.profileStatus === 'approved' ? 'CREATOR' : 'TRIBE MEMBER'))}
+                                                    {(() => {
+                                                        if (user.role === 'developer') return 'DEV';
+                                                        if (user.role === 'super_admin') return 'ADMIN';
+                                                        const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
+                                                        const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
+                                                        if (isApprovedArtist) return 'ARTIST';
+                                                        if (isApprovedCreator) return 'CREATOR';
+                                                        return 'TRIBE MEMBER';
+                                                    })()}
                                                 </span>
                                             </div>
                                         </div>

@@ -44,6 +44,24 @@ const GalleryManager = () => {
         }
     };
 
+    const handlePaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setUploading(true);
+                const url = await handleFileUpload(file);
+                if (url) {
+                    setNewImage(prev => ({ ...prev, src: url }));
+                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                }
+                setUploading(false);
+                e.preventDefault();
+            }
+        }
+    };
+
     const handleAdd = async (e) => {
         e.preventDefault();
         if (!newImage.src) return;
@@ -75,7 +93,7 @@ const GalleryManager = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* Control Panel */}
                     <div className="lg:col-span-4">
-                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] sticky top-12">
+                        <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] lg:sticky lg:top-32">
                             <h2 className="text-2xl font-black font-heading uppercase italic tracking-tight text-white mb-8 flex items-center gap-3">
                                 <Plus className="text-neon-blue" size={20} /> INGEST MEDIA
                             </h2>
@@ -120,7 +138,8 @@ const GalleryManager = () => {
                                         <Input
                                             value={newImage.src}
                                             onChange={(e) => setNewImage({ ...newImage, src: e.target.value })}
-                                            placeholder="HTTPS://CDN.SOURCE.COM/..."
+                                            onPaste={handlePaste}
+                                            placeholder="HTTPS://... OR CTRL+V IMAGE"
                                             required
                                             disabled={uploading}
                                             className="h-14 bg-black/50 border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest focus:border-neon-blue/30"

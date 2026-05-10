@@ -41,7 +41,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
         >
             {/* Progress Strip */}
             {isJoined && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden z-10">
+                <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden z-20">
                     <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
@@ -49,6 +49,24 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     />
                 </div>
             )}
+
+            {/* Thumbnail */}
+            <div className="aspect-video relative overflow-hidden bg-black/20 border-b border-white/5">
+                {campaign.thumbnail ? (
+                    <img 
+                        src={campaign.thumbnail} 
+                        alt={campaign.title} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+                        <Instagram className="text-white/5" size={48} />
+                    </div>
+                )}
+                
+                {/* Ambient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/40 to-transparent pointer-events-none" />
+            </div>
 
             <div className="p-5 md:p-6 flex flex-col flex-1 relative">
                 {/* Header Row */}

@@ -419,7 +419,7 @@ const ProposalGenerator = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -460,7 +460,7 @@ const ProposalGenerator = () => {
                 </div>
             </header>
 
-            <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-x-clip">
                 <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>

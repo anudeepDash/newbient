@@ -145,21 +145,23 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
     );
 };
 
-const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, onCopyLink }) => (
+const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign }) => (
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2rem] sm:rounded-[3.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:h-[520px]"
+        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-[2.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto min-h-[510px]"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
         <div className="relative mb-6 group-hover:scale-[1.01] transition-transform duration-700">
-            <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+            <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
                 {campaign.thumbnail ? (
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 ) : (
-                    <div className="text-4xl font-black text-white/[0.03] uppercase italic select-none">
-                        MISSION ALPHA
+                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm">
+                        <div className="text-2xl font-black text-white/5 uppercase italic select-none tracking-[0.2em]">
+                            MISSION ASSET
+                        </div>
                     </div>
                 )}
                 <div className="absolute top-4 right-4">
@@ -168,46 +170,60 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, onCopyLink })
             </div>
         </div>
 
-        <div className="flex-1 flex flex-col px-2">
-            <div className="h-28 mb-4">
-                <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2">ACTIVE MISSION</p>
+        <div className="flex-1 flex flex-col px-1">
+            <div className="mb-6">
+                <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2 opacity-60">ACTIVE MISSION</p>
                 <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-blue transition-colors duration-500 line-clamp-2">
                     {campaign.title}
                 </h3>
             </div>
 
-            <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-2 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
+            <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
                     <MapPin size={12} className="text-neon-pink animate-pulse" />
                     <span>{campaign.targetCity || 'GLOBAL'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-yellow-500/80 text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/5 px-4 py-2.5 rounded-2xl border border-yellow-500/10 shadow-inner w-fit">
+                <div className="flex items-center gap-3 text-yellow-500/80 text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/5 px-4 py-2.5 rounded-2xl border border-yellow-500/10 shadow-inner w-fit">
                     <Zap size={12} className="text-yellow-500" />
                     <span>{campaign.tasks?.length || 0} OPERATIONAL UNITS</span>
                 </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-                <div>
+            <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between gap-4">
+                <div className="min-w-0 pr-2">
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">REWARD PACKAGE</p>
-                    <p className="text-xl font-black text-white tracking-tighter truncate max-w-[180px]">{campaign.reward}</p>
+                    <p className="text-lg font-black text-white tracking-tighter truncate uppercase italic">{campaign.reward}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
+                    {(!campaign.shortlistedCreators || campaign.shortlistedCreators.length === 0) && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                                    onDelete(campaign.id);
+                                }
+                            }}
+                            className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                            title="Delete Mission"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
                             const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
-                            useStore.getState().updateCampaign(campaign.id, { ...campaign, status: newStatus });
+                            updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "w-10 h-10 rounded-xl border transition-all flex items-center justify-center",
-                            campaign.status === 'Open' ? "bg-white/5 border-white/5 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                            "w-10 h-10 rounded-xl border transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl",
+                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                         )}
                         title={campaign.status === 'Open' ? "Close Mission" : "Open Mission"}
                     >
                         {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
                     </button>
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-neon-blue group-hover:border-neon-blue/30 group-hover:bg-neon-blue/10 transition-all shadow-xl backdrop-blur-3xl">
                         <ChevronRight size={16} />
                     </div>
                 </div>
@@ -385,6 +401,27 @@ const CampaignManager = ({ isEmbedded = false }) => {
             useStore.getState().addToast("UPLOAD FAILED.", 'error');
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const handlePaste = async (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setIsUploading(true);
+                try {
+                    const url = await uploadToCloudinary(file);
+                    setFormData(prev => ({ ...prev, thumbnail: url }));
+                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                } catch (error) {
+                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                } finally {
+                    setIsUploading(false);
+                }
+                e.preventDefault();
+            }
         }
     };
 
@@ -654,20 +691,26 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MISSION THUMBNAIL</label>
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MISSION THUMBNAIL (OR CTRL+V)</label>
                                                 <div className="flex gap-4 items-center">
                                                     {formData.thumbnail && (
                                                         <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
                                                             <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
                                                         </div>
                                                     )}
-                                                    <label className="flex-1 h-20 bg-black/30 border-2 border-dashed border-white/10 hover:border-neon-blue/30 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center group">
-                                                        <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
-                                                        <div className="flex items-center gap-3">
+                                                    <div className="flex-1 flex gap-4">
+                                                        <Input 
+                                                            value={formData.thumbnail} 
+                                                            onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} 
+                                                            onPaste={handlePaste}
+                                                            placeholder="ASSET URL OR PASTE IMAGE" 
+                                                            className="flex-1 h-14 bg-black/50 border-white/10 rounded-2xl" 
+                                                        />
+                                                        <label className="w-20 h-14 bg-black/30 border-2 border-dashed border-white/10 hover:border-neon-blue/30 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center group shrink-0">
+                                                            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
                                                             <ImageIcon size={18} className="text-gray-500 group-hover:text-neon-blue transition-colors" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-white transition-colors">{isUploading ? 'UPLOADING...' : 'Upload Mission Asset'}</span>
-                                                        </div>
-                                                    </label>
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -720,7 +763,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                         </Card>
                                     </div>
 
-                                    <div className="lg:col-span-5 space-y-8">
+                                    <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-32 h-fit">
+                                        <LivePreview type="campaign" data={formData} />
                                         <Card className="p-8 md:p-10 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl">
                                             <div className="flex items-center justify-between mb-8">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
