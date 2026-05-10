@@ -44,8 +44,10 @@ const TicketingManagement = () => {
     }, [searchParams]);
 
     const operationalEvents = [
-        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled) || []),
-        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled)) || [])
+        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
+        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || []),
+        ...(useStore.getState().guestlists || []).map(gl => ({ ...gl, isGuestlistEnabled: true })),
+        ...(useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [])
     ].sort((a, b) => {
         if (!a.date) return 1;
         if (!b.date) return -1;
@@ -79,13 +81,13 @@ const TicketingManagement = () => {
                             const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
                             const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
                             return (
-                                <Card key={event.id} onClick={() => setSelectedEventId(event.id)} className="cursor-pointer group p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] overflow-hidden hover:border-neon-green/30 transition-all">
+                                <Card key={event.id} onClick={() => setSelectedEventId(event.id)} className="cursor-pointer group p-0 bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-neon-green/30 transition-all duration-700 shadow-2xl">
                                     <div className="h-48 relative overflow-hidden bg-black/50">
-                                        {event.image ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" /> : <div className="absolute inset-0 flex items-center justify-center"><Ticket size={48} className="opacity-20"/></div>}
+                                        {event.image ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" /> : <div className="absolute inset-0 flex items-center justify-center"><Ticket size={48} className="opacity-20"/></div>}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                                        <div className="absolute bottom-6 left-6 right-6">
-                                            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate">{event.title}</h3>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
+                                        <div className="absolute bottom-8 left-8 right-8">
+                                            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{event.title}</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
                                         </div>
                                         {event.date && new Date(event.date) < new Date() && (
                                             <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
@@ -94,14 +96,14 @@ const TicketingManagement = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-6 grid grid-cols-2 gap-4 bg-black/40">
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Tickets Sold</p>
-                                            <p className="text-xl font-black text-neon-green">{approvedCount}</p>
+                                    <div className="p-8 grid grid-cols-2 gap-4 bg-black/40">
+                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-neon-green/5 transition-colors">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Tickets Sold</p>
+                                            <p className="text-2xl font-black text-neon-green">{approvedCount}</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Pending UPI</p>
-                                            <p className="text-xl font-black text-yellow-500">{pendingCount}</p>
+                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-yellow-500/5 transition-colors">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Pending UPI</p>
+                                            <p className="text-2xl font-black text-yellow-500">{pendingCount}</p>
                                         </div>
                                     </div>
                                 </Card>
@@ -321,10 +323,10 @@ const TicketingManagement = () => {
                                                         {order.status === 'pending' && (
                                                             <>
                                                                 <button onClick={() => handleApprove(order.id)} className="w-12 h-12 rounded-2xl bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black inline-flex items-center justify-center transition-all border border-neon-green/20 hover:scale-110" title="Verify Payment">
-                                                                    <Check size={20} />
+                                                                    <Check size={24} />
                                                                 </button>
                                                                 <button onClick={() => handleReject(order.id)} className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white inline-flex items-center justify-center transition-all border border-red-500/20 hover:scale-110" title="Reject Payment">
-                                                                    <X size={20} />
+                                                                    <X size={24} />
                                                                 </button>
                                                             </>
                                                         )}
@@ -425,7 +427,7 @@ const TicketingManagement = () => {
                                         </div>
                                     </div>
                                     <Button onClick={handleDispatchAll} className="w-full h-16 bg-neon-blue text-black font-black uppercase text-xs tracking-[0.2em] rounded-3xl hover:scale-105 transition-all">
-                                        <Send size={18} className="mr-3" /> {event?.ticketMode === 'pdf' ? 'DISPATCH MAPPED PDFs' : 'DISPATCH QR PASSES'}
+                                        <Send size={22} className="mr-3" /> {event?.ticketMode === 'pdf' ? 'DISPATCH MAPPED PDFs' : 'DISPATCH QR PASSES'}
                                     </Button>
                                 </Card>
                             </div>
@@ -449,7 +451,7 @@ const TicketingManagement = () => {
                                         <p className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mt-2">Download raw CSV sheets of verified buyers and scanned tickets.</p>
                                     </div>
                                     <Button onClick={downloadSheets} className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-black uppercase tracking-widest h-14 px-8 rounded-2xl border border-white/10 hover:border-white/20">
-                                        <Download size={16} className="mr-2" /> Download Master CSV
+                                        <Download size={20} className="mr-2" /> Download Master CSV
                                     </Button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

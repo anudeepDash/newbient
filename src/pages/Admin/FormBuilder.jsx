@@ -154,6 +154,16 @@ const FormBuilder = () => {
                         <div className="absolute -top-20 -right-20 w-64 h-64 bg-neon-pink/5 rounded-full blur-[100px] pointer-events-none" />
                         
                         <form onSubmit={handleSubmit} className="space-y-12 relative z-10">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">DESCRIPTION</label>
+                                <textarea 
+                                    className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
+                                    value={description} 
+                                    onChange={e => setDescription(e.target.value)} 
+                                    placeholder="Brief details..." 
+                                />
+                            </div>
+
                             <div className="space-y-10">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3">

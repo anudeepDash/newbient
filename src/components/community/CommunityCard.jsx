@@ -308,7 +308,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 {/* Back Side */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rotate-y-180 bg-[#080808] border-2 rounded-[2.5rem] p-7 md:p-9 flex flex-col shadow-2xl overflow-hidden",
+                        "absolute inset-0 backface-hidden rotate-y-180 bg-[#080808] border-2 rounded-[2.5rem] pt-7 px-7 pb-4 md:pt-9 md:px-9 md:pb-5 flex flex-col shadow-2xl overflow-hidden",
                         isFlipped ? "pointer-events-auto" : "pointer-events-none"
                     )}
                     style={{ 
@@ -318,16 +318,25 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.03),transparent)]" />
                     
-                    <div className="relative z-10 flex items-center justify-end mb-8">
-                        <button 
-                            onClick={() => setIsFlipped(false)}
-                            className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all group/close backdrop-blur-3xl"
-                        >
-                            <X size={20} className="group-hover/close:rotate-90 transition-transform duration-500" />
-                        </button>
-                    </div>
-
                     <div className="relative z-10 flex-1 overflow-y-auto pr-4 space-y-10 scrollbar-hide">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4 text-white/20">
+                                    <div className="w-10 h-[1px] bg-current" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">DESCRIPTION</span>
+                                </div>
+                                <button 
+                                    onClick={() => setIsFlipped(false)}
+                                    className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all group/close backdrop-blur-3xl"
+                                >
+                                    <X size={20} className="group-hover/close:rotate-90 transition-transform duration-500" />
+                                </button>
+                            </div>
+                            <div className="text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap pl-1">
+                                {item.description || ""}
+                            </div>
+                        </div>
+
                         {item.importantNotes && (
                             <div className="p-6 rounded-[1.5rem] bg-white/[0.03] border border-white/5 relative overflow-hidden group/note">
                                 <div className="absolute top-0 left-0 w-1 h-full transition-all duration-500 group-hover/note:w-1.5" style={{ backgroundColor: highlightColor }} />
@@ -340,16 +349,6 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 </div>
                             </div>
                         )}
-
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-4 text-white/20">
-                                <div className="w-10 h-[1px] bg-current" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.5em]">DESCRIPTION</span>
-                            </div>
-                            <div className="text-base font-medium text-gray-400 leading-relaxed italic whitespace-pre-wrap pl-1">
-                                {item.description || ""}
-                            </div>
-                        </div>
 
                         {isCampaign && (
                             <div className="pt-8 border-t border-white/5 space-y-5">
@@ -368,16 +367,8 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                         )}
                     </div>
 
-                    <div className="relative z-10 pt-8 mt-auto flex items-center justify-between border-t border-white/10">
-                        <div className="flex items-center gap-3">
-                            <Sparkles size={12} style={{ color: highlightColor }} />
-                            <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.6em] italic">NEWBI ENTERTAINMENT</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                        </div>
+                    <div className="relative z-10 mt-auto pt-2 flex items-center justify-start">
+                        <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.5em] italic">NEWBI ENT.</span>
                     </div>
                 </div>
             </motion.div>

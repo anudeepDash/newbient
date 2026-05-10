@@ -530,11 +530,11 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                 {/* SUCCESS */}
                                 {step === 'success' && (
                                     <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-6">
-                                        <div className={cn("w-24 h-24 rounded-full flex items-center justify-center text-black mb-2 shadow-[0_0_15px_rgba(0,0,0,0.1)]", activeTab === 'tickets' ? "bg-neon-green" : "bg-neon-blue")}>
-                                            <CheckCircle2 size={48} />
+                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-black mb-1 shadow-[0_0_15px_rgba(0,0,0,0.1)]", activeTab === 'tickets' ? "bg-neon-green" : "bg-neon-blue")}>
+                                            <CheckCircle2 size={32} />
                                         </div>
                                         <div>
-                                            <h3 className="text-3xl font-black font-heading italic uppercase text-white">
+                                            <h3 className="text-2xl font-black font-heading italic uppercase text-white">
                                                 {activeTab === 'tickets' ? 'Payment Verifying' : 'Guestlist Confirmed'}
                                             </h3>
                                             <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto">
@@ -542,9 +542,9 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                             </p>
                                         </div>
                                         
-                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full mt-4">
-                                            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mb-2">Booking Reference</p>
-                                            <p className="text-xl font-black font-mono tracking-widest text-white mb-6">{bookingRef}</p>
+                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full mt-2">
+                                            <p className="text-[9px] uppercase font-bold text-gray-600 tracking-widest mb-1">Booking Reference</p>
+                                            <p className="text-lg font-black font-mono tracking-widest text-white mb-4">{bookingRef}</p>
                                             
                                             <div className="flex flex-col gap-3">
                                                 {activeTab === 'tickets' && event.ticketMode === 'pdf' ? (
@@ -554,21 +554,18 @@ const EventTicketingModal = ({ event, isOpen, onClose }) => {
                                                 ) : (
                                                     <Button 
                                                         onClick={handleDownloadTicket} 
-                                                        className={cn("w-full h-14 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? 'bg-neon-green text-black' : 'bg-neon-pink text-black')}
+                                                        className={cn("w-full h-12 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? 'bg-neon-green text-black' : 'bg-neon-pink text-black')}
                                                     >
-                                                        <Download size={16} /> DOWNLOAD PASS
+                                                        <Download size={14} /> DOWNLOAD PASS
                                                     </Button>
                                                 )}
                                                 
-                                                <a href={`/ticket/${bookingRef}?event=${event.id}`} target="_blank" rel="noopener noreferrer" className="w-full h-14 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white transition-all">
-                                                    <QrCode size={16} /> VIEW DIGITAL PASS
+                                                <a href={`/ticket/${bookingRef}?event=${event.id}`} target="_blank" rel="noopener noreferrer" className="w-full h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-white transition-all">
+                                                    <QrCode size={14} /> VIEW DIGITAL PASS
                                                 </a>
                                             </div>
                                         </div>
 
-                                        <Button onClick={onClose} variant="ghost" className="w-full h-14 mt-2 text-gray-500 hover:text-white">
-                                            CLOSE
-                                        </Button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>

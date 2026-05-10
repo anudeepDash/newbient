@@ -226,6 +226,7 @@ const ArtistAnt = () => {
 
     const handleClientSubmit = async (e) => {
         e.preventDefault();
+        if (!user) { setAuthModal(true); return; }
         setIsSubmitting(true);
         try {
             await addClientRequest({
