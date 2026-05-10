@@ -17,6 +17,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import { cn } from '../../lib/utils';
 
 const MessageManager = () => {
     const { messages, markMessageRead, deleteMessage } = useStore();
