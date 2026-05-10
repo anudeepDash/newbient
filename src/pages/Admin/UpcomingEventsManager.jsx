@@ -263,6 +263,16 @@ const UpcomingEventsManager = () => {
                                                     </div>
 
                                                     <form onSubmit={handleSubmit} className="space-y-16">
+                                                        <div className="space-y-4">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Description</label>
+                                                            <textarea 
+                                                                className="w-full bg-black/50 border border-white/5 rounded-[2rem] p-8 text-white focus:outline-none focus:border-neon-pink/40 min-h-[150px] resize-none text-[11px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner uppercase tracking-widest" 
+                                                                value={newEvent.description} 
+                                                                onChange={e => setNewEvent({ ...newEvent, description: e.target.value })} 
+                                                                placeholder="Rules of entry, age limits, dress code..." 
+                                                            />
+                                                        </div>
+
                                                         {/* Section 1: Identity */}
                                                         <div className="space-y-8">
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

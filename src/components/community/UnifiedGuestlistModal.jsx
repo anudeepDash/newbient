@@ -379,52 +379,54 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                     {step === 'success' && (
                                         <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-10">
-                                            <div className="w-20 h-20 bg-neon-green rounded-3xl flex items-center justify-center text-black shadow-[0_0_20px_rgba(0,230,168,0.3)]">
-                                                <CheckCircle2 size={36} />
+                                            <div className="w-16 h-16 bg-neon-green rounded-2xl flex items-center justify-center text-black mb-1 shadow-[0_0_15px_rgba(0,230,168,0.2)]">
+                                                <CheckCircle2 size={32} />
                                             </div>
                                             
                                             <div className="space-y-1">
-                                                <h3 className="text-4xl font-black font-heading text-white italic tracking-tighter uppercase leading-none">
+                                                <h3 className="text-2xl font-black font-heading text-white italic tracking-tighter uppercase leading-none">
                                                     REGISTRATION <span className="text-neon-green">CONFIRMED.</span>
                                                 </h3>
-                                                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest px-4">Your entry is secured. Save your ticket below or view it in your account.</p>
+                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest px-4">Your entry is secured. Save your ticket below.</p>
                                             </div>
 
                                             <div className="relative">
-                                                <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl scale-95 group hover:scale-[0.98] transition-transform duration-700">
+                                                <div className="bg-white p-4 rounded-2xl shadow-xl scale-90">
                                                     <img 
                                                         src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingRef)}`} 
                                                         alt="Access QR" 
                                                         crossOrigin="anonymous"
-                                                        className="w-40 h-40 mix-blend-multiply" 
+                                                        className="w-24 h-24 mix-blend-multiply" 
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div className="w-full flex flex-col gap-3">
+                                            <div className="w-full flex flex-col gap-2">
                                                 <Button 
                                                     onClick={handleDownloadTicket} 
-                                                    className="w-full h-16 bg-neon-green text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                                    className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    <Download size={16} /> DOWNLOAD TICKET
+                                                    <Download size={14} /> DOWNLOAD TICKET
                                                 </Button>
                                                 
-                                                <Button 
-                                                    onClick={() => { window.location.href = '/account'; }} 
-                                                    variant="outline"
-                                                    className="w-full h-16 border-white/10 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl hover:bg-white/5 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <ExternalLink size={16} /> VIEW IN ACCOUNT
-                                                </Button>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <Button 
+                                                        onClick={() => { window.location.href = '/account'; }} 
+                                                        variant="outline"
+                                                        className="h-12 border-white/10 text-white font-black uppercase tracking-[0.2em] text-[8px] rounded-xl hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <ExternalLink size={14} /> ACCOUNT
+                                                    </Button>
 
-                                                <a 
-                                                    href={`/ticket/${bookingRef}?gl=${guestlist.id}`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="w-full h-14 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white transition-all mt-2"
-                                                >
-                                                    <QrCode size={16} /> VIEW DIGITAL PASS
-                                                </a>
+                                                    <a 
+                                                        href={`/ticket/${bookingRef}?gl=${guestlist.id}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[8px] font-black uppercase tracking-widest text-white transition-all"
+                                                    >
+                                                        <QrCode size={14} /> DIGITAL PASS
+                                                    </a>
+                                                </div>
                                             </div>
 
                                             {/* Hidden Ticket Surface for Download */}
