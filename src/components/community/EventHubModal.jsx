@@ -178,7 +178,55 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                         </button>
 
                                         <div className="flex-1 overflow-y-auto p-8 md:p-12 scrollbar-hide space-y-12">
-                                            {/* Header */}
+                                            {/* Video Highlight - TOP PRIORITY */}
+                                            {event.videoUrl && (
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-4 text-neon-pink">
+                                                        <div className="w-10 h-[1px] bg-current" />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">VIDEO HIGHLIGHT</span>
+                                                    </div>
+                                                    <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-black border border-white/10 shadow-2xl relative group">
+                                                        {(event.videoUrl.match(/\.(mp4|webm|ogg)$/i) || event.videoUrl.includes('cloudinary.com')) ? (
+                                                            <video 
+                                                                src={event.videoUrl} 
+                                                                controls 
+                                                                autoPlay
+                                                                muted
+                                                                className="w-full h-full object-cover"
+                                                                poster={event.image}
+                                                            />
+                                                        ) : (
+                                                            <iframe 
+                                                                src={getVideoEmbedUrl(event.videoUrl)} 
+                                                                className="w-full h-full border-none"
+                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                                allowFullScreen
+                                                                title="Event Highlight"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Description - PRIMARY CONTEXT */}
+                                            <div className="space-y-4">
+                                                <div className={cn(
+                                                    "text-gray-400 text-sm leading-relaxed whitespace-pre-wrap italic font-medium border-l-2 border-white/10 pl-6 transition-all duration-500",
+                                                    !isDescriptionExpanded && "line-clamp-3"
+                                                )}>
+                                                    {event.description || "No detailed briefing provided for this protocol. Standard event parameters apply."}
+                                                </div>
+                                                {event.description && event.description.length > 150 && (
+                                                    <button 
+                                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                                        className="text-[9px] font-black uppercase tracking-[0.2em] text-neon-blue/60 hover:text-neon-blue pl-6 transition-colors"
+                                                    >
+                                                        {isDescriptionExpanded ? "Show Less" : "Read More"}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Header - TITLE & LOGISTICS */}
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-4 text-neon-blue">
                                                     <div className="w-10 h-[1px] bg-current" />
@@ -208,54 +256,6 @@ const EventHubModal = ({ event, isOpen, onClose }) => {
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-white/70 group-hover/artist:text-white transition-colors">{artist}</span>
                                                         </div>
                                                     ))}
-                                                </div>
-                                            )}
-
-                                            {/* Description */}
-                                            <div className="space-y-4">
-                                                <div className={cn(
-                                                    "text-gray-400 text-sm leading-relaxed whitespace-pre-wrap italic font-medium border-l-2 border-white/10 pl-6 transition-all duration-500",
-                                                    !isDescriptionExpanded && "line-clamp-3"
-                                                )}>
-                                                    {event.description || "No detailed briefing provided for this protocol. Standard event parameters apply."}
-                                                </div>
-                                                {event.description && event.description.length > 150 && (
-                                                    <button 
-                                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                                        className="text-[9px] font-black uppercase tracking-[0.2em] text-neon-blue/60 hover:text-neon-blue pl-6 transition-colors"
-                                                    >
-                                                        {isDescriptionExpanded ? "Show Less" : "Read More"}
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Video Highlight */}
-                                            {event.videoUrl && (
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center gap-4 text-neon-pink">
-                                                        <div className="w-10 h-[1px] bg-current" />
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">VIDEO HIGHLIGHT</span>
-                                                    </div>
-                                                    <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-black border border-white/10 shadow-2xl relative group">
-                                                        {(event.videoUrl.match(/\.(mp4|webm|ogg)$/i) || event.videoUrl.includes('cloudinary.com')) ? (
-                                                            <video 
-                                                                src={event.videoUrl} 
-                                                                controls 
-                                                                autoPlay
-                                                                muted
-                                                                className="w-full h-full object-cover"
-                                                                poster={event.image}
-                                                            />
-                                                        ) : (
-                                                            <iframe 
-                                                                src={getVideoEmbedUrl(event.videoUrl)} 
-                                                                className="w-full h-full border-none"
-                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                                                allowFullScreen
-                                                                title="Event Highlight"
-                                                            />
-                                                        )}
-                                                    </div>
                                                 </div>
                                             )}
 

@@ -1110,7 +1110,7 @@ const ProposalGenerator = () => {
                                                     </div>
                                                     <h3 className="text-4xl font-black text-black tracking-tight leading-none">Summary & Terms.</h3>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-16 items-start">
+                                                <div className="grid grid-cols-2 gap-16 items-stretch">
                                                     <div className="space-y-8">
                                                         {!isHidden('terms') && (
                                                             <div className="space-y-4">
@@ -1320,7 +1320,7 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'commercials' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="grid grid-cols-2 gap-16 items-start">
+                                    <div className="grid grid-cols-2 gap-16 items-stretch">
                                         <div className="space-y-12">
                                             {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(formData.terms)}</div></div>}
                                             {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(formData.paymentDetails)}</div></div>}

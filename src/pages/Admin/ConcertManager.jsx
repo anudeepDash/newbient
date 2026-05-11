@@ -165,8 +165,7 @@ const ConcertManager = () => {
                 <AnimatePresence mode="wait">
                     {isAdding ? (
                         /* ── Editor ── */
-                        <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}
-                            className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
                             <div className="lg:col-span-7 w-full">
                                 <AnimatePresence mode="wait">
                                     {showPreviewMobile ? (
@@ -297,7 +296,7 @@ const ConcertManager = () => {
                                 <LivePreview type="portfolio" categories={portfolioCategories}
                                     data={{ ...newPortfolio, image: selectedFile ? URL.createObjectURL(selectedFile) : newPortfolio.image }} />
                             </div>
-                        </motion.div>
+                        </div>
                     ) : (
                         /* ── Grid ── */
                         <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

@@ -174,7 +174,7 @@ const GuestlistManager = () => {
                     icon: ListChecks
                 }}
             >
-                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-start mb-20 relative z-10">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-stretch mb-20 relative z-10">
                     {/* Editor Column */}
                     <div className="w-full">
                         <Card className="p-8 md:p-12 bg-zinc-950/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
