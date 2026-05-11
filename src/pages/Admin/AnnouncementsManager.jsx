@@ -241,7 +241,7 @@ const AnnouncementsManager = () => {
                                                 <LivePreview type="announcement" data={newAnnouncement} hideDecorations={true} />
                                             </motion.div>
                                         ) : (
-                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-stretch">
                                                 <div className="xl:col-span-7">
                                                     <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden">
                                                         {/* Header */}
@@ -477,7 +477,7 @@ const AnnouncementsManager = () => {
                                                         <LivePreview type="announcement" data={newAnnouncement} hideDecorations={true} />
                                                     </div>
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         )}
                                     </AnimatePresence>
                                 </div>
