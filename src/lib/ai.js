@@ -35,8 +35,20 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
     try {
         console.log('[NEWBI AI] → Requesting secure neural path via proxy...');
         
-        const user = auth.currentUser;
+        let user = auth.currentUser;
+        
+        // If user isn't immediately available, wait a brief moment for Firebase to sync
+        if (!user) {
+            console.log('[NEWBI AI] Waiting for Auth sync...');
+            await new Promise(resolve => setTimeout(resolve, 800));
+            user = auth.currentUser;
+        }
+
         const token = user ? await user.getIdToken() : null;
+
+        if (!token) {
+            console.warn('[NEWBI AI] ⚠️ No active session found. AI requests may fail.');
+        }
 
         const response = await fetch('/api/ai', {
             method: 'POST',
