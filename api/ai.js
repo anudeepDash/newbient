@@ -77,7 +77,7 @@ export default async function handler(req, res) {
                 console.warn('[AI PROXY] ⚠️ Gemini 2.0 Quota/Error. Stepping down to 1.5...');
                 try {
                     const model15 = genAI.getGenerativeModel({ 
-                        model: "gemini-1.5-flash-latest",
+                        model: "gemini-1.5-flash",
                         generationConfig: { responseMimeType: "application/json" }
                     });
                     const result15 = await model15.generateContent([
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         }
 
         // 2. TRY OPENROUTER (FETCH)
-        if (OPENROUTER_API_KEY) {
+        if (OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10) {
             try {
                 console.log('[AI PROXY] Path: OpenRouter');
                 const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -129,68 +129,34 @@ export default async function handler(req, res) {
                         });
                     }
                 } else {
-                    const err = await orRes.text();
-                    console.warn('[AI PROXY] ⚠️ OpenRouter response not OK:', err.substring(0, 100));
+                    const errText = await orRes.text();
+                    console.warn('[AI PROXY] ⚠️ OpenRouter response not OK:', errText.substring(0, 100));
                 }
             } catch (e) {
                 console.error('[AI PROXY] OpenRouter path failed:', e.message);
             }
         }
 
-        // 3. TRY PERPLEXITY
-        if (PERPLEXITY_API_KEY) {
-            try {
-                console.log('[AI PROXY] Path: Perplexity');
-                const pRes = await fetch('https://api.perplexity.ai/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.1-sonar-large-128k-online",
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: userPrompt }
-                        ]
-                    })
-                });
-
-                if (pRes.ok) {
-                    const data = await pRes.json();
-                    return res.status(200).json({ 
-                        content: data.choices[0].message.content, 
-                        provider: 'perplexity' 
-                    });
-                }
-            } catch (e) {
-                console.error('[AI PROXY] Perplexity path failed:', e.message);
-            }
-        }
-
-        // 4. TRY AIRFORCE (FREE PROXY)
+        // 3. TRY AIRFORCE (FREE PROXY - VERY FAST)
         try {
             console.log('[AI PROXY] Path: Airforce');
-            const models = ['gpt-4o-mini', 'llama-3.3-70b-versatile'];
-            for (const model of models) {
-                const afRes = await fetch('https://api.airforce/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: systemPrompt + '\n\nReturn ONLY JSON.' },
-                            { role: 'user', content: userPrompt }
-                        ]
-                    })
+            const afRes = await fetch('https://api.airforce/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        { role: 'system', content: systemPrompt + '\n\nReturn ONLY JSON.' },
+                        { role: 'user', content: userPrompt }
+                    ]
+                })
+            });
+            if (afRes.ok) {
+                const data = await afRes.json();
+                return res.status(200).json({ 
+                    content: data.choices[0].message.content, 
+                    provider: `airforce` 
                 });
-                if (afRes.ok) {
-                    const data = await afRes.json();
-                    return res.status(200).json({ 
-                        content: data.choices[0].message.content, 
-                        provider: `airforce-${model}` 
-                    });
-                }
             }
         } catch (e) {
             console.error('[AI PROXY] Airforce path failed:', e.message);
