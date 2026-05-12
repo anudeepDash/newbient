@@ -447,7 +447,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     </div>
                                     <button 
                                         onClick={() => setStep('selection')}
-                                        className="shrink-0 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-gray-400 hover:text-white uppercase tracking-widest md:hidden"
+                                        className="shrink-0 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 text-[9px] md:text-xs font-black text-gray-400 hover:text-white uppercase tracking-widest transition-all"
                                     >
                                         List View
                                     </button>
