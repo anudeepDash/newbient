@@ -57,9 +57,9 @@ export default async function handler(req, res) {
         // 1. TRY GEMINI (SDK)
         if (genAI) {
             try {
-                console.log('[AI PROXY] 🚀 Path: Gemini SDK');
+                console.log('[AI PROXY] 🚀 Path: Gemini SDK (2.0 Flash)');
                 const model = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash-latest",
+                    model: "gemini-2.0-flash",
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 
