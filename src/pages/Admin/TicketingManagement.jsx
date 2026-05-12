@@ -231,7 +231,9 @@ const TicketingManagement = () => {
                o.customerEmail,
                "Ticket",
                o.status,
-               o.items?.map(i => `${i.count}x ${i.name}`).join(' | '),
+               Array.isArray(o.items) 
+                 ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
+                 : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | '),
                o.bookingRef,
                o.createdAt
             ]),
@@ -632,7 +634,7 @@ const TicketingManagement = () => {
                                                     </td>
                                                     <td className="p-8">
                                                         <div className="flex flex-wrap gap-2">
-                                                        {order.items?.map((item, i) => (
+                                                        {(Array.isArray(order.items) ? order.items : Object.entries(order.items || {}).map(([k, v]) => ({ name: k, count: v }))).map((item, i) => (
                                                             <div key={i} className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block">
                                                                 {item.count}x <span className="text-white">{item.name}</span>
                                                             </div>
@@ -792,7 +794,13 @@ const TicketingManagement = () => {
                                     <div className="bg-black/60 p-8 rounded-3xl border border-white/5">
                                         <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Tickets Sold</p>
                                         <p className="text-4xl font-black text-white italic tracking-tighter">
-                                            {approvedOrders.reduce((acc, order) => acc + (order.items?.reduce((a, b) => a + b.count, 0) || 0), 0)}
+                                            {approvedOrders.reduce((acc, order) => {
+                                                const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
+                                                const count = Array.isArray(order.items) 
+                                                    ? items.reduce((a, b) => a + (b.count || 0), 0)
+                                                    : items.reduce((a, b) => a + (b || 0), 0);
+                                                return acc + count;
+                                            }, 0)}
                                         </p>
                                     </div>
                                     {!isScanner && (
