@@ -47,8 +47,6 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import SignatureModal from '../../components/ui/SignatureModal';
 import { Button } from '../../components/ui/Button';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -248,6 +246,14 @@ const ContractGenerator = () => {
         setPreviewScale(1);
         await new Promise(r => setTimeout(r, 800));
         try {
+            // Lazy load libraries
+            const [jsPDFModule, html2canvasModule] = await Promise.all([
+                import('jspdf'),
+                import('html2canvas')
+            ]);
+            const jsPDF = jsPDFModule.default;
+            const html2canvas = html2canvasModule.default;
+
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pages = document.querySelectorAll('.pdf-export-only .agreement-page-render');
             for (let i = 0; i < pages.length; i++) {
@@ -333,7 +339,7 @@ const ContractGenerator = () => {
 
             <div className="flex-1 flex overflow-x-clip">
                 {/* Sidebar - Desktop Only */}
-                <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
@@ -360,8 +366,8 @@ const ContractGenerator = () => {
                 </div>
 
                 {/* Editor */}
-                <main className="flex-1 overflow-y-auto px-8 py-16 scrollbar-hide bg-[#050505] pb-32">
-                    <div className="max-w-7xl mx-auto space-y-12">
+                <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
+                    <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
                         
                         <AIPromptBox onGenerate={handleGenerateContract} isGenerating={isGenerating} type="contract" forceClear={promptBoxClear} />
 
@@ -551,108 +557,166 @@ const ContractGenerator = () => {
                                         isAILoading={isGenerating}
                                     />
                                 )}
-
-
                                 {activeTab === '7' && (
-                                    <div className="space-y-10">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                            <div className="space-y-8">
-                                                <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
-                                                    <h3 className="text-lg font-black uppercase tracking-tighter italic">Document Settings</h3>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-10">
+                                        {/* Row 1: Security & Identity */}
+                                        <div className="flex flex-col gap-8">
+                                            {/* Security Controls - Full Width */}
+                                            <div className="p-8 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="w-14 h-14 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20 shrink-0">
+                                                            <ShieldCheck size={28} className="text-[#A855F7]" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em]">Verification</p>
+                                                            <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Security Controls.</h3>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-4">
                                                         <button 
-                                                            onClick={() => updateField('showSeal', !formData.showSeal)} 
+                                                            onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
                                                             className={cn(
-                                                                "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", 
-                                                                formData.showSeal ? "bg-white text-black border-white" : "bg-transparent text-gray-500 border-white/10"
+                                                                "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
+                                                                formData.showSeal 
+                                                                    ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_20px_40px_rgba(168,85,247,0.25)]" 
+                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
                                                             )}
                                                         >
-                                                            {formData.showSeal ? <Eye size={14} /> : <EyeOff size={14} />} Official Seal
+                                                            <div className={cn(
+                                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
+                                                                formData.showSeal ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
+                                                            )}>
+                                                                <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-black" : "text-gray-500")} />
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSeal ? "text-black/60" : "text-gray-600")}>Protocol</p>
+                                                                <p className="text-[11px] font-black uppercase tracking-widest">Official Seal</p>
+                                                            </div>
                                                         </button>
+
                                                         <button 
-                                                            onClick={() => updateField('showSignatures', !formData.showSignatures)} 
+                                                            onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
                                                             className={cn(
-                                                                "h-12 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2", 
-                                                                formData.showSignatures ? "bg-white text-black border-white" : "bg-transparent text-gray-500 border-white/10"
+                                                                "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
+                                                                formData.showSignatures 
+                                                                    ? "bg-[#A855F7] text-black border-[#A855F7] shadow-[0_20px_40px_rgba(168,85,247,0.25)]" 
+                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
                                                             )}
                                                         >
-                                                            {formData.showSignatures ? <Eye size={14} /> : <EyeOff size={14} />} Digital Signatures
+                                                            <div className={cn(
+                                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
+                                                                formData.showSignatures ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
+                                                            )}>
+                                                                <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-black" : "text-gray-500")} />
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSignatures ? "text-black/60" : "text-gray-600")}>Protocol</p>
+                                                                <p className="text-[11px] font-black uppercase tracking-widest">Digital Sign</p>
+                                                            </div>
                                                         </button>
                                                     </div>
                                                 </div>
-
-                                                {/* Provider Authorization (Newbi) */}
-                                                {formData.showSignatures && (
-                                                    <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="space-y-1">
-                                                                <h3 className="text-lg font-black uppercase tracking-tighter italic">Provider Authorization</h3>
-                                                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">Sign for Newbi Entertainment</p>
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                <Input 
-                                                                    value={formData.providerName} 
-                                                                    onChange={e => updateField('providerName', e.target.value)} 
-                                                                    placeholder="Signatory Name" 
-                                                                    className="h-10 w-48 bg-black/40 border-white/10 text-[10px]" 
-                                                                />
-                                                                <Input 
-                                                                    value={formData.providerDesignation} 
-                                                                    onChange={e => updateField('providerDesignation', e.target.value)} 
-                                                                    placeholder="Designation" 
-                                                                    className="h-10 w-48 bg-black/40 border-white/10 text-[10px]" 
-                                                                />
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => setIsSignatureModalOpen(true)}
-                                                                className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
-                                                            >
-                                                                <PenTool size={12} /> Capture Signature
-                                                            </button>
-                                                        </div>
-                                                        
-                                                        <div 
-                                                            onClick={() => setIsSignatureModalOpen(true)}
-                                                            className="relative h-32 bg-black/40 rounded-2xl border border-white/5 flex items-center justify-center group overflow-hidden cursor-pointer hover:bg-black/60 transition-all"
-                                                        >
-                                                            {formData.providerSignature ? (
-                                                                <div className="relative group w-full h-full flex items-center justify-center p-4">
-                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="max-h-full object-contain invert brightness-200" />
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                                                        <RefreshCw size={20} className="text-white" />
-                                                                    </div>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); updateField('providerSignature', null); }}
-                                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col items-center gap-2 text-white/10">
-                                                                    <PenTool size={24} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-[0.5em]">Click to Sign</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-
                                             </div>
 
-                                            <div className="flex flex-col gap-8">
-                                                <div className="flex flex-col items-center justify-center p-12 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] flex-1">
-                                                    <DocumentSeal type="contract" date={formData.effectiveDate} className="w-48 h-48 opacity-100" />
-                                                    <div className="mt-8 text-center space-y-2">
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Execution Reference</p>
-                                                        <p className="text-xl font-black text-[#A855F7] tracking-widest">{formData.agreementNumber}</p>
+                                            {/* Signatory Identity - Full Width */}
+                                            <div className="p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Authorized Representative</label>
+                                                        <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="h-20 w-full bg-black/60 border border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Corporate Designation</label>
+                                                        <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director" className="h-20 w-full bg-black/60 border border-white/5 focus:border-[#A855F7]/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
                                                     </div>
                                                 </div>
-                                                <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem]">
-                                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Security Protocol</p>
-                                                    <p className="text-[11px] text-gray-400 leading-relaxed italic">Documents are electronically sealed and timestamped upon export. Digital signatures are embedded as unalterable raster assets.</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Row 2: Signature Pad - FULL WIDTH */}
+                                        <div className="p-8 md:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] relative overflow-hidden group">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20">
+                                                        <PenTool size={22} className="text-[#A855F7]" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
+                                                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Biometric Authentication Interface</p>
+                                                    </div>
                                                 </div>
+                                                {formData.providerSignature && (
+                                                    <button onClick={() => updateField('providerSignature', null)} className="h-10 px-5 rounded-xl bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+                                                        Clear Pad
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div 
+                                                onClick={() => setIsSignatureModalOpen(true)}
+                                                className="w-full h-64 md:h-80 bg-black/80 rounded-[2.5rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-[#A855F7]/40 transition-all duration-500 relative group/pad"
+                                            >
+                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                                                
+                                                {formData.providerSignature ? (
+                                                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full h-full flex items-center justify-center p-10">
+                                                        <img src={formData.providerSignature} className="max-w-full max-h-full object-contain invert brightness-200 drop-shadow-[0_0_40px_rgba(168,85,247,0.4)]" alt="Signature" />
+                                                        <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-[#A855F7]/20 rounded-full border border-[#A855F7]/30 backdrop-blur-md">
+                                                            <CheckCircle2 size={12} className="text-[#A855F7]" />
+                                                            <span className="text-[8px] font-black text-[#A855F7] uppercase tracking-widest">Verified</span>
+                                                        </div>
+                                                    </motion.div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-4 text-white/5 group-hover/pad:text-[#A855F7]/30 transition-all duration-500">
+                                                        <PenTool size={48} className="-rotate-12" />
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.8em]">Click to Execute</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Row 3: Integrity Hub - FULL WIDTH */}
+                                        <div className="p-8 md:p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group">
+                                            <div className="absolute inset-0 bg-[#A855F7]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                                            
+                                            <div className="flex items-center gap-10 relative z-10 w-full md:w-auto">
+                                                <div className="relative shrink-0">
+                                                    <DocumentSeal type="contract" date={formData.effectiveDate} className="w-40 h-40 drop-shadow-[0_0_40px_rgba(168,85,247,0.2)]" />
+                                                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-[#A855F7]/20 rounded-full pointer-events-none" />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">Execution Reference</p>
+                                                    <div className="bg-black/60 backdrop-blur-2xl px-8 py-5 rounded-[2rem] border border-white/10 group-hover:border-[#A855F7]/40 transition-all">
+                                                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-[0.1em] italic leading-none">
+                                                            {formData.agreementNumber.split('-').map((part, i) => (
+                                                                <span key={i} className={i === 3 ? "text-[#A855F7]" : ""}>{part}{i < 3 ? '-' : ''}</span>
+                                                            ))}
+                                                        </h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-6 w-full md:w-80 relative z-10">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Lock size={12} className="text-emerald-500" />
+                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">AES-256</span>
+                                                        </div>
+                                                        <p className="text-[7px] font-bold text-gray-500 uppercase">Secure</p>
+                                                    </div>
+                                                    <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <History size={12} className="text-[#A855F7]" />
+                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">v{formData.version || '1.0'}</span>
+                                                        </div>
+                                                        <p className="text-[7px] font-bold text-gray-500 uppercase">Immutable</p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[9px] text-gray-500 leading-relaxed font-bold italic uppercase tracking-wider text-right">
+                                                    Cryptographically sealed & timestamped. Handshake status: <span className="text-emerald-500">Active</span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>

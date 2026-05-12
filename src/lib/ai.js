@@ -7,6 +7,8 @@
 
 // API Keys are now handled securely by the backend proxy (/api/ai)
 
+import { auth } from './firebase';
+
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
     UNSUPPORTED_TYPE: { code: 'NB-101', message: 'The document type requested is not currently supported by our neural engine.' },
@@ -33,11 +35,14 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
     try {
         console.log('[NEWBI AI] → Requesting secure neural path via proxy...');
         
+        const user = auth.currentUser;
+        const token = user ? await user.getIdToken() : null;
+
         const response = await fetch('/api/ai', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-Newbi-Secret': 'nb-sec-9921-xp' // Simple app-level secret
+                'Authorization': token ? `Bearer ${token}` : ''
             },
             body: JSON.stringify({ systemPrompt, userPrompt, type: systemPrompt.includes('proposal') ? 'proposal' : 'generic' })
         });

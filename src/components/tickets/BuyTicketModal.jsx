@@ -289,7 +289,7 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                         {paymentDetails?.upiId ? (
                                             <div className="inline-block p-4 bg-white rounded-xl border border-gray-200">
                                                 <img
-                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${paymentDetails.upiId}&pn=NewBi Entertainment&am=${totalAmount}&cu=INR`)}`}
+                                                    src={`/api/qr?size=250&text=${encodeURIComponent(`upi://pay?pa=${paymentDetails.upiId}&pn=NewBi Entertainment&am=${totalAmount}&cu=INR`)}`}
                                                     alt="Payment QR"
                                                     className="w-48 h-48 object-contain mx-auto mix-blend-multiply"
                                                 />

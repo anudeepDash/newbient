@@ -7,4 +7,21 @@ export default defineConfig({
   optimizeDeps: {
     include: ['lucide-react'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('firebase')) return 'vendor-firebase';
+            if (id.includes('framer-motion')) return 'vendor-motion';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            return 'vendor';
+          }
+          if (id.includes('src/pages/Admin')) return 'admin-pages';
+          if (id.includes('src/components/admin')) return 'admin-components';
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 })

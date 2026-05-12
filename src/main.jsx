@@ -8,11 +8,9 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </StrictMode>,
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
 )
 
 // Register Service Worker for Push Notifications

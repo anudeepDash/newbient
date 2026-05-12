@@ -877,7 +877,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
                                     <div className="bg-white rounded-[2rem] p-8 flex flex-col items-center gap-4 shadow-2xl">
                                         <img 
-                                            src={qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`)}`} 
+                                            src={qrCodeUrl || `/api/qr?size=300&text=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`)}`} 
                                             alt="QR" 
                                             className="w-48 h-48 md:w-56 md:h-56 object-contain" 
                                         />
@@ -1001,7 +1001,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         </div>
                                         <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
                                             <div className="bg-white p-8 rounded-[3rem]">
-                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
+                                                <img src={`/api/qr?size=400&text=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
                                             </div>
                                             <div className="space-y-6">
                                                 <div>
