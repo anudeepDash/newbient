@@ -157,7 +157,7 @@ const TicketingManagement = () => {
     let filteredOrders = eventOrders.filter(order => {
         let matchesSearch = true;
         if (searchQuery) {
-            matchesSearch = order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) || order.paymentRef?.includes(searchQuery);
+            matchesSearch = (order.customerName || order.name)?.toLowerCase().includes(searchQuery.toLowerCase()) || order.paymentRef?.includes(searchQuery);
         }
         let matchesStatus = true;
         if (statusFilter !== 'ALL') {
@@ -227,8 +227,8 @@ const TicketingManagement = () => {
         const headers = ["Name", "Email", "Type", "Status", "Details", "Booking Ref", "Created At"];
         const rows = [
             ...eventOrders.map(o => [
-               o.customerName,
-               o.customerEmail,
+               o.customerName || o.name,
+               o.customerEmail || o.email,
                "Ticket",
                o.status,
                Array.isArray(o.items) 
@@ -629,8 +629,8 @@ const TicketingManagement = () => {
                                             {filteredOrders.length > 0 ? filteredOrders.map((order) => (
                                                 <tr key={order.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                                                     <td className="p-8">
-                                                        <p className="font-black text-white text-base tracking-tight">{order.customerName}</p>
-                                                        <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone}</p>
+                                                        <p className="font-black text-white text-base tracking-tight">{order.customerName || order.name}</p>
+                                                        <p className="text-[10px] font-bold text-gray-500 tracking-widest mt-1">{order.customerPhone || order.phone}</p>
                                                     </td>
                                                     <td className="p-8">
                                                         <div className="flex flex-wrap gap-2">
