@@ -52,6 +52,7 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import artistantLogo from '../assets/logo/artistant.png';
 
@@ -129,6 +130,7 @@ const ArtistAnt = () => {
         addClientRequest, deleteArtist, updateArtist, uploadToCloudinary, addToast 
     } = useStore();
     const navigate = useNavigate();
+    const isArtistantDomain = typeof window !== 'undefined' && window.location.hostname.includes('artistant');
 
     const [view, setView] = useState('gateway');
     const [step, setStep] = useState(1);
@@ -175,7 +177,7 @@ const ArtistAnt = () => {
             }
             addToast("Profile picture uploaded!", 'success');
         } catch (error) {
-            addToast("Upload failed: " + error.message, 'error');
+            addToast("Couldn't upload your photo. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -200,7 +202,7 @@ const ArtistAnt = () => {
             });
             setView('dashboard');
         } catch (error) {
-            useStore.getState().addToast("Protocol failure: " + error.message, 'error');
+            useStore.getState().addToast("Something went wrong while submitting. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -218,7 +220,7 @@ const ArtistAnt = () => {
             });
             setView('dashboard');
         } catch (error) {
-            useStore.getState().addToast("Update failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't save your changes. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -242,7 +244,7 @@ const ArtistAnt = () => {
             setStep(1);
             setClientData({ name: '', org: '', email: '', city: '', category: '', budget: '', date: '', requirement: '' });
         } catch (error) {
-            useStore.getState().addToast("Error: " + error.message, 'error');
+            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -257,7 +259,7 @@ const ArtistAnt = () => {
             setView('gateway');
             setShowDeleteConfirm(false);
         } catch (error) {
-            useStore.getState().addToast("Deletion failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't delete your profile. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -271,6 +273,18 @@ const ArtistAnt = () => {
 
     return (
         <div className="min-h-screen bg-[#050505] text-white relative font-outfit scroll-smooth">
+            <Helmet>
+                <title>Artistant — the ultimate creative link-up.</title>
+                <meta name="description" content="Artistant is India's premier artist booking platform. Connect verified live performers — singers, DJs, bands, comedians — with event organizers. Book talent instantly." />
+                <link rel="canonical" href="https://artistant.in" />
+                <meta property="og:title" content="Artistant — the ultimate creative link-up." />
+                <meta property="og:description" content="India's premier live performance booking platform. Artists and organizers, united." />
+                <meta property="og:url" content="https://artistant.in" />
+                <meta property="og:type" content="website" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="Artistant — the ultimate creative link-up." />
+                <meta name="twitter:description" content="India's premier live performance booking platform." />
+            </Helmet>
             {/* Minimal Header */}
             <div className="fixed top-4 left-4 right-4 md:top-8 md:left-8 md:right-8 z-[100] flex justify-between items-center">
                 {isFormView ? (
@@ -281,6 +295,11 @@ const ArtistAnt = () => {
                         <ArrowLeft size={16} className="text-[#FF6B6B] group-hover:-translate-x-1 transition-transform" />
                         <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to Home</span>
                     </button>
+                ) : isArtistantDomain ? (
+                    <a href="https://newbi.live" className="flex items-center gap-3 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl transition-all group">
+                        <Home size={16} className="text-[#FF6B6B] group-hover:scale-110 transition-transform" />
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">newbi.live</span>
+                    </a>
                 ) : (
                     <Link to="/" className="flex items-center gap-3 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl transition-all group">
                         <Home size={16} className="text-[#FF6B6B] group-hover:scale-110 transition-transform" />
@@ -372,7 +391,7 @@ const ArtistAnt = () => {
                                         className="relative z-30 w-full mx-auto px-4"
                                     >
                                         <h1 className="text-[20px] sm:text-2xl md:text-3xl lg:text-4xl font-black font-heading tracking-[0.1em] sm:tracking-[0.25em] uppercase italic leading-none text-white opacity-90 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
-                                            YOUR ARTIST. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF] not-italic">YOUR ASSISTANT.</span>
+                                            THE ULTIMATE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B6B] via-white to-[#7B61FF] not-italic">CREATIVE LINK-UP.</span>
                                         </h1>
 
                                     </motion.div>

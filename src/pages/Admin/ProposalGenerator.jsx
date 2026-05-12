@@ -210,7 +210,7 @@ const ProposalGenerator = () => {
             
             navigate('/admin/proposals');
         } catch (error) {
-            useStore.getState().addToast("Save Error: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't save the proposal. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -257,7 +257,7 @@ const ProposalGenerator = () => {
                 })));
             }
         } catch (error) {
-            useStore.getState().addToast("AI Generation failed: " + error.message, 'error');
+            useStore.getState().addToast("AI couldn't generate the content right now. Please try again.", 'error');
         } finally {
             setIsGenerating(false);
             setGeneratingSection(null);

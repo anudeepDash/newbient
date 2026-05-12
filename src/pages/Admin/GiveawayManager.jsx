@@ -133,10 +133,10 @@ const GiveawayManager = () => {
                 const file = item.getAsFile();
                 if (type === 'poster') {
                     setSelectedFile(file);
-                    useStore.getState().addToast("POSTER_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Poster pasted from clipboard!", 'success');
                 } else if (type === 'venueLayout') {
                     setVenueLayoutFile(file);
-                    useStore.getState().addToast("LAYOUT_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Layout pasted from clipboard!", 'success');
                 }
                 e.preventDefault();
             }

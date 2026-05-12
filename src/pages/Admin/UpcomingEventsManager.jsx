@@ -188,13 +188,13 @@ const UpcomingEventsManager = () => {
                 const file = item.getAsFile();
                 if (type === 'image') {
                     setSelectedFile(file);
-                    useStore.getState().addToast("THUMBNAIL_CAPTURED", 'success');
+                    useStore.getState().addToast("Thumbnail pasted from clipboard!", 'success');
                 } else if (type === 'hubImage') {
                     setSelectedHubBanner(file);
-                    useStore.getState().addToast("HUB_BANNER_CAPTURED", 'success');
+                    useStore.getState().addToast("Hub banner pasted from clipboard!", 'success');
                 } else if (type === 'venueLayout') {
                     setVenueLayoutFile(file);
-                    useStore.getState().addToast("LAYOUT_CAPTURED", 'success');
+                    useStore.getState().addToast("Layout image pasted from clipboard!", 'success');
                 }
                 e.preventDefault();
             }
@@ -232,7 +232,7 @@ const UpcomingEventsManager = () => {
                 venueLayout: venueLayoutUrl || '', 
                 videoUrl: videoUrl || '',
                 buttonText: newEvent.buttonText || "LEARN MORE",
-                updatedAt: new Date()
+                updatedAt: new Date().toISOString()
             };
 
             if (editingId) {
@@ -242,11 +242,8 @@ const UpcomingEventsManager = () => {
             }
             resetForm();
         } catch (error) {
-            addNotification({
-                title: "Database Error",
-                content: "The system was unable to save your changes.",
-                type: 'error'
-            });
+            console.error("Save failed:", error);
+            useStore.getState().addToast("Couldn't save the event. Please check your data and try again.", 'error', 'EVT-01');
         } finally {
             setUploading(false);
         }
@@ -311,9 +308,9 @@ const UpcomingEventsManager = () => {
                                                 <Card className="p-6 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] md:rounded-[3rem]">
                                                     <div className="flex justify-between items-center mb-10">
                                                         <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3 leading-none">
-                                                            BASICS <span className="text-neon-blue">ENGINE.</span>
+                                                            EVENT <span className="text-neon-blue">EDITOR.</span>
                                                         </h2>
-                                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest">Abort</button>
+                                                        <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest">Cancel</button>
                                                     </div>
 
                                                     <form onSubmit={handleSubmit} className="space-y-16">
@@ -672,7 +669,7 @@ const UpcomingEventsManager = () => {
                                                         <div className="pt-16 border-t border-white/5 space-y-12">
                                                             <div className="flex justify-between items-center">
                                                                 <h2 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-3 leading-none">
-                                                                    HUB <span className="text-neon-pink">CONNECTIVITY.</span>
+                                                                    EVENT <span className="text-neon-pink">CONNECTIONS.</span>
                                                                 </h2>
                                                                 <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Connect external platforms and related gigs</p>
                                                             </div>
@@ -711,7 +708,7 @@ const UpcomingEventsManager = () => {
                                                                     />
                                                                 </div>
                                                                 <div className="space-y-3">
-                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Creator Mission</label>
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Creator Campaign</label>
                                                                     <StudioSelect
                                                                         value={newEvent.relatedCampaignId}
                                                                         options={[
@@ -719,7 +716,7 @@ const UpcomingEventsManager = () => {
                                                                             ...campaigns.map(c => ({ value: c.id, label: c.title.toUpperCase() }))
                                                                         ]}
                                                                         onChange={val => setNewEvent({ ...newEvent, relatedCampaignId: val })}
-                                                                        placeholder="SELECT CREATOR MISSION..."
+                                                                        placeholder="SELECT CREATOR CAMPAIGN..."
                                                                         className="h-16"
                                                                         accentColor="neon-pink"
                                                                     />
@@ -771,7 +768,7 @@ const UpcomingEventsManager = () => {
                                                             {newEvent.isTicketed && (
                                                                 <div className="space-y-8 bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
                                                                     <div className="space-y-4">
-                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticketing Infrastructure</label>
+                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticket System</label>
                                                                         <div className="flex gap-4 p-1.5 bg-black/40 rounded-2xl border border-white/10">
                                                                             {[
                                                                                 { id: 'qr', label: 'QR PASSES (AUTOMATED)', color: 'neon-green' },
@@ -786,8 +783,8 @@ const UpcomingEventsManager = () => {
                                                                     
                                                                     <div className="space-y-4 pt-6 border-t border-white/5">
                                                                         <div className="flex justify-between items-center">
-                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Inventory Tiers</label>
-                                                                            <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '', color: '#2ebfff' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest flex items-center gap-1"><Plus size={12}/> New Tier</button>
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Ticket Categories</label>
+                                                                            <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '', color: '#2ebfff' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest flex items-center gap-1"><Plus size={12}/> Add Category</button>
                                                                         </div>
                                                                         <div className="space-y-4">
                                                                             {(newEvent.ticketCategories || []).map((cat, idx) => (
@@ -822,13 +819,31 @@ const UpcomingEventsManager = () => {
                                                                                     {cat.mapping && (
                                                                                         <div className="mt-3 flex items-center gap-3 pl-1">
                                                                                             <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Zone Defined: {Math.round(cat.mapping.width)}% Wide</span>
-                                                                                            <button type="button" onClick={() => { const newCats = [...newEvent.ticketCategories]; delete newCats[idx].mapping; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
+                                                                                            <button type="button" onClick={() => { 
+                                                                                                const newCats = newEvent.ticketCategories.map((c, i) => {
+                                                                                                    if (i === idx) {
+                                                                                                        const { mapping, ...rest } = c;
+                                                                                                        return rest;
+                                                                                                    }
+                                                                                                    return c;
+                                                                                                });
+                                                                                                setNewEvent({...newEvent, ticketCategories: newCats});
+                                                                                            }} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
                                                                                         </div>
                                                                                     )}
                                                                                     {cat.coords && (
                                                                                         <div className="mt-3 flex items-center gap-3 pl-1">
                                                                                             <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Pin Location: {Math.round(cat.coords.x)}% x {Math.round(cat.coords.y)}%</span>
-                                                                                            <button type="button" onClick={() => { const newCats = [...newEvent.ticketCategories]; delete newCats[idx].coords; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
+                                                                                            <button type="button" onClick={() => { 
+                                                                                                const newCats = newEvent.ticketCategories.map((c, i) => {
+                                                                                                    if (i === idx) {
+                                                                                                        const { coords, ...rest } = c;
+                                                                                                        return rest;
+                                                                                                    }
+                                                                                                    return c;
+                                                                                                });
+                                                                                                setNewEvent({...newEvent, ticketCategories: newCats});
+                                                                                            }} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
@@ -983,8 +998,8 @@ const UpcomingEventsManager = () => {
                                                                         <Zap size={24} />
                                                                     </div>
                                                                     <div className="flex-1">
-                                                                        <p className="text-xs font-black uppercase tracking-widest text-white">CROSS-POST TO BROADCASTS</p>
-                                                                        <p className="text-[10px] font-medium text-gray-500">Cross-post this event to the Announcements stream.</p>
+                                                                        <p className="text-xs font-black uppercase tracking-widest text-white">POST TO ANNOUNCEMENTS</p>
+                                                                        <p className="text-[10px] font-medium text-gray-500">Post this event to the Announcements feed.</p>
                                                                     </div>
                                                                     <div className={cn("w-6 h-6 rounded-lg border flex items-center justify-center transition-all", newEvent.alsoPostToAnnouncements ? "bg-neon-blue border-neon-blue text-black" : "border-white/10")}>
                                                                         {newEvent.alsoPostToAnnouncements && <CheckCircle size={14} />}
@@ -999,10 +1014,10 @@ const UpcomingEventsManager = () => {
                                                                 onClick={resetForm} 
                                                                 className="h-16 px-12 rounded-2xl bg-white/5 border border-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] flex-1"
                                                             >
-                                                                Abort
+                                                                Cancel
                                                             </button>
                                                             <Button type="submit" disabled={uploading} className="h-14 px-12 sm:px-24 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(0,255,255,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
-                                                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'COMMIT CHANGES' : 'DEPLOY EVENT')}
+                                                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'SAVE CHANGES' : 'PUBLISH EVENT')}
                                                             </Button>
                                                         </div>
                                                     </form>
@@ -1073,13 +1088,15 @@ const UpcomingEventsManager = () => {
                                         {/* Standardized 16:9 Thumbnail Header */}
                                         <div className="relative mb-6 shrink-0 group-hover:scale-[1.01] transition-transform duration-700">
                                             <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
-                                                {item.image ? (
+                                                {(item.hubImage || item.image) ? (
                                                     <div
                                                         className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
                                                         style={{
-                                                            backgroundImage: `url(${item.image})`,
-                                                            transform: `scale(${item.imageTransform?.scale || 1})`,
-                                                            backgroundPosition: `calc(50% + ${(item.imageTransform?.x || 0)}%) calc(50% + ${(item.imageTransform?.y || 0)}%)`
+                                                            backgroundImage: `url(${item.hubImage || item.image})`,
+                                                            transform: `scale(${item.hubImage ? (item.hubImageTransform?.scale || 1) : (item.imageTransform?.scale || 1)})`,
+                                                            backgroundPosition: item.hubImage 
+                                                                ? `calc(50% + ${(item.hubImageTransform?.x || 0)}%) calc(50% + ${(item.hubImageTransform?.y || 0)}%)`
+                                                                : `calc(50% + ${(item.imageTransform?.x || 0)}%) calc(50% + ${(item.imageTransform?.y || 0)}%)`
                                                         }}
                                                     />
                                                 ) : (

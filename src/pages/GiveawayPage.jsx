@@ -95,7 +95,7 @@ const GiveawayPage = () => {
         try {
             await enterGiveaway(giveaway.id, { ...formData, referredBy });
         } catch (error) {
-            useStore.getState().addToast(error.message, 'error');
+            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -54,7 +54,7 @@ const GalleryManager = () => {
                 const url = await handleFileUpload(file);
                 if (url) {
                     setNewImage(prev => ({ ...prev, src: url }));
-                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
                 }
                 setUploading(false);
                 e.preventDefault();

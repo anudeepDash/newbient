@@ -135,7 +135,7 @@ const Agreement = () => {
     const handleApprove = async () => {
         if (displayAgreement.status === 'Executed') return;
         if (!signatureName.trim()) { useStore.getState().addToast('Please enter your full name.', 'error'); return; }
-        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Valid email required.', 'error'); return; }
+        if (!verificationEmail.trim() || !verificationEmail.includes('@')) { useStore.getState().addToast('Please enter a valid email address.', 'error'); return; }
         
         setIsSubmitting(true);
         try {
@@ -151,7 +151,7 @@ const Agreement = () => {
             setIsVerifying(false);
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast('Authorization failed.', 'error');
+            useStore.getState().addToast('Signing failed. Please try again or contact support.', 'error');
         } finally { setIsSubmitting(false); }
     };
 

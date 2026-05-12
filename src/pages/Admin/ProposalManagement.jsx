@@ -68,7 +68,7 @@ const ProposalManagement = () => {
 
     const handleDelete = (id) => {
         if (user?.role === 'editor') {
-            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
+            useStore.getState().addToast("Only admins can delete documents.", 'error');
             return;
         }
         if (window.confirm('Are you sure you want to delete this proposal?')) {
@@ -88,11 +88,11 @@ const ProposalManagement = () => {
                 useStore.getState().addToast("Proposal link sent successfully!", 'success');
                 updateProposalStatus(proposal.id, 'Sent');
             } else {
-                useStore.getState().addToast("Failed to send email. Check console for details.", 'error');
+                useStore.getState().addToast("Couldn't send the email. Please check the details and try again.", 'error');
             }
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("An error occurred while sending.", 'error');
+            useStore.getState().addToast("Something went wrong while sending. Please try again.", 'error');
         }
     };
 
@@ -133,7 +133,7 @@ const ProposalManagement = () => {
                 useStore.getState().addToast('Proposal duplicated as Draft.', 'success');
             } catch (err) {
                 console.error(err);
-                useStore.getState().addToast('Failed to duplicate.', 'error');
+                useStore.getState().addToast("Couldn't duplicate the proposal. Please try again.", 'error');
             }
         }
     };
@@ -150,7 +150,7 @@ const ProposalManagement = () => {
                 setSelectedAnalytics(null);
             } catch (err) {
                 console.error(err);
-                useStore.getState().addToast('Failed to revoke signature.', 'error');
+                useStore.getState().addToast("Couldn't revoke the signature. Please try again.", 'error');
             }
         }
     };

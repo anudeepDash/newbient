@@ -4,7 +4,8 @@ import {
     X, User, Shield, Briefcase, Ticket, LogOut, ExternalLink, Settings, 
     Sparkles, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
     Edit2, Loader2, Info, Instagram, ShieldCheck, 
-    LayoutDashboard, CreditCard, History, ChevronRight, Image as ImageIcon
+    LayoutDashboard, CreditCard, History, ChevronRight, Image as ImageIcon,
+    Mic
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
@@ -12,7 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import { loginWithMeta } from '../lib/metaSDK';
 
 const ProfilePanel = ({ isOpen, onClose }) => {
-    const { user, logout, creators, artists, addNotification, resetPassword, updateDisplayName, verifyInstagramFollowers, ticketOrders, notifications } = useStore();
+    const { 
+        user, logout, creators, artists, addNotification, 
+        resetPassword, updateDisplayName, verifyInstagramFollowers, 
+        ticketOrders, notifications, upcomingEvents, portfolio 
+    } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
     const [isUpdating, setIsUpdating] = useState(false);
@@ -33,9 +38,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const isArtist = !!artistProfile;
     const isApprovedArtist = artistProfile?.profileStatus === 'approved';
 
-    const { upcomingEvents, portfolio } = useStore();
     const allPossibleEvents = [...(upcomingEvents || []), ...(portfolio || [])];
-
     const userTickets = (ticketOrders?.filter(order => order.userId === user.uid) || [])
         .map(order => {
             const event = allPossibleEvents.find(e => e.id === order.eventId);
@@ -212,7 +215,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                             {user.displayName || 'Member'}
                                         </h3>
                                         {isApprovedCreator && <ShieldCheck size={16} className="text-neon-blue" />}
-                                        {isApprovedArtist && <Sparkles size={16} className="text-[#FF6B6B]" />}
+                                        {isApprovedArtist && <Mic size={16} className="text-[#FF6B6B]" />}
                                     </div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             {user.role === 'developer' && (
@@ -316,10 +319,10 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     <p className="text-2xl font-black text-white italic">{isCreator ? 'ACTIVE' : 'NONE'}</p>
                                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Creator Status</p>
                                                 </div>
-                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all" onClick={() => { if(isArtist) { navigate('/artistant'); onClose(); } }}>
+                                                <div className="p-6 rounded-3xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-[#FF6B6B]/30 transition-all cursor-pointer" onClick={() => { navigate('/artistant'); onClose(); }}>
                                                     <div className="flex items-center justify-between mb-4">
                                                         <div className="w-10 h-10 rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B]">
-                                                            <Sparkles size={20} />
+                                                            <Mic size={20} />
                                                         </div>
                                                         <ChevronRight size={16} className="text-gray-700 group-hover:text-white transition-all" />
                                                     </div>
@@ -356,7 +359,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 rounded-2xl bg-[#FF6B6B]/10 flex items-center justify-center text-[#FF6B6B] shadow-[0_0_15px_rgba(255,107,107,0.1)]">
-                                                            <ImageIcon size={24} />
+                                                            <Mic size={24} />
                                                         </div>
                                                         <div className="text-left">
                                                             <p className="text-sm font-black text-white uppercase tracking-widest italic">Artist Hub</p>

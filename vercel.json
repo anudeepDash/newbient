@@ -1,5 +1,41 @@
 {
+    "redirects": [
+        {
+            "source": "/admin",
+            "has": [{ "type": "host", "value": "artistant.in" }],
+            "destination": "/",
+            "permanent": false
+        },
+        {
+            "source": "/admin",
+            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "destination": "/",
+            "permanent": false
+        },
+        {
+            "source": "/admin/:path*",
+            "has": [{ "type": "host", "value": "artistant.in" }],
+            "destination": "/",
+            "permanent": false
+        },
+        {
+            "source": "/admin/:path*",
+            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "destination": "/",
+            "permanent": false
+        }
+    ],
     "rewrites": [
+        {
+            "source": "/",
+            "has": [{ "type": "host", "value": "artistant.in" }],
+            "destination": "/artistant"
+        },
+        {
+            "source": "/",
+            "has": [{ "type": "host", "value": "www.artistant.in" }],
+            "destination": "/artistant"
+        },
         {
             "source": "/giveaway/:slug",
             "destination": "/api/og?giveaway=:slug"

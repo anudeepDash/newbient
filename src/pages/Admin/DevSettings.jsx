@@ -341,35 +341,69 @@ const SystemControlCenter = () => {
                     </div>
                 </div>
 
-                {/* Compact Diagnostics */}
-                <div className="mt-20 p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Cpu size={14} className="text-gray-600" />
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-600">Core Diagnostics</h4>
+                {/* Compact Diagnostics & Error Codes */}
+                <div className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 p-8 bg-white/[0.02] border border-white/5 rounded-3xl">
+                        <div className="flex items-center gap-3 mb-6">
+                            <Shield size={16} className="text-neon-blue" />
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Error Code Registry</h4>
                         </div>
-                        <span className="text-[10px] font-mono text-gray-800">NB_SYS_772</span>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-[10px] font-mono">
+                                <thead className="text-gray-600 border-b border-white/5">
+                                    <tr>
+                                        <th className="pb-3 pr-4 font-black uppercase italic">Code</th>
+                                        <th className="pb-3 pr-4 font-black uppercase italic">Module</th>
+                                        <th className="pb-3 font-black uppercase italic">Scenario</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-gray-400">
+                                    <ErrorRow code="TKT-VAL-*" module="Ticketing" scenario="User input validation (Phone, Name, Selection)" />
+                                    <ErrorRow code="TKT-OTP-01" module="Ticketing" scenario="FCM/Auth Handshake - Code Send failure" />
+                                    <ErrorRow code="TKT-OTP-02" module="Ticketing" scenario="Incorrect OTP verification attempt" />
+                                    <ErrorRow code="TKT-PAY-01" module="Ticketing" scenario="Critical: Order commit failure after payment attempt" />
+                                    <ErrorRow code="TKT-CPN-01" module="Ticketing" scenario="Coupon validation/lookup error" />
+                                    <ErrorRow code="TKT-GST-01" module="Ticketing" scenario="Guestlist entry commit failure" />
+                                    <ErrorRow code="ANN-01" module="Announcements" scenario="Database write failure for new announcement" />
+                                    <ErrorRow code="EVT-01" module="Events" scenario="Event creation/update synchronization error" />
+                                    <ErrorRow code="GUEST-01" module="Guestlist" scenario="General guestlist management error" />
+                                    <ErrorRow code="FORM-01" module="Forms" scenario="Dynamic form submission or config error" />
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className="mt-6 text-[8px] text-gray-700 italic">Note: Error codes starting with TKT/PAY/EVT automatically trigger support contact info in UI toasts.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 font-mono text-[10px]">
+                    <div className="p-8 bg-white/[0.02] border border-white/5 rounded-3xl flex flex-col justify-between">
                         <div>
-                            <p className="text-gray-700 uppercase mb-1">Host</p>
-                            <p className="text-gray-400 truncate">{window.location.hostname}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-700 uppercase mb-1">Registry</p>
-                            <p className="text-neon-blue truncate">Local_Storage_Sync</p>
-                        </div>
-                        <div className="md:col-span-2">
-                            <p className="text-gray-700 uppercase mb-1">State Flux</p>
-                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div 
-                                    animate={{ width: ['20%', '80%', '20%'] }}
-                                    transition={{ duration: 10, repeat: Infinity }}
-                                    className="h-full bg-neon-blue/20"
-                                />
+                            <div className="flex items-center gap-2 mb-6">
+                                <Cpu size={14} className="text-gray-600" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-600">Core Diagnostics</h4>
+                            </div>
+
+                            <div className="space-y-6 font-mono text-[10px]">
+                                <div>
+                                    <p className="text-gray-700 uppercase mb-1">Host Identity</p>
+                                    <p className="text-gray-400 truncate">{window.location.hostname}</p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-700 uppercase mb-1">Registry Vector</p>
+                                    <p className="text-neon-blue truncate">Local_Storage_Sync</p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-700 uppercase mb-1">State Flux</p>
+                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden mt-2">
+                                        <motion.div 
+                                            animate={{ width: ['20%', '80%', '20%'] }}
+                                            transition={{ duration: 10, repeat: Infinity }}
+                                            className="h-full bg-neon-blue/20"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        <span className="text-[10px] font-mono text-gray-800 text-right mt-8">NB_SYS_772_NODE</span>
                     </div>
                 </div>
             </div>
@@ -401,6 +435,14 @@ const FeaturePill = ({ label, active, onClick }) => (
     >
         {label}: {active ? 'ACTIVE' : 'DISABLED'}
     </button>
+);
+
+const ErrorRow = ({ code, module, scenario }) => (
+    <tr className="border-b border-white/5 last:border-0">
+        <td className="py-3 pr-4 text-neon-blue font-black tracking-tighter">{code}</td>
+        <td className="py-3 pr-4 text-gray-300 uppercase italic">{module}</td>
+        <td className="py-3 text-gray-500 italic">{scenario}</td>
+    </tr>
 );
 
 export default SystemControlCenter;

@@ -105,7 +105,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                                         <div className="flex items-center gap-3">
                                             <div className="px-3 py-1 rounded-full bg-neon-pink/10 border border-neon-pink/20">
                                                 <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neon-pink">
-                                                    {data.category || 'BROADCAST'}
+                                                    {data.category || 'ANNOUNCEMENT'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-white/30">
@@ -128,11 +128,11 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                                             </p>
                                         )}
                                         <h3 className="text-2xl font-black font-heading tracking-tighter uppercase italic text-white leading-none group-hover:text-neon-pink transition-colors">
-                                            {data.title || 'UNTITLED SIGNAL'}
+                                            {data.title || 'UNTITLED ANNOUNCEMENT'}
                                         </h3>
                                         <div className="h-0.5 w-10 bg-neon-pink/30 rounded-full group-hover:w-20 transition-all" />
                                         <p className="text-sm font-medium text-gray-400 line-clamp-4 leading-relaxed italic">
-                                            {data.content || 'Awaiting transmission data... The broadcast content will materialize here in high-fidelity.'}
+                                            {data.content || 'Waiting for content... This area will show your announcement once you start typing.'}
                                         </p>
                                     </div>
 
@@ -223,7 +223,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                                     />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center text-gray-800 font-black uppercase tracking-[0.3em] text-[9px]">
-                                        PORTFOLIO_READY
+                                        PREVIEW_READY
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10 z-10" />
@@ -238,7 +238,7 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                             <div className="absolute top-6 left-6 right-6 z-30 flex justify-between items-start">
                                 <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-2xl border border-white/10 group-hover:border-neon-green/20 transition-colors duration-500">
                                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-neon-green">
-                                        {data.sector || categories.find(c => c.id === data.category)?.label || 'SECTOR'}
+                                        {data.sector || categories.find(c => c.id === data.category)?.label || 'CATEGORY'}
                                     </span>
                                 </div>
 
@@ -257,10 +257,10 @@ const LivePreview = ({ type, data, categories = [], hideDecorations = false, onA
                             <div className="absolute inset-x-6 bottom-7 z-30 space-y-5 w-full pr-12">
                                 <div>
                                     <h3 className="text-2xl md:text-3xl font-black font-heading text-white leading-none tracking-tighter uppercase italic mb-2 group-hover:text-neon-green transition-all duration-500 line-clamp-2">
-                                        {data.title || 'UNTITLED RECORD'}
+                                        {data.title || 'UNTITLED PROJECT'}
                                     </h3>
                                     <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.25em]">
-                                        {data.date ? new Date(data.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : 'PROJECT TIMELINE'}
+                                        {data.date ? new Date(data.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : 'PROJECT DATE'}
                                     </p>
                                 </div>
 

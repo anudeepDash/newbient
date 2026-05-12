@@ -175,7 +175,7 @@ const TicketingManagement = () => {
                 await updateTicketOrderStatus(orderId, 'approved');
             } catch (err) {
                 console.error(err);
-                useStore.getState().addToast("Failed to approve order.", 'error');
+                useStore.getState().addToast("Couldn't approve the order. Please try again.", 'error');
             }
         }
     };
@@ -186,7 +186,7 @@ const TicketingManagement = () => {
                 await updateTicketOrderStatus(orderId, 'rejected');
             } catch (err) {
                 console.error(err);
-                useStore.getState().addToast("Failed to reject order.", 'error');
+                useStore.getState().addToast("Couldn't reject the order. Please try again.", 'error');
             }
         }
     };
@@ -258,7 +258,7 @@ const TicketingManagement = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        useStore.getState().addToast("Operations Report Downloaded.", 'success');
+        useStore.getState().addToast("Report downloaded!", 'success');
     };
 
     const handleUpdateEventPayment = async (e) => {
@@ -269,10 +269,10 @@ const TicketingManagement = () => {
         try {
             const { updateUpcomingEvent } = useStore.getState();
             await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl });
-            useStore.getState().addToast("Payment configuration synchronized.", 'success');
+            useStore.getState().addToast("Payment settings saved!", 'success');
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Failed to update payment settings.", 'error');
+            useStore.getState().addToast("Couldn't save payment settings. Please try again.", 'error');
         }
     };
 
@@ -298,7 +298,7 @@ const TicketingManagement = () => {
             useStore.getState().addToast("QR Code uploaded and mapped.", 'success');
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Upload failed.", 'error');
+            useStore.getState().addToast("Couldn't upload the QR code. Please try again.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -386,7 +386,7 @@ const TicketingManagement = () => {
                                                 useStore.getState().addToast("Coupon created successfully!", 'success');
                                                 e.target.reset();
                                             } catch (err) {
-                                                useStore.getState().addToast("Failed to create coupon.", 'error');
+                                                useStore.getState().addToast("Couldn't create the coupon. Please try again.", 'error');
                                             } finally {
                                                 setIsSavingCoupon(false);
                                             }

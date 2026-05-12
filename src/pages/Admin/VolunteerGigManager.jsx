@@ -142,9 +142,9 @@ const GigCard = ({ gig, index, totalGigs, onEdit, onMove, onUpdate, onDelete }) 
                         <Button 
                             variant="outline" 
                             onClick={async () => {
-                                if (confirm(`Transmit broadcast for "${gig.title}"?`)) {
+                                if (confirm(`Send a notification for "${gig.title}"?`)) {
                                     await notifyAllUsers(`Volunteers Needed: ${gig.title}`, `Join the squad for ${gig.title} at ${gig.location}. Apply now!`, `/community`, '');
-                                    useStore.getState().addToast("BROADCAST_SENT.", 'success');
+                                    useStore.getState().addToast("Notification sent to all volunteers!", 'success');
                                 }
                             }}
                             className="flex-1 h-14 rounded-2xl border-white/5 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all flex items-center justify-center gap-3 group/btn"
@@ -294,8 +294,8 @@ const VolunteerGigManager = () => {
             } else {
                 await addVolunteerGig(gigData);
                 await notifyAllUsers(
-                    'NEW VOLUNTEER GIG!',
-                    `${gigData.title.toUpperCase()} IS NOW LIVE. APPLY NOW.`,
+                    'New Volunteer Opportunity!',
+                    `A new opportunity for ${gigData.title} is now available. Apply now!`,
                     '/community',
                     'gig'
                 );
@@ -304,7 +304,7 @@ const VolunteerGigManager = () => {
             resetForm();
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast(`Error saving gig: ${error.code || error.message}`, 'error');
+            useStore.getState().addToast(`Something went wrong while saving. Please try again.`, 'error');
         } finally {
             setSaving(false);
         }
@@ -334,7 +334,7 @@ const VolunteerGigManager = () => {
             setFormData(prev => ({ ...prev, image: url }));
         } catch (error) {
             console.error("Upload failed:", error);
-            useStore.getState().addToast("UPLOAD FAILED. PLEASE TRY AGAIN.", 'error');
+            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -350,10 +350,10 @@ const VolunteerGigManager = () => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, image: url }));
-                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
                 } catch (error) {
                     console.error("Upload failed:", error);
-                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                    useStore.getState().addToast("Couldn't upload the pasted image. Please try again.", 'error');
                 } finally {
                     setIsUploading(false);
                 }
@@ -514,7 +514,7 @@ const VolunteerGigManager = () => {
                                             className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-8 text-white focus:outline-none focus:border-neon-green/40 min-h-[150px] resize-none text-[13px] font-medium placeholder:text-gray-800 leading-relaxed italic shadow-inner" 
                                             value={formData.description} 
                                             onChange={e => setFormData({ ...formData, description: e.target.value })} 
-                                            placeholder="Transmission brief details..." 
+                                            placeholder="Enter gig description and details..." 
                                         />
                                     </div>
 
@@ -687,7 +687,7 @@ const VolunteerGigManager = () => {
             description="Manage community contributions and operational support roles."
             studioHeader={{
                 title: "GIG",
-                subtitle: "ENGINE",
+                subtitle: "MANAGER",
                 accentClass: "text-neon-green",
                 icon: Briefcase
             }}
@@ -717,7 +717,7 @@ const VolunteerGigManager = () => {
                             <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
                                 <Briefcase size={32} className="text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">EMPTY.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No opportunities found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

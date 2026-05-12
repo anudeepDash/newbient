@@ -332,7 +332,7 @@ const CreatorSettingsView = ({ profile }) => {
             setForm(prev => ({ ...prev, profilePicture: url }));
             useStore.getState().addToast("Profile picture updated!", 'success');
         } catch (error) {
-            useStore.getState().addToast("Upload failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't upload your photo. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -346,9 +346,9 @@ const CreatorSettingsView = ({ profile }) => {
                 ...form,
                 specializations: form.specializations.split(',').map(s => s.trim())
             });
-            useStore.getState().addToast("Profile synchronized successfully.", 'success');
+            useStore.getState().addToast("Profile saved successfully!", 'success');
         } catch (err) {
-            useStore.getState().addToast("Protocol interruption: " + err.message, 'error');
+            useStore.getState().addToast("Couldn't save your profile. Please try again.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -827,7 +827,7 @@ const CreatorDashboard = () => {
             await useStore.getState().applyToCampaign(profile.uid, campaignId);
             // We can keep the panel open, it will auto-update state due to Firebase subscription
         } catch (error) {
-            useStore.getState().addToast("Application failed.", 'error');
+            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
         } finally {
             setIsApplying(false);
         }

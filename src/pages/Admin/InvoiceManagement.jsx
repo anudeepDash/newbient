@@ -82,7 +82,7 @@ const InvoiceManagement = () => {
         // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
         // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
         if (user?.role === 'editor') {
-            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
+            useStore.getState().addToast("Only admins can delete invoices.", 'error');
             return;
         }
 
@@ -105,7 +105,7 @@ const InvoiceManagement = () => {
                 await addInvoice(newInvoice);
                 useStore.getState().addToast('Invoice duplicated.', 'success');
             } catch (error) {
-                useStore.getState().addToast("Failed to duplicate invoice.", 'error');
+                useStore.getState().addToast("Couldn't duplicate the invoice. Please try again.", 'error');
             }
         }
     };
@@ -122,11 +122,11 @@ const InvoiceManagement = () => {
             if (res.success) {
                 useStore.getState().addToast("Invoice link sent successfully!", 'success');
             } else {
-                useStore.getState().addToast("Failed to send email.", 'error');
+                useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
             }
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("An error occurred.", 'error');
+            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
         }
     };
 
@@ -135,7 +135,7 @@ const InvoiceManagement = () => {
             try {
                 await updateInvoice(invoice.id, { status: 'Paid' });
             } catch (error) {
-                useStore.getState().addToast("Failed to update status.", 'error');
+                useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
             }
         }
     };
@@ -166,7 +166,7 @@ const InvoiceManagement = () => {
             setQuickClientName('');
             setQuickFile(null);
         } catch (error) {
-            useStore.getState().addToast("Failed to upload.", 'error');
+            useStore.getState().addToast("Couldn't upload the file. Please try again.", 'error');
         } finally {
             setUploading(false);
         }

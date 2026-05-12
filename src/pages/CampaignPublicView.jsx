@@ -98,7 +98,7 @@ const CampaignPublicView = () => {
     });
 
     const handleInstagramVerify = async () => {
-        if (!form.instagram) return useStore.getState().addToast("Enter your Instagram handle", 'error');
+        if (!form.instagram) return useStore.getState().addToast("Please enter your Instagram handle to continue.", 'error');
         setIsVerifying(true);
         setVerificationStep('verifying');
 
@@ -107,7 +107,7 @@ const CampaignPublicView = () => {
             if (isNaN(count)) {
                 setIsVerifying(false);
                 setVerificationStep('failed');
-                useStore.getState().addToast("Please enter a valid follower count for verification.", 'error');
+                useStore.getState().addToast("Please enter your follower count so we can check eligibility.", 'error');
             } else if (count < (campaign?.minInstagramFollowers || 0)) {
                 setIsVerifying(false);
                 setVerificationStep('failed');
@@ -126,14 +126,14 @@ const CampaignPublicView = () => {
         }
 
         if (verificationStep !== 'success') {
-            return useStore.getState().addToast("Check your Instagram eligibility first!", 'error');
+            return useStore.getState().addToast("Please verify your Instagram eligibility before applying.", 'error');
         }
 
         setIsJoining(true);
         try {
             const currentJoined = profile?.joinedCampaigns || [];
             if (currentJoined.includes(id)) {
-                useStore.getState().addToast("You've already applied!", 'error');
+                useStore.getState().addToast("You've already applied to this campaign!", 'error');
                 navigate('/creator-dashboard');
                 return;
             }
@@ -160,7 +160,7 @@ const CampaignPublicView = () => {
 
             setJoinSuccess(true);
         } catch (error) {
-            useStore.getState().addToast("Application submission failed.", 'error');
+            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
         } finally {
             setIsJoining(false);
         }

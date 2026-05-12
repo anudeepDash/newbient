@@ -72,7 +72,7 @@ const CreatorJoin = () => {
             setFormData(prev => ({ ...prev, profilePicture: url }));
             useStore.getState().addToast("Profile picture uploaded!", 'success');
         } catch (error) {
-            useStore.getState().addToast("Upload failed: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't upload your photo. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -103,7 +103,7 @@ const CreatorJoin = () => {
             // navigate('/creator-dashboard'); // Handled by the success state UI
         } catch (error) {
             console.error("Error joining creator hub:", error);
-            useStore.getState().addToast("Failed to submit application: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -58,27 +58,27 @@ const MailingManager = () => {
         return unique;
     }, [recipientType, subscribers, allUsers, admins]);
 
-    const handleBroadcast = async (e) => {
+    const handleSendEmails = async (e) => {
         if (e) e.preventDefault();
         if (recipients.length === 0) {
-            useStore.getState().addToast("Digital void detected: No recipients in the current sector.", 'error');
+            useStore.getState().addToast("No recipients found. Please select an audience group first.", 'error');
             return;
         }
 
         const confirmMsg = alsoSendingPush 
-            ? `ESTABLISH DUAL-CHANNEL CAMPAIGN: Send email and push notification to ${recipients.length} recipients?`
-            : `INITIATE CAMPAIGN: Send broadcast to ${recipients.length} recipients?`;
+            ? `Send email and push notification to ${recipients.length} recipients?`
+            : `Send this email to ${recipients.length} recipients?`;
 
         if (!window.confirm(confirmMsg)) return;
 
         setSending(true);
-        setStatus({ type: 'info', text: 'INITIATING MULTI-CHANNEL CAMPAIGN...' });
+        setStatus({ type: 'info', text: 'Sending your emails...' });
 
         try {
             // Optional: Send Push Notification if toggled
             if (alsoSendingPush) {
                 await notifyAllUsers(
-                    mailData.subject || "NEW MESSAGE RECEIVED",
+                    mailData.subject || "New Message",
                     mailData.headerText || mailData.messageBody.substring(0, 50),
                     mailData.ctaUrl || "/",
                     mailData.heroImage || null
@@ -91,10 +91,10 @@ const MailingManager = () => {
             // Simulation of delay
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            setStatus({ type: 'success', text: `BROADCAST SUCCESSFUL. ${recipients.length} EMAILS SENT.` });
+            setStatus({ type: 'success', text: `All done! ${recipients.length} emails sent successfully.` });
         } catch (error) {
-            console.error("Broadcast failed:", error);
-            setStatus({ type: 'error', text: 'BROADCAST INTERRUPTED. SYSTEM FAILURE.' });
+            console.error("Send failed:", error);
+            setStatus({ type: 'error', text: 'Something went wrong while sending. Please try again.' });
         } finally {
             setSending(false);
             setTimeout(() => setStatus(null), 5000);
@@ -161,17 +161,17 @@ const MailingManager = () => {
                     {/* Mail Maker Editor */}
                     <div className="lg:col-span-6">
                         <Card className="p-8 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem] relative overflow-hidden">
-                            <form onSubmit={handleBroadcast} className="space-y-8 relative z-10">
+                            <form onSubmit={handleSendEmails} className="space-y-8 relative z-10">
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                                <Mail size={12} className="text-neon-green" /> Broadcast Subject
+                                                <Mail size={12} className="text-neon-green" /> Email Subject
                                             </label>
                                             <Input 
                                                 value={mailData.subject}
                                                 onChange={(e) => setMailData({...mailData, subject: e.target.value})}
-                                                placeholder="SYSTEM ALERT: NEW UPDATE..."
+                                                placeholder="ENTER SUBJECT..."
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                                 required
                                             />
@@ -183,7 +183,7 @@ const MailingManager = () => {
                                             <Input 
                                                 value={mailData.headerText}
                                                 onChange={(e) => setMailData({...mailData, headerText: e.target.value})}
-                                                placeholder="ACCESS GRANTED. VIEW DETAILS."
+                                                placeholder="ENTER HEADER TEXT..."
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
                                                 required
                                             />
@@ -192,7 +192,7 @@ const MailingManager = () => {
 
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center px-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Hero Image Asset</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Cover Image Asset</label>
                                             <div className="flex items-center gap-2">
                                                 <input 
                                                     type="file" 
@@ -209,9 +209,9 @@ const MailingManager = () => {
                                                             const uploadTask = await uploadBytesResumable(storageRef, file);
                                                             const url = await getDownloadURL(uploadTask.ref);
                                                             setMailData({ ...mailData, heroImage: url });
-                                                            setStatus({ type: 'info', text: 'IMAGE UPLOAD SUCCESSFUL.' });
+                                                            setStatus({ type: 'info', text: 'Image uploaded successfully!' });
                                                         } catch (err) {
-                                                            setStatus({ type: 'error', text: 'UPLOAD FAILED.' });
+                                                            setStatus({ type: 'error', text: 'Image upload failed. Please try again.' });
                                                         } finally {
                                                             setUploading(false);
                                                         }
@@ -234,7 +234,7 @@ const MailingManager = () => {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Communication Content</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Message Content</label>
                                         <textarea 
                                             value={mailData.messageBody}
                                             onChange={(e) => setMailData({...mailData, messageBody: e.target.value})}
@@ -279,7 +279,7 @@ const MailingManager = () => {
                                             <Sparkles size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-white">DUAL CHANNEL BROADCAST</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-white">EMAIL & PUSH NOTIFICATION</p>
                                             <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">Simultaneous Mobile & Desktop Push Notification</p>
                                         </div>
                                     </div>
@@ -318,18 +318,18 @@ const MailingManager = () => {
                                         type="button"
                                         onClick={() => {
                                             if (Notification.permission === 'granted') {
-                                                new Notification(mailData.subject || "DIAGNOSTIC_SIGNAL", {
-                                                    body: mailData.headerText || "LOCAL_TEST_PAYLOAD_RECEIVED.",
+                                                new Notification(mailData.subject || "Test Notification", {
+                                                    body: mailData.headerText || "This is a test notification from your dashboard.",
                                                     icon: '/logo_full.png'
                                                 });
-                                                setStatus({ type: 'info', text: 'LOCAL_SIGNAL_DISPATCHED. CHECK_LAPTOP_NOTIFICATIONS.' });
+                                                setStatus({ type: 'info', text: 'Test notification sent! Check your desktop notifications.' });
                                             } else {
-                                                useStore.getState().addToast("PERMISSION_DENIED: Browser has blocked native signals.", 'error');
+                                                useStore.getState().addToast("Notifications are blocked by your browser. Please enable them in your browser settings.", 'error');
                                             }
                                         }}
                                         className="h-20 bg-white/5 text-white font-black font-heading uppercase tracking-[0.2em] rounded-[2rem] border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                                     >
-                                        <Monitor size={20} /> Test Signal
+                                        <Monitor size={20} /> Test Notification
                                     </Button>
                                     
                                     <Button 
@@ -340,11 +340,11 @@ const MailingManager = () => {
                                         {sending ? (
                                             <>
                                                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                                TRANSMITTING...
+                                                SENDING...
                                             </>
                                         ) : (
                                             <>
-                                                <Send size={20} /> Initiate Broadcast
+                                                <Send size={20} /> Send Emails
                                             </>
                                         )}
                                     </Button>
