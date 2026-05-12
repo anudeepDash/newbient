@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { verifyToken } from './lib/auth';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NEWBI AI BACKEND PROXY v1.0
@@ -34,9 +35,9 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Access Denied: Origin not allowed' });
     }
 
-    const secret = req.headers['x-newbi-secret'];
-    if (secret !== 'nb-sec-9921-xp') {
-        return res.status(401).json({ error: 'Unauthorized: Invalid neural pulse secret' });
+    const decodedToken = await verifyToken(req);
+    if (!decodedToken) {
+        return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
 
     if (req.method !== 'POST') {

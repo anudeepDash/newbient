@@ -38,8 +38,6 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
@@ -285,6 +283,14 @@ const InvoiceGenerator = () => {
         document.body.appendChild(hiddenContainer);
 
         try {
+            // Lazy load libraries
+            const [jsPDFModule, html2canvasModule] = await Promise.all([
+                import('jspdf'),
+                import('html2canvas')
+            ]);
+            const jsPDF = jsPDFModule.default;
+            const html2canvas = html2canvasModule.default;
+
             const pdf = new jsPDF('p', 'mm', 'a4');
             const allPages = getPaginatedPages();
             
