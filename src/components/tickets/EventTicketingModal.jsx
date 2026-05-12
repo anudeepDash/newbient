@@ -1,247 +1,365 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    X, Ticket, Calendar, MapPin, Users, 
-    ArrowRight, Loader2, Minus, Plus, ShieldCheck, 
-    ChevronLeft, QrCode, Info, Map as MapIcon, Download, ExternalLink,
-    User, Mail, Phone
+    X, Calendar, MapPin, Ticket, Plus, Minus, ArrowRight, 
+    ChevronLeft, Loader2, CheckCircle2, ShieldCheck, Zap,
+    Info, CreditCard, Lock, Share2
 } from 'lucide-react';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import { useStore } from '../../lib/store';
-import { notifyAdmins } from '../../lib/notificationTriggers';
+import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { cn } from '../../lib/utils';
-import LoadingSpinner from '../ui/LoadingSpinner';
+import { useStore } from '../../lib/store';
+import { db, auth } from '../../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import html2canvas from 'html2canvas';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
-const EventTicketingModal = ({ event, isOpen, onClose, isEmbedded = false }) => {
-    const { user, addTicketOrder, addGuestlistEntry, paymentDetails, setAuthModal } = useStore();
+const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => {
+    const user = useStore(state => state.user);
+    const setAuthModal = useStore(state => state.setAuthModal);
+
+    if (!event && isOpen) {
+        return null; // Don't render if open but no event data
+    }
     
     // Core state
     const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' or 'guestlist'
-    const [step, setStep] = useState('overview'); // overview, selection, details, payment, success
+    const [step, setStep] = useState('selection'); // map, selection, identity, otp, payment, success
     
     // Setup tabs based on event config
     const hasTickets = event?.isTicketed;
     const hasGuestlist = event?.isGuestlistEnabled;
     const hasLayout = !!event?.venueLayout;
-    const baseTicketPrice = event?.ticketPrice || 0;
-    const hasCategories = event?.ticketCategories && event.ticketCategories.length > 0;
+    const hasCategories = event?.ticketCategories?.length > 0;
 
-    // Form states
+    // Ticketing state
     const [cart, setCart] = useState({});
-    const [ticketCount, setTicketCount] = useState(1);
     const [guestCount, setGuestCount] = useState(1);
-    
+    const [ticketCount, setTicketCount] = useState(1); // For events without categories
+    const [selectedMapCategory, setSelectedMapCategory] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [bookingRef, setBookingRef] = useState(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // Form data
     const [formData, setFormData] = useState({
         name: user?.displayName || '',
         email: user?.email || '',
-        phone: '',
-        plusOneNames: [],
+        phone: user?.phoneNumber || ''
     });
-    
+
+    // OTP states
+    const [confirmationResult, setConfirmationResult] = useState(null);
+    const [countryCode, setCountryCode] = useState('+91');
+    const [otpCode, setOtpCode] = useState('');
+    const [verifying, setVerifying] = useState(false);
+    const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
+
+    // Payment state
     const [paymentRef, setPaymentRef] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [bookingRef, setBookingRef] = useState('');
-    const [isDownloading, setIsDownloading] = useState(false);
+    const [showUpiGuide, setShowUpiGuide] = useState(false);
+    
+    const globalPaymentDetails = useStore(state => state.paymentDetails);
+    const upiId = event?.upiId || event?.paymentDetails?.upiId || globalPaymentDetails?.upiId || 'newbi@upi';
+    const qrCodeUrl = event?.qrCodeUrl || globalPaymentDetails?.qrCodeUrl;
 
     useEffect(() => {
-        if (isOpen && event) {
+        if (isOpen) {
             if (hasTickets) setActiveTab('tickets');
             else if (hasGuestlist) setActiveTab('guestlist');
             
-            setStep('overview');
+            // Start with map if layout exists, otherwise selection
+            setStep(hasLayout && hasTickets ? 'map' : 'selection');
             setCart({});
+            setSelectedMapCategory(null);
             setTicketCount(1);
             setGuestCount(1);
-            setPaymentRef('');
             setFormData({
                 name: user?.displayName || '',
                 email: user?.email || '',
-                phone: '',
-                plusOneNames: [],
+                phone: user?.phoneNumber?.replace(/^\+\d{2}/, '') || ''
             });
+            setConfirmationResult(null);
+            setOtpCode('');
+            setPaymentRef('');
         }
-    }, [isOpen, event, user, hasTickets, hasGuestlist]);
+    }, [isOpen, hasTickets, hasGuestlist, user]);
 
-    if (!isOpen || !event) return null;
-
-    // --- COMPUTATIONS ---
-    const totalAmount = hasCategories
-        ? event.ticketCategories.reduce((acc, cat) => acc + (cat.price * (cart[cat.id] || 0)), 0)
-        : baseTicketPrice * ticketCount;
-
-    const cartTotalCount = hasCategories
-        ? Object.values(cart).reduce((a, b) => a + b, 0)
-        : ticketCount;
-
-    // --- HANDLERS ---
-    const updateCart = (catId, delta) => {
-        setCart(prev => ({
-            ...prev,
-            [catId]: Math.max(0, (prev[catId] || 0) + delta)
-        }));
+    const updateCart = (categoryId, delta) => {
+        setCart(prev => {
+            const nextCart = { ...prev };
+            
+            // If selecting a NEW category on a map event, clear others
+            // but if it's the SAME category, just update the count
+            if (hasLayout && delta > 0 && !prev[categoryId]) {
+                Object.keys(nextCart).forEach(key => delete nextCart[key]);
+            }
+            
+            const current = nextCart[categoryId] || 0;
+            const next = Math.max(0, current + delta);
+            
+            if (next === 0) {
+                const { [categoryId]: _, ...rest } = nextCart;
+                return rest;
+            }
+            return { ...nextCart, [categoryId]: next };
+        });
     };
 
-    const handleNext = () => {
-        if (!user && step === 'overview') {
-            setAuthModal(true);
-            return;
+    const cartTotalCount = useMemo(() => Object.values(cart).reduce((a, b) => a + b, 0), [cart]);
+    const totalAmount = useMemo(() => {
+        if (!event) return 0;
+        if (!hasCategories) return ticketCount * (event.basePrice || 0);
+        return Object.entries(cart).reduce((total, [id, count]) => {
+            const cat = event.ticketCategories?.find(c => c.id === id);
+            return total + (cat?.price || 0) * count;
+        }, 0);
+    }, [cart, event, hasCategories, ticketCount]);
+
+    const setupRecaptcha = async () => {
+        if (window.recaptchaVerifier) {
+            try { window.recaptchaVerifier.clear(); } catch(e) {}
+            window.recaptchaVerifier = null;
         }
 
-        if (step === 'overview') {
-            setStep(hasLayout && activeTab === 'tickets' ? 'layout' : 'selection');
-        } else if (step === 'layout') {
-            setStep('selection');
-        } else if (step === 'selection') {
-            if (activeTab === 'tickets' && cartTotalCount === 0) return useStore.getState().addToast("Select at least one ticket.", 'error');
-            setStep('details');
-        } else if (step === 'details') {
-            if (!formData.name || !formData.email || !formData.phone) return useStore.getState().addToast("Please fill all details.", 'error');
+        const container = document.getElementById('recaptcha-container');
+        if (!container) return null;
+        container.innerHTML = '';
+        
+        try {
+            const verifier = new RecaptchaVerifier(auth, container, {
+                'size': 'invisible',
+                'callback': () => console.log("reCAPTCHA active")
+            });
+            await verifier.render();
+            window.recaptchaVerifier = verifier;
+            return verifier;
+        } catch (error) {
+            console.error("Recaptcha error:", error);
+            return null;
+        }
+    };
+
+    const handleSendOTP = async () => {
+        if (!formData.phone || formData.phone.length < 10) {
+            return useStore.getState().addToast("Enter a valid phone number.", 'error');
+        }
+
+        setLoading(true);
+        try {
+            const verifier = await setupRecaptcha();
+            if (!verifier) throw new Error("Verification system failed to initialize.");
+
+            const cleanPhone = formData.phone.trim().replace(/\D/g, '');
+            const phoneNumber = `${countryCode}${cleanPhone}`;
+
+            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+            setConfirmationResult(confirmation);
+            setStep('otp');
+            useStore.getState().addToast("Verification code sent!", 'success');
+        } catch (error) {
+            console.error("OTP Error:", error);
+            useStore.getState().addToast(error.message || "Failed to send code.", 'error');
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.render().then(widgetId => {
+                    window.grecaptcha.reset(widgetId);
+                });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOTP = async () => {
+        if (otpCode.length !== 6 || !confirmationResult) return;
+        setVerifying(true);
+        try {
+            await confirmationResult.confirm(otpCode);
+            useStore.getState().addToast("Phone verified!", 'success');
+            
             if (activeTab === 'tickets') {
                 if (totalAmount === 0) submitTickets();
                 else setStep('payment');
+            } else {
+                submitGuestlist();
             }
-            else submitGuestlist();
+        } catch (error) {
+            console.error("Verification error:", error);
+            useStore.getState().addToast("Invalid code. Please try again.", 'error');
+        } finally {
+            setVerifying(false);
         }
     };
 
     const submitGuestlist = async () => {
         setLoading(true);
         try {
-            const ref = `GL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-            setBookingRef(ref);
-
-            await addGuestlistEntry(event.id, {
-                guestlistId: event.id,
-                title: event.title,
-                date: event.date,
-                location: event.location || 'Venue',
-                image: event.image || '',
+            const ref = `GUEST-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            await addDoc(collection(db, 'guestlists'), {
+                eventId: event?.id,
                 userId: user?.uid || null,
-                customerName: formData.name,
-                customerEmail: formData.email,
-                customerPhone: formData.phone,
-                guestsCount: guestCount,
-                plusOneNames: formData.plusOneNames.filter(Boolean),
-                status: 'approved',
-                createdAt: new Date().toISOString(),
-                bookingRef: ref
+                name: formData.name,
+                email: formData.email,
+                phone: `${countryCode}${formData.phone}`,
+                guestCount,
+                bookingRef: ref,
+                createdAt: serverTimestamp(),
+                status: 'confirmed'
             });
+            setBookingRef(ref);
             setStep('success');
-        } catch (err) {
-            console.error(err);
-            useStore.getState().addToast("Registration failed.", 'error');
+        } catch (error) {
+            console.error("Guestlist error:", error);
+            useStore.getState().addToast("Failed to join guestlist.", 'error');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
+    };
+
+    const submitTickets = async () => {
+        setLoading(true);
+        try {
+            const ref = `TKT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            const orderData = {
+                eventId: event?.id,
+                userId: user?.uid || null,
+                name: formData.name,
+                email: formData.email,
+                phone: `${countryCode}${formData.phone}`,
+                items: hasCategories ? cart : { base: ticketCount },
+                totalAmount,
+                paymentRef: totalAmount > 0 ? paymentRef : 'FREE',
+                bookingRef: ref,
+                createdAt: serverTimestamp(),
+                status: totalAmount > 0 ? 'pending' : 'confirmed'
+            };
+            await addDoc(collection(db, 'ticket_orders'), orderData);
+            setBookingRef(ref);
+            setStep('success');
+        } catch (error) {
+            console.error("Ticketing error:", error);
+            useStore.getState().addToast("Failed to process booking.", 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDownloadTicket = async () => {
-        const ticket = document.getElementById('ticket-download-surface');
-        if (!ticket) return;
-
+        const element = document.getElementById('ticket-download-surface');
+        if (!element) return;
+        
         setIsDownloading(true);
         try {
-            const canvas = await html2canvas(ticket, {
-                scale: 2,
+            const canvas = await html2canvas(element, {
                 backgroundColor: '#000000',
+                scale: 2,
                 useCORS: true,
-                logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: 800,
-                windowHeight: ticket.offsetHeight || 1200
+                logging: false
             });
-            
-            const image = canvas.toDataURL("image/png", 1.0);
             const link = document.createElement('a');
-            link.download = `NEWBI-TICKET-${bookingRef}.png`;
-            link.href = image;
+            link.download = `NEWBI_PASS_${bookingRef}.png`;
+            link.href = canvas.toDataURL('image/png');
             link.click();
-        } catch (err) {
-            console.error("handleDownloadTicket failed:", err);
-            useStore.getState().addToast("Failed to save image. Please try taking a screenshot.", 'error');
+        } catch (error) {
+            console.error("Download error:", error);
+            useStore.getState().addToast("Download failed. Try again.", 'error');
         } finally {
             setIsDownloading(false);
         }
     };
 
-    const submitTickets = async () => {
-        if (totalAmount > 0 && !paymentRef) return useStore.getState().addToast("Please enter UTR/Transaction ID.", 'error');
-        setLoading(true);
-        try {
-            const ref = `TKT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-            setBookingRef(ref);
-
-            const items = hasCategories
-                ? event.ticketCategories.filter(c => cart[c.id] > 0).map(c => ({
-                    categoryId: c.id,
-                    name: c.name,
-                    price: c.price,
-                    count: cart[c.id]
-                }))
-                : [{ name: 'Standard Ticket', price: baseTicketPrice, count: ticketCount }];
-
-            await addTicketOrder({
-                eventId: event.id,
-                eventTitle: event.title,
-                customerName: formData.name,
-                customerEmail: formData.email,
-                customerPhone: formData.phone,
-                userId: user?.uid || null,
-                items: items,
-                totalAmount,
-                paymentRef: totalAmount > 0 ? paymentRef : 'FREE',
-                status: totalAmount > 0 ? 'pending' : 'approved',
-                bookingRef: ref,
-                ticketMode: event.ticketMode || 'qr'
-            });
-
-            if (totalAmount > 0) {
-                await notifyAdmins('NEW TICKETING ORDER', `Payment verification pending for ${event.title}`, '/admin/tickets', 'ticket');
-            }
-            setStep('success');
-        } catch (err) {
-            console.error(err);
-            useStore.getState().addToast("Failed to submit order.", 'error');
+    const handleNext = () => {
+        if (!user && (step === 'selection' || step === 'map')) {
+            setAuthModal(true);
+            return;
         }
-        setLoading(false);
+
+        if (step === 'map') {
+            if (cartTotalCount === 0) {
+                return useStore.getState().addToast("Select a zone on the map.", 'error');
+            }
+            setStep('selection');
+        } else if (step === 'selection') {
+            if (activeTab === 'tickets' && cartTotalCount === 0 && hasCategories) {
+                return useStore.getState().addToast("Select at least one ticket.", 'error');
+            }
+            setStep('identity');
+        } else if (step === 'identity') {
+            if (!formData.name || !formData.phone || formData.phone.length < 10) {
+                return useStore.getState().addToast("Please fill all details correctly.", 'error');
+            }
+            handleSendOTP();
+        }
+    };
+
+    const handleBack = () => {
+        if (step === 'selection') {
+            if (hasLayout && activeTab === 'tickets') setStep('map');
+        }
+        else if (step === 'identity') setStep('selection');
+        else if (step === 'otp') setStep('identity');
+        else if (step === 'payment') setStep('identity');
     };
 
     const modalContent = (
-        <motion.div
-            initial={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
-            animate={window.innerWidth < 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
-            className={cn(
-                "relative w-full bg-zinc-950 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row transition-all",
-                isEmbedded ? "h-full w-full border-0 shadow-none rounded-0" : "max-w-4xl h-[90vh] md:h-[650px] rounded-t-[3rem] md:rounded-[3.5rem]"
-            )}
-        >
-            {/* Left Column: Poster (Hidden in Embedded) */}
+        <>
+            <motion.div
+                initial={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
+                animate={window.innerWidth < 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                exit={isEmbedded ? {} : (window.innerWidth < 768 ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 })}
+                className={cn(
+                    "relative w-full bg-zinc-950 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row transition-all",
+                    isEmbedded ? "h-full w-full border-0 shadow-none rounded-0" : "max-w-5xl h-[95vh] md:h-[800px] rounded-t-[2.5rem] md:rounded-[4rem]"
+                )}
+            >
+            {/* Left Sidebar: Event Brief & Guidelines */}
             {!isEmbedded && (
-                <div className="hidden md:flex w-[320px] bg-black border-r border-white/5 shrink-0 flex-col relative overflow-hidden">
-                    <img src={event.image} className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-1000 scale-105" alt="Event" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                    <div className="relative z-10 p-8 mt-auto space-y-4">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit">
-                            <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest">{event.performanceType || 'Protocol'}</span>
+                <div className="hidden lg:flex w-[320px] bg-black border-r border-white/5 shrink-0 flex-col relative overflow-hidden">
+                    <img 
+                        src={event?.hubImage || event?.image} 
+                        className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale hover:grayscale-0 transition-all duration-1000" 
+                        alt="Event" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                    <div className="relative z-10 p-8 flex flex-col h-full">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit mb-6">
+                            <Zap size={10} className="text-neon-blue" />
+                            <span className="text-[9px] font-black text-white uppercase tracking-widest">OFFICIAL TICKETS</span>
                         </div>
-                        <h3 className="text-2xl font-black font-heading text-white italic uppercase tracking-tighter leading-none">{event.title}</h3>
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                                <Calendar size={12} className="text-neon-blue" /> {event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}
+                        
+                        <h3 className="text-3xl font-black font-heading text-white italic uppercase tracking-tighter leading-none mb-8">{event?.title}</h3>
+                        
+                        <div className="space-y-6 flex-1">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 text-gray-400">
+                                    <Calendar size={14} className="text-neon-blue" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{event?.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-400">
+                                    <MapPin size={14} className="text-neon-pink" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{event?.location || 'VENUE TBA'}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                                <MapPin size={12} className="text-neon-pink" /> {event.location || 'Venue TBA'}
+
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                    <ShieldCheck size={12} className="text-neon-green" /> GUIDELINES
+                                </p>
+                                <p className="text-[10px] text-gray-400 leading-relaxed italic">{event?.ticketingDescription || "Standard venue protocols apply. Carry valid ID."}</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-white/5">
+                            <div className="flex items-center gap-4 text-white/20">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em]">NEWBI ENT.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Right Column: Content */}
+            {/* Main Content Area */}
             <div className="flex-1 flex flex-col relative overflow-hidden bg-zinc-950/50 backdrop-blur-xl">
                 {!isEmbedded && (
                     <button onClick={onClose} className="absolute top-8 right-8 z-50 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all group">
@@ -249,186 +367,399 @@ const EventTicketingModal = ({ event, isOpen, onClose, isEmbedded = false }) => 
                     </button>
                 )}
 
-                <div className="flex-1 overflow-y-auto p-8 md:p-12 scrollbar-hide">
-                    {/* Progress */}
-                    <div className="flex gap-2 mb-12">
-                        {['overview', 'selection', 'details', 'payment'].filter(s => s !== 'payment' || totalAmount > 0).map((s, i) => {
-                            const isPast = ['overview', 'selection', 'details', 'payment'].indexOf(step) > ['overview', 'selection', 'details', 'payment'].indexOf(s);
-                            const isActive = step === s;
-                            return (
-                                <div key={s} className={cn(
-                                    "h-1 rounded-full transition-all duration-1000",
-                                    isActive ? "flex-[3] bg-neon-blue shadow-[0_0_10px_rgba(46,191,255,0.4)]" : 
-                                    isPast ? "flex-1 bg-neon-blue/20" : "flex-1 bg-white/5"
-                                )} />
-                            );
-                        })}
-                    </div>
-
+                <div className={cn(
+                    "flex-1 overflow-y-auto p-4 md:p-12 scrollbar-hide",
+                    isEmbedded && "pt-12 md:pt-16"
+                )}>
                     <AnimatePresence mode="wait">
-                        {step === 'overview' && (
-                            <motion.div key="overview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-4 text-neon-blue">
-                                        <div className="w-10 h-[1px] bg-current" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Ticketing Protocol</span>
-                                    </div>
-                                    <h2 className="text-4xl font-black font-heading text-white italic uppercase tracking-tighter leading-none">
-                                        Secure your <span className="text-neon-blue">Access.</span>
-                                    </h2>
+                        {step === 'map' && (
+                            <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
+                                <div className="space-y-4 mb-10">
+                                    <h3 className="text-2xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter">Select Tickets</h3>
+                                    <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest italic">Choose your preferred ticket categories and quantity below.</p>
                                 </div>
 
-                                {hasTickets && hasGuestlist && (
-                                    <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
-                                        <button onClick={() => setActiveTab('tickets')} className={cn("flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white")}>Tickets</button>
-                                        <button onClick={() => setActiveTab('guestlist')} className={cn("flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-neon-pink text-black" : "text-gray-500 hover:text-white")}>Guestlist</button>
-                                    </div>
-                                )}
-
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-2">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Entry Time</p>
-                                            <p className="text-xs font-black text-white italic">{event.doorsOpen || '20:00 HRS'}</p>
+                                <div className="flex-1 bg-black/40 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 p-0 overflow-hidden relative shadow-2xl group/map mb-8 min-h-[300px] md:min-h-[450px]">
+                                    <div className="relative h-full w-fit mx-auto">
+                                        <img src={event?.venueLayout} alt="Venue Map" className="h-full w-auto object-contain" />
+                                        <div className="absolute inset-0">
+                                            {event?.ticketCategories?.map(cat => (cat.mapping || cat.coords) && (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => {
+                                                        setSelectedMapCategory(cat.id);
+                                                        updateCart(cat.id, 1);
+                                                    }}
+                                                    className={cn(
+                                                        "absolute flex flex-col items-center justify-center transition-all border-2",
+                                                        (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "z-50 ring-4 ring-white/30 scale-[1.05]" : "hover:scale-[1.02] opacity-80"
+                                                    )}
+                                                    style={{
+                                                        left: `${cat.mapping?.x || cat.coords?.x || 0}%`,
+                                                        top: `${cat.mapping?.y || cat.coords?.y || 0}%`,
+                                                        width: cat.mapping ? `${cat.mapping.width}%` : '40px',
+                                                        height: cat.mapping ? `${cat.mapping.height}%` : '40px',
+                                                        backgroundColor: cat.color || '#2ebfff',
+                                                        borderColor: 'rgba(255,255,255,0.4)',
+                                                        marginLeft: cat.mapping ? '0' : '-20px',
+                                                        marginTop: cat.mapping ? '0' : '-20px',
+                                                        borderRadius: cat.mapping ? '6px' : '9999px'
+                                                    }}
+                                                >
+                                                    <span className="text-[7px] font-black text-white uppercase truncate px-1 drop-shadow-md">{cat.name}</span>
+                                                    <span className="text-[9px] font-black text-white drop-shadow-md">₹{cat.price}</span>
+                                                </button>
+                                            ))}
                                         </div>
-                                        <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-2">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Age Limit</p>
-                                            <p className="text-xs font-black text-white italic">{event.ageLimit || '21+'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-8 rounded-[2rem] bg-white/5 border border-white/5">
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Event Guidelines</p>
-                                        <p className="text-xs text-gray-400 leading-relaxed italic">{event.ticketingDescription || "Standard venue protocols apply. Valid ID required for entry."}</p>
                                     </div>
                                 </div>
 
-                                <Button onClick={handleNext} className="w-full h-20 rounded-[2rem] bg-neon-blue text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
-                                    Proceed to Selection <ArrowRight size={18} />
-                                </Button>
-                            </motion.div>
-                        )}
-
-                        {step === 'layout' && (
-                            <motion.div key="layout" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 h-full flex flex-col">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setStep('overview')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white"><ChevronLeft size={18}/></button>
-                                    <h3 className="text-xl font-black font-heading italic uppercase text-white">Interactive Map</h3>
-                                </div>
-                                <div className="flex-1 bg-black/50 rounded-2xl border border-white/5 p-2 overflow-hidden relative">
-                                    <img src={event.venueLayout} alt="Venue Map" className="w-full h-full object-contain" />
-                                    {event.ticketCategories?.map(cat => cat.coords && (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => updateCart(cat.id, 1)}
-                                            className={cn("absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 flex items-center justify-center transition-all", (cart[cat.id] || 0) > 0 ? "bg-neon-green border-white scale-125 shadow-lg" : "bg-black/60 border-neon-green/40")}
-                                            style={{ left: `${cat.coords.x}%`, top: `${cat.coords.y}%` }}
-                                        >
-                                            <Ticket size={12} className={(cart[cat.id] || 0) > 0 ? "text-black" : "text-neon-green"} />
-                                        </button>
-                                    ))}
-                                </div>
-                                <Button onClick={handleNext} disabled={cartTotalCount === 0} className="w-full h-14 bg-neon-green text-black font-black uppercase tracking-widest">
-                                    Confirm Selection
+                                <Button 
+                                    onClick={handleNext} 
+                                    disabled={cartTotalCount === 0}
+                                    className="h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-xs rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                >
+                                    PROCEED TO TICKETS
+                                    <ArrowRight size={20} />
                                 </Button>
                             </motion.div>
                         )}
 
                         {step === 'selection' && (
-                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 h-full flex flex-col">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setStep('overview')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white"><ChevronLeft size={18}/></button>
-                                    <h3 className="text-xl font-black font-heading italic uppercase text-white">Select Spots</h3>
-                                </div>
-                                <div className="flex-1 space-y-4">
-                                    {activeTab === 'guestlist' ? (
-                                        <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-8">
-                                            <span className="text-7xl font-black italic tracking-tighter tabular-nums">{guestCount}</span>
-                                            <div className="flex gap-8">
-                                                <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center"><Minus size={24}/></button>
-                                                <button onClick={() => setGuestCount(g => Math.min(5, g + 1))} className="w-16 h-16 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue"><Plus size={24}/></button>
+                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
+                                {hasLayout && activeTab === 'tickets' && (
+                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-8">
+                                        <ChevronLeft size={14} /> Back to Map
+                                    </button>
+                                )}
+
+                                {hasTickets && hasGuestlist && (
+                                    <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 mb-8 w-fit mx-auto">
+                                        <button onClick={() => setActiveTab('tickets')} className={cn("px-8 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'tickets' ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white")}>TICKETS</button>
+                                        <button onClick={() => setActiveTab('guestlist')} className={cn("px-8 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'guestlist' ? "bg-neon-pink text-black" : "text-gray-500 hover:text-white")}>GUESTLIST</button>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col gap-8 flex-1 min-h-0">
+                                    <div className="relative z-10 flex flex-col h-full p-4 md:p-12 pt-6 md:pt-12 overflow-y-auto scrollbar-hide space-y-4 pr-2">
+                                        {activeTab === 'guestlist' ? (
+                                            <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
+                                                <div className="text-center">
+                                                    <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2">Number of Guests</h4>
+                                                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Maximum 5 per entry</p>
+                                                </div>
+                                                <span className="text-8xl font-black italic tracking-tighter tabular-nums text-neon-pink drop-shadow-[0_0_20px_rgba(255,46,191,0.3)]">{guestCount}</span>
+                                                <div className="flex gap-10">
+                                                    <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all"><Minus size={28}/></button>
+                                                    <button onClick={() => setGuestCount(g => Math.min(5, g + 1))} className="w-20 h-20 rounded-full bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"><Plus size={28}/></button>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            hasCategories ? event?.ticketCategories?.filter(cat => 
+                                                !hasLayout || cartTotalCount === 0 || cart[cat.id]
+                                            ).map(cat => (
+                                                <div key={cat.id} className={cn(
+                                                    "p-5 md:p-8 bg-white/5 border transition-all rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-between group",
+                                                    (selectedMapCategory === cat.id || (cart[cat.id] || 0) > 0) ? "border-neon-blue bg-neon-blue/5" : "border-white/10 hover:border-white/20"
+                                                )}>
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: cat.color || '#2ebfff' }} />
+                                                        <div>
+                                                            <div className="font-black text-white uppercase text-base italic tracking-widest">{cat.name}</div>
+                                                            <div className="text-neon-green font-black text-2xl tracking-tighter">₹{cat.price}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 md:gap-6 bg-black/40 p-2 rounded-2xl border border-white/5">
+                                                        <button onClick={() => updateCart(cat.id, -1)} className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><Minus size={16}/></button>
+                                                        <span className="w-8 md:w-10 text-center font-black text-lg md:text-xl tabular-nums">{cart[cat.id] || 0}</span>
+                                                        <button onClick={() => updateCart(cat.id, 1)} className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10 flex items-center justify-center hover:bg-neon-blue hover:text-black transition-all"><Plus size={16}/></button>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
+                                                    <span className="text-7xl font-black italic tabular-nums text-neon-green drop-shadow-[0_0_20px_rgba(43,217,62,0.3)]">{ticketCount}</span>
+                                                    <div className="flex gap-10">
+                                                        <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-18 h-18 rounded-full border border-white/10 flex items-center justify-center"><Minus size={24}/></button>
+                                                        <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-18 h-18 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={24}/></button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+
+                                    {/* Checkout Bar */}
+                                    <div className="p-6 md:p-10 bg-zinc-900/80 border border-white/10 rounded-[2rem] md:rounded-[3rem] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl relative">
+                                        <div className="space-y-1 text-center sm:text-left">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Final Total</p>
+                                            <p className="text-3xl md:text-5xl font-black text-white italic tracking-tighter tabular-nums drop-shadow-lg">
+                                                ₹{activeTab === 'guestlist' ? '0' : totalAmount}
+                                            </p>
                                         </div>
-                                    ) : (
-                                        hasCategories ? event.ticketCategories.map(cat => (
-                                            <div key={cat.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-black text-white uppercase text-sm">{cat.name}</div>
-                                                    <div className="text-neon-green font-bold text-lg">₹{cat.price}</div>
-                                                </div>
-                                                <div className="flex items-center gap-4 bg-black p-1 rounded-xl">
-                                                    <button onClick={() => updateCart(cat.id, -1)} className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center"><Minus size={16}/></button>
-                                                    <span className="w-6 text-center font-bold">{cart[cat.id] || 0}</span>
-                                                    <button onClick={() => updateCart(cat.id, 1)} className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center"><Plus size={16}/></button>
-                                                </div>
-                                            </div>
-                                        )) : (
-                                            <div className="p-8 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center gap-6">
-                                                <span className="text-5xl font-black tabular-nums">{ticketCount}</span>
-                                                <div className="flex gap-8">
-                                                    <button onClick={() => setTicketCount(g => Math.max(1, g - 1))} className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center"><Minus size={20}/></button>
-                                                    <button onClick={() => setTicketCount(g => Math.min(10, g + 1))} className="w-14 h-14 rounded-full bg-neon-green/20 text-neon-green flex items-center justify-center"><Plus size={20}/></button>
-                                                </div>
-                                            </div>
-                                        )
-                                    )}
+                                        <Button 
+                                            onClick={handleNext} 
+                                            disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories)}
+                                            className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                        >
+                                            {loading ? <Loader2 className="animate-spin" /> : 'CONTINUE'}
+                                            <ArrowRight size={20} />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button onClick={handleNext} className="w-full h-14 bg-neon-green text-black font-black uppercase tracking-widest">
-                                    Proceed
-                                </Button>
                             </motion.div>
                         )}
 
-                        {step === 'details' && (
-                            <motion.div key="details" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                                <h3 className="text-xl font-black font-heading italic uppercase text-white">Enter Details</h3>
-                                <div className="space-y-4">
-                                    <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-14 bg-white/5" placeholder="Full Name" />
-                                    <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-14 bg-white/5" placeholder="Email Address" />
-                                    <Input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-14 bg-white/5" placeholder="Phone Number" />
+                        {step === 'identity' && (
+                            <motion.div key="identity" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col h-full">
+                                <div className="space-y-2 mb-6">
+                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-2">
+                                        <ChevronLeft size={14} /> Back to Selection
+                                    </button>
+                                    <h3 className="text-2xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter">Your Details</h3>
+                                    <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest italic whitespace-nowrap">Provide your information for identity verification.</p>
                                 </div>
-                                <Button onClick={handleNext} className="w-full h-14 bg-neon-blue text-black font-black uppercase tracking-widest">
-                                    Confirm
-                                </Button>
+
+                                <div className="space-y-4 flex-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">FULL NAME</p>
+                                            <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-16 bg-white/5 border-white/10 text-sm rounded-2xl" placeholder="NAME" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">EMAIL ADDRESS</p>
+                                            <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-16 bg-white/5 border-white/10 text-sm rounded-2xl" placeholder="EMAIL" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">PHONE NUMBER</p>
+                                        <div className="flex gap-4">
+                                            <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="w-28 h-16 bg-white/5 border border-white/10 rounded-2xl text-white text-sm px-3 outline-none focus:border-neon-blue transition-all">
+                                                <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
+                                                <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
+                                                <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
+                                            </select>
+                                            <Input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-16 bg-white/5 border-white/10 flex-1 text-sm rounded-2xl" placeholder="PHONE" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 mb-4">
+                                    <Button 
+                                        onClick={handleNext} 
+                                        disabled={loading || !formData.name || !formData.phone}
+                                        className="w-full h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-xs rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                    >
+                                        {loading ? <Loader2 className="animate-spin" /> : 'VERIFY & CONTINUE'}
+                                        <ArrowRight size={20} />
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 'otp' && (
+                            <motion.div key="otp_verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-col items-center justify-center h-full max-w-md mx-auto space-y-12">
+                                <div className="text-center space-y-4">
+                                    <div className="w-20 h-20 bg-neon-blue/10 border border-neon-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <Lock size={32} className="text-neon-blue" />
+                                    </div>
+                                    <h3 className="text-2xl md:text-4xl font-black font-heading italic uppercase text-white tracking-tighter">Verify Phone</h3>
+                                    <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest italic">Enter the 6-digit code sent to your phone to confirm your identity.</p>
+                                </div>
+                                <div className="w-full space-y-8">
+                                    <Input 
+                                        type="text" 
+                                        maxLength={6} 
+                                        value={otpCode} 
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9]/g, '');
+                                            setOtpCode(val);
+                                        }} 
+                                        className="h-24 bg-white/5 border-white/10 text-center text-5xl font-black tracking-[0.5em] rounded-[2rem] focus:border-neon-blue focus:shadow-[0_0_30px_rgba(46,191,255,0.2)] transition-all" 
+                                        placeholder="000000" 
+                                    />
+                                    <div className="flex flex-col gap-4">
+                                        <Button onClick={handleVerifyOTP} disabled={verifying || otpCode.length !== 6} className="h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-xs rounded-3xl">
+                                            {verifying ? <Loader2 className="animate-spin" /> : 'VERIFY CODE'}
+                                        </Button>
+                                        <button 
+                                            onClick={() => { setStep('identity'); setConfirmationResult(null); setOtpCode(''); }} 
+                                            className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-[0.2em] transition-all"
+                                        >
+                                            Change Number
+                                        </button>
+                                    </div>
+                                </div>
                             </motion.div>
                         )}
 
                         {step === 'payment' && (
-                            <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                                <h3 className="text-xl font-black font-heading italic uppercase text-white">Payment</h3>
-                                <div className="bg-white rounded-3xl p-6 text-center border border-gray-200">
-                                    {paymentDetails?.upiId && (
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${paymentDetails.upiId}&pn=NewBi&am=${totalAmount}`)}`} alt="QR" className="w-48 h-48 mx-auto" />
-                                    )}
-                                    <p className="mt-4 font-mono font-bold text-gray-800">{paymentDetails?.upiId}</p>
+                            <motion.div key="payment" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full overflow-y-auto scrollbar-hide pb-10">
+                                <div className="text-center space-y-4 mb-10 shrink-0">
+                                    <h3 className="text-3xl md:text-5xl font-black font-heading italic uppercase text-white tracking-tighter">Payment</h3>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scan the QR or use the UPI app to pay, then enter Transaction ID.</p>
                                 </div>
-                                <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5" placeholder="Enter Transaction ID" />
-                                <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-14 bg-white text-black font-black uppercase tracking-widest">
-                                    {loading ? <Loader2 className="animate-spin" /> : 'Confirm Payment'}
-                                </Button>
+                                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div className="bg-white rounded-[2rem] p-8 flex flex-col items-center gap-4 shadow-2xl">
+                                        <img 
+                                            src={qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`)}`} 
+                                            alt="QR" 
+                                            className="w-48 h-48 md:w-56 md:h-56 object-contain" 
+                                        />
+                                        <p className="font-mono font-bold text-gray-900 text-[10px] md:text-xs tracking-tight">{upiId}</p>
+                                        
+                                        {/* Pay with UPI Button - Mobile Only */}
+                                        <a 
+                                            href={`upi://pay?pa=${upiId}&pn=NewBi&am=${totalAmount}`}
+                                            className="w-full h-14 rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 md:hidden"
+                                        >
+                                            <Zap size={14} />
+                                            PAY VIA UPI APP
+                                        </a>
+                                    </div>
+                                    <div className="flex flex-col justify-center space-y-6">
+                                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-1">
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Amount to Pay</p>
+                                            <p className="text-3xl md:text-4xl font-black text-neon-green italic tabular-nums">₹{totalAmount}</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between px-2">
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Transaction ID / Ref No.</p>
+                                                    <button 
+                                                        onClick={() => setShowUpiGuide(!showUpiGuide)}
+                                                        className="text-[9px] font-black text-neon-blue hover:underline uppercase tracking-widest flex items-center gap-1"
+                                                    >
+                                                        <Info size={10} />
+                                                        How to find?
+                                                    </button>
+                                                </div>
+
+                                                <AnimatePresence>
+                                                    {showUpiGuide && (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="p-4 bg-white/5 border border-dashed border-white/20 rounded-xl space-y-3 mb-4">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-blue">GPay:</span> History > Tap Payment > UPI Transaction ID</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-pink" />
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-pink">PhonePe:</span> History > Tap Payment > UTR Number</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance & History > Tap Payment > UPI Ref No.</p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-[8px] text-gray-500 italic border-t border-white/5 pt-2">Note: It is always a 12-digit number.</p>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5 border-white/10 text-xs tracking-widest rounded-xl" placeholder="ENTER 12-DIGIT ID" />
+                                            </div>
+                                            <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                                                {loading ? <Loader2 className="animate-spin" /> : 'CONFIRM PAYMENT'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
                             </motion.div>
                         )}
 
                         {step === 'success' && (
-                            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-6">
-                                <CheckCircle2 size={64} className="text-neon-green" />
-                                <h3 className="text-2xl font-black font-heading text-white italic uppercase">Success!</h3>
-                                <p className="text-gray-400 text-sm">Your booking reference: <span className="text-white font-mono">{bookingRef}</span></p>
-                                <Button onClick={handleDownloadTicket} className="w-full h-12 bg-neon-green text-black uppercase font-black">Download Pass</Button>
+                            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-10">
+                                <div className="w-24 h-24 bg-neon-green/20 border border-neon-green/40 rounded-[2.5rem] flex items-center justify-center text-neon-green shadow-[0_0_60px_rgba(43,217,62,0.3)]">
+                                    <CheckCircle2 size={48} />
+                                </div>
+                                <div className="space-y-3">
+                                    <h3 className="text-3xl md:text-5xl font-black font-heading text-white italic uppercase tracking-tighter">Booking Successful</h3>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Booking Reference:</span>
+                                        <span className="text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10">{bookingRef}</span>
+                                    </div>
+                                </div>
+                                
+                                {totalAmount > 0 ? (
+                                    <div className="p-10 bg-neon-blue/10 border border-neon-blue/20 rounded-[3rem] max-w-sm relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
+                                        <p className="text-[12px] font-black text-neon-blue uppercase tracking-[0.2em] leading-relaxed italic">
+                                            Passes will be available after payment verification in the profile section.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="w-full max-w-sm space-y-6">
+                                        <Button onClick={handleDownloadTicket} className="w-full h-20 bg-neon-green text-black uppercase font-black rounded-3xl tracking-[0.2em] text-xs shadow-[0_30px_60px_rgba(43,217,62,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
+                                            DOWNLOAD PASS <ArrowRight size={20} />
+                                        </Button>
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest italic">Ready for offline use.</p>
+                                    </div>
+                                )}
+
+                                <div className="fixed -left-[9999px] top-0 pointer-events-none">
+                                    <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-blue/20">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
+                                            <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">{activeTab === 'tickets' ? 'OFFICIAL_TICKET' : 'GUESTLIST_PASS'}</div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">{event?.title}</h1>
+                                            <div className="flex gap-8">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
+                                                    <p className="text-xl font-bold text-white uppercase italic">{event?.date ? new Date(event.date).toLocaleDateString() : 'To Be Announced'}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
+                                                    <p className="text-xl font-bold text-white uppercase italic">{event?.location || 'Special Venue'}</p>
+                                                    {event?.locationUrl && <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest truncate max-w-[200px]">{event.locationUrl.replace('https://', '').replace('www.', '')}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
+                                            <div className="bg-white p-8 rounded-[3rem]">
+                                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
+                                            </div>
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
+                                                    <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                                </div>
+                                                <div className="flex gap-8">
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{activeTab === 'tickets' ? 'ITEMS' : 'GUESTS'}</p>
+                                                        <p className="text-2xl font-bold text-neon-blue italic">{activeTab === 'tickets' ? cartTotalCount : guestCount}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
+                                                        <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] italic">NEWBI ENT.</p>
+                                            <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">NEWBI.LIVE</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
-                
-                {/* Footer */}
-                <div className="pt-8 border-t border-white/5 flex items-center justify-between p-8 md:px-12">
-                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em]">www.newbi.in</p>
-                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em]">#AUTHENTIC_ACCESS</p>
-                </div>
             </div>
         </motion.div>
-    );
+        <div id="recaptcha-container" className="fixed bottom-0 right-0 z-[200]"></div>
+    </>
+);
 
-    if (isEmbedded) return modalContent;
+    if (isEmbedded) return isOpen ? modalContent : null;
 
     return (
         <AnimatePresence>
@@ -442,7 +773,6 @@ const EventTicketingModal = ({ event, isOpen, onClose, isEmbedded = false }) => 
                             </motion.div>
                         )}
                     </AnimatePresence>
-
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/90 backdrop-blur-3xl transition-all" />
                     {modalContent}
                 </div>

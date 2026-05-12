@@ -434,7 +434,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                                 <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-green/20">
                                                     {/* Logo Header */}
                                                     <div className="flex items-center justify-between">
-                                                        <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-green">ENT.</span></div>
+                                                        <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
                                                         <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">GUESTLIST_PASS</div>
                                                     </div>
 
@@ -485,8 +485,8 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
 
                                                     {/* Footer */}
                                                     <div className="pt-8 border-t border-white/5 flex items-center justify-between">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em]">www.newbi.in</p>
-                                                        <p className="text-[9px] font-black text-neon-green/50 uppercase tracking-[0.3em]">#TRIBE_ACCESS_ONLY</p>
+                                                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] italic">NEWBI ENT.</p>
+                                                        <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">#TRIBE_ACCESS_ONLY</p>
                                                     </div>
                                                 </div>
                                             </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Users from 'lucide-react/dist/esm/icons/users';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Star from 'lucide-react/dist/esm/icons/star';
 import Gift from 'lucide-react/dist/esm/icons/gift';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
@@ -81,8 +81,7 @@ const CommunityJoin = () => {
     const featuredItems = [
         ...(volunteerGigs || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gig' })),
         ...(guestlists || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'gl' })),
-        ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' })),
-        ...(campaigns || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'campaign' }))
+        ...(forms || []).filter(i => i.isPinned).map(item => ({ ...item, type: 'form' }))
     ];
 
     useEffect(() => {
@@ -239,7 +238,7 @@ const CommunityJoin = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 md:mb-8 backdrop-blur-md"
                     >
-                        <Sparkles size={14} className="text-neon-pink" />
+                        <Star size={14} className="text-neon-pink fill-neon-pink/20" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                             {user ? 'Access Unlocked' : 'The Tribe'}
                         </span>
@@ -346,7 +345,7 @@ const CommunityJoin = () => {
                                                  boxShadow: `0 0 30px ${(featuredItems[0]?.highlightColor || '#2ebfff')}50`
                                              }}
                                          >
-                                             <Sparkles size={32} />
+                                             <Star size={32} className="fill-black" />
                                          </div>
                                          <div>
                                              <h2 className="text-4xl md:text-7xl font-black font-heading tracking-tighter text-white uppercase italic leading-none">

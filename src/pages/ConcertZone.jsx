@@ -63,13 +63,13 @@ const ConcertZone = () => {
                         className="flex flex-col sm:flex-row gap-4 justify-center"
                     >
                         <a
-                            href="https://www.instagram.com/concert.zone/"
+                            href="https://www.instagram.com/newbi.live/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center gap-3 h-14 px-8 rounded-2xl font-black font-heading uppercase tracking-widest bg-neon-pink text-black hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,0,255,0.2)] text-sm"
                         >
                             <Instagram size={18} />
-                            Visit Concert.zone
+                            Visit Instagram
                         </a>
                     </motion.div>
                 </div>
@@ -89,7 +89,7 @@ const ConcertZone = () => {
                         </div>
                         <div>
                             <h2 className="text-lg font-black font-heading tracking-tight uppercase">Latest Vibes</h2>
-                            <p className="text-gray-500 text-xs font-medium mt-0.5">Live from @concert.zone</p>
+                            <p className="text-gray-500 text-xs font-medium mt-0.5">Live from @newbi.live</p>
                         </div>
                     </div>
 
@@ -107,7 +107,7 @@ const ConcertZone = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Feed Live</span>
                         </div>
                         <a
-                            href="https://www.instagram.com/concert.zone/"
+                            href="https://www.instagram.com/newbi.live/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neon-pink hover:text-white transition-colors"

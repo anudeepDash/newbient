@@ -195,20 +195,18 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     <p className="text-lg font-black text-white tracking-tighter truncate uppercase italic">{campaign.reward}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                    {(!campaign.shortlistedCreators || campaign.shortlistedCreators.length === 0) && (
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
-                                    onDelete(campaign.id);
-                                }
-                            }}
-                            className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
-                            title="Delete Mission"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    )}
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                                onDelete(campaign.id);
+                            }
+                        }}
+                        className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                        title="Delete Mission"
+                    >
+                        <Trash2 size={16} />
+                    </button>
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
@@ -232,7 +230,8 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
     </motion.div>
 );
 
-const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onCopyLink }) => (
+
+const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink }) => (
     <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -272,7 +271,35 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onCopyLink }) => (
             <p className="text-lg font-black text-white font-mono">{campaign.tasks?.length || 0}</p>
         </div>
 
-        <div className="hidden sm:flex w-32 items-center justify-end">
+        <div className="hidden sm:flex w-48 items-center justify-end gap-3">
+            <div className="flex gap-2">
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                            onDelete(campaign.id);
+                        }
+                    }}
+                    className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                    title="Delete Mission"
+                >
+                    <Trash2 size={16} />
+                </button>
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
+                        updateCampaign(campaign.id, { ...campaign, status: newStatus });
+                    }}
+                    className={cn(
+                        "w-10 h-10 rounded-xl border transition-all flex items-center justify-center",
+                        campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                    )}
+                    title={campaign.status === 'Open' ? "Close Mission" : "Open Mission"}
+                >
+                    {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
+                </button>
+            </div>
             <StatusPill status={campaign.status} />
         </div>
 
@@ -281,6 +308,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onCopyLink }) => (
         </div>
     </motion.div>
 );
+
 
 const StatusPill = ({ status }) => {
     const config = {
@@ -878,9 +906,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                         campaign={campaign} 
                                                         onSelect={() => setExpandedCampaignId(campaign.id)}
                                                         onEdit={() => handleEdit(campaign)}
-                                                        onDelete={() => deleteCampaign(campaign.id)}
+                                                        onDelete={deleteCampaign}
+                                                        updateCampaign={updateCampaign}
                                                         onCopyLink={() => handleCopyLink(campaign.id)}
                                                     />
+
                                                 </motion.div>
                                             ))}
                                         </div>
@@ -901,8 +931,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                 idx={idx}
                                                 onSelect={() => setExpandedCampaignId(campaign.id)}
                                                 onEdit={() => handleEdit(campaign)}
+                                                onDelete={deleteCampaign}
+                                                updateCampaign={updateCampaign}
                                                 onCopyLink={() => handleCopyLink(campaign.id)}
                                             />
+
                                         ))}
                                     </div>
                                 )}
@@ -951,7 +984,15 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         onEdit={(c) => { handleEdit(c); setExpandedCampaignId(null); }}
                         onToggleShortlist={handleToggleShortlist}
                         onReviewSubmission={handleReviewSubmission}
+                        onDelete={(id) => {
+                            if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                                deleteCampaign(id);
+                                setExpandedCampaignId(null);
+                            }
+                        }}
+                        updateCampaign={updateCampaign}
                     />
+
                 )}
                 {rejectionModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
@@ -973,7 +1014,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
 /* --- Detailed Mission Modal --- */
 
-const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission }) => {
+const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign }) => {
+
     const { campaigns, creators } = useStore();
     const campaign = campaigns.find(c => c.id === campaignId);
     const [activeTab, setActiveTab] = useState('applicants'); // applicants | tasks
@@ -1005,11 +1047,31 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                         </div>
                     </div>
                     <div className="flex gap-4">
+                        <button 
+                            onClick={() => {
+                                const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
+                                updateCampaign(campaign.id, { ...campaign, status: newStatus });
+                            }}
+                            className={cn(
+                                "h-14 px-8 border rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3",
+                                campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                            )}
+                        >
+                            {campaign.status === 'Open' ? <Unlock size={18} /> : <Lock size={18} />}
+                            {campaign.status === 'Open' ? 'CLOSE MISSION' : 'OPEN MISSION'}
+                        </button>
+                        <button 
+                            onClick={() => onDelete(campaign.id)} 
+                            className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-xl"
+                        >
+                            <Trash2 size={24} />
+                        </button>
                         <button onClick={() => onEdit(campaign)} className="h-14 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all">EDIT MISSION</button>
                         <button onClick={onClose} className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group">
                             <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                         </button>
                     </div>
+
                 </div>
 
                 {/* Tabs */}

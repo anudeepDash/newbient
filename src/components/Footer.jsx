@@ -41,7 +41,7 @@ const Footer = () => {
                         </motion.div>
 
                         <div className="flex items-center gap-6">
-                            <a href="https://instagram.com/newbi.ent" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
+                            <a href="https://www.instagram.com/newbi.live" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">INSTAGRAM</a>
                             <a href="https://linkedin.com/company/newbi-ent" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">LINKEDIN</a>
                             <a href="mailto:hello@newbi.ent" className="text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em]">EMAIL</a>
                         </div>

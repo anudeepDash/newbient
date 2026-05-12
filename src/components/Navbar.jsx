@@ -351,12 +351,15 @@ const Navbar = () => {
                             {user ? (
                                 <div className="space-y-4">
                                     <div className="w-full flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10">
-                                        <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
+                                        <div 
+                                            className="flex items-center gap-4 flex-1 min-w-0 pr-2 cursor-pointer group/profile"
+                                            onClick={() => { setIsProfileOpen(true); setIsOpen(false); }}
+                                        >
                                             <div className="w-12 h-12 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue shrink-0">
                                                 <UserIcon size={20} />
                                             </div>
                                             <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="text-lg font-black text-white italic capitalize truncate">{user.displayName || 'Tribe Member'}</span>
+                                                <span className="text-lg font-black text-white italic capitalize truncate group-hover/profile:text-neon-blue transition-colors">{user.displayName || 'Tribe Member'}</span>
                                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
                                                     {(() => {
                                                         if (user.role === 'developer') return 'DEV';

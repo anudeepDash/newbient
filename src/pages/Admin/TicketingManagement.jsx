@@ -32,7 +32,7 @@ const TicketingManagement = () => {
     
     const [searchParams] = useSearchParams();
     const [selectedEventId, setSelectedEventId] = useState(null);
-    const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, dispatch, sheets
+    const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, guestlist, dispatch, attendance, sheets, settings
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [isUploading, setIsUploading] = useState(false);
@@ -253,6 +253,49 @@ const TicketingManagement = () => {
         useStore.getState().addToast("Operations Report Downloaded.", 'success');
     };
 
+    const handleUpdateEventPayment = async (e) => {
+        e.preventDefault();
+        const upiId = e.target.upiId.value;
+        const qrCodeUrl = e.target.qrCodeUrl.value;
+        
+        try {
+            const { updateUpcomingEvent } = useStore.getState();
+            await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl });
+            useStore.getState().addToast("Payment configuration synchronized.", 'success');
+        } catch (err) {
+            console.error(err);
+            useStore.getState().addToast("Failed to update payment settings.", 'error');
+        }
+    };
+
+    const handleQRUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            // Reusing existing upload logic if available, or manual fetch to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'ml_default'); 
+
+            const res = await fetch(`https://api.cloudinary.com/v1_1/dmod79hsz/image/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            
+            const { updateUpcomingEvent } = useStore.getState();
+            await updateUpcomingEvent(selectedEventId, { qrCodeUrl: data.secure_url });
+            useStore.getState().addToast("QR Code uploaded and mapped.", 'success');
+        } catch (err) {
+            console.error(err);
+            useStore.getState().addToast("Upload failed.", 'error');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#020202] text-white pb-20">
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -275,10 +318,10 @@ const TicketingManagement = () => {
                 </div>
 
                 <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
-                     <div className="flex gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
-                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'sheets'].map((tab) => {
-                            if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist')) return null; 
-                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch')) return null;
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
+                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'sheets', 'settings'].map((tab) => {
+                            if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
+                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings')) return null;
                             if (!(event?.isGuestlistEnabled || event?.guestlistEnabled) && tab === 'guestlist') return null;
                             return (
                                 <button
@@ -291,7 +334,7 @@ const TicketingManagement = () => {
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : 'Sheets'}
+                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : 'Sheets'}
                                 </button>
                             );
                         })}
@@ -598,6 +641,54 @@ const TicketingManagement = () => {
                                     )}
                                 </div>
                             </Card>
+                        </motion.div>
+                    )}
+                    {/* SETTINGS TAB */}
+                    {activeTab === 'settings' && !isScanner && (
+                        <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl">
+                                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Event Payment Config</h3>
+                                    <form onSubmit={handleUpdateEventPayment} className="space-y-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Event UPI ID</label>
+                                            <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Direct QR Link (Optional)</label>
+                                            <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                        </div>
+                                        <Button type="submit" className="w-full h-14 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-2xl">
+                                            Update Configuration
+                                        </Button>
+                                    </form>
+                                </Card>
+
+                                <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl flex flex-col items-center justify-center text-center group">
+                                    <div className="relative w-full">
+                                        {event?.qrCodeUrl ? (
+                                            <div className="relative group/qr">
+                                                <img src={event.qrCodeUrl} alt="Event QR" className="w-48 h-48 mx-auto object-contain rounded-2xl border border-white/10 p-2 bg-white" />
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                                                    <label className="cursor-pointer p-4 bg-white text-black rounded-xl font-black uppercase text-[10px]">
+                                                        {isUploading ? <LoadingSpinner size="sm" /> : 'Change QR'}
+                                                        <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="cursor-pointer border-2 border-dashed border-white/10 rounded-[2rem] p-12 flex flex-col items-center justify-center hover:border-neon-blue transition-colors w-full h-64">
+                                                <QrCode size={48} className="text-gray-600 mb-4" />
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Upload Custom QR</p>
+                                                <input type="file" onChange={handleQRUpload} className="hidden" accept="image/*" />
+                                            </label>
+                                        )}
+                                    </div>
+                                    <p className="mt-6 text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                                        This QR will be displayed to buyers during the payment step of the ticketing modal for <span className="text-white italic">{event?.title}</span>.
+                                    </p>
+                                </Card>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -143,7 +143,7 @@ const Contact = () => {
                                 <ContactMethod 
                                     icon={Instagram} 
                                     label="Social" 
-                                    val="@newbi_ent" 
+                                    val="@newbi.live" 
                                     href={siteDetails.instagram} 
                                     accent="neon-pink"
                                 />

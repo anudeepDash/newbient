@@ -1420,6 +1420,31 @@ export const useStore = create((set, get) => ({
         set({ user: { ...user, displayName } });
     },
 
+    updateUserProfile: async (uid, data) => {
+        const { updateProfile } = await import('firebase/auth');
+        const { auth } = await import('./firebase');
+
+        // 1. Sync with Firestore
+        const userRef = doc(db, 'users', uid);
+        await setDoc(userRef, data, { merge: true });
+        
+        // 2. If it's the current user, sync with Firebase Auth profile
+        if (auth.currentUser && auth.currentUser.uid === uid) {
+            const updates = {};
+            if (data.displayName) updates.displayName = data.displayName;
+            // Note: email and photoURL can also be updated here if needed
+            if (Object.keys(updates).length > 0) {
+                await updateProfile(auth.currentUser, updates);
+            }
+        }
+
+        // 3. Update local state
+        const { user } = get();
+        if (user && user.uid === uid) {
+            set({ user: { ...user, ...data } });
+        }
+    },
+
     checkUserRole: async (firebaseUser) => {
         if (!firebaseUser) {
             localStorage.removeItem(AUTH_CACHE_KEY);
@@ -1483,10 +1508,11 @@ export const useStore = create((set, get) => ({
         }
 
         const finalUser = {
-            email: firebaseUser.email,
+            email: firebaseUser.email || (userDoc.exists() ? userDoc.data().email : null),
             uid: firebaseUser.uid,
             role: role,
             displayName: displayName,
+            phoneNumber: firebaseUser.phoneNumber || (userDoc.exists() ? userDoc.data().phoneNumber : null),
             hasJoinedTribe: hasJoinedTribe,
             hasJoinedWhatsapp: hasJoinedWhatsapp
         };

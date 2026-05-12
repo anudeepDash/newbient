@@ -18,6 +18,8 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [newDisplayName, setNewDisplayName] = useState(user?.displayName || '');
     const [isEditingName, setIsEditingName] = useState(false);
+    const [ticketSort, setTicketSort] = useState('booking'); // 'booking' or 'event'
+    const [ticketFilter, setTicketFilter] = useState('upcoming'); // 'upcoming' or 'past'
 
     if (!user) return null;
 
@@ -29,7 +31,47 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const isArtist = !!artistProfile;
     const isApprovedArtist = artistProfile?.profileStatus === 'approved';
 
-    const userTickets = ticketOrders?.filter(order => order.userId === user.uid) || [];
+    const { upcomingEvents, portfolio } = useStore();
+    const allPossibleEvents = [...(upcomingEvents || []), ...(portfolio || [])];
+
+    const userTickets = (ticketOrders?.filter(order => order.userId === user.uid) || [])
+        .map(order => {
+            const event = allPossibleEvents.find(e => e.id === order.eventId);
+            return {
+                ...order,
+                eventTitle: order.eventTitle || event?.title || 'Event Pass',
+                eventDate: order.eventDate || event?.date || null
+            };
+        })
+        .filter(ticket => {
+            const title = (ticket.eventTitle || '').toLowerCase();
+            // Only leave "At the Terminal" and "Jazba Tere Ishq Ka"
+            return title.includes('jazba') || title.includes('terminal');
+        })
+        .filter(ticket => {
+            if (!ticket.eventDate) return ticketFilter === 'upcoming';
+            const eventDate = new Date(ticket.eventDate);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); // Start of today
+            
+            if (ticketFilter === 'upcoming') {
+                return eventDate >= now;
+            } else {
+                return eventDate < now;
+            }
+        })
+        .sort((a, b) => {
+            if (ticketSort === 'event') {
+                const dateA = a.eventDate ? new Date(a.eventDate) : new Date(0);
+                const dateB = b.eventDate ? new Date(b.eventDate) : new Date(0);
+                return ticketFilter === 'upcoming' ? dateA - dateB : dateB - dateA; // Ascending for upcoming, Descending for past
+            } else {
+                // Booking date (createdAt)
+                const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt || 0);
+                const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt || 0);
+                return dateB - dateA; // Newest booking first
+            }
+        });
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -376,6 +418,55 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
+                                            <div className="flex flex-col gap-6">
+                                                <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/5">
+                                                    <button 
+                                                        onClick={() => setTicketFilter('upcoming')}
+                                                        className={cn(
+                                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                            ticketFilter === 'upcoming' ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-gray-300"
+                                                        )}
+                                                    >
+                                                        Upcoming Passes
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setTicketFilter('past')}
+                                                        className={cn(
+                                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                            ticketFilter === 'past' ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-gray-300"
+                                                        )}
+                                                    >
+                                                        Past History
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sort By:</span>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={() => setTicketSort('booking')}
+                                                                className={cn(
+                                                                    "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
+                                                                    ticketSort === 'booking' ? "bg-neon-pink/10 border-neon-pink text-neon-pink" : "bg-white/5 border-white/5 text-gray-500 hover:text-white"
+                                                                )}
+                                                            >
+                                                                Booking
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setTicketSort('event')}
+                                                                className={cn(
+                                                                    "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all",
+                                                                    ticketSort === 'event' ? "bg-neon-pink/10 border-neon-pink text-neon-pink" : "bg-white/5 border-white/5 text-gray-500 hover:text-white"
+                                                                )}
+                                                            >
+                                                                Event
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             {userTickets.length > 0 ? (
                                                 <div className="grid grid-cols-1 gap-4">
                                                     {userTickets.map((ticket, i) => (
@@ -386,11 +477,22 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                                     <ImageIcon size={30} className="text-gray-700" />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className="text-lg font-black text-white uppercase italic truncate">{ticket.eventTitle || 'Event Pass'}</h4>
+                                                                    <h4 className="text-lg font-black text-white uppercase italic truncate">{ticket.eventTitle}</h4>
                                                                     <div className="flex items-center gap-3 mt-1">
-                                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">{ticket.eventDate || 'TBD'}</span>
+                                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">
+                                                                            {ticket.eventDate ? new Date(ticket.eventDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}
+                                                                        </span>
                                                                         <span className="w-1 h-1 rounded-full bg-gray-700" />
                                                                         <span className="text-[10px] font-black text-neon-pink uppercase tracking-widest">{ticket.bookingRef}</span>
+                                                                    </div>
+                                                                    <div className="mt-2 flex items-center gap-2">
+                                                                        <div className={cn(
+                                                                            "w-1.5 h-1.5 rounded-full",
+                                                                            ticket.status === 'confirmed' || ticket.status === 'dispatched' ? "bg-neon-green" : "bg-yellow-500"
+                                                                        )} />
+                                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest">
+                                                                            {ticket.status === 'confirmed' || ticket.status === 'dispatched' ? 'Verified' : 'Pending Verification'}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                                 <button 
