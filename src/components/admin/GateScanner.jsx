@@ -12,7 +12,7 @@ const GateScanner = ({ eventId }) => {
     const [scanResult, setScanResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [manualCode, setManualCode] = useState('');
+    const [manualCode, setManualCode] = useState('NB-');
     const scannerRef = useRef(null);
 
     useEffect(() => {
@@ -45,62 +45,58 @@ const GateScanner = ({ eventId }) => {
 
         try {
             // 1. Identify Code Type
-            if (code.startsWith('NB-')) {
-                // TICKET ORDER (Same logic for now)
+            if (code.startsWith('NB-') || code.startsWith('GL-')) {
+                // Check Tickets first
                 const order = ticketOrders.find(o => o.bookingRef === code && o.eventId === eventId);
-                if (!order) throw new Error("INVALID TICKET: NOT FOUND FOR THIS EVENT.");
-                if (order.attended) throw new Error("WARNING: TICKET ALREADY REDEEMED.");
-                
-                await updateTicketOrder(order.id, { attended: true, attendedAt: new Date().toISOString() });
-                setScanResult({ type: 'ticket', data: order });
-                setManualCode('');
-            } 
-            else if (code.startsWith('GL-')) {
-                // GUESTLIST ENTRY: Search globally for bookingRef
-                const { query, collectionGroup, where, getDocs, doc, updateDoc, increment, getDoc } = await import('firebase/firestore');
+                if (order) {
+                    if (order.attended) throw new Error("WARNING: TICKET ALREADY REDEEMED.");
+                    await updateTicketOrder(order.id, { attended: true, attendedAt: new Date().toISOString() });
+                    setScanResult({ type: 'ticket', data: order });
+                    setManualCode('NB-');
+                    return;
+                }
+
+                // If not in tickets, check guestlist
+                const { query, collectionGroup, where, getDocs, doc, updateDoc, getDoc } = await import('firebase/firestore');
                 const { db } = await import('../../lib/firebase');
                 
                 const q = query(collectionGroup(db, 'entries'), where('bookingRef', '==', code));
                 const querySnapshot = await getDocs(q);
                 
-                if (querySnapshot.empty) throw new Error("GUESTLIST ENTRY NOT FOUND IN REGISTRY.");
-                
-                const entryDoc = querySnapshot.docs[0];
-                const entryData = entryDoc.data();
-                const entryId = entryDoc.id;
-                
-                // Get parent (guestlist) ID from path: guestlists/{glId}/entries/{entryId}
-                const pathParts = entryDoc.ref.path.split('/');
-                const glId = pathParts[1];
+                if (!querySnapshot.empty) {
+                    const entryDoc = querySnapshot.docs[0];
+                    const entryData = entryDoc.data();
+                    const pathParts = entryDoc.ref.path.split('/');
+                    const glId = pathParts[1];
 
-                if (entryData.attended) throw new Error("WARNING: GUEST ALREADY CHECKED IN.");
+                    if (entryData.attended) throw new Error("WARNING: GUEST ALREADY CHECKED IN.");
 
-                // Check eventId if required (Guestlists are usually event-specific)
-                // If the guestlist defines an eventId, we should check it
-                const glSnap = await getDoc(doc(db, 'guestlists', glId));
-                const glData = glSnap.data();
-                
-                // If this scanner is restricted to an event, check it
-                if (eventId && glData.eventId && glData.eventId !== eventId) {
-                    throw new Error("INVALID ACCESS: THIS CODE IS FOR A DIFFERENT MISSION.");
+                    const glSnap = await getDoc(doc(db, 'guestlists', glId));
+                    const glData = glSnap.data();
+                    
+                    if (eventId && glData.eventId && glData.eventId !== eventId) {
+                        throw new Error("INVALID ACCESS: THIS CODE IS FOR A DIFFERENT MISSION.");
+                    }
+
+                    await updateDoc(entryDoc.ref, {
+                        attended: true,
+                        attendedAt: new Date().toISOString()
+                    });
+
+                    setScanResult({ 
+                        type: 'guestlist', 
+                        code,
+                        data: {
+                            customerName: entryData.customerName,
+                            customerEmail: entryData.customerEmail,
+                            guestsCount: entryData.guestsCount
+                        }
+                    });
+                    setManualCode('NB-');
+                    return;
                 }
 
-                // 2. Mark attendance
-                await updateDoc(entryDoc.ref, {
-                    attended: true,
-                    attendedAt: new Date().toISOString()
-                });
-
-                setScanResult({ 
-                    type: 'guestlist', 
-                    code,
-                    data: {
-                        customerName: entryData.customerName,
-                        customerEmail: entryData.customerEmail,
-                        guestsCount: entryData.guestsCount
-                    }
-                });
-                setManualCode('');
+                throw new Error("CODE NOT FOUND IN REGISTRY.");
             }
             else {
                 throw new Error("UNRECOGNIZED ENTRANCE PROTOCOL.");

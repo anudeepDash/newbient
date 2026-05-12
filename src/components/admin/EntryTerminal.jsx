@@ -282,9 +282,9 @@ const EntryTerminal = ({ eventId }) => {
                                     <div className="truncate">
                                         <h3 className="text-lg font-black uppercase text-white truncate tracking-tight">{entry.customerName || 'UNKNOWN_ENTITY'}</h3>
                                         <div className="flex items-center gap-4 mt-1">
-                                            <span className="text-[9px] font-mono text-gray-600 uppercase tracking-widest">{entry.bookingRef || 'REF_MISSING'}</span>
+                                            <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-lg border border-neon-blue/20 uppercase tracking-widest">{entry.bookingRef || 'REF_MISSING'}</span>
                                             <div className="w-1 h-1 rounded-full bg-gray-800" />
-                                            <span className="text-[9px] font-black text-neon-blue/40 uppercase tracking-widest">{entry.type === 'ticket' ? 'TICKET HOLDER' : 'GUESTLIST GUEST'}</span>
+                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{entry.type === 'ticket' ? 'TICKET HOLDER' : 'GUESTLIST'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -303,7 +303,7 @@ const EntryTerminal = ({ eventId }) => {
                                                 : "bg-white/5 text-neon-blue border-white/10 hover:bg-neon-blue hover:text-black hover:scale-105 shadow-[0_10px_20px_rgba(46,191,255,0.1)]"
                                         )}
                                     >
-                                        {entry.attended ? 'RESET_ENTRY' : 'VERIFY_ENTRANCE'}
+                                        {entry.attended ? 'CANCEL_CHECK_IN' : 'MARK_ATTENDED'}
                                     </Button>
                                 </div>
                             </motion.div>
