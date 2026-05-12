@@ -3,9 +3,9 @@ import admin from 'firebase-admin';
 
 try {
     if (!admin.apps.length) {
-        const projectId = process.env.FIREBASE_PROJECT_ID;
-        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
 
         if (!projectId || !clientEmail || !privateKey) {
             console.error('[AUTH INIT] ❌ Missing Firebase Admin environment variables!');
