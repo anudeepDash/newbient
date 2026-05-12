@@ -30,15 +30,15 @@ export default async function handler(req, res) {
         return;
     }
 
-    // Origin & Secret Enforcement
-    if (origin && !allowedOrigins.includes(origin)) {
-        return res.status(403).json({ error: 'Access Denied: Origin not allowed' });
-    }
+    console.log(`[AI PROXY] 🛰️ Neural request from origin: ${origin}`);
+    console.log(`[AI PROXY] 🔑 Key Status: Gemini=${!!GEMINI_API_KEY}, OpenRouter=${!!OPENROUTER_API_KEY}, Perplexity=${!!PERPLEXITY_API_KEY}`);
 
     const decodedToken = await verifyToken(req);
     if (!decodedToken) {
+        console.warn('[AI PROXY] 🚨 Auth Failed: Missing or invalid token');
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
+    console.log(`[AI PROXY] ✅ Auth Success: User=${decodedToken.email || decodedToken.uid}`);
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         // 1. TRY GEMINI (SDK)
         if (genAI) {
             try {
-                console.log('[AI PROXY] Path: Gemini SDK');
+                console.log('[AI PROXY] 🚀 Path: Gemini SDK');
                 const model = genAI.getGenerativeModel({ 
                     model: "gemini-1.5-flash",
                     generationConfig: { responseMimeType: "application/json" }
@@ -69,11 +69,15 @@ export default async function handler(req, res) {
                 
                 const text = result.response.text();
                 if (text && text.length > 20) {
+                    console.log('[AI PROXY] ✨ Success: Gemini SDK delivered payload');
                     return res.status(200).json({ content: text, provider: 'gemini' });
                 }
             } catch (e) {
-                console.error('[AI PROXY] Gemini path failed:', e.message);
+                console.error('[AI PROXY] ❌ Gemini path failed:', e.message);
+                // Continue to backup paths...
             }
+        } else {
+            console.warn('[AI PROXY] ⚠️ Skipping Gemini: GEMINI_API_KEY is not defined in environment');
         }
 
         // 2. TRY OPENROUTER (FETCH)
