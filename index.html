@@ -35,6 +35,15 @@
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </div>
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      alert("PRODUCTION ERROR: " + msg + "\nAt: " + url + ":" + lineNo + ":" + columnNo);
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      alert("UNHANDLED PROMISE: " + event.reason);
+    };
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
