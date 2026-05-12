@@ -27,16 +27,18 @@ export const useStore = create((set, get) => ({
         if (!file) return null;
         const data = new FormData();
         data.append("file", file);
-        data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
+        data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
+        data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n");
 
         // Auto-detect resource type from file MIME
         let resourceType = "image";
         if (file.type?.startsWith("video/")) resourceType = "video";
         else if (file.type === "application/pdf" || file.type?.startsWith("application/")) resourceType = "raw";
 
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+
         try {
-            const res = await fetch(`https://api.cloudinary.com/v1_1/dgtalrz4n/${resourceType}/upload`, { 
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
                 method: "POST", 
                 body: data 
             });

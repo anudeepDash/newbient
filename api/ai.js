@@ -13,14 +13,30 @@ const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 export default async function handler(req, res) {
     // Enable CORS
+    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Newbi-Secret');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
+    }
+
+    // Origin & Secret Enforcement
+    if (origin && !allowedOrigins.includes(origin)) {
+        return res.status(403).json({ error: 'Access Denied: Origin not allowed' });
+    }
+
+    const secret = req.headers['x-newbi-secret'];
+    if (secret !== 'nb-sec-9921-xp') {
+        return res.status(401).json({ error: 'Unauthorized: Invalid neural pulse secret' });
     }
 
     if (req.method !== 'POST') {
