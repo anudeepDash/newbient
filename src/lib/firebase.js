@@ -16,12 +16,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+try {
+    app = initializeApp(firebaseConfig);
+} catch (error) {
+    console.error("Firebase Initialization Error:", error);
+}
 
 // Initialize Cloud Firestore and get a reference to the service
-const db = getFirestore(app);
-const storage = getStorage(app);
-const auth = getAuth(app);
+const db = app ? getFirestore(app) : null;
+const storage = app ? getStorage(app) : null;
+const auth = app ? getAuth(app) : null;
 
 const googleProvider = new GoogleAuthProvider();
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
