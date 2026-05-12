@@ -35,9 +35,14 @@ const EventCard = ({ item, onAction, handleShare }) => {
                         className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
                     />
                 ) : (
-                    <div 
-                        className="w-full h-full bg-cover bg-center opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
-                        style={{ backgroundImage: `url(${item.image})` }}
+                    <img 
+                        src={item.image} 
+                        alt={item.title}
+                        className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-110"
+                        style={{
+                            transform: `scale(${item.imageTransform?.scale || 1})`,
+                            objectPosition: `${50 + (item.imageTransform?.x || 0)}% ${50 + (item.imageTransform?.y || 0)}%`
+                        }}
                     />
                 )}
                 {/* Advanced Overlay Gradients */}
@@ -72,14 +77,14 @@ const EventCard = ({ item, onAction, handleShare }) => {
                 <div className="space-y-4">
                     {/* Artists List */}
                     {item.artists && item.artists.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                             {item.artists.slice(0, 2).map((artist, idx) => (
-                                <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-blue/80 px-2 py-0.5 rounded bg-neon-blue/5 border border-neon-blue/20">
+                                <span key={idx} className="text-[9px] font-black uppercase tracking-widest text-neon-blue/80 px-2 py-0.5 rounded bg-neon-blue/5 border border-neon-blue/20 whitespace-nowrap">
                                     {artist}
                                 </span>
                             ))}
                             {item.artists.length > 2 && (
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/20">+{item.artists.length - 2} MORE</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">+{item.artists.length - 2} MORE</span>
                             )}
                         </div>
                     )}
@@ -89,14 +94,14 @@ const EventCard = ({ item, onAction, handleShare }) => {
                     </h3>
 
                     {/* Metadata Row */}
-                    <div className="flex items-center gap-6 text-white/40">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/40">
                         <div className="flex items-center gap-2">
                             <Calendar size={12} className="text-neon-pink" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{formatDate(item.date)}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{formatDate(item.date)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <MapPin size={12} className="text-neon-blue" />
-                            <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{item.location || 'TBD'}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{item.location || 'TBD'}</span>
                         </div>
                     </div>
                 </div>

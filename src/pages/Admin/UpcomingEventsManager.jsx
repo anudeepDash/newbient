@@ -69,6 +69,7 @@ const UpcomingEventsManager = () => {
         category: '',
         description: '',
         location: '',
+        locationUrl: '',
         buttonText: '',
         image: '',
         hubImage: '',
@@ -111,7 +112,7 @@ const UpcomingEventsManager = () => {
 
     const resetForm = () => {
         setNewEvent({
-            title: '', date: '', time: '', category: '', description: '', location: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
+            title: '', date: '', time: '', category: '', description: '', location: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
             isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
             hubImageTransform: { scale: 1, x: 0, y: 0 },
@@ -133,6 +134,8 @@ const UpcomingEventsManager = () => {
     };
 
     const [mappingCategoryId, setMappingCategoryId] = useState(null);
+    const [dragStart, setDragStart] = useState(null);
+    const [currentDrag, setCurrentDrag] = useState(null);
 
     const handleEdit = (item) => {
         setEditingId(item.id);
@@ -198,79 +201,36 @@ const UpcomingEventsManager = () => {
         }
     };
 
-    const handleFileUpload = async (file) => {
-        if (!file) return null;
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
-
-        try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { method: "POST", body: data });
-            const uploadedImage = await res.json();
-            return uploadedImage.secure_url;
-        } catch (error) {
-            throw new Error("Upload failed.");
-        }
-    };
-
-    const handleVideoUpload = async (file) => {
-        if (!file) return null;
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "maw1e4ud");
-        data.append("cloud_name", "dgtalrz4n");
-
-        try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/video/upload", { method: "POST", body: data });
-            const uploadedVideo = await res.json();
-            return uploadedVideo.secure_url;
-        } catch (error) {
-            throw new Error("Video upload failed.");
-        }
-    };
-
-    const handleHubBannerUpload = async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', 'newbi_events');
-
-        try {
-            const response = await fetch(
-                `https://api.cloudinary.com/v1_1/dmod7m9sk/image/upload`,
-                { method: 'POST', body: formData }
-            );
-            const data = await response.json();
-            return data.secure_url;
-        } catch (error) {
-            console.error('Hub Banner upload failed:', error);
-            return null;
-        }
-    };
+    const uploadToCloudinary = useStore.getState().uploadToCloudinary;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setUploading(true);
         try {
             let imageUrl = newEvent.image;
-            if (selectedFile) imageUrl = await handleFileUpload(selectedFile);
+            if (selectedFile) imageUrl = await uploadToCloudinary(selectedFile);
+            
             let venueLayoutUrl = newEvent.venueLayout;
-            if (venueLayoutFile) venueLayoutUrl = await handleFileUpload(venueLayoutFile);
+            if (venueLayoutFile) venueLayoutUrl = await uploadToCloudinary(venueLayoutFile);
+            
             let videoUrl = newEvent.videoUrl;
-            if (videoFile) videoUrl = await handleVideoUpload(videoFile);
+            if (videoFile) {
+                // For video, we might still need a specific endpoint or preset if it's different
+                // But let's try the store's one first as it's cleaner
+                videoUrl = await uploadToCloudinary(videoFile);
+            }
 
             let hubImageUrl = newEvent.hubImage;
             if (selectedHubBanner) {
-                const uploadedUrl = await handleHubBannerUpload(selectedHubBanner);
-                if (uploadedUrl) hubImageUrl = uploadedUrl;
+                hubImageUrl = await uploadToCloudinary(selectedHubBanner);
             }
 
             const eventData = { 
                 ...newEvent, 
-                image: imageUrl,
-                hubImage: hubImageUrl,
-                venueLayout: venueLayoutUrl, 
-                videoUrl: videoUrl,
+                image: imageUrl || '',
+                hubImage: hubImageUrl || '',
+                venueLayout: venueLayoutUrl || '', 
+                videoUrl: videoUrl || '',
                 buttonText: newEvent.buttonText || "LEARN MORE",
                 updatedAt: new Date()
             };
@@ -363,180 +323,191 @@ const UpcomingEventsManager = () => {
                                                         <div className="space-y-8">
                                                             {/* Asset Management */}
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                                <div 
-                                                                    className="space-y-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5 relative group/upload outline-none focus-within:border-neon-blue/40"
-                                                                    onPaste={(e) => handlePaste(e, 'image')}
-                                                                    tabIndex={0}
-                                                                >
-                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
-                                                                        Card Thumbnail (4:5)
-                                                                        <span className="text-[8px] text-neon-blue/40 opacity-0 group-hover/upload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
-                                                                    </label>
-                                                                    <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-black border border-white/10 group-hover/upload:border-neon-blue/30 transition-all">
-                                                                        {(selectedFile || newEvent.image) ? (
-                                                                            <img 
-                                                                                src={selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image} 
-                                                                                className="w-full h-full object-cover" 
-                                                                                style={{
-                                                                                    transform: `scale(${newEvent.imageTransform?.scale || 1})`,
-                                                                                    objectPosition: `${50 + (newEvent.imageTransform?.x || 0)}% ${50 + (newEvent.imageTransform?.y || 0)}%`
-                                                                                }}
+                                                                    <div 
+                                                                        className="space-y-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5 relative group/upload outline-none focus-within:border-neon-blue/40"
+                                                                        onPaste={(e) => handlePaste(e, 'image')}
+                                                                        tabIndex={0}
+                                                                    >
+                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
+                                                                            Card Thumbnail (4:5)
+                                                                            <span className="text-[8px] text-neon-blue/40 opacity-0 group-hover/upload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
+                                                                        </label>
+                                                                        <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-black border border-white/10 group-hover/upload:border-neon-blue/30 transition-all">
+                                                                            {(selectedFile || newEvent.image) ? (
+                                                                                <img 
+                                                                                    src={selectedFile ? URL.createObjectURL(selectedFile) : newEvent.image} 
+                                                                                    className="w-full h-full object-cover" 
+                                                                                    style={{
+                                                                                        transform: `scale(${newEvent.imageTransform?.scale || 1})`,
+                                                                                        objectPosition: `${50 + (newEvent.imageTransform?.x || 0)}% ${50 + (newEvent.imageTransform?.y || 0)}%`
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
+                                                                                    <Plus size={32} />
+                                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Upload 4:5</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <input 
+                                                                                type="file" 
+                                                                                accept="image/*" 
+                                                                                onChange={e => setSelectedFile(e.target.files[0])}
+                                                                                className="absolute inset-0 opacity-0 cursor-pointer"
                                                                             />
-                                                                        ) : (
-                                                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
-                                                                                <Plus size={32} />
-                                                                                <span className="text-[9px] font-black uppercase tracking-widest">Upload Thumbnail</span>
+                                                                        </div>
+
+                                                                        {/* Calibration Overlay */}
+                                                                        {(selectedFile || newEvent.image) && (
+                                                                            <div className="pt-4 space-y-4 border-t border-white/5">
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE</span>
+                                                                                    <button type="button" onClick={() => setNewEvent({ ...newEvent, imageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-blue hover:underline">RESET</button>
+                                                                                </div>
+                                                                                <div className="space-y-4">
+                                                                                    <div className="space-y-2">
+                                                                                        <div className="flex justify-between items-center">
+                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
+                                                                                            <input 
+                                                                                                type="number" 
+                                                                                                value={newEvent.imageTransform?.scale || 1} 
+                                                                                                step="0.01"
+                                                                                                onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value) || 1}})}
+                                                                                                className="w-12 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-blue/40 outline-none"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <input type="range" min="1" max="3" step="0.01" value={newEvent.imageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                                    </div>
+                                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
+                                                                                                <input 
+                                                                                                    type="number" 
+                                                                                                    value={newEvent.imageTransform?.x || 0} 
+                                                                                                    onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value) || 0}})}
+                                                                                                    className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-green/40 outline-none"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-green" />
+                                                                                        </div>
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
+                                                                                                <input 
+                                                                                                    type="number" 
+                                                                                                    value={newEvent.imageTransform?.y || 0} 
+                                                                                                    onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value) || 0}})}
+                                                                                                    className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-pink/40 outline-none"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-pink" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
                                                                         )}
-                                                                        <input 
-                                                                            type="file" 
-                                                                            accept="image/*" 
-                                                                            onChange={e => setSelectedFile(e.target.files[0])}
-                                                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                        />
                                                                     </div>
 
-                                                                    {/* Calibration Overlay */}
-                                                                    {(selectedFile || newEvent.image) && (
-                                                                        <div className="pt-4 space-y-4 border-t border-white/5">
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE</span>
-                                                                                <button type="button" onClick={() => setNewEvent({ ...newEvent, imageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-blue hover:underline">RESET</button>
-                                                                            </div>
-                                                                            <div className="space-y-4">
-                                                                                <div className="space-y-2">
-                                                                                    <div className="flex justify-between items-center">
-                                                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
-                                                                                        <input 
-                                                                                            type="number" 
-                                                                                            value={newEvent.imageTransform?.scale || 1} 
-                                                                                            step="0.01"
-                                                                                            onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value) || 1}})}
-                                                                                            className="w-12 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-blue/40 outline-none"
-                                                                                        />
-                                                                                    </div>
-                                                                                    <input type="range" min="1" max="3" step="0.01" value={newEvent.imageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                    <div 
+                                                                        className="space-y-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5 relative group/hubupload outline-none focus-within:border-neon-pink/40"
+                                                                        onPaste={(e) => handlePaste(e, 'hubImage')}
+                                                                        tabIndex={0}
+                                                                    >
+                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
+                                                                            Hub Banner (16:9)
+                                                                            <span className="text-[8px] text-neon-pink/40 opacity-0 group-hover/hubupload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
+                                                                        </label>
+                                                                        <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/10 group-hover/hubupload:border-neon-pink/30 transition-all">
+                                                                            {(selectedHubBanner || newEvent.hubImage) ? (
+                                                                                <img 
+                                                                                    src={selectedHubBanner ? URL.createObjectURL(selectedHubBanner) : newEvent.hubImage} 
+                                                                                    className="w-full h-full object-cover" 
+                                                                                    style={{
+                                                                                        transform: `scale(${newEvent.hubImageTransform?.scale || 1})`,
+                                                                                        objectPosition: `${50 + (newEvent.hubImageTransform?.x || 0)}% ${50 + (newEvent.hubImageTransform?.y || 0)}%`
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
+                                                                                    <Plus size={32} />
+                                                                                    <span className="text-[9px] font-black uppercase tracking-widest">Upload 16:9</span>
                                                                                 </div>
-                                                                                <div className="grid grid-cols-2 gap-4">
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
-                                                                                            <input 
-                                                                                                type="number" 
-                                                                                                value={newEvent.imageTransform?.x || 0} 
-                                                                                                onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value) || 0}})}
-                                                                                                className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-green/40 outline-none"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-green" />
-                                                                                    </div>
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
-                                                                                            <input 
-                                                                                                type="number" 
-                                                                                                value={newEvent.imageTransform?.y || 0} 
-                                                                                                onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value) || 0}})}
-                                                                                                className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-pink/40 outline-none"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <input type="range" min="-100" max="100" step="1" value={newEvent.imageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, imageTransform: {...newEvent.imageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-pink" />
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                <div 
-                                                                    className="space-y-6 bg-black/30 p-8 rounded-[2.5rem] border border-white/5 relative group/upload outline-none focus-within:border-neon-pink/40"
-                                                                    onPaste={(e) => handlePaste(e, 'hubImage')}
-                                                                    tabIndex={0}
-                                                                >
-                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex justify-between items-center">
-                                                                        Hub Banner Image (16:9)
-                                                                        <span className="text-[8px] text-neon-pink/40 opacity-0 group-hover/upload:opacity-100 transition-opacity">CTRL+V TO PASTE</span>
-                                                                    </label>
-                                                                    <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/10 group-hover/upload:border-neon-pink/30 transition-all">
-                                                                        {(selectedHubBanner || newEvent.hubImage) ? (
-                                                                            <img 
-                                                                                src={selectedHubBanner ? URL.createObjectURL(selectedHubBanner) : newEvent.hubImage} 
-                                                                                className="w-full h-full object-cover" 
-                                                                                style={{
-                                                                                    transform: `scale(${newEvent.hubImageTransform?.scale || 1})`,
-                                                                                    objectPosition: `${50 + (newEvent.hubImageTransform?.x || 0)}% ${50 + (newEvent.hubImageTransform?.y || 0)}%`
-                                                                                }}
+                                                                            )}
+                                                                            <input 
+                                                                                type="file" 
+                                                                                accept="image/*" 
+                                                                                onChange={e => setSelectedHubBanner(e.target.files[0])}
+                                                                                className="absolute inset-0 opacity-0 cursor-pointer"
                                                                             />
-                                                                        ) : (
-                                                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600">
-                                                                                <Plus size={32} />
-                                                                                <span className="text-[9px] font-black uppercase tracking-widest">Upload Banner</span>
+                                                                        </div>
+
+                                                                        {/* Hub Calibration */}
+                                                                        {(selectedHubBanner || newEvent.hubImage) && (
+                                                                            <div className="pt-4 space-y-4 border-t border-white/5">
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE BANNER</span>
+                                                                                    <button type="button" onClick={() => setNewEvent({ ...newEvent, hubImageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-pink hover:underline">RESET</button>
+                                                                                </div>
+                                                                                <div className="space-y-4">
+                                                                                    <div className="space-y-2">
+                                                                                        <div className="flex justify-between items-center">
+                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
+                                                                                            <input 
+                                                                                                type="number" 
+                                                                                                value={newEvent.hubImageTransform?.scale || 1} 
+                                                                                                step="0.01"
+                                                                                                onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value) || 1}})}
+                                                                                                className="w-12 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-pink/40 outline-none"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <input type="range" min="1" max="3" step="0.01" value={newEvent.hubImageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-white/5 rounded-full appearance-none accent-neon-pink" />
+                                                                                    </div>
+                                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
+                                                                                                <input 
+                                                                                                    type="number" 
+                                                                                                    value={newEvent.hubImageTransform?.x || 0} 
+                                                                                                    onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value) || 0}})}
+                                                                                                    className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-green/40 outline-none"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-green" />
+                                                                                        </div>
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
+                                                                                                <input 
+                                                                                                    type="number" 
+                                                                                                    value={newEvent.hubImageTransform?.y || 0} 
+                                                                                                    onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value) || 0}})}
+                                                                                                    className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-blue/40 outline-none"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-blue" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
                                                                         )}
-                                                                        <input 
-                                                                            type="file" 
-                                                                            accept="image/*" 
-                                                                            onChange={e => setSelectedHubBanner(e.target.files[0])}
-                                                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                        />
                                                                     </div>
 
-                                                                    {/* Calibration Overlay */}
-                                                                    {(selectedHubBanner || newEvent.hubImage) && (
-                                                                        <div className="pt-4 space-y-4 border-t border-white/5">
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">CALIBRATE</span>
-                                                                                <button type="button" onClick={() => setNewEvent({ ...newEvent, hubImageTransform: { scale: 1, x: 0, y: 0 } })} className="text-[8px] font-black text-neon-pink hover:underline">RESET</button>
-                                                                            </div>
-                                                                            <div className="space-y-4">
-                                                                                <div className="space-y-2">
-                                                                                    <div className="flex justify-between items-center">
-                                                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Scale</span>
-                                                                                        <input 
-                                                                                            type="number" 
-                                                                                            value={newEvent.hubImageTransform?.scale || 1} 
-                                                                                            step="0.01"
-                                                                                            onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value) || 1}})}
-                                                                                            className="w-12 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-pink/40 outline-none"
-                                                                                        />
-                                                                                    </div>
-                                                                                    <input type="range" min="1" max="3" step="0.01" value={newEvent.hubImageTransform?.scale || 1} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, scale: parseFloat(e.target.value)}})} className="w-full h-1 bg-white/5 rounded-full appearance-none accent-neon-pink" />
-                                                                                </div>
-                                                                                <div className="grid grid-cols-2 gap-4">
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">X-Pos</span>
-                                                                                            <input 
-                                                                                                type="number" 
-                                                                                                value={newEvent.hubImageTransform?.x || 0} 
-                                                                                                onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value) || 0}})}
-                                                                                                className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-green/40 outline-none"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.x || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, x: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-green" />
-                                                                                    </div>
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between items-center">
-                                                                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Y-Pos</span>
-                                                                                            <input 
-                                                                                                type="number" 
-                                                                                                value={newEvent.hubImageTransform?.y || 0} 
-                                                                                                onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value) || 0}})}
-                                                                                                className="w-10 h-5 bg-black/40 border border-white/10 rounded text-[8px] font-black text-white text-center focus:border-neon-blue/40 outline-none"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <input type="range" min="-100" max="100" step="1" value={newEvent.hubImageTransform?.y || 0} onChange={e => setNewEvent({...newEvent, hubImageTransform: {...newEvent.hubImageTransform, y: parseFloat(e.target.value)}})} className="h-1 bg-white/5 rounded-full appearance-none accent-neon-blue" />
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
                                                             </div>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                                 <div className="space-y-3">
                                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Title</label>
                                                                     <Input placeholder="E.G. SUMMER MUSIC FESTIVAL..." value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} required className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Location Name</label>
+                                                                    <Input placeholder="E.G. MADISON SQUARE GARDEN..." value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} required className="h-16 bg-black/50 border-white/5 rounded-2xl uppercase text-[10px] font-black tracking-widest px-6" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Location Google Maps URL</label>
+                                                                    <Input placeholder="PASTE MAPS LINK HERE..." value={newEvent.locationUrl} onChange={(e) => setNewEvent({ ...newEvent, locationUrl: e.target.value })} className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" />
                                                                 </div>
                                                                 <div className="space-y-3">
                                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Event Date & Time</label>
@@ -816,15 +787,27 @@ const UpcomingEventsManager = () => {
                                                                     <div className="space-y-4 pt-6 border-t border-white/5">
                                                                         <div className="flex justify-between items-center">
                                                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Inventory Tiers</label>
-                                                                            <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest flex items-center gap-1"><Plus size={12}/> New Tier</button>
+                                                                            <button type="button" onClick={() => setNewEvent({...newEvent, ticketCategories: [...(newEvent.ticketCategories || []), { id: `cat_${Date.now()}`, name: '', price: 0, description: '', color: '#2ebfff' }]})} className="text-[9px] font-black text-neon-green uppercase tracking-widest flex items-center gap-1"><Plus size={12}/> New Tier</button>
                                                                         </div>
                                                                         <div className="space-y-4">
                                                                             {(newEvent.ticketCategories || []).map((cat, idx) => (
                                                                                 <div key={cat.id} className={cn("bg-black/50 p-5 rounded-2xl border transition-all", mappingCategoryId === cat.id ? "border-neon-blue shadow-[0_0_20px_rgba(0,255,255,0.1)]" : "border-white/5")}>
                                                                                     <div className="flex flex-wrap md:flex-nowrap gap-4 items-center">
                                                                                         <Input placeholder="TIER NAME" value={cat.name} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].name = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10 uppercase text-[10px] font-black tracking-widest" />
-                                                                                        <div className="relative w-32 shrink-0"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-green font-black text-[10px]">₹</span><Input type="number" placeholder="0" value={cat.price} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].price = parseFloat(e.target.value) || 0; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 pl-8 bg-black/50 border-white/10 text-xs font-black" /></div>
+                                                                                        <div className="relative w-32 shrink-0">
+                                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-green font-black text-[10px]">₹</span>
+                                                                                            <Input type="number" placeholder="0" value={cat.price} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].price = parseFloat(e.target.value) || 0; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 pl-8 bg-black/50 border-white/10 text-xs font-black" />
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                                                                            <input 
+                                                                                                type="color" 
+                                                                                                value={cat.color || '#2ebfff'} 
+                                                                                                onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].color = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }}
+                                                                                                className="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer"
+                                                                                            />
+                                                                                        </div>
                                                                                         <Input placeholder="BENEFITS..." value={cat.description} onChange={e => { const newCats = [...newEvent.ticketCategories]; newCats[idx].description = e.target.value; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="h-12 bg-black/50 border-white/10 text-[10px] font-medium" />
+
                                                                                         <div className="flex gap-2">
                                                                                             <button 
                                                                                                 type="button" 
@@ -836,6 +819,12 @@ const UpcomingEventsManager = () => {
                                                                                             <button type="button" onClick={() => { const newCats = newEvent.ticketCategories.filter((_, i) => i !== idx); setNewEvent({...newEvent, ticketCategories: newCats}) }} className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16}/></button>
                                                                                         </div>
                                                                                     </div>
+                                                                                    {cat.mapping && (
+                                                                                        <div className="mt-3 flex items-center gap-3 pl-1">
+                                                                                            <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Zone Defined: {Math.round(cat.mapping.width)}% Wide</span>
+                                                                                            <button type="button" onClick={() => { const newCats = [...newEvent.ticketCategories]; delete newCats[idx].mapping; setNewEvent({...newEvent, ticketCategories: newCats}) }} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
+                                                                                        </div>
+                                                                                    )}
                                                                                     {cat.coords && (
                                                                                         <div className="mt-3 flex items-center gap-3 pl-1">
                                                                                             <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Pin Location: {Math.round(cat.coords.x)}% x {Math.round(cat.coords.y)}%</span>
@@ -855,19 +844,41 @@ const UpcomingEventsManager = () => {
                                                                                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Mapping: {newEvent.ticketCategories.find(c => c.id === mappingCategoryId)?.name || 'SELECTED TIER'}</span>
                                                                                     </div>
                                                                                     <span className="text-[9px] font-medium text-gray-500 italic">Click on the layout below to place the hotspot.</span>
-                                                                                </div>
-                                                                                <div 
-                                                                                    className="relative rounded-3xl overflow-hidden border border-neon-blue/20 bg-black group cursor-crosshair"
-                                                                                    onClick={(e) => {
+                                                                                </div>                                                                                <div 
+                                                                                    className="relative rounded-3xl overflow-hidden border border-white/10 bg-black group cursor-crosshair select-none"
+                                                                                    onMouseDown={(e) => {
+                                                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                                                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                                                                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                                                                        setDragStart({ x, y });
+                                                                                    }}
+                                                                                    onMouseMove={(e) => {
+                                                                                        if (!dragStart) return;
                                                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                                                         const x = ((e.clientX - rect.left) / rect.width) * 100;
                                                                                         const y = ((e.clientY - rect.top) / rect.height) * 100;
                                                                                         
+                                                                                        const width = Math.abs(x - dragStart.x);
+                                                                                        const height = Math.abs(y - dragStart.y);
+                                                                                        const left = Math.min(x, dragStart.x);
+                                                                                        const top = Math.min(y, dragStart.y);
+                                                                                        
+                                                                                        setCurrentDrag({ x: left, y: top, width, height });
+                                                                                    }}
+                                                                                    onMouseUp={() => {
+                                                                                        if (!dragStart || !currentDrag) {
+                                                                                            setDragStart(null);
+                                                                                            setCurrentDrag(null);
+                                                                                            return;
+                                                                                        }
+                                                                                        
                                                                                         const newCats = newEvent.ticketCategories.map(c => 
-                                                                                            c.id === mappingCategoryId ? { ...c, coords: { x, y } } : c
+                                                                                            c.id === mappingCategoryId ? { ...c, mapping: currentDrag } : c
                                                                                         );
                                                                                         setNewEvent({ ...newEvent, ticketCategories: newCats });
                                                                                         setMappingCategoryId(null);
+                                                                                        setDragStart(null);
+                                                                                        setCurrentDrag(null);
                                                                                     }}
                                                                                 >
                                                                                     <img 
@@ -875,23 +886,70 @@ const UpcomingEventsManager = () => {
                                                                                         alt="Mapping Surface" 
                                                                                         className="w-full h-auto opacity-80 group-hover:opacity-100 transition-opacity"
                                                                                     />
-                                                                                    {/* Existing Hotspots */}
-                                                                                    {newEvent.ticketCategories.map(cat => cat.coords && (
+                                                                                    
+                                                                                    {/* Current Drag Preview */}
+                                                                                    {currentDrag && (
+                                                                                        <div 
+                                                                                            className="absolute border-2 border-dashed border-white bg-neon-blue/30 z-[60] flex items-center justify-center overflow-hidden"
+                                                                                            style={{ 
+                                                                                                left: `${currentDrag.x}%`, 
+                                                                                                top: `${currentDrag.y}%`,
+                                                                                                width: `${currentDrag.width}%`,
+                                                                                                height: `${currentDrag.height}%`
+                                                                                            }}
+                                                                                        >
+                                                                                            <span className="text-[8px] font-black text-white uppercase tracking-tighter opacity-50">Defining Area...</span>
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* Existing Zones */}
+                                                                                    {newEvent.ticketCategories.map(cat => cat.mapping && (
                                                                                         <div 
                                                                                             key={cat.id}
                                                                                             className={cn(
-                                                                                                "absolute w-6 h-6 -ml-3 -mt-3 rounded-full border-2 flex items-center justify-center transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]",
-                                                                                                cat.id === mappingCategoryId ? "bg-neon-blue border-white scale-125 z-50" : "bg-black/50 border-neon-blue/50 scale-100"
+                                                                                                "absolute flex flex-col items-center justify-center transition-all shadow-[0_0_20px_rgba(0,0,0,0.3)] border-2",
+                                                                                                cat.id === mappingCategoryId ? "z-50 scale-105 border-white ring-4 ring-white/20" : "scale-100 border-black/20"
                                                                                             )}
-                                                                                            style={{ left: `${cat.coords.x}%`, top: `${cat.coords.y}%` }}
+                                                                                            style={{ 
+                                                                                                left: `${cat.mapping.x}%`, 
+                                                                                                top: `${cat.mapping.y}%`,
+                                                                                                width: `${cat.mapping.width}%`,
+                                                                                                height: `${cat.mapping.height}%`,
+                                                                                                backgroundColor: cat.color || '#2ebfff',
+                                                                                                borderColor: 'rgba(255,255,255,0.3)',
+                                                                                                borderRadius: '4px'
+                                                                                            }}
                                                                                         >
-                                                                                            <Ticket size={10} className={cat.id === mappingCategoryId ? "text-black" : "text-neon-blue"} />
-                                                                                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black/90 px-2 py-1 rounded text-[7px] font-black text-white whitespace-nowrap border border-white/10 uppercase tracking-widest pointer-events-none">
+                                                                                            <span className="text-[8px] font-black text-white uppercase truncate w-full text-center drop-shadow-md">
                                                                                                 {cat.name}
-                                                                                            </div>
+                                                                                            </span>
+                                                                                            <span className="text-[10px] font-black text-neon-green drop-shadow-md">
+                                                                                                ₹{cat.price}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+
+                                                                                    {/* Legacy Pins */}
+                                                                                    {newEvent.ticketCategories.map(cat => cat.coords && !cat.mapping && (
+                                                                                        <div 
+                                                                                            key={cat.id}
+                                                                                            className="absolute w-10 h-10 -ml-5 -mt-5 flex flex-col items-center justify-center transition-all border-2 border-white rounded-full shadow-lg"
+                                                                                            style={{ 
+                                                                                                left: `${cat.coords.x}%`, 
+                                                                                                top: `${cat.coords.y}%`,
+                                                                                                backgroundColor: cat.color || '#2ebfff',
+                                                                                            }}
+                                                                                        >
+                                                                                            <span className="text-[6px] font-black text-black uppercase truncate w-full text-center">
+                                                                                                {cat.name}
+                                                                                            </span>
+                                                                                            <span className="text-[8px] font-black text-black">
+                                                                                                ₹{cat.price}
+                                                                                            </span>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
+
                                                                             </div>
                                                                         )}
                                                                     </div>

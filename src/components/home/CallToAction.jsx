@@ -61,7 +61,7 @@ const CallToAction = () => {
 
                     <div className="flex w-full md:w-auto gap-4">
                         <a 
-                            href="https://www.instagram.com/newbi_ent" 
+                            href="https://www.instagram.com/newbi.live" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex-1 md:w-16 h-16 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center text-white hover:border-neon-pink hover:text-neon-pink transition-all duration-300"

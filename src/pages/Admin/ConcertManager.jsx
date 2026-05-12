@@ -274,7 +274,7 @@ const ConcertManager = () => {
                                         {/* Reel URL */}
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Highlight Reel URL (Optional)</label>
-                                            <Input placeholder="HTTPS://WWW.INSTAGRAM.COM/REEL/..." value={newPortfolio.highlightUrl || ''}
+                                            <Input placeholder="HTTPS://WWW.INSTAGRAM.COM/NEWBI.LIVE/REEL/..." value={newPortfolio.highlightUrl || ''}
                                                 onChange={e => setNewPortfolio({ ...newPortfolio, highlightUrl: e.target.value })}
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black px-6" />
                                         </div>
