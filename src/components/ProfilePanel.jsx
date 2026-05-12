@@ -17,7 +17,9 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
     const [isUpdating, setIsUpdating] = useState(false);
     const [newDisplayName, setNewDisplayName] = useState(user?.displayName || '');
+    const [newPhone, setNewPhone] = useState(user?.phoneNumber || '');
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingPhone, setIsEditingPhone] = useState(false);
     const [ticketSort, setTicketSort] = useState('booking'); // 'booking' or 'event'
     const [ticketFilter, setTicketFilter] = useState('upcoming'); // 'upcoming' or 'past'
 
@@ -121,6 +123,28 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             addNotification({
                 title: "Update Error",
                 content: "Failed to sync identity changes.",
+                type: 'default'
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+    
+    const handleUpdatePhone = async () => {
+        if (!newPhone.trim()) return;
+        setIsUpdating(true);
+        try {
+            await useStore.getState().updateUserProfile(user.uid, { phoneNumber: newPhone });
+            setIsEditingPhone(false);
+            addNotification({
+                title: "Security Uplinked",
+                content: "Your phone number has been updated.",
+                type: 'security'
+            });
+        } catch (err) {
+            addNotification({
+                title: "Uplink Error",
+                content: "Failed to sync phone changes.",
                 type: 'default'
             });
         } finally {
@@ -566,6 +590,45 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                         </div>
                                                     </div>
                                                 </div>
+ 
+                                                 {/* Phone Number Edit */}
+                                                 <div className="space-y-3">
+                                                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Primary Contact</label>
+                                                     <div className="relative group">
+                                                         <div className={cn(
+                                                             "absolute -inset-0.5 bg-gradient-to-r from-neon-blue to-neon-purple rounded-2xl blur opacity-0 transition duration-500",
+                                                             isEditingPhone && "opacity-20"
+                                                         )} />
+                                                         <input 
+                                                             type="text" 
+                                                             disabled={!isEditingPhone || isUpdating}
+                                                             value={isEditingPhone ? newPhone : (user.phoneNumber || '')} 
+                                                             onChange={(e) => setNewPhone(e.target.value)}
+                                                             className="relative w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-sm font-bold text-white focus:border-neon-blue transition-all disabled:opacity-50 outline-none"
+                                                             placeholder="+91 XXXXX XXXXX"
+                                                         />
+                                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                                             {isEditingPhone && (
+                                                                 <button 
+                                                                     onClick={() => { setIsEditingPhone(false); setNewPhone(user.phoneNumber || ''); }}
+                                                                     className="w-10 h-10 rounded-xl bg-white/5 text-gray-500 hover:text-white transition-all flex items-center justify-center"
+                                                                 >
+                                                                     <X size={16} />
+                                                                 </button>
+                                                             )}
+                                                             <button 
+                                                                 onClick={() => isEditingPhone ? handleUpdatePhone() : setIsEditingPhone(true)}
+                                                                 disabled={isUpdating}
+                                                                 className={cn(
+                                                                     "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg",
+                                                                     isEditingPhone ? "bg-neon-blue text-black" : "bg-white/10 text-gray-400 hover:text-white"
+                                                                 )}
+                                                             >
+                                                                 {isUpdating ? <Loader2 size={16} className="animate-spin" /> : isEditingPhone ? <Check size={18} /> : <Edit2 size={16} />}
+                                                             </button>
+                                                         </div>
+                                                     </div>
+                                                 </div>
 
                                                 {/* Email View */}
                                                 <div className="space-y-3">

@@ -230,6 +230,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             await confirmationResult.confirm(otpCode);
             useStore.getState().addToast("Phone verified!", 'success');
             
+            // Save phone to profile if user exists
+            if (user?.uid) {
+                const verifiedPhone = `${countryCode}${formData.phone}`;
+                await useStore.getState().updateUserProfile(user.uid, { phoneNumber: verifiedPhone });
+            }
+            
             if (activeTab === 'tickets') {
                 if (totalAmount === 0) submitTickets();
                 else setStep('payment');
