@@ -1,3 +1,4 @@
+console.log('[BOOT] 🔐 Auth Library Loading...');
 import admin from 'firebase-admin';
 
 try {
