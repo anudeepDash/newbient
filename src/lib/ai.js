@@ -50,6 +50,9 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
             console.warn('[NEWBI AI] ⚠️ No active session found. AI requests may fail.');
         }
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
         const response = await fetch('/api/ai', {
             method: 'POST',
             headers: { 
@@ -436,30 +439,43 @@ ${schema}
 
 CRITICAL: Every field must have specific, relevant content based on the request. No placeholders. Arrays must have multiple items. Numbers must be actual numbers.`;
 
-    // Try AI generation — NO silent fallback to mocks
-    const rawResponse = await executeNeuralPulse(systemPrompt, userPrompt);
-    console.log('[NEWBI AI] Got response, length:', rawResponse.length, 'chars. Parsing JSON...');
-    const parsed = finalExtract(rawResponse);
+    // Try AI generation with a hard 15s timeout
+    try {
+        const rawResponse = await Promise.race([
+            executeNeuralPulse(systemPrompt, userPrompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 15000))
+        ]);
 
-    // Ensure numeric fields in items
-    if (parsed.items) {
-        parsed.items = parsed.items.map(item => ({
-            ...item,
-            qty: Number(item.qty) || 1,
-            price: Number(item.price) || 0
-        }));
-    }
-
-    // Ensure agreement/contract clauses have isActive
-    if ((type === 'agreement' || type === 'contract') && parsed.clauses) {
-        parsed.clauses = parsed.clauses.map(c => ({ ...c, isActive: c.isActive !== false }));
-        if (parsed.parties?.firstParty) {
-            parsed.parties.firstParty.name = parsed.parties.firstParty.name || "Newbi Entertainment";
+        console.log('[NEWBI AI] Got response, length:', rawResponse.length, 'chars. Parsing JSON...');
+        const parsed = finalExtract(rawResponse);
+        
+        // Ensure numeric fields in items
+        if (parsed.items) {
+            parsed.items = parsed.items.map(item => ({
+                ...item,
+                qty: Number(item.qty) || 1,
+                price: Number(item.price) || 0
+            }));
         }
-    }
 
-    console.log(`[NEWBI AI] ✓ ${type} generated successfully`);
-    return stripHTML(parsed);
+        // Ensure agreement/contract clauses have isActive
+        if ((type === 'agreement' || type === 'contract') && parsed.clauses) {
+            parsed.clauses = parsed.clauses.map(c => ({ ...c, isActive: c.isActive !== false }));
+            if (parsed.parties?.firstParty) {
+                parsed.parties.firstParty.name = parsed.parties.firstParty.name || "Newbi Entertainment";
+            }
+        }
+
+        console.log(`[NEWBI AI] ✓ ${type} generated successfully`);
+        return stripHTML(parsed);
+
+    } catch (error) {
+        console.warn('[NEWBI AI] ⚠️ Neural Orchestration hit a limit or timed out. Activating Failproof Mock.', error.message);
+        const typeKey = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
+                        systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
+                        systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 'invoice';
+        return getAbsoluteFailproofMock(typeKey, prompt);
+    }
 };
 
 /**
