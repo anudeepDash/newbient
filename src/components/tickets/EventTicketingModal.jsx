@@ -206,12 +206,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             useStore.getState().addToast("Verification code sent!", 'success');
         } catch (error) {
             console.error("OTP Error:", error);
-            useStore.getState().addToast(error.message || "Failed to send code.", 'error');
             if (window.recaptchaVerifier) {
                 window.recaptchaVerifier.render().then(widgetId => {
                     window.grecaptcha.reset(widgetId);
                 });
             }
+            useStore.getState().addToast(error.message || "Failed to send code.", 'error');
         } finally {
             setLoading(false);
         }
@@ -245,9 +245,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             await addDoc(collection(db, 'guestlists'), {
                 eventId: event?.id,
                 userId: user?.uid || null,
-                name: formData.name,
-                email: formData.email,
-                phone: `${countryCode}${formData.phone}`,
+                customerName: formData.name,
+                customerEmail: formData.email,
+                customerPhone: `${countryCode}${formData.phone}`,
                 guestCount,
                 bookingRef: ref,
                 createdAt: serverTimestamp(),
@@ -266,13 +266,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const submitTickets = async () => {
         setLoading(true);
         try {
-            const ref = `TKT-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
             const orderData = {
                 eventId: event?.id,
                 userId: user?.uid || null,
-                name: formData.name,
-                email: formData.email,
-                phone: `${countryCode}${formData.phone}`,
+                customerName: formData.name,
+                customerEmail: formData.email,
+                customerPhone: `${countryCode}${formData.phone}`,
                 items: hasCategories 
                     ? Object.entries(cart).map(([id, count]) => {
                         const cat = event.ticketCategories?.find(c => c.id === id);
@@ -528,7 +528,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         )}
 
                         {step === 'selection' && (
-                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
+                            <motion.div key="selection" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex, flex-col">
                                 {hasLayout && activeTab === 'tickets' && (
                                     <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-8">
                                         <ChevronLeft size={14} /> Back to Map
