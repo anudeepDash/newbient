@@ -781,15 +781,15 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                 <div className="space-y-2">
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-blue">GPay:</span> History > Tap Payment > UPI Transaction ID</p>
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-blue">GPay:</span> History &gt; Tap Payment &gt; UPI Transaction ID</p>
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-neon-pink" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-pink">PhonePe:</span> History > Tap Payment > UTR Number</p>
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-pink">PhonePe:</span> History &gt; Tap Payment &gt; UTR Number</p>
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance & History > Tap Payment > UPI Ref No.</p>
+                                                                        <p className="text-[9px] text-white/70 font-bold uppercase"><span className="text-neon-green">Paytm:</span> Balance &amp; History &gt; Tap Payment &gt; UPI Ref No.</p>
                                                                     </div>
                                                                 </div>
                                                                 <p className="text-[8px] text-gray-500 italic border-t border-white/5 pt-2">Note: It is always a 12-digit number.</p>
