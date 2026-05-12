@@ -94,8 +94,24 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setConfirmationResult(null);
             setOtpCode('');
             setPaymentRef('');
+            setAppliedCoupon(null);
+            setCouponInput('');
+            setLoading(false);
+            setVerifying(false);
+            setBookingRef(null);
         }
-    }, [isOpen, hasTickets, hasGuestlist, user]);
+    }, [isOpen, event?.id]);
+
+    // Non-destructive update of form data when user logs in or profile updates
+    useEffect(() => {
+        if (isOpen && user) {
+            setFormData(prev => ({
+                name: prev.name || user.displayName || '',
+                email: prev.email || user.email || '',
+                phone: prev.phone || user.phoneNumber?.replace(/^\+\d{2}/, '') || ''
+            }));
+        }
+    }, [user, isOpen]);
 
     const updateCart = (categoryId, delta) => {
         setCart(prev => {
@@ -151,7 +167,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setAppliedCoupon(coupon);
             useStore.getState().addToast("Coupon applied successfully!", 'success');
         } catch (error) {
-            useStore.getState().addToast(error.message, 'error');
+            useStore.getState().addToast(error.message, 'error', 'TKT-CPN-01');
             setAppliedCoupon(null);
         } finally {
             setIsValidatingCoupon(false);
@@ -195,7 +211,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
     const handleSendOTP = async () => {
         if (!formData.phone || formData.phone.length < 10) {
-            return useStore.getState().addToast("Enter a valid phone number.", 'error');
+            return useStore.getState().addToast("Please enter a valid 10-digit phone number.", 'error', 'TKT-VAL-01');
         }
 
         setLoading(true);
@@ -217,7 +233,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                     window.grecaptcha.reset(widgetId);
                 });
             }
-            useStore.getState().addToast(error.message || "Failed to send code.", 'error');
+            useStore.getState().addToast(error.message || "We couldn't send your verification code. Please check your connection.", 'error', 'TKT-OTP-01');
         } finally {
             setLoading(false);
         }
@@ -244,7 +260,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             }
         } catch (error) {
             console.error("Verification error:", error);
-            useStore.getState().addToast("Invalid code. Please try again.", 'error');
+            useStore.getState().addToast("Invalid code. Please double-check and try again.", 'error', 'TKT-OTP-02');
         } finally {
             setVerifying(false);
         }
@@ -269,7 +285,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setStep('success');
         } catch (error) {
             console.error("Guestlist error:", error);
-            useStore.getState().addToast("Failed to join guestlist.", 'error');
+            useStore.getState().addToast("We couldn't complete your guestlist request. Please try again later.", 'error', 'TKT-GST-01');
         } finally {
             setLoading(false);
         }
@@ -317,7 +333,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setStep('success');
         } catch (error) {
             console.error("Ticketing error:", error);
-            useStore.getState().addToast("Failed to process booking.", 'error');
+            useStore.getState().addToast("Your booking couldn't be processed. If payment was made, don't worry—contact support.", 'error', 'TKT-PAY-01');
         } finally {
             setLoading(false);
         }
@@ -341,7 +357,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             link.click();
         } catch (error) {
             console.error("Download error:", error);
-            useStore.getState().addToast("Download failed. Try again.", 'error');
+            useStore.getState().addToast("We couldn't download your pass. You can always find it in your profile.", 'error', 'TKT-DL-01');
         } finally {
             setIsDownloading(false);
         }
@@ -355,17 +371,17 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
         if (step === 'map') {
             if (cartTotalCount === 0) {
-                return useStore.getState().addToast("Select a zone on the map.", 'error');
+                return useStore.getState().addToast("Please select a ticket category on the map first.", 'error', 'TKT-MAP-01');
             }
             setStep('selection');
         } else if (step === 'selection') {
             if (activeTab === 'tickets' && cartTotalCount === 0 && hasCategories) {
-                return useStore.getState().addToast("Select at least one ticket.", 'error');
+                return useStore.getState().addToast("Please select at least one ticket to continue.", 'error', 'TKT-VAL-02');
             }
             setStep('identity');
         } else if (step === 'identity') {
             if (!formData.name || !formData.phone || formData.phone.length < 10) {
-                return useStore.getState().addToast("Please fill all details correctly.", 'error');
+                return useStore.getState().addToast("Please provide your name and a valid phone number.", 'error', 'TKT-VAL-03');
             }
             handleSendOTP();
         }

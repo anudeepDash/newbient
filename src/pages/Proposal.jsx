@@ -193,7 +193,7 @@ const Proposal = () => {
             pdf.save(`Newbi-Strategic-Memorandum-${displayProposal.clientName}.pdf`);
         } catch (err) {
             console.error("PDF generation failed:", err);
-            useStore.getState().addToast("Failed to generate PDF.", 'error');
+            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -243,10 +243,10 @@ const Proposal = () => {
                 }
             });
             setIsVerifying(false);
-            useStore.getState().addToast('Strategic proposal authorized and legally binding.', 'error');
+            useStore.getState().addToast('Proposal signed and accepted successfully!', 'success');
         } catch (error) {
             console.error('Error approving proposal:', error);
-            useStore.getState().addToast('Authorization failed. Please contact support.', 'error');
+            useStore.getState().addToast('Signing failed. Please contact support for help.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -268,10 +268,10 @@ const Proposal = () => {
                     ip: ipAddress
                 }
             });
-            useStore.getState().addToast('Proposal status updated to Refused.', 'success');
+            useStore.getState().addToast('Proposal declined.', 'success');
         } catch (error) {
             console.error('Error refusing proposal:', error);
-            useStore.getState().addToast('Failed to update status.', 'error');
+            useStore.getState().addToast('Couldn\'t update the status. Please try again.', 'error');
         } finally {
             setIsSubmitting(false);
         }

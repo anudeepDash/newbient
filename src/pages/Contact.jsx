@@ -53,7 +53,7 @@ const Contact = () => {
             setFormData({ name: '', email: '', message: '' });
         } catch (error) {
             console.error("Error sending message: ", error);
-            useStore.getState().addToast('Failed to send message. Please try again.', 'error');
+            useStore.getState().addToast("Couldn't send your message. Please try again.", 'error');
         } finally {
             setSending(false);
         }

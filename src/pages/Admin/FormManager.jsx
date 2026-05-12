@@ -39,7 +39,7 @@ const FormManager = () => {
         const announcement = {
             title: `Form Access: ${form.title}`,
             date: new Date().toISOString().split('T')[0],
-            content: form.description || "YOUR PARTICIPATION IS REQUIRED. PARTICIPATE IN THIS FORM NOW.",
+            content: form.description || "Please take a moment to fill out this form. Your feedback helps us improve.",
             isPinned: false,
             link: `/forms/${form.id}`,
             image: form.image || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
@@ -47,8 +47,8 @@ const FormManager = () => {
         await addAnnouncement(announcement);
         
         await notifyAllUsers(
-            `FORM ACCESS: ${form.title.toUpperCase()}`,
-            form.description || "YOUR FEEDBACK IS REQUIRED. PARTICIPATE IN THIS FORM NOW.",
+            `New Form: ${form.title}`,
+            form.description || "We value your input! Please complete this form at your convenience.",
             `/forms/${form.id}`,
             'form'
         );
@@ -66,10 +66,10 @@ const FormManager = () => {
     return (
         <AdminCommunityHubLayout 
             title="Form Systems" 
-            description="Manage data collection pipelines and community intake systems."
+            description="Create and manage forms for community feedback and registrations."
             studioHeader={{
                 title: "FORM",
-                subtitle: "ENGINE",
+                subtitle: "MANAGER",
                 accentClass: "text-neon-pink"
             }}
             action={
@@ -109,7 +109,7 @@ const FormManager = () => {
                                     <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{item.title}</h3>
                                     <div className="flex items-center gap-4 mt-2 opacity-60">
                                         <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                            <Calendar size={10} className="text-neon-pink" /> {item.date || 'PERPETUAL'}
+                                            <Calendar size={10} className="text-neon-pink" /> {item.date || 'ALWAYS ACTIVE'}
                                         </span>
                                     </div>
                                 </div>
@@ -118,7 +118,7 @@ const FormManager = () => {
                             {/* Card Content */}
                             <div className="p-8 flex-grow flex flex-col justify-between">
                                 <p className="text-[11px] font-medium text-gray-500 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
-                                    {item.description || "EMPTY."}
+                                    {item.description || "No description provided."}
                                 </p>
 
                                 <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
@@ -184,7 +184,7 @@ const FormManager = () => {
                             <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
                                 <FileText size={32} className="text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">EMPTY.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No forms found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

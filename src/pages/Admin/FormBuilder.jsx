@@ -85,7 +85,7 @@ const FormBuilder = () => {
             }
         } catch (error) {
             console.error("Upload failed:", error);
-            useStore.getState().addToast("UPLOAD FAILED. PLEASE TRY AGAIN.", 'error');
+            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
         } finally {
             setIsUploading(false);
         }

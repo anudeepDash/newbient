@@ -89,7 +89,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                                 transition={{ repeat: Infinity, duration: 2 }}
                                 className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-[6px] md:text-[7px] font-black uppercase tracking-widest text-yellow-500 flex items-center justify-center"
                             >
-                                New Deliverables
+                                New Tasks Available
                             </motion.span>
                         )}
                         {isJoined && (
@@ -99,7 +99,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                                 isShortlisted ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : 
                                 "bg-zinc-800 text-gray-400 border-white/5"
                             )}>
-                                {isFullyComplete ? 'MISSION COMPLETE' : isShortlisted ? 'IN-PROGRESS' : 'PENDING APPROVAL'}
+                                {isFullyComplete ? 'Completed' : isShortlisted ? 'Ongoing' : 'Awaiting Approval'}
                             </div>
                         )}
                     </div>
@@ -116,14 +116,14 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                     
                     <div className="flex items-center gap-4 md:gap-6 mt-auto">
                         <div className="flex flex-col">
-                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">BOUNTY</span>
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">REWARD</span>
                             <span className="text-neon-green text-xs md:text-sm font-black italic">{campaign.reward || 'Barter'}</span>
                         </div>
                         <div className="w-px h-6 md:h-8 bg-white/10" />
                         <div className="flex flex-col">
-                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">DELIVERABLES</span>
+                            <span className="text-[7px] md:text-[8px] font-black text-gray-600 uppercase tracking-widest">TASKS</span>
                             <span className="text-white text-xs md:text-sm font-black">
-                                {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Segments`}
+                                {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Tasks`}
                             </span>
                         </div>
                         {isJoined && isShortlisted && (
@@ -142,7 +142,7 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 <div className="mt-4 md:mt-6 pt-3 md:pt-5 border-t border-white/5 flex items-center justify-between">
                     <div className="text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
                         <FileText size={10} className="group-hover:text-neon-blue transition-colors" /> 
-                        {isJoined && isShortlisted ? 'Open Mission' : 'View Brief'}
+                        {isJoined && isShortlisted ? 'Open Campaign' : 'View Details'}
                     </div>
                     <ArrowRight className="text-gray-700 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" size={12} md={16} />
                 </div>

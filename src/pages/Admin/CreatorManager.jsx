@@ -106,7 +106,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
                 setSelectedCreator({ ...selectedCreator, profileStatus: newStatus });
             }
         } catch (error) {
-            useStore.getState().addToast("Status sync failed.", 'error');
+            useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
         }
     };
 
@@ -116,7 +116,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
                 await deleteCreator(uid);
                 setSelectedCreator(null);
             } catch (error) {
-                useStore.getState().addToast("Deletion failed.", 'error');
+                useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
             }
         }
     };

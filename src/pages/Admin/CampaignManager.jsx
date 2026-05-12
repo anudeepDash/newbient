@@ -426,7 +426,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             const url = await uploadToCloudinary(file);
             setFormData(prev => ({ ...prev, thumbnail: url }));
         } catch (error) {
-            useStore.getState().addToast("UPLOAD FAILED.", 'error');
+            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error');
         } finally {
             setIsUploading(false);
         }
@@ -442,9 +442,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, thumbnail: url }));
-                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
                 } catch (error) {
-                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                    useStore.getState().addToast("Couldn't upload the pasted image. Please try again.", 'error');
                 } finally {
                     setIsUploading(false);
                 }

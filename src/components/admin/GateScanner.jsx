@@ -49,7 +49,7 @@ const GateScanner = ({ eventId }) => {
                 // Check Tickets first
                 const order = ticketOrders.find(o => o.bookingRef === code && o.eventId === eventId);
                 if (order) {
-                    if (order.attended) throw new Error("WARNING: TICKET ALREADY REDEEMED.");
+                    if (order.attended) throw new Error("This ticket has already been used.");
                     await updateTicketOrder(order.id, { attended: true, attendedAt: new Date().toISOString() });
                     setScanResult({ type: 'ticket', data: order });
                     setManualCode('NB-');
@@ -69,13 +69,13 @@ const GateScanner = ({ eventId }) => {
                     const pathParts = entryDoc.ref.path.split('/');
                     const glId = pathParts[1];
 
-                    if (entryData.attended) throw new Error("WARNING: GUEST ALREADY CHECKED IN.");
+                    if (entryData.attended) throw new Error("This guest has already checked in.");
 
                     const glSnap = await getDoc(doc(db, 'guestlists', glId));
                     const glData = glSnap.data();
                     
                     if (eventId && glData.eventId && glData.eventId !== eventId) {
-                        throw new Error("INVALID ACCESS: THIS CODE IS FOR A DIFFERENT MISSION.");
+                        throw new Error("This code is for a different event.");
                     }
 
                     await updateDoc(entryDoc.ref, {
@@ -96,10 +96,10 @@ const GateScanner = ({ eventId }) => {
                     return;
                 }
 
-                throw new Error("CODE NOT FOUND IN REGISTRY.");
+                throw new Error("This code wasn't found. Please check and try again.");
             }
             else {
-                throw new Error("UNRECOGNIZED ENTRANCE PROTOCOL.");
+                throw new Error("Invalid ticket. This code wasn't recognized.");
             }
         } catch (err) {
             console.error("Scan Error:", err);
@@ -176,7 +176,7 @@ const GateScanner = ({ eventId }) => {
                         {loading && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
                                 <div className="w-16 h-16 border-4 border-neon-blue/20 border-t-neon-blue rounded-full animate-spin mb-6" />
-                                <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest animate-pulse">Establishing Handshake...</p>
+                                <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest animate-pulse">Verifying...</p>
                             </motion.div>
                         )}
 
@@ -184,11 +184,11 @@ const GateScanner = ({ eventId }) => {
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="absolute inset-0 z-40 bg-neon-green/90 backdrop-blur-xl flex flex-col items-center justify-center p-12 text-center text-black">
                                 <CheckCircle size={80} className="mb-6 drop-shadow-lg" />
                                 <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-2">ACCESS<br />GRANTED.</h2>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-8">Protocol Validated</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-8">Entry Confirmed</p>
                                 
                                 <div className="bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full space-y-3">
                                     <p className="text-[9px] font-black uppercase opacity-60">Verified Identity</p>
-                                    <p className="text-xl font-black uppercase tracking-tight truncate w-full italic">{scanResult.data?.customerName || 'VALID_HOLDER'}</p>
+                                    <p className="text-xl font-black uppercase tracking-tight truncate w-full italic">{scanResult.data?.customerName || 'Ticket Holder'}</p>
                                     <div className="h-px bg-black/5 w-12 mx-auto" />
                                     <p className="text-[10px] font-bold uppercase tracking-widest">{scanResult.type === 'ticket' ? 'PREMIUM HOLDER' : 'GUESTLIST'}</p>
                                 </div>
@@ -206,7 +206,7 @@ const GateScanner = ({ eventId }) => {
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="absolute inset-0 z-40 bg-red-600/90 backdrop-blur-xl flex flex-col items-center justify-center p-12 text-center text-white">
                                 <XCircle size={80} className="mb-6 drop-shadow-lg" />
                                 <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-2">DENIED.</h2>
-                                <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80 mb-8">UNAUTHORIZED_SIGNAL</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-80 mb-8">Entry Not Allowed</p>
                                 
                                 <div className="bg-black/10 backdrop-blur-md rounded-3xl p-6 w-full">
                                     <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">{error}</p>
@@ -216,7 +216,7 @@ const GateScanner = ({ eventId }) => {
                                     onClick={() => setError(null)}
                                     className="mt-8 bg-white text-red-600 h-14 rounded-2xl px-12 border-none font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all w-full"
                                 >
-                                    Retry Optical Link
+                                    Try Again
                                 </Button>
                             </motion.div>
                         )}
@@ -227,7 +227,7 @@ const GateScanner = ({ eventId }) => {
                 <div className="max-w-md mx-auto w-full space-y-6">
                     <div className="flex items-center gap-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] px-4">
                         <div className="h-[2px] flex-1 bg-white/5" />
-                        OR_INPUT_MANUAL_SIGNAL
+                        Or enter code manually
                         <div className="h-[2px] flex-1 bg-white/5" />
                     </div>
 
@@ -237,7 +237,7 @@ const GateScanner = ({ eventId }) => {
                             value={manualCode}
                             onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                             onKeyDown={(e) => e.key === 'Enter' && handleScan(manualCode)}
-                            placeholder="RECOVERY_CODE_INPUT..."
+                            placeholder="Enter booking code..."
                             className="w-full h-20 pl-16 pr-32 bg-zinc-900/40 border border-white/5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] focus:border-neon-blue/40 focus:bg-zinc-900/60 outline-none transition-all placeholder:text-gray-800 backdrop-blur-xl"
                         />
                         <button 
@@ -251,11 +251,11 @@ const GateScanner = ({ eventId }) => {
                     <div className="flex justify-center gap-8 pt-4">
                         <div className="flex flex-col items-center gap-2">
                             <ShieldAlert className="text-neon-blue/40" size={20} />
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Operational_Intel</span>
+                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Event Info</span>
                         </div>
                         <div className="flex flex-col items-center gap-2">
                             <QrCode className="text-gray-700" size={20} />
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">optical_capture</span>
+                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">QR Scanner</span>
                         </div>
                     </div>
                 </div>

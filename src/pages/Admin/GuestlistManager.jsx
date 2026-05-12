@@ -80,10 +80,10 @@ const GuestlistManager = () => {
                 try {
                     const url = await uploadToCloudinary(file);
                     setFormData(prev => ({ ...prev, image: url }));
-                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
                 } catch (error) {
                     console.error("Upload failed:", error);
-                    useStore.getState().addToast("UPLOAD FAILED.", 'error');
+                    useStore.getState().addToast("Couldn't upload the pasted image. Please check your data and try again.", 'error', 'GUEST-UP-01');
                 } finally {
                     setIsUploading(false);
                 }
@@ -142,7 +142,7 @@ const GuestlistManager = () => {
             resetForm();
         } catch (error) {
             console.error(error);
-            useStore.getState().addToast(`Error saving guestlist: ${error.message}`, 'error');
+            useStore.getState().addToast("Couldn't save the guestlist. Please check your connection and try again.", 'error', 'GUEST-01');
         } finally {
             setSaving(false);
         }
@@ -157,7 +157,7 @@ const GuestlistManager = () => {
             setFormData(prev => ({ ...prev, image: url }));
         } catch (error) {
             console.error("Upload failed:", error);
-            useStore.getState().addToast("UPLOAD FAILED.", 'error');
+            useStore.getState().addToast("Couldn't upload the image. Please try again.", 'error', 'GUEST-UP-01');
         } finally {
             setIsUploading(false);
         }
@@ -252,7 +252,7 @@ const GuestlistManager = () => {
                                                     <ShieldCheck size={24} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">ACCESS PROTOCOL</h4>
+                                                    <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">ENTRY RULES</h4>
                                                     <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">
                                                         {formData.guestlistEnabled ? "INTERNAL REGISTRATION" : "EXTERNAL REDIRECTION"}
                                                     </p>
@@ -441,7 +441,7 @@ const GuestlistManager = () => {
             description="Manage verified entry lists for exclusive events and community gatherings."
             studioHeader={{
                 title: "GUESTLIST",
-                subtitle: "VAULT",
+                subtitle: "MANAGER",
                 accentClass: "text-neon-blue",
                 icon: ListChecks
             }}
@@ -528,7 +528,7 @@ const GuestlistManager = () => {
                                                     <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
                                                 </div>
                                                 <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
-                                                    {gl.description || "EMPTY."}
+                                                    {gl.description || "No description provided."}
                                                 </p>
                                             </div>
                                             
@@ -583,7 +583,7 @@ const GuestlistManager = () => {
 
                                                 <Button 
                                                     variant="outline" 
-                                                    onClick={() => { if(confirm('Permanently purge this guestlist vault?')) deleteGuestlist(gl.id); }}
+                                                    onClick={() => { if(confirm('Are you sure you want to permanently delete this guestlist?')) deleteGuestlist(gl.id); }}
                                                     className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
                                                 >
                                                     <Trash2 size={26} />
@@ -604,7 +604,7 @@ const GuestlistManager = () => {
                             <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
                                 <ListChecks size={32} className="text-white/20" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">EMPTY.</h3>
+                            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white/40">No guestlists found.</h3>
                             <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mt-2">CREATE ONE TO START.</p>
                         </div>
                     )}

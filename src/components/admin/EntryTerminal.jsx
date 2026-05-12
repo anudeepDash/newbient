@@ -94,11 +94,11 @@ const EntryTerminal = ({ eventId }) => {
             const result = await scanTicket(eventId, code);
             if (result.valid) {
                 if (result.scanned) {
-                    throw new Error("ALREADY REDEEMED / CHECKED IN.");
+                    throw new Error("This ticket or guest has already been checked in.");
                 }
                 setScanResult({ type: result.data.type, data: { customerName: result.data.name } });
             } else {
-                throw new Error(result.message || "INVALID CODE.");
+                throw new Error(result.message || "This code is invalid.");
             }
         } catch (err) {
             setScanError(err.message);
@@ -177,7 +177,7 @@ const EntryTerminal = ({ eventId }) => {
     if (loading) return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
             <Loader className="animate-spin text-neon-blue" size={48} />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Initializing Terminal...</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Loading Entry System...</p>
         </div>
     );
 
@@ -191,8 +191,8 @@ const EntryTerminal = ({ eventId }) => {
                             <HardDrive size={24} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">ENTRY TERMINAL</h2>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{gl?.title || 'GENERAL ACCESS'}</p>
+                            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">CHECK-IN DESK</h2>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{gl?.title || 'GENERAL ADMISSION'}</p>
                         </div>
                     </div>
                     <Button onClick={handleDownloadAttendeeList} variant="outline" className="h-14 px-8 rounded-2xl border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
@@ -258,7 +258,7 @@ const EntryTerminal = ({ eventId }) => {
             <div className="grid grid-cols-1 gap-4">
                 {[...filteredEntries.map(e => ({...e, type: 'guestlist'})), ...filteredTickets.map(t => ({...t, type: 'ticket'}))].length === 0 ? (
                     <div className="py-40 text-center bg-white/[0.02] border border-dashed border-white/5 rounded-[4rem]">
-                        <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No entries recorded in buffer.</p>
+                        <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No entries found.</p>
                     </div>
                 ) : (
                     [...filteredEntries.map(e => ({...e, type: 'guestlist'})), ...filteredTickets.map(t => ({...t, type: 'ticket'}))]
@@ -280,9 +280,9 @@ const EntryTerminal = ({ eventId }) => {
                                         {entry.attended ? <CheckCircle2 size={32} /> : (entry.type === 'ticket' ? <TicketIcon size={32} /> : <User size={32} />)}
                                     </div>
                                     <div className="truncate">
-                                        <h3 className="text-lg font-black uppercase text-white truncate tracking-tight">{entry.customerName || 'UNKNOWN_ENTITY'}</h3>
+                                        <h3 className="text-lg font-black uppercase text-white truncate tracking-tight">{entry.customerName || 'Unknown Person'}</h3>
                                         <div className="flex items-center gap-4 mt-1">
-                                            <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-lg border border-neon-blue/20 uppercase tracking-widest">{entry.bookingRef || 'REF_MISSING'}</span>
+                                            <span className="text-[11px] font-black text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-lg border border-neon-blue/20 uppercase tracking-widest">{entry.bookingRef || 'No Reference'}</span>
                                             <div className="w-1 h-1 rounded-full bg-gray-800" />
                                             <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{entry.type === 'ticket' ? 'TICKET HOLDER' : 'GUESTLIST'}</span>
                                         </div>
@@ -291,7 +291,7 @@ const EntryTerminal = ({ eventId }) => {
 
                                 <div className="flex items-center gap-10">
                                     <div className="hidden xl:block text-right">
-                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Entry Signal</p>
+                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Contact Email</p>
                                         <p className="text-xs font-black text-white italic lowercase font-mono">{entry.customerEmail}</p>
                                     </div>
                                     <Button 
@@ -303,7 +303,7 @@ const EntryTerminal = ({ eventId }) => {
                                                 : "bg-white/5 text-neon-blue border-white/10 hover:bg-neon-blue hover:text-black hover:scale-105 shadow-[0_10px_20px_rgba(46,191,255,0.1)]"
                                         )}
                                     >
-                                        {entry.attended ? 'CANCEL_CHECK_IN' : 'MARK_ATTENDED'}
+                                        {entry.attended ? 'Cancel Check-in' : 'Mark as Attended'}
                                     </Button>
                                 </div>
                             </motion.div>
@@ -334,7 +334,7 @@ const EntryTerminal = ({ eventId }) => {
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[8px] font-black uppercase tracking-widest">
                                     <Zap size={10} /> Active Scanner
                                 </div>
-                                <h3 className="text-3xl font-black italic uppercase text-white tracking-tighter">SCANNER LINK.</h3>
+                                <h3 className="text-3xl font-black italic uppercase text-white tracking-tighter">SCAN TICKET.</h3>
                                 <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Align QR Code within the frame below</p>
                             </div>
 

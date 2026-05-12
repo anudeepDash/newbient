@@ -139,7 +139,7 @@ const Invoice = () => {
             const pageElements = document.querySelectorAll('.invoice-page-render');
             
             if (!pageElements.length) {
-                useStore.getState().addToast("No invoice pages found to download!", 'error');
+                useStore.getState().addToast("Nothing to download. The invoice might still be loading.", 'error');
                 return;
             }
 
@@ -174,7 +174,7 @@ const Invoice = () => {
             pdf.save(`Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`);
         } catch (error) {
             console.error("PDF generation failed:", error);
-            useStore.getState().addToast("PDF Generation Error: " + error.message, 'error');
+            useStore.getState().addToast("Couldn't create the PDF. Please try again.", 'error');
         } finally {
             setScale(originalScale);
             setIsExporting(false);
@@ -267,7 +267,7 @@ const Invoice = () => {
             };
         } catch (error) {
             console.error("Print failed:", error);
-            useStore.getState().addToast("Failed to prepare for printing.", 'error');
+            useStore.getState().addToast("Couldn't prepare for printing. Please try again.", 'error');
         }
     };
 

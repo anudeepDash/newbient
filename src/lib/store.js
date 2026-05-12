@@ -30,17 +30,32 @@ export const useStore = create((set, get) => ({
         data.append("upload_preset", "maw1e4ud");
         data.append("cloud_name", "dgtalrz4n");
 
+        // Auto-detect resource type from file MIME
+        let resourceType = "image";
+        if (file.type?.startsWith("video/")) resourceType = "video";
+        else if (file.type === "application/pdf" || file.type?.startsWith("application/")) resourceType = "raw";
+
         try {
-            const res = await fetch("https://api.cloudinary.com/v1_1/dgtalrz4n/image/upload", { 
+            const res = await fetch(`https://api.cloudinary.com/v1_1/dgtalrz4n/${resourceType}/upload`, { 
                 method: "POST", 
                 body: data 
             });
-            if (!res.ok) throw new Error("Upload failed");
-            const uploadedImage = await res.json();
-            return uploadedImage.secure_url;
+            
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("Cloudinary Response Error:", errorData);
+                throw new Error(errorData.error?.message || "Upload failed");
+            }
+            
+            const uploadedFile = await res.json();
+            return uploadedFile.secure_url;
         } catch (error) {
-            console.error("Cloudinary Upload Error:", error);
-            throw new Error("Asset uplink failed. Please check connection.");
+            console.error("Cloudinary Upload Error Details:", error);
+            // Re-throw with more context if it's not already a descriptive error
+            const message = error.message.includes("Upload failed") 
+                ? "Couldn't upload your file. Please check your internet connection or try a smaller file." 
+                : `Upload didn't go through — please try again.`;
+            throw new Error(message);
         }
     },
     announcements: [],
@@ -267,8 +282,15 @@ export const useStore = create((set, get) => ({
     // Toast System
     addToast: (message, type = 'error', code = null) => {
         const id = Date.now();
+        
+        let finalMessage = message;
+        // Append support email for specific non-auto-resolvable errors (like ticketing/payments)
+        if (type === 'error' && (code?.startsWith('TKT') || code?.startsWith('EVT') || code?.startsWith('PAY') || message.toLowerCase().includes('ticket') || message.toLowerCase().includes('payment'))) {
+            finalMessage = `${message} For assistance, contact support@newbi.live`;
+        }
+
         set(state => ({
-            toasts: [...state.toasts, { id, message, type, code }]
+            toasts: [...state.toasts, { id, message: finalMessage, type, code }]
         }));
         // Auto-remove after 5 seconds
         setTimeout(() => {
@@ -310,14 +332,23 @@ export const useStore = create((set, get) => ({
         const currentItems = get().upcomingEvents;
         const maxOrder = currentItems.reduce((max, i) => Math.max(max, i.order || 0), 0);
 
-        const cleanedEvent = Object.entries({
+        // Recursive clean utility for nested objects/arrays
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+
+        const cleanedEvent = deepClean({
             ...event,
-            category: event.category || '', // Added category
+            category: event.category || '',
             order: maxOrder + 1
-        }).reduce((acc, [k, v]) => {
-            if (v !== undefined) acc[k] = v;
-            return acc;
-        }, {});
+        });
 
         // Safely remove id if it exists
         delete cleanedEvent.id;
@@ -360,14 +391,22 @@ export const useStore = create((set, get) => ({
         return docRef.id;
     },
     updateUpcomingEvent: async (id, updates) => {
-        // Remove undefined values to prevent Firestore errors
-        const cleanedUpdates = Object.entries({
+        // Recursive clean utility
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+
+        const cleanedUpdates = deepClean({
             ...updates,
-            category: updates.category || '' // Ensure category is updated
-        }).reduce((acc, [k, v]) => {
-            if (v !== undefined) acc[k] = v;
-            return acc;
-        }, {});
+            category: updates.category || ''
+        });
 
         // Safely remove id if it exists in updates to avoid rewriting document id
         delete cleanedUpdates.id;
@@ -1500,22 +1539,26 @@ export const useStore = create((set, get) => ({
         let hasJoinedTribe = false;
         let hasJoinedWhatsapp = false;
         let displayName = firebaseUser.displayName || '';
+        let adminSnapshot = null;
+        let userDoc = null;
 
         try {
             // Parallelize Firestore lookups to reduce auto-login delay
-            const [adminSnapshot, userDoc] = await Promise.all([
+            const [adminSnap, uDoc] = await Promise.all([
                 getDocs(query(collection(db, 'admins'), where('email', '==', firebaseUser.email))),
                 getDoc(doc(db, 'users', firebaseUser.uid))
             ]);
+            adminSnapshot = adminSnap;
+            userDoc = uDoc;
 
-            if (!adminSnapshot.empty) {
+            if (adminSnapshot && !adminSnapshot.empty) {
                 const adminData = adminSnapshot.docs[0].data();
                 role = adminData.role || 'unauthorized';
                 displayName = adminData.displayName || displayName;
             }
 
             const userRef = doc(db, 'users', firebaseUser.uid);
-            if (userDoc.exists()) {
+            if (userDoc?.exists()) {
                 const userData = userDoc.data();
 
                 // CHECK BLOCK STATUS
@@ -1552,11 +1595,11 @@ export const useStore = create((set, get) => ({
         }
 
         const finalUser = {
-            email: firebaseUser.email || (userDoc.exists() ? userDoc.data().email : null),
+            email: firebaseUser.email || (userDoc?.exists() ? userDoc.data().email : null),
             uid: firebaseUser.uid,
             role: role,
             displayName: displayName,
-            phoneNumber: firebaseUser.phoneNumber || (userDoc.exists() ? userDoc.data().phoneNumber : null),
+            phoneNumber: firebaseUser.phoneNumber || (userDoc?.exists() ? userDoc.data().phoneNumber : null),
             hasJoinedTribe: hasJoinedTribe,
             hasJoinedWhatsapp: hasJoinedWhatsapp
         };

@@ -70,7 +70,7 @@ const BlogPostEditor = () => {
                 const url = await handleFileUpload(file);
                 if (url) {
                     setFormData(prev => ({ ...prev, coverImage: url }));
-                    useStore.getState().addToast("IMAGE_CAPTURED_FROM_CLIPBOARD", 'success');
+                    useStore.getState().addToast("Image pasted from clipboard!", 'success');
                 }
                 setIsUploading(false);
                 e.preventDefault();

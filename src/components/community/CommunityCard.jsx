@@ -39,7 +39,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                 }
                 return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}, ${start.getFullYear()}`;
             } catch (e) {
-                return `${dateValue.length} DAYS`;
+                return `${dateValue.length} Days`;
             }
         }
 
@@ -78,7 +78,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
     
     const getButtonLabel = () => {
         if (item.buttonText) return item.buttonText;
-        if (hasExternalLink) return "ACCESS";
+        if (hasExternalLink) return "VIEW MORE";
         if (isInternalGL) return "JOIN GUESTLIST";
         if (isGig) return "APPLY";
         if (isCampaign) return "APPLY";
@@ -87,7 +87,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
             if (item.isGuestlistEnabled) return "RSVP NOW";
             return "VIEW DETAILS";
         }
-        return "FILL FORM";
+        return "OPEN FORM";
     };
 
     const buttonLabel = getButtonLabel();
@@ -371,7 +371,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                 </div>
                                 <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/10 flex items-center justify-between group/metric hover:bg-white/[0.04] transition-colors">
                                     <div>
-                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] mb-1 opacity-60">MIN. THRESHOLD</p>
+                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.3em] mb-1 opacity-60">MINIMUM REQUIRED</p>
                                         <p className="text-4xl font-black italic tracking-tighter text-white">{Number(item.minInstagramFollowers || 0).toLocaleString()}+</p>
                                     </div>
                                     <Users size={32} className="text-white/10 group-hover/metric:text-neon-blue group-hover/metric:scale-110 transition-all duration-500" />
