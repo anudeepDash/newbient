@@ -1,6 +1,6 @@
 console.log('[BOOT] 🛰️ AI Proxy Booting...');
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { verifyToken } from './lib/auth';
+import { verifyToken } from './lib/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NEWBI AI BACKEND PROXY v1.0
