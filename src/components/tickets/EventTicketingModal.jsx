@@ -164,19 +164,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     };
 
     const setupRecaptcha = async () => {
-        if (window.recaptchaVerifier) {
-            try { window.recaptchaVerifier.clear(); } catch(e) {}
-            window.recaptchaVerifier = null;
-        }
-
-        const container = document.getElementById('recaptcha-container');
-        if (!container) return null;
-        container.innerHTML = '';
+        if (window.recaptchaVerifier) return window.recaptchaVerifier;
         
         try {
-            const verifier = new RecaptchaVerifier(auth, container, {
+            const { RecaptchaVerifier } = await import('firebase/auth');
+            const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
-                'callback': () => console.log("reCAPTCHA active")
+                'callback': () => {}
             });
             await verifier.render();
             window.recaptchaVerifier = verifier;
@@ -186,6 +180,18 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             return null;
         }
     };
+
+    useEffect(() => {
+        if (auth && !window.recaptchaVerifier) {
+            setupRecaptcha();
+        }
+        return () => {
+            if (window.recaptchaVerifier) {
+                try { window.recaptchaVerifier.clear(); } catch(e) {}
+                window.recaptchaVerifier = null;
+            }
+        };
+    }, [auth]);
 
     const handleSendOTP = async () => {
         if (!formData.phone || formData.phone.length < 10) {
@@ -241,7 +247,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const submitGuestlist = async () => {
         setLoading(true);
         try {
-            const ref = `GUEST-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
             await addDoc(collection(db, 'guestlists'), {
                 eventId: event?.id,
                 userId: user?.uid || null,
