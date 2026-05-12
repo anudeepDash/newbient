@@ -10,18 +10,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('firebase')) return 'vendor-firebase';
-            if (id.includes('framer-motion')) return 'vendor-motion';
-            if (id.includes('lucide-react')) return 'vendor-icons';
-            return 'vendor';
-          }
-          if (id.includes('src/pages/Admin')) return 'admin-pages';
-          if (id.includes('src/components/admin')) return 'admin-components';
-        }
+        // Default chunking is safer for preventing dependency execution order issues
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 2000
   }
 })
