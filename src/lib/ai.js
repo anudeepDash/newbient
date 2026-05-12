@@ -35,8 +35,11 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
         
         const response = await fetch('/api/ai', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemPrompt, userPrompt })
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Newbi-Secret': 'nb-sec-9921-xp' // Simple app-level secret
+            },
+            body: JSON.stringify({ systemPrompt, userPrompt, type: systemPrompt.includes('proposal') ? 'proposal' : 'generic' })
         });
 
         if (response.ok) {

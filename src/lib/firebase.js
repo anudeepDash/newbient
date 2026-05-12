@@ -5,13 +5,14 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getMessaging } from "firebase/messaging";
 
 // Validated Config from User
+// Validated Config from Environment
 const firebaseConfig = {
-    apiKey: "AIzaSyBnl7hSfXXUj4khyV3yrhT5oUtMQfdoH_A",
-    authDomain: "newbi-ent-v2.firebaseapp.com",
-    projectId: "newbi-ent-v2",
-    storageBucket: "newbi-ent-v2.firebasestorage.app",
-    messagingSenderId: "860370467784",
-    appId: "1:860370467784:web:d7b4dfc66336f6da50defd"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase

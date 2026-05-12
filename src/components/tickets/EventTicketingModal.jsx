@@ -58,6 +58,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
     // Payment state
     const [paymentRef, setPaymentRef] = useState('');
+    const [lockedAmount, setLockedAmount] = useState(0); // Security: Lock price before payment
     const [showUpiGuide, setShowUpiGuide] = useState(false);
     
     // Coupon state
@@ -272,7 +273,10 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             
             if (activeTab === 'tickets') {
                 if (currentAmount === 0) submitTickets();
-                else setStep('payment');
+                else {
+                    setLockedAmount(currentAmount); // Lock the price
+                    setStep('payment');
+                }
             } else {
                 submitGuestlist();
             }
@@ -310,8 +314,23 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     };
 
     const submitTickets = async () => {
+        if (totalAmount > 0 && !paymentRef.trim()) {
+            return useStore.getState().addToast("Please enter the payment reference/UTR number.", 'error', 'TKT-VAL-04');
+        }
+
         setLoading(true);
         try {
+            // 1. DEDUPLICATION CHECK: Check if this payment reference was used before
+            if (totalAmount > 0) {
+                const { query, collection, where, getDocs } = await import('firebase/firestore');
+                const q = query(collection(db, 'ticket_orders'), where('paymentRef', '==', paymentRef.trim()));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    setLoading(false);
+                    return useStore.getState().addToast("This payment reference has already been used. Please provide a valid UTR.", 'error', 'TKT-PAY-02');
+                }
+            }
+
             const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
             const orderData = {
                 eventId: event?.id,
@@ -325,8 +344,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         return { id, name: cat?.name || 'Category', count, price: cat?.price || 0 };
                     })
                     : [{ id: 'base', name: 'Standard', count: ticketCount, price: event.basePrice || 0 }],
-                totalAmount,
-                paymentRef: totalAmount > 0 ? paymentRef : 'FREE',
+                totalAmount: lockedAmount || totalAmount, // Use locked amount for security
+                paymentRef: totalAmount > 0 ? paymentRef.trim() : 'FREE',
                 bookingRef: ref,
                 appliedCoupon: appliedCoupon ? {
                     id: appliedCoupon.id,
