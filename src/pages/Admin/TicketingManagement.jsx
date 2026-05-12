@@ -506,7 +506,6 @@ const TicketingManagement = () => {
                         </motion.div>
                     )}
 
-                <AnimatePresence mode="wait">
                     {/* GUESTLIST TAB */}
                     {activeTab === 'guestlist' && !isScanner && (
                         <motion.div key="guestlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
