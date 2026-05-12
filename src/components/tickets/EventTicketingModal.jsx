@@ -273,7 +273,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 name: formData.name,
                 email: formData.email,
                 phone: `${countryCode}${formData.phone}`,
-                items: hasCategories ? cart : { base: ticketCount },
+                items: hasCategories 
+                    ? Object.entries(cart).map(([id, count]) => {
+                        const cat = event.ticketCategories?.find(c => c.id === id);
+                        return { id, name: cat?.name || 'Category', count, price: cat?.price || 0 };
+                    })
+                    : [{ id: 'base', name: 'Standard', count: ticketCount, price: event.basePrice || 0 }],
                 totalAmount,
                 paymentRef: totalAmount > 0 ? paymentRef : 'FREE',
                 bookingRef: ref,
