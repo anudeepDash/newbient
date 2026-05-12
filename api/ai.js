@@ -58,24 +58,40 @@ export default async function handler(req, res) {
         if (genAI) {
             try {
                 console.log('[AI PROXY] 🚀 Path: Gemini SDK (2.0 Flash)');
-                const model = genAI.getGenerativeModel({ 
+                const model2 = genAI.getGenerativeModel({ 
                     model: "gemini-2.0-flash",
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 
-                const result = await model.generateContent([
+                const result2 = await model2.generateContent([
                     { text: systemPrompt + "\n\nReturn valid JSON." },
                     { text: userPrompt }
                 ]);
                 
-                const text = result.response.text();
-                if (text && text.length > 20) {
-                    console.log('[AI PROXY] ✨ Success: Gemini SDK delivered payload');
-                    return res.status(200).json({ content: text, provider: 'gemini' });
+                const text2 = result2.response.text();
+                if (text2 && text2.length > 20) {
+                    console.log('[AI PROXY] ✨ Success: Gemini 2.0 SDK');
+                    return res.status(200).json({ content: text2, provider: 'gemini-2.0' });
                 }
-            } catch (e) {
-                console.error('[AI PROXY] ❌ Gemini path failed:', e.message);
-                // Continue to backup paths...
+            } catch (e2) {
+                console.warn('[AI PROXY] ⚠️ Gemini 2.0 Quota/Error. Stepping down to 1.5...');
+                try {
+                    const model15 = genAI.getGenerativeModel({ 
+                        model: "gemini-1.5-flash-latest",
+                        generationConfig: { responseMimeType: "application/json" }
+                    });
+                    const result15 = await model15.generateContent([
+                        { text: systemPrompt + "\n\nReturn valid JSON." },
+                        { text: userPrompt }
+                    ]);
+                    const text15 = result15.response.text();
+                    if (text15 && text15.length > 20) {
+                        console.log('[AI PROXY] ✨ Success: Gemini 1.5 SDK (Step-down)');
+                        return res.status(200).json({ content: text15, provider: 'gemini-1.5' });
+                    }
+                } catch (e15) {
+                    console.error('[AI PROXY] ❌ Gemini SDK completely exhausted:', e15.message);
+                }
             }
         } else {
             console.warn('[AI PROXY] ⚠️ Skipping Gemini: GEMINI_API_KEY is not defined in environment');
@@ -105,10 +121,16 @@ export default async function handler(req, res) {
 
                 if (orRes.ok) {
                     const data = await orRes.json();
-                    return res.status(200).json({ 
-                        content: data.choices[0].message.content, 
-                        provider: 'openrouter' 
-                    });
+                    if (data.choices?.[0]?.message?.content) {
+                        console.log('[AI PROXY] ✨ Success: OpenRouter');
+                        return res.status(200).json({ 
+                            content: data.choices[0].message.content, 
+                            provider: 'openrouter' 
+                        });
+                    }
+                } else {
+                    const err = await orRes.text();
+                    console.warn('[AI PROXY] ⚠️ OpenRouter response not OK:', err.substring(0, 100));
                 }
             } catch (e) {
                 console.error('[AI PROXY] OpenRouter path failed:', e.message);
