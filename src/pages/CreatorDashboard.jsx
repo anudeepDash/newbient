@@ -867,36 +867,55 @@ const CreatorDashboard = () => {
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
                 {/* STUDIO NAVIGATION TABS */}
                 {/* STUDIO NAVIGATION TABS */}
-                <div className="flex items-center justify-between mb-16">
-                    <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-[2rem] border border-white/5 backdrop-blur-2xl shadow-2xl">
-                        <button 
-                            onClick={() => setActiveDashboardTab('workspace')}
-                            className={cn(
-                                "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group",
-                                activeDashboardTab === 'workspace' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                            )}
-                        >
-                            <span className="relative z-10">Workspace</span>
-                        </button>
-                        <button 
-                            onClick={() => setActiveDashboardTab('settings')}
-                            className={cn(
-                                "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all group",
-                                activeDashboardTab === 'settings' ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-white"
-                            )}
-                        >
-                            Studio Settings
-                        </button>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
+                <div className="flex justify-center mb-16 overflow-x-auto scrollbar-hide py-4 px-2">
+                    <div className="flex items-center gap-1.5 md:gap-3 bg-white/[0.02] p-1.5 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl shadow-2xl min-w-max">
+                        <div className="flex items-center p-1 bg-black/20 rounded-full border border-white/5">
+                            <button 
+                                onClick={() => setActiveDashboardTab('workspace')}
+                                className={cn(
+                                    "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
+                                    activeDashboardTab === 'workspace' ? "text-black" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                {activeDashboardTab === 'workspace' && (
+                                    <motion.div 
+                                        layoutId="dashboard-tab-pill"
+                                        className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                                        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                    />
+                                )}
+                                Workspace
+                            </button>
+                            <button 
+                                onClick={() => setActiveDashboardTab('settings')}
+                                className={cn(
+                                    "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
+                                    activeDashboardTab === 'settings' ? "text-black" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                {activeDashboardTab === 'settings' && (
+                                    <motion.div 
+                                        layoutId="dashboard-tab-pill"
+                                        className="absolute inset-0 bg-white rounded-full -z-10 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                                        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                    />
+                                )}
+                                Settings
+                            </button>
+                        </div>
+
+                        <div className="w-px h-6 bg-white/10 mx-1" />
+
                         <button 
                             onClick={() => setIsWorkspacePanelOpen(true)}
-                            className="h-12 px-6 rounded-full bg-white/[0.03] border border-white/5 flex items-center gap-3 text-gray-500 hover:text-neon-blue hover:bg-white/5 transition-all group shadow-xl"
+                            className="h-11 px-5 md:px-8 rounded-full bg-white/[0.03] border border-white/10 flex items-center gap-3 md:gap-4 text-gray-500 hover:text-neon-blue hover:bg-white/5 hover:border-neon-blue/30 transition-all group shadow-xl"
                         >
-                            <LayoutDashboard size={16} className="group-hover:rotate-12 transition-transform" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Hub</span>
-                            <div className="w-1.5 h-1.5 bg-neon-blue rounded-full animate-pulse shadow-[0_0_8px_rgba(46,191,255,0.6)]" />
+                            <LayoutDashboard size={14} className="group-hover:rotate-12 transition-transform" />
+                            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Hub</span>
+                            <div className="relative">
+                                <div className="w-1.5 h-1.5 bg-neon-blue rounded-full shadow-[0_0_8px_rgba(46,191,255,0.6)]" />
+                                <div className="absolute inset-0 w-1.5 h-1.5 bg-neon-blue rounded-full animate-ping opacity-75" />
+                            </div>
                         </button>
                     </div>
                 </div>
@@ -1003,12 +1022,24 @@ const CreatorDashboard = () => {
                                         <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Executive fulfillment required</p>
                                     </div>
                                 </div>
+
+                                {/* Navigation Arrows */}
+                                <div className="flex items-center gap-2 md:hidden">
+                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <ChevronRight className="rotate-180" size={16} />
+                                    </button>
+                                    <button onClick={() => scrollContainer('priority-campaigns-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {shortlistedCampaignsList.map(c => 
-                                    <CampaignCard key={c.id} campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
-                                )}
+                            <div id="priority-campaigns-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 pb-4 scrollbar-hide snap-x">
+                                {shortlistedCampaignsList.map(c => (
+                                    <div key={c.id} className="min-w-[280px] w-[280px] md:min-w-0 md:w-auto snap-start">
+                                        <CampaignCard campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
+                                    </div>
+                                ))}
                             </div>
                         </motion.section>
                     )}
@@ -1057,14 +1088,24 @@ const CreatorDashboard = () => {
                             </div>
 
                             <div className="flex items-center gap-4 w-full md:w-auto justify-end">
-                                <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 mr-auto md:mr-0">
                                     <span className="text-white mr-2">{activeTab === 'opportunities' ? availableCampaigns.length : joinedCampaignsList.length}</span>
                                     {activeTab === 'opportunities' ? 'GIGS DISCOVERED' : 'CAMPAIGNS TRACKED'}
+                                </div>
+
+                                {/* Navigation Arrows */}
+                                <div className="flex items-center gap-2 md:hidden">
+                                    <button onClick={() => scrollContainer('opportunities-scroll', 'left')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <ChevronRight className="rotate-180" size={16} />
+                                    </button>
+                                    <button onClick={() => scrollContainer('opportunities-scroll', 'right')} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+                                        <ChevronRight size={16} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div id="opportunities-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 pb-4 scrollbar-hide snap-x">
                             <AnimatePresence mode="popLayout">
                                 {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).map(c => (
                                     <motion.div
@@ -1073,6 +1114,7 @@ const CreatorDashboard = () => {
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
+                                        className="min-w-[280px] w-[280px] md:min-w-0 md:w-auto snap-start"
                                     >
                                         <CampaignCard 
                                             campaign={c} 

@@ -15,6 +15,10 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import Send from 'lucide-react/dist/esm/icons/send';
 import Users from 'lucide-react/dist/esm/icons/users';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Percent from 'lucide-react/dist/esm/icons/percent';
+import Tag from 'lucide-react/dist/esm/icons/tag';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -32,13 +36,15 @@ const TicketingManagement = () => {
     
     const [searchParams] = useSearchParams();
     const [selectedEventId, setSelectedEventId] = useState(null);
-    const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, guestlist, dispatch, attendance, sheets, settings
+    const [activeTab, setActiveTab] = useState(isScanner ? 'sheets' : 'buyers'); // buyers, guestlist, dispatch, attendance, coupons, sheets, settings
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [isUploading, setIsUploading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [guestlistEntries, setGuestlistEntries] = useState([]);
     const [glLoading, setGlLoading] = useState(false);
+    const [showAddCoupon, setShowAddCoupon] = useState(false);
+    const [isSavingCoupon, setIsSavingCoupon] = useState(false);
 
     useEffect(() => {
         const eventId = searchParams.get('eventId');
@@ -319,7 +325,7 @@ const TicketingManagement = () => {
 
                 <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
                     <div className="flex flex-wrap gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
-                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'sheets', 'settings'].map((tab) => {
+                        {['buyers', 'guestlist', 'dispatch', 'attendance', 'coupons', 'sheets', 'settings'].map((tab) => {
                             if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
                             if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings')) return null;
                             if (!(event?.isGuestlistEnabled || event?.guestlistEnabled) && tab === 'guestlist') return null;
@@ -334,12 +340,171 @@ const TicketingManagement = () => {
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : 'Sheets'}
+                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : tab === 'coupons' ? 'Coupons' : 'Sheets'}
                                 </button>
                             );
                         })}
                     </div>
                 </div>
+
+                <AnimatePresence mode="wait">
+                    {/* COUPONS TAB */}
+                    {activeTab === 'coupons' && !isScanner && (
+                        <motion.div key="coupons" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Coupon Form */}
+                                <Card className="lg:col-span-1 p-8 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] h-fit sticky top-48">
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-4 mb-8">
+                                            <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                                                <Tag size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Create Code</h3>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Add new discount code.</p>
+                                            </div>
+                                        </div>
+
+                                        <form onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            setIsSavingCoupon(true);
+                                            try {
+                                                const formData = new FormData(e.target);
+                                                const coupon = {
+                                                    code: formData.get('code').toUpperCase(),
+                                                    discountType: formData.get('type'),
+                                                    discountValue: Number(formData.get('value')),
+                                                    usageLimit: formData.get('limit') ? Number(formData.get('limit')) : null,
+                                                    expiryDate: formData.get('expiry') || null,
+                                                    eventId: selectedEventId,
+                                                    usedCount: 0,
+                                                    isActive: true
+                                                };
+                                                await useStore.getState().addCoupon(coupon);
+                                                useStore.getState().addToast("Coupon created successfully!", 'success');
+                                                e.target.reset();
+                                            } catch (err) {
+                                                useStore.getState().addToast("Failed to create coupon.", 'error');
+                                            } finally {
+                                                setIsSavingCoupon(false);
+                                            }
+                                        }} className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">COUPON CODE</label>
+                                                <Input name="code" placeholder="e.g. NEWBI20" required className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black tracking-[0.2em]" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">TYPE</label>
+                                                    <select name="type" className="w-full h-14 bg-black/40 border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-4 outline-none">
+                                                        <option value="percentage" className="bg-zinc-900">PERCENTAGE %</option>
+                                                        <option value="flat" className="bg-zinc-900">FLAT ₹</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">VALUE</label>
+                                                    <Input name="value" type="number" placeholder="20" required className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">USAGE LIMIT (OPTIONAL)</label>
+                                                <Input name="limit" type="number" placeholder="e.g. 100" className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">EXPIRY DATE (OPTIONAL)</label>
+                                                <Input name="expiry" type="date" className="h-14 bg-black/40 border-white/10 rounded-2xl text-[11px] font-black uppercase" />
+                                            </div>
+                                            <Button type="submit" disabled={isSavingCoupon} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] rounded-2xl mt-4">
+                                                {isSavingCoupon ? <LoadingSpinner size="sm" /> : 'CREATE COUPON'}
+                                            </Button>
+                                        </form>
+                                    </div>
+                                </Card>
+
+                                {/* Coupon List */}
+                                <Card className="lg:col-span-2 p-0 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-fit">
+                                    <div className="p-8 border-b border-white/5 bg-black/40 flex justify-between items-center">
+                                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Active Coupons</h3>
+                                        <div className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                            {useStore.getState().coupons.filter(c => c.eventId === selectedEventId).length} Active
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-black/80 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                                    <th className="p-8">Code</th>
+                                                    <th className="p-8">Benefit</th>
+                                                    <th className="p-8">Usage</th>
+                                                    <th className="p-8 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-sm">
+                                                {(() => {
+                                                    const eventCoupons = useStore.getState().coupons.filter(c => c.eventId === selectedEventId);
+                                                    if (eventCoupons.length === 0) return (
+                                                        <tr>
+                                                            <td colSpan="4" className="p-20 text-center text-gray-500 bg-black/20">
+                                                                <Percent size={48} className="mx-auto mb-6 opacity-20" />
+                                                                <p className="text-[10px] font-black uppercase tracking-[0.4em]">No coupons active for this event.</p>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                    return eventCoupons.map((coupon) => (
+                                                        <tr key={coupon.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                                            <td className="p-8">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-black text-white text-base tracking-[0.1em]">{coupon.code}</span>
+                                                                    {coupon.expiryDate && <span className="text-[8px] text-gray-500 font-bold uppercase mt-1">Exp: {new Date(coupon.expiryDate).toLocaleDateString()}</span>}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-8">
+                                                                <span className={cn(
+                                                                    "px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest border",
+                                                                    coupon.discountType === 'percentage' ? "text-neon-green bg-neon-green/10 border-neon-green/20" : "text-neon-blue bg-neon-blue/10 border-neon-blue/20"
+                                                                )}>
+                                                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-8">
+                                                                <div className="flex flex-col gap-2">
+                                                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                                                        <span className="text-gray-500">Usage</span>
+                                                                        <span className="text-white">{coupon.usedCount || 0} / {coupon.usageLimit || '∞'}</span>
+                                                                    </div>
+                                                                    {coupon.usageLimit && (
+                                                                        <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                                            <div 
+                                                                                className="h-full bg-neon-blue" 
+                                                                                style={{ width: `${Math.min(100, ((coupon.usedCount || 0) / coupon.usageLimit) * 100)}%` }} 
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-8 text-right">
+                                                                <button 
+                                                                    onClick={async () => {
+                                                                        if (window.confirm('Delete this coupon?')) {
+                                                                            await useStore.getState().deleteCoupon(coupon.id);
+                                                                            useStore.getState().addToast("Coupon deleted.", 'success');
+                                                                        }
+                                                                    }}
+                                                                    className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ));
+                                                })()}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Card>
+                            </div>
+                        </motion.div>
+                    )}
 
                 <AnimatePresence mode="wait">
                     {/* GUESTLIST TAB */}
