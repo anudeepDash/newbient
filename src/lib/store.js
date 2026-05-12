@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp } from 'firebase/firestore';
 import { sendBookingConfirmation } from './email';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
@@ -69,6 +69,7 @@ export const useStore = create((set, get) => ({
     unreadNotificationsCount: 0,
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
+    coupons: [], // Coupon Code System
     portfolioCategories: [], // Dynamic categories
     toasts: [], // Ephemeral UI notifications
     aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
@@ -180,6 +181,7 @@ export const useStore = create((set, get) => ({
         const unsubAdmins = sub('admins', 'admins');
         const unsubClientRequests = sub('client_requests', 'clientRequests');
         const unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
+        const unsubCoupons = sub('coupons', 'coupons');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -257,6 +259,7 @@ export const useStore = create((set, get) => ({
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
             unsubClientRequests(); unsubTicketOrders();
+            unsubCoupons();
             unsubAI();
         };
     },
@@ -1330,6 +1333,47 @@ export const useStore = create((set, get) => ({
             status: 'rejected',
             rejectedAt: new Date().toISOString()
         });
+    },
+
+    // Coupons System
+    addCoupon: async (coupon) => {
+        await addDoc(collection(db, 'coupons'), {
+            ...coupon,
+            usedCount: 0,
+            createdAt: serverTimestamp(),
+            isActive: true
+        });
+    },
+    updateCoupon: async (id, updates) => {
+        await updateDoc(doc(db, 'coupons', id), updates);
+    },
+    deleteCoupon: async (id) => {
+        await deleteDoc(doc(db, 'coupons', id));
+    },
+    validateCoupon: async (code, eventId) => {
+        const { coupons } = get();
+        const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && c.isActive);
+        
+        if (!coupon) throw new Error("Invalid or inactive coupon code.");
+        
+        // Expiry check
+        if (coupon.expiryDate) {
+            const expiry = new Date(coupon.expiryDate);
+            const now = new Date();
+            if (expiry < now) throw new Error("This coupon code has expired.");
+        }
+        
+        // Usage limit check
+        if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
+            throw new Error("This coupon has reached its usage limit.");
+        }
+        
+        // Event restriction check
+        if (coupon.eventId && coupon.eventId !== eventId) {
+            throw new Error("This coupon is not valid for this specific event.");
+        }
+        
+        return coupon;
     },
 
     // Ticket Vault (Bulk Assets)
