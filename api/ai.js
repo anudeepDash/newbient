@@ -1,3 +1,4 @@
+console.log('[BOOT] 🛰️ AI Proxy Booting...');
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { verifyToken } from './lib/auth';
 
