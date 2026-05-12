@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Ticket, Plus, Minus, ArrowRight, 
@@ -71,12 +71,18 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const handleZoomOut = () => setZoom(prev => Math.max(0.5, prev - 0.25));
     const handleReset = () => setZoom(1);
     
+    // UI Expand states
+    const [infoPopup, setInfoPopup] = useState(null); // { title: string, content: string, icon: any, color: string }
+    
+    // Robust initialization tracking
+    const lastInitId = useRef(null);
+    
     const globalPaymentDetails = useStore(state => state.paymentDetails);
     const upiId = event?.upiId || event?.paymentDetails?.upiId || globalPaymentDetails?.upiId || 'newbi@upi';
     const qrCodeUrl = event?.qrCodeUrl || globalPaymentDetails?.qrCodeUrl;
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && lastInitId.current !== event?.id) {
             if (hasTickets) setActiveTab('tickets');
             else if (hasGuestlist) setActiveTab('guestlist');
             
@@ -99,6 +105,13 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setLoading(false);
             setVerifying(false);
             setBookingRef(null);
+            
+            lastInitId.current = event?.id;
+        }
+
+        // Reset if modal is closed
+        if (!isOpen) {
+            lastInitId.current = null;
         }
     }, [isOpen, event?.id]);
 
@@ -242,6 +255,11 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const handleVerifyOTP = async () => {
         if (otpCode.length !== 6 || !confirmationResult) return;
         setVerifying(true);
+        
+        // Capture totalAmount before await to ensure we use the correct value 
+        // even if a re-render/store-update happens during verification
+        const currentAmount = totalAmount;
+
         try {
             await confirmationResult.confirm(otpCode);
             useStore.getState().addToast("Phone verified!", 'success');
@@ -253,7 +271,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             }
             
             if (activeTab === 'tickets') {
-                if (totalAmount === 0) submitTickets();
+                if (currentAmount === 0) submitTickets();
                 else setStep('payment');
             } else {
                 submitGuestlist();
@@ -518,6 +536,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     onClick={() => {
                                                         setSelectedMapCategory(cat.id);
                                                         updateCart(cat.id, 1);
+                                                        setStep('selection');
                                                     }}
                                                     className={cn(
                                                         "absolute flex flex-col items-center justify-center transition-all border-2",
@@ -571,7 +590,64 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                 )}
 
                                 <div className="flex flex-col gap-8 flex-1 min-h-0">
-                                    <div className="relative z-10 flex flex-col h-full p-4 md:p-12 pt-6 md:pt-12 overflow-y-auto scrollbar-hide space-y-4 pr-2">
+                                    <div className="relative z-10 flex flex-col h-full p-4 md:p-12 pt-6 md:pt-12 overflow-y-auto scrollbar-hide space-y-8 pr-2">
+                                        {/* Event Brief & Rules */}
+                                        {(event?.ticketingDescription || event?.ticketingRules) && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {event?.ticketingDescription && (
+                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-3 group/info hover:bg-white/[0.05] transition-all cursor-default">
+                                                        <div className="flex items-center gap-2 text-neon-blue opacity-50 group-hover/info:opacity-100 transition-all">
+                                                            <Info size={14} />
+                                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Overview</span>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <p className="text-[11px] text-gray-400 leading-relaxed italic line-clamp-3">
+                                                                {event.ticketingDescription}
+                                                            </p>
+                                                            {event.ticketingDescription.length > 100 && (
+                                                                <button 
+                                                                    onClick={() => setInfoPopup({ 
+                                                                        title: 'Event Overview', 
+                                                                        content: event.ticketingDescription, 
+                                                                        icon: <Info size={24}/>, 
+                                                                        color: 'text-neon-blue' 
+                                                                    })}
+                                                                    className="text-[9px] font-black text-neon-blue uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
+                                                                >
+                                                                    Read More <Maximize2 size={10} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {event?.ticketingRules && (
+                                                    <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-3 group/rules hover:bg-white/[0.05] transition-all cursor-default">
+                                                        <div className="flex items-center gap-2 text-neon-pink opacity-50 group-hover/rules:opacity-100 transition-all">
+                                                            <ShieldCheck size={14} />
+                                                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Rules & Policy</span>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <div className="text-[11px] text-gray-400 leading-relaxed italic line-clamp-3 whitespace-pre-line">
+                                                                {event.ticketingRules}
+                                                            </div>
+                                                            {event.ticketingRules.length > 100 && (
+                                                                <button 
+                                                                    onClick={() => setInfoPopup({ 
+                                                                        title: 'Rules & Policy', 
+                                                                        content: event.ticketingRules, 
+                                                                        icon: <ShieldCheck size={24}/>, 
+                                                                        color: 'text-neon-pink' 
+                                                                    })}
+                                                                    className="text-[9px] font-black text-neon-pink uppercase tracking-widest mt-2 hover:underline flex items-center gap-1"
+                                                                >
+                                                                    Read More <Maximize2 size={10} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                         {activeTab === 'guestlist' ? (
                                             <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
                                                 <div className="text-center">
@@ -619,58 +695,71 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
                                     {/* Checkout Bar */}
                                     <div className="flex flex-col gap-4">
-                                        {activeTab === 'tickets' && totalAmount > 0 && (
-                                            <div className="px-6 py-4 bg-white/5 border border-white/10 rounded-[1.5rem] md:rounded-[2rem] flex items-center gap-4">
-                                                <div className="flex-1">
-                                                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 px-1">Coupon Code</p>
-                                                    <input 
-                                                        type="text" 
-                                                        value={couponInput}
-                                                        onChange={e => setCouponInput(e.target.value.toUpperCase())}
-                                                        placeholder="ENTER CODE"
-                                                        disabled={appliedCoupon}
-                                                        className="w-full bg-transparent border-0 text-xs font-black uppercase tracking-widest text-white placeholder:text-gray-700 outline-none px-1"
-                                                    />
+                                        <div className="p-6 md:p-10 bg-zinc-900/80 border border-white/10 rounded-[2rem] md:rounded-[3rem] flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl relative">
+                                            <div className="flex flex-col sm:flex-row items-center gap-6 md:gap-12 w-full lg:w-auto">
+                                                <div className="space-y-1 text-center sm:text-left shrink-0">
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Final Total</p>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <p className="text-3xl md:text-5xl font-black text-white italic tracking-tighter tabular-nums drop-shadow-lg">
+                                                            ₹{activeTab === 'guestlist' ? '0' : Math.floor(totalAmount)}
+                                                        </p>
+                                                        {appliedCoupon && (
+                                                            <span className="text-[10px] font-black text-neon-green uppercase tracking-widest animate-pulse lg:hidden">Applied</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                {appliedCoupon ? (
-                                                    <button 
-                                                        onClick={removeCoupon}
-                                                        className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                ) : (
-                                                    <button 
-                                                        onClick={handleApplyCoupon}
-                                                        disabled={isValidatingCoupon || !couponInput.trim()}
-                                                        className="px-6 py-2 rounded-xl bg-neon-blue text-black text-[9px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
-                                                    >
-                                                        {isValidatingCoupon ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
-                                                    </button>
+
+                                                {/* Inline Coupon Box */}
+                                                {activeTab === 'tickets' && totalAmount > 0 && (
+                                                    <div className="flex-1 w-full sm:w-64 flex flex-col gap-2">
+                                                        <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 group/coupon focus-within:border-white/20 transition-all">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Coupon Code</p>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={couponInput}
+                                                                    onChange={e => setCouponInput(e.target.value.toUpperCase())}
+                                                                    placeholder="ENTER CODE"
+                                                                    disabled={appliedCoupon}
+                                                                    className="w-full bg-transparent border-0 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-gray-700 outline-none p-0 h-4"
+                                                                />
+                                                            </div>
+                                                            {appliedCoupon ? (
+                                                                <button 
+                                                                    onClick={removeCoupon}
+                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 text-[8px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shrink-0"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            ) : (
+                                                                <button 
+                                                                    onClick={handleApplyCoupon}
+                                                                    disabled={isValidatingCoupon || !couponInput.trim()}
+                                                                    className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
+                                                                >
+                                                                    {isValidatingCoupon ? <Loader2 size={10} className="animate-spin" /> : 'Apply'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {appliedCoupon && (
+                                                            <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.2em] animate-pulse italic whitespace-nowrap ml-1">
+                                                                {appliedCoupon.code} Applied!
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                        )}
 
-                                        <div className="p-6 md:p-10 bg-zinc-900/80 border border-white/10 rounded-[2rem] md:rounded-[3rem] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl relative">
-                                            <div className="space-y-1 text-center sm:text-left">
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Final Total</p>
-                                                <div className="flex items-baseline gap-2">
-                                                    <p className="text-3xl md:text-5xl font-black text-white italic tracking-tighter tabular-nums drop-shadow-lg">
-                                                        ₹{activeTab === 'guestlist' ? '0' : Math.floor(totalAmount)}
-                                                    </p>
-                                                    {appliedCoupon && (
-                                                        <span className="text-[10px] font-black text-neon-green uppercase tracking-widest animate-pulse">Coupon Applied</span>
-                                                    )}
-                                                </div>
+                                            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                                                <Button 
+                                                    onClick={handleNext} 
+                                                    disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories && !appliedCoupon)}
+                                                    className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                                >
+                                                    {loading ? <Loader2 className="animate-spin" /> : 'CONTINUE'}
+                                                    <ArrowRight size={20} />
+                                                </Button>
                                             </div>
-                                            <Button 
-                                                onClick={handleNext} 
-                                                disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories && !appliedCoupon)}
-                                                className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
-                                            >
-                                                {loading ? <Loader2 className="animate-spin" /> : 'CONTINUE'}
-                                                <ArrowRight size={20} />
-                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -922,6 +1011,63 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         )}
                     </AnimatePresence>
                 </div>
+
+                {/* Info Detail Popup Overlay */}
+                <AnimatePresence>
+                    {infoPopup && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-[100] flex items-center justify-center p-4 md:p-12"
+                        >
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setInfoPopup(null)}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                            />
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+                            >
+                                <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn("w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center", infoPopup.color)}>
+                                            {infoPopup.icon}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{infoPopup.title}</h4>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Full Event Details</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setInfoPopup(null)}
+                                        className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-all"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+                                <div className="p-8 overflow-y-auto max-h-[400px] scrollbar-hide">
+                                    <p className="text-sm text-gray-300 leading-relaxed italic whitespace-pre-line">
+                                        {infoPopup.content}
+                                    </p>
+                                </div>
+                                <div className="p-6 bg-black/20 border-t border-white/5">
+                                    <Button 
+                                        onClick={() => setInfoPopup(null)}
+                                        className="w-full h-14 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-white hover:text-black transition-all"
+                                    >
+                                        CLOSE
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </motion.div>
         <div id="recaptcha-container" className="fixed bottom-0 right-0 z-[200]"></div>
