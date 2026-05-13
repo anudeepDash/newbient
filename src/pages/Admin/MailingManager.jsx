@@ -20,13 +20,17 @@ import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import MailPreview from '../../components/admin/MailPreview';
+import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
+import { sendMassEmail, generateMailingHTML } from '../../lib/email';
 import { storage } from '../../lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import WeeklyNewsletterGenerator from '../../components/admin/WeeklyNewsletterGenerator';
 
 const MailingManager = () => {
-    const { subscribers, allUsers, admins, siteDetails } = useStore();
+    const { subscribers, allUsers, admins, siteDetails, uploadToCloudinary, addToast } = useStore();
     const [searchParams] = useSearchParams();
     
     // Mail Maker State
@@ -37,6 +41,7 @@ const MailingManager = () => {
         messageBody: searchParams.get('body') || '',
         ctaText: searchParams.get('ctaText') || '',
         ctaUrl: searchParams.get('ctaUrl') || '',
+        accentColor: '#39FF14'
     });
 
     const [recipientType, setRecipientType] = useState('subscribers'); // subscribers, registered, all
@@ -45,6 +50,21 @@ const MailingManager = () => {
     const [status, setStatus] = useState(null); // { type: 'success' | 'error' | 'info', text: string }
     const [viewMode, setViewMode] = useState('desktop');
     const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [showWeeklyGenerator, setShowWeeklyGenerator] = useState(false);
+
+    const handlePaste = (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                setSelectedFile(file);
+                addToast("Hero image pasted from clipboard!", 'success');
+                e.preventDefault();
+            }
+        }
+    };
 
     const recipients = useMemo(() => {
         if (recipientType === 'subscribers') return subscribers;
@@ -75,21 +95,37 @@ const MailingManager = () => {
         setStatus({ type: 'info', text: 'Sending your emails...' });
 
         try {
+            let finalHeroImage = mailData.heroImage;
+            if (selectedFile) {
+                setStatus({ type: 'info', text: 'Uploading hero image...' });
+                finalHeroImage = await uploadToCloudinary(selectedFile);
+                setMailData(prev => ({ ...prev, heroImage: finalHeroImage }));
+                setSelectedFile(null);
+            }
+
             // Optional: Send Push Notification if toggled
             if (alsoSendingPush) {
                 await notifyAllUsers(
                     mailData.subject || "New Message",
                     mailData.headerText || mailData.messageBody.substring(0, 50),
                     mailData.ctaUrl || "/",
-                    mailData.heroImage || null
+                    finalHeroImage || null
                 );
             }
 
-            // Real EmailJS integration placeholder
-            console.log("Broadcasting to:", recipients.map(r => r.email));
-            
-            // Simulation of delay
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Generate high-fidelity HTML content
+            const htmlContent = generateMailingHTML({
+                ...mailData,
+                heroImage: finalHeroImage
+            });
+
+            // Send via our API
+            const bccList = recipients.map(r => r.email).filter(Boolean);
+            const mailResult = await sendMassEmail(bccList, mailData.subject, htmlContent);
+
+            if (!mailResult.success) {
+                throw new Error(mailResult.error || "Failed to broadcast emails");
+            }
 
             setStatus({ type: 'success', text: `All done! ${recipients.length} emails sent successfully.` });
         } catch (error) {
@@ -100,65 +136,60 @@ const MailingManager = () => {
             setTimeout(() => setStatus(null), 5000);
         }
     };
-
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Atmos */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Sparkles size={16} className="text-neon-green" />
-                            <span className="text-neon-green text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
+        <AdminCommunityHubLayout 
+            hideTabs={true}
+            studioHeader={{
+                title: "MAILING",
+                subtitle: "MANAGEMENT",
+                accentClass: "text-neon-green"
+            }}
+            action={(
+                <>
+                    <div className="flex items-center gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] w-full md:w-auto overflow-hidden">
+                        <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+                        {[
+                            { id: 'subscribers', label: 'Subscribers' },
+                            { id: 'registered', label: 'Users' },
+                            { id: 'admins', label: 'Admins' },
+                            { id: 'all', label: 'Global' }
+                        ].map(type => (
+                            <button
+                                key={type.id}
+                                type="button"
+                                onClick={() => setRecipientType(type.id)}
+                                className={cn(
+                                    "px-4 md:px-6 py-2 md:py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0",
+                                    recipientType === type.id ? "bg-neon-green text-black" : "text-gray-500 hover:text-white"
+                                )}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="hidden sm:block w-px h-10 bg-white/10 shrink-0" />
+                    <div className="hidden sm:flex items-center gap-4 shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green">
+                            <Users size={20} />
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
-                            MAILING <span className="text-neon-green">MANAGEMENT.</span>
-                        </h1>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
+                        <div>
+                            <h3 className="text-xl font-black font-heading text-white leading-none">{recipients.length}</h3>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Recipients</p>
+                        </div>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-6 rounded-[2.5rem]">
-                        <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
-                            {[
-                                { id: 'subscribers', label: 'Subscribers' },
-                                { id: 'registered', label: 'Users' },
-                                { id: 'admins', label: 'Admins' },
-                                { id: 'all', label: 'Global' }
-                            ].map(type => (
-                                <button
-                                    key={type.id}
-                                    onClick={() => setRecipientType(type.id)}
-                                    className={cn(
-                                        "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                        recipientType === type.id ? "bg-neon-green text-black" : "text-gray-500 hover:text-white"
-                                    )}
-                                >
-                                    {type.label}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="w-px h-10 bg-white/10" />
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 flex items-center justify-center text-neon-green">
-                                <Users size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-black font-heading text-white leading-none">{recipients.length}</h3>
-                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Recipients</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+                    <div className="hidden sm:block w-px h-10 bg-white/10 shrink-0" />
+                    <Button 
+                        onClick={() => setShowWeeklyGenerator(true)}
+                        className="h-14 px-6 bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2"
+                    >
+                        <Sparkles size={16} /> Weekly Generator
+                    </Button>
+                </>
+            )}
+        >
+            <div className="relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    {/* Mail Maker Editor */}
                     <div className="lg:col-span-6">
                         <Card className="p-8 md:p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[3rem] relative overflow-hidden">
                             <form onSubmit={handleSendEmails} className="space-y-8 relative z-10">
@@ -173,7 +204,7 @@ const MailingManager = () => {
                                                 onChange={(e) => setMailData({...mailData, subject: e.target.value})}
                                                 placeholder="ENTER SUBJECT..."
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
-                                                required
+                                                required={true}
                                             />
                                         </div>
                                         <div className="space-y-4">
@@ -185,36 +216,71 @@ const MailingManager = () => {
                                                 onChange={(e) => setMailData({...mailData, headerText: e.target.value})}
                                                 placeholder="ENTER HEADER TEXT..."
                                                 className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-neon-green/30"
-                                                required
+                                                required={true}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Mailing Accent Color</label>
+                                        <div className="flex flex-wrap gap-3 p-4 bg-black/40 rounded-2xl border border-white/5">
+                                            {[
+                                                { name: 'Neon Green', color: '#39FF14' },
+                                                { name: 'Neon Blue', color: '#2EBFFF' },
+                                                { name: 'Neon Pink', color: '#FF0080' },
+                                                { name: 'Gold', color: '#FFD700' },
+                                                { name: 'White', color: '#FFFFFF' }
+                                            ].map((preset) => (
+                                                <button
+                                                    key={preset.color}
+                                                    type="button"
+                                                    onClick={() => setMailData({ ...mailData, accentColor: preset.color })}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
+                                                        mailData.accentColor === preset.color ? "border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]" : "border-transparent opacity-50 hover:opacity-100"
+                                                    )}
+                                                    style={{ backgroundColor: preset.color }}
+                                                    title={preset.name}
+                                                />
+                                            ))}
+                                            <div className="w-px h-8 bg-white/10 mx-2" />
+                                            <input 
+                                                type="color" 
+                                                value={mailData.accentColor}
+                                                onChange={(e) => setMailData({ ...mailData, accentColor: e.target.value })}
+                                                className="w-8 h-8 bg-transparent border-0 cursor-pointer p-0 overflow-hidden rounded-full"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div 
+                                        className="space-y-4 group/upload outline-none"
+                                        onPaste={handlePaste}
+                                        tabIndex={0}
+                                    >
                                         <div className="flex justify-between items-center px-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Cover Image Asset</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                                Cover Image Asset
+                                                <span className="text-[8px] text-neon-green/40 opacity-0 group-hover/upload:opacity-100 transition-opacity font-black">CTRL+V TO PASTE</span>
+                                            </label>
                                             <div className="flex items-center gap-2">
+                                                {selectedFile && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setSelectedFile(null)}
+                                                        className="text-[9px] font-black text-red-500 hover:text-white transition-colors cursor-pointer bg-red-500/10 px-3 py-1.5 rounded-xl border border-red-500/20"
+                                                    >
+                                                        RESET
+                                                    </button>
+                                                )}
                                                 <input 
                                                     type="file" 
                                                     id="hero-image-upload" 
                                                     className="hidden" 
                                                     accept="image/*"
-                                                    onChange={async (e) => {
+                                                    onChange={(e) => {
                                                         const file = e.target.files[0];
-                                                        if (!file) return;
-                                                        
-                                                        setUploading(true);
-                                                        try {
-                                                            const storageRef = ref(storage, `broadcasts/${Date.now()}_${file.name}`);
-                                                            const uploadTask = await uploadBytesResumable(storageRef, file);
-                                                            const url = await getDownloadURL(uploadTask.ref);
-                                                            setMailData({ ...mailData, heroImage: url });
-                                                            setStatus({ type: 'info', text: 'Image uploaded successfully!' });
-                                                        } catch (err) {
-                                                            setStatus({ type: 'error', text: 'Image upload failed. Please try again.' });
-                                                        } finally {
-                                                            setUploading(false);
-                                                        }
+                                                        if (file) setSelectedFile(file);
                                                     }}
                                                 />
                                                 <label 
@@ -234,13 +300,13 @@ const MailingManager = () => {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Message Content</label>
-                                        <textarea 
+                                        <StudioRichEditor 
+                                            label="Email Message Content"
                                             value={mailData.messageBody}
-                                            onChange={(e) => setMailData({...mailData, messageBody: e.target.value})}
-                                            className="w-full bg-black/50 border border-white/5 rounded-[2.5rem] p-8 text-sm font-medium text-gray-300 focus:outline-none focus:border-neon-green/30 transition-all resize-none min-h-[250px] custom-scrollbar"
-                                            placeholder="Draft your message to the community..."
-                                            required
+                                            onChange={(val) => setMailData({...mailData, messageBody: val})}
+                                            placeholder="Draft your message to the community... Use formatting, lists, and links!"
+                                            minHeight="250px"
+                                            accentColor="neon-green"
                                         />
                                     </div>
 
@@ -317,7 +383,7 @@ const MailingManager = () => {
                                     <Button 
                                         type="button"
                                         onClick={() => {
-                                            if (Notification.permission === 'granted') {
+                                            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                                                 new Notification(mailData.subject || "Test Notification", {
                                                     body: mailData.headerText || "This is a test notification from your dashboard.",
                                                     icon: '/logo_full.png'
@@ -338,14 +404,14 @@ const MailingManager = () => {
                                         className="h-20 bg-neon-green text-black font-black font-heading uppercase tracking-[0.2em] rounded-[2rem] shadow-[0_10px_40px_rgba(57,255,20,0.2)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
                                     >
                                         {sending ? (
-                                            <>
+                                            <span className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                                                 SENDING...
-                                            </>
+                                            </span>
                                         ) : (
-                                            <>
+                                            <span className="flex items-center gap-2">
                                                 <Send size={20} /> Send Emails
-                                            </>
+                                            </span>
                                         )}
                                     </Button>
                                 </div>
@@ -353,14 +419,44 @@ const MailingManager = () => {
                         </Card>
                     </div>
 
-                    {/* Live Preview Pane */}
                     <div className="lg:col-span-6">
-                        <MailPreview data={mailData} />
+                        <MailPreview data={{
+                            ...mailData,
+                            heroImage: selectedFile ? URL.createObjectURL(selectedFile) : mailData.heroImage
+                        }} />
                     </div>
                 </div>
             </div>
-        </div>
+            {showWeeklyGenerator && (
+                <WeeklyNewsletterGenerator 
+                    onClose={() => setShowWeeklyGenerator(false)}
+                    onGenerate={(subject, header, body) => {
+                        setMailData(prev => ({
+                            ...prev,
+                            subject,
+                            headerText: header,
+                            messageBody: body
+                        }));
+                        setShowWeeklyGenerator(false);
+                        addToast("WEEKLY_TEMPLATE_LOADED.", "success");
+                    }}
+                />
+            )}
+        </AdminCommunityHubLayout>
+
+        <AnimatePresence>
+            {showWeeklyGenerator && (
+                <WeeklyNewsletterGenerator 
+                    onGenerate={(generatedData) => {
+                        setMailData(generatedData);
+                        addToast("WEEKLY_NEWSLETTER_COMPOSED.", 'success');
+                    }}
+                    onClose={() => setShowWeeklyGenerator(false)}
+                />
+            )}
+        </AnimatePresence>
     );
 };
 
 export default MailingManager;
+

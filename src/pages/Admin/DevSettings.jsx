@@ -65,7 +65,7 @@ const SystemControlCenter = () => {
                     <Shield size={48} className="mx-auto mb-4 text-red-500" />
                     <h1 className="text-2xl font-black font-heading tracking-tighter uppercase italic mb-2">ACCESS DENIED</h1>
                     <p className="text-gray-400 text-xs uppercase tracking-widest leading-relaxed">
-                        Neural handshake failed. Required clearance missing.
+                        System handshake failed. Required clearance missing.
                     </p>
                     <Link to="/admin">
                         <Button variant="outline" className="mt-6 w-full border-red-500/30 text-red-500 text-xs font-black tracking-widest uppercase">

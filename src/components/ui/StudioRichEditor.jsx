@@ -185,10 +185,10 @@ const StudioRichEditor = ({
                     onBlur={() => setIsFocused(false)}
                     onKeyDown={handleKeyDown}
                     className={cn(
-                        "w-full p-6 text-[11px] font-medium text-gray-300 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none",
+                        "w-full p-6 text-[11px] font-medium text-gray-300 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words",
                         "min-h-[150px]"
                     )}
-                    style={{ minHeight }}
+                    style={{ minHeight, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 />
 
                 {/* Placeholder Overlay */}

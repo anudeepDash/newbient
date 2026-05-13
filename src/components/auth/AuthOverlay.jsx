@@ -15,11 +15,11 @@ import {
     Loader2, 
     CheckCircle2 
 } from 'lucide-react';
-import { sendPasswordResetEmail, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 
 const AuthOverlay = () => {
-    const { loginWithGoogle, signUpWithEmail, signInWithEmail, isAuthOpen, setAuthModal } = useStore();
+    const { loginWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, isAuthOpen, setAuthModal } = useStore();
     const [mode, setMode] = useState('signIn'); // 'signIn', 'signUp', 'forgot', 'phone', 'complete_profile'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -114,7 +114,7 @@ const AuthOverlay = () => {
                 await signInWithEmail(formData.email, formData.password);
                 onClose();
             } else if (mode === 'forgot') {
-                await sendPasswordResetEmail(auth, formData.email);
+                await resetPassword(formData.email);
                 setResetSent(true);
             }
         } catch (err) {

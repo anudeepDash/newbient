@@ -179,3 +179,76 @@ export const sendProposalEmail = async (toEmail, proposalTitle, proposalUrl) => 
         return { success: false, error };
     }
 };
+
+/**
+ * Generates the HTML for a mailing broadcast based on the high-fidelity template.
+ */
+export const generateMailingHTML = (data) => {
+    const { 
+        headerText = "NEWBI ENTERTAINMENT", 
+        messageBody = "", 
+        heroImage = "", 
+        ctaText = "", 
+        ctaUrl = "#", 
+        accentColor = "#39FF14" 
+    } = data;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 40px; overflow: hidden; }
+                .header { padding: 40px; text-align: center; border-bottom: 1px solid #111; }
+                .hero { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+                .content { padding: 40px 60px; text-align: left; }
+                .title { font-size: 32px; font-weight: 900; text-transform: uppercase; font-style: italic; margin-bottom: 20px; line-height: 1.1; letter-spacing: -1px; color: #fff; }
+                .accent-line { width: 40px; height: 4px; background-color: ${accentColor}; border-radius: 2px; margin-bottom: 30px; }
+                .body-text { color: #888; font-size: 14px; line-height: 1.6; font-weight: 500; margin-bottom: 40px; }
+                .cta-button { display: inline-block; padding: 16px 32px; background-color: ${accentColor}; color: #000; text-decoration: none; font-weight: 900; text-transform: uppercase; font-size: 12px; border-radius: 12px; box-shadow: 0 10px 30px ${accentColor}4D; }
+                .footer { padding: 40px; background-color: #000; border-top: 1px solid #111; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 900; color: #333; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+                .sub-footer-text { font-size: 8px; font-weight: 700; color: #222; text-transform: uppercase; letter-spacing: 1px; max-width: 300px; margin: 0 auto; line-height: 1.4; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <img src="https://newbi.live/logo_full.png" alt="Newbi Ent" height="32">
+                </div>
+                ${heroImage ? `<img src="${heroImage}" class="hero" alt="Hero">` : ''}
+                <div class="content">
+                    <div class="title">${headerText.replace(/\n/g, '<br/>')}</div>
+                    <div class="accent-line"></div>
+                    <div class="body-text">${messageBody}</div>
+                    ${ctaText ? `<a href="${ctaUrl}" class="cta-button">${ctaText}</a>` : ''}
+                </div>
+                <div class="footer">
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENT. ALL RIGHTS RESERVED.</p>
+                    <p class="sub-footer-text">YOU ARE RECEIVING THIS BECAUSE YOU ARE PART OF THE TRIBE INFRASTRUCTURE.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+/**
+ * Sends a mass email to multiple recipients via BCC to protect privacy.
+ */
+export const sendMassEmail = async (bccArray, subject, htmlContent) => {
+    try {
+        const result = await apiFetch('/api/mail', {
+            to: 'support@newbi.live', // Main TO address (usually support/self)
+            bcc: bccArray.join(','),
+            subject: subject,
+            html: htmlContent
+        });
+        return result.success ? { success: true } : { success: false, error: result.error };
+    } catch (error) {
+        console.error('Failed to send mass email:', error);
+        return { success: false, error };
+    }
+};

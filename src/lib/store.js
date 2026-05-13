@@ -327,6 +327,43 @@ export const useStore = create((set, get) => ({
     },
 
     // --- Actions (Write to DB) ---
+    
+    // Notifications
+    addNotification: async (notificationData) => {
+        try {
+            await addDoc(collection(db, 'notifications'), {
+                ...notificationData,
+                isRead: false,
+                createdAt: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Failed to add notification:", error);
+        }
+    },
+    markNotificationRead: async (id) => {
+        try {
+            await updateDoc(doc(db, 'notifications', id), { isRead: true });
+        } catch (error) {
+            console.error("Failed to mark notification as read:", error);
+        }
+    },
+    markAllNotificationsRead: async () => {
+        try {
+            const user = get().user;
+            const { notifications } = get();
+            
+            // Only update notifications that belong to the user or are global, and are unread
+            const unread = notifications.filter(n => !n.isRead && (!n.userId || n.userId === user?.uid));
+            
+            const updates = unread.map(n => 
+                updateDoc(doc(db, 'notifications', n.id), { isRead: true })
+            );
+            
+            await Promise.all(updates);
+        } catch (error) {
+            console.error("Failed to mark all notifications as read:", error);
+        }
+    },
 
     // Upcoming Events
     addUpcomingEvent: async (event, alsoAddToAnnouncements = false) => {
@@ -457,6 +494,10 @@ export const useStore = create((set, get) => ({
     },
     deleteUpcomingEvent: async (id) => {
         await deleteDoc(doc(db, 'upcoming_events', id));
+    },
+    togglePinUpcomingEvent: async (id) => {
+        const item = get().upcomingEvents.find(e => e.id === id);
+        if (item) await updateDoc(doc(db, 'upcoming_events', id), { isPinned: !item.isPinned });
     },
     updateUpcomingEventOrder: async (items) => {
         const updates = items.map((item, index) =>
@@ -1484,9 +1525,14 @@ export const useStore = create((set, get) => ({
     },
 
     resetPassword: async (email) => {
-        const { sendPasswordResetEmail } = await import('firebase/auth');
-        const { auth } = await import('./firebase');
-        await sendPasswordResetEmail(auth, email);
+        const response = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Failed to send reset email');
+        return result;
     },
 
     updateDisplayName: async (displayName) => {
@@ -1848,6 +1894,24 @@ export const useStore = create((set, get) => ({
     },
     deletePost: async (id) => {
         await deleteDoc(doc(db, 'posts', id));
+    },
+    incrementPostView: async (id) => {
+        try {
+            await updateDoc(doc(db, 'posts', id), {
+                viewCount: increment(1)
+            });
+        } catch (error) {
+            console.error("Failed to increment view count:", error);
+        }
+    },
+    incrementPostShare: async (id) => {
+        try {
+            await updateDoc(doc(db, 'posts', id), {
+                shareCount: increment(1)
+            });
+        } catch (error) {
+            console.error("Failed to increment share count:", error);
+        }
     },
     subscribeUser: async (email, name = '') => {
         // Check if already subscribed

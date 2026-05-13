@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// NEWBI AI NEURAL ENGINE v4.1 — Gemini-Powered with Smart Retry
+// NEWBI AI CORE ENGINE v4.1 — Gemini-Powered with Smart Retry
 // ═══════════════════════════════════════════════════════════════════════════
 // Primary: Google Gemini (via Backend Proxy)
 // Backup: Local Failproof Mocks
@@ -11,13 +11,13 @@ import { auth } from './firebase';
 
 // ── Newbi Error System ──────────────────────────────────────────────────
 export const ERROR_CODES = {
-    UNSUPPORTED_TYPE: { code: 'NB-101', message: 'The document type requested is not currently supported by our neural engine.' },
+    UNSUPPORTED_TYPE: { code: 'NB-101', message: 'The document type requested is not currently supported by our AI engine.' },
     EMPTY_PROMPT: { code: 'NB-202', message: 'The prompt provided is too brief. Please provide more context for a premium result.' },
-    PARSING_FAILED: { code: 'NB-302', message: 'Neural extraction failed to produce valid data structure. Please try a more specific prompt.' },
-    AUTH_FAILED: { code: 'NB-401', message: 'Neural authentication failed. Please verify your AI API configuration in settings.' },
-    RATE_LIMITED: { code: 'NB-429', message: 'Neural capacity reached. Please wait a moment while we recalibrate our path.' },
-    ORCHESTRATION_COLLAPSE: { code: 'NB-503', message: 'All neural paths are currently unresponsive. Activating local failproof backup.' },
-    TIMEOUT: { code: 'NB-504', message: 'The AI took too long to respond. Our neural path may be congested.' }
+    PARSING_FAILED: { code: 'NB-302', message: 'AI extraction failed to produce valid data structure. Please try a more specific prompt.' },
+    AUTH_FAILED: { code: 'NB-401', message: 'AI authentication failed. Please verify your AI API configuration in settings.' },
+    RATE_LIMITED: { code: 'NB-429', message: 'AI capacity reached. Please wait a moment while we recalibrate our path.' },
+    ORCHESTRATION_COLLAPSE: { code: 'NB-503', message: 'All AI paths are currently unresponsive. Activating local failproof backup.' },
+    TIMEOUT: { code: 'NB-504', message: 'The AI took too long to respond. Our AI path may be congested.' }
 };
 
 export class NBError extends Error {
@@ -31,9 +31,9 @@ export class NBError extends Error {
 }
 
 // ── Master Orchestrator (Backend Proxy Migration) ────────────────────────
-const executeNeuralPulse = async (systemPrompt, userPrompt) => {
+const executeAIPulse = async (systemPrompt, userPrompt) => {
     try {
-        console.log('[NEWBI AI] → Requesting secure neural path via proxy...');
+        console.log('[NEWBI AI] → Requesting secure AI path via proxy...');
         
         let user = auth.currentUser;
         
@@ -64,7 +64,7 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
 
         if (response.ok) {
             const data = await response.json();
-            console.log(`[NEWBI AI] ✓ Neural Path: Secure Proxy (${data.provider})`);
+            console.log(`[NEWBI AI] ✓ AI Path: Secure Proxy (${data.provider})`);
             return data.content;
         }
 
@@ -75,7 +75,7 @@ const executeNeuralPulse = async (systemPrompt, userPrompt) => {
     }
 
     // FINAL FAILPROOF FALLBACK
-    console.error('[NEWBI AI] ✗ ✗ ✗ ALL NEURAL PATHS COLLAPSED. Activating Absolute Failproof Mock.');
+    console.error('[NEWBI AI] ✗ ✗ ✗ ALL AI PATHS COLLAPSED. Activating Absolute Failproof Mock.');
     
     const type = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
                  systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
@@ -442,7 +442,7 @@ CRITICAL: Every field must have specific, relevant content based on the request.
     // Try AI generation with a hard 15s timeout
     try {
         const rawResponse = await Promise.race([
-            executeNeuralPulse(systemPrompt, userPrompt),
+            executeAIPulse(systemPrompt, userPrompt),
             new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 15000))
         ]);
 
@@ -470,7 +470,7 @@ CRITICAL: Every field must have specific, relevant content based on the request.
         return stripHTML(parsed);
 
     } catch (error) {
-        console.warn('[NEWBI AI] ⚠️ Neural Orchestration hit a limit or timed out. Activating Failproof Mock.', error.message);
+        console.warn('[NEWBI AI] ⚠️ AI Orchestration hit a limit or timed out. Activating Failproof Mock.', error.message);
         const typeKey = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
                         systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
                         systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 'invoice';
@@ -485,7 +485,7 @@ export const improveContent = async (type, fieldLabel, currentContent, tone = 'P
     try {
         const sys = `You are a professional ${type} writer. Improve the text to be more polished and impactful. Return ONLY the improved plain text, nothing else.`;
         const user = `Field: "${fieldLabel}"\nContent: "${currentContent}"\nTone: ${tone}\n\nReturn ONLY the improved plain text.`;
-        const result = await executeNeuralPulse(sys, user);
+        const result = await executeAIPulse(sys, user);
         return result.replace(/<[^>]*>/g, '').replace(/^["']|["']$/g, '').trim();
     } catch {
         return currentContent;
@@ -499,7 +499,7 @@ export const regenerateField = async (type, fieldLabel, originalPrompt, fieldCon
     try {
         const sys = `You are a professional ${type} writer. Generate content for a specific field. Return ONLY plain text.`;
         const user = `Goal: "${originalPrompt}"\nField: "${fieldLabel}"\nContext: "${fieldContext}"\nTone: ${tone}\n\nReturn ONLY the text.`;
-        const result = await executeNeuralPulse(sys, user);
+        const result = await executeAIPulse(sys, user);
         return result.replace(/<[^>]*>/g, '').replace(/^["']|["']$/g, '').trim();
     } catch {
         return "Content pending review.";

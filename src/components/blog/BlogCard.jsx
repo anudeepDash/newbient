@@ -1,174 +1,247 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, User, ArrowUpRight, Tag, Calendar } from 'lucide-react';
+import { Clock, User, ArrowUpRight, Calendar, Sparkles, Star } from 'lucide-react';
 
-const BlogCard = ({ post, variant = 'standard' }) => {
-    // Generate the path based on the new category-slug structure
+const CATEGORY_COLORS = {
+    'Live Events': '#00ffff', // neon-blue
+    'Artists': '#e11d48',    // rose-600
+    'Guides': '#a855f7',     // purple
+    'Buzz': '#facc15',       // yellow
+    'Community': '#10b981',   // green
+    'default': '#00ffff'
+};
+
+const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
     const categorySlug = post.category?.toLowerCase().replace(' ', '-') || 'news';
-    const detailPath = `/concert-zone/${categorySlug}/${post.slug}`;
+    const detailPath = `/concertzone/${categorySlug}/${post.slug}`;
+    const accentColor = post.accentColor || CATEGORY_COLORS[post.category] || CATEGORY_COLORS.default;
 
-    if (variant === 'carousel-item') {
-        return (
-            <Link to={detailPath} className="relative block w-full h-full rounded-[2.5rem] overflow-hidden group">
-                <img 
-                    src={post.coverImage} 
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-12 md:p-16">
-                    <span className="inline-block px-4 py-1.5 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-full mb-6 italic flex items-center justify-center w-fit">
-                        {post.category}
-                    </span>
-                    <h2 className="text-4xl md:text-6xl font-black font-heading uppercase leading-[0.9] tracking-tighter italic mb-6 group-hover:text-neon-blue transition-colors">
-                        {post.title}
-                    </h2>
-                    <p className="text-gray-300 text-sm md:text-base font-medium max-w-2xl line-clamp-2 mb-8">
-                        {post.shortDescription}
-                    </p>
-                    <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest text-white/60">
-                        <div className="flex items-center gap-2">BY {post.author || 'NEWBI TEAM'}</div>
-                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
-                        <div className="flex items-center gap-2">{post.readingTime || 5} MIN READ</div>
-                    </div>
-                </div>
-            </Link>
-        );
-    }
-
-    if (variant === 'list-item') {
-        return (
-            <Link to={detailPath} className="flex gap-4 p-4 hover:bg-white/5 rounded-2xl transition-all group border border-transparent hover:border-white/10">
-                <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden">
-                    <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                </div>
-                <div className="flex flex-col justify-center gap-2">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-neon-blue">{post.category}</span>
-                    <h4 className="text-sm font-black font-heading uppercase leading-tight line-clamp-2 group-hover:text-white transition-colors">
-                        {post.title}
-                    </h4>
-                    <div className="flex items-center gap-3 text-[8px] font-black uppercase tracking-widest text-gray-500">
-                        <span>{post.readingTime || 5} MIN</span>
-                        <div className="w-1 h-1 rounded-full bg-white/10" />
-                        <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                </div>
-            </Link>
-        );
-    }
-
-    if (variant === 'grid-card-v2') {
-        return (
+    const variants = {
+        hero: (
             <motion.div
-                whileHover={{ y: -10 }}
-                className="group relative flex flex-col h-full bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl hover:border-white/20 transition-all duration-500"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="relative group w-full h-[650px] md:h-[850px] rounded-[4rem] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
             >
-                <Link to={detailPath} className="flex flex-col h-full">
-                    <div className="relative aspect-[4/5] overflow-hidden">
+                <Link to={detailPath} className="block w-full h-full">
+                    {post.videoUrl ? (
+                        <video 
+                            src={post.videoUrl} 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline
+                            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110" 
+                        />
+                    ) : (
                         <img 
                             src={post.coverImage} 
                             alt={post.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                        <div className="absolute top-6 left-6">
-                            <span className="px-4 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white flex items-center justify-center">
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                    
+                    {/* Immersive Badge System */}
+                    <div className="absolute top-10 left-10 md:top-16 md:left-16 flex items-center gap-6">
+                        <span 
+                            className="px-8 py-3 text-black text-[14px] font-black uppercase tracking-[0.2em] rounded-2xl italic"
+                            style={{ backgroundColor: accentColor, boxShadow: `0 20px 40px ${accentColor}66` }}
+                        >
+                            {post.category}
+                        </span>
+                        <div className="flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em]">
+                            <Clock size={16} style={{ color: accentColor }} /> {post.readingTime || 5} MIN
+                        </div>
+                    </div>
+
+                    <div className="absolute inset-x-0 bottom-0 p-10 md:p-24 lg:p-32">
+                        <div className="max-w-5xl space-y-10">
+                            <motion.h2 
+                                initial={{ opacity: 0, x: -30 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-6xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase leading-[0.8] tracking-tighter italic transition-all duration-700"
+                                style={{ 
+                                    '--hover-color': accentColor 
+                                }}
+                            >
+                                {post.title}
+                            </motion.h2>
+                            <p className="text-gray-300 text-xl md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed">
+                                {post.shortDescription}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-10 text-[13px] font-black uppercase tracking-[0.4em] text-white/40">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <User size={20} />
+                                    </div>
+                                    <span>{post.author || 'NEWBI TEAM'}</span>
+                                </div>
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
+                                <div className="flex items-center gap-3">
+                                    <Calendar size={18} /> {new Date(post.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Hover Interaction Hub */}
+                    <div className="absolute bottom-16 right-16 w-24 h-24 bg-white text-black rounded-[2.5rem] flex items-center justify-center opacity-0 translate-y-10 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700 shadow-[0_30px_60px_rgba(255,255,255,0.3)]">
+                        <ArrowUpRight size={40} className="group-hover:rotate-45 transition-transform duration-500" />
+                    </div>
+                </Link>
+            </motion.div>
+        ),
+        featured: (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="group relative h-full min-h-[550px] bg-zinc-900/30 border border-white/5 rounded-[3.5rem] overflow-hidden backdrop-blur-3xl transition-all duration-700 shadow-2xl"
+                style={{ '--hover-border': `${accentColor}4D` }}
+            >
+                <Link to={detailPath} className="flex flex-col h-full">
+                    <div className="relative h-[60%] overflow-hidden">
+                        {post.videoUrl ? (
+                            <video 
+                                src={post.videoUrl} 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                            />
+                        ) : (
+                            <img 
+                                src={post.coverImage} 
+                                alt={post.title}
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                            />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+                        <div className="absolute top-8 left-8">
+                            <span className="px-6 py-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-white italic">
                                 {post.category}
                             </span>
                         </div>
+                        {post.featured && (
+                            <div 
+                                className="absolute top-8 right-8 w-12 h-12 text-white rounded-2xl flex items-center justify-center"
+                                style={{ backgroundColor: accentColor, boxShadow: `0 10px 20px ${accentColor}66` }}
+                            >
+                                <Star size={18} fill="currentColor" />
+                            </div>
+                        )}
                     </div>
-                    <div className="p-8 flex flex-col flex-grow">
-                        <div className="flex items-center gap-4 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                            <div className="flex items-center gap-1.5"><Clock size={12} /> {post.readingTime || 5} MIN</div>
-                            <div className="w-1 h-1 rounded-full bg-white/20" />
-                            <div className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(post.publishDate).toLocaleDateString()}</div>
+                    <div className="p-10 md:p-14 flex flex-col flex-grow">
+                        <div className="flex items-center gap-5 text-gray-500 text-[11px] font-black uppercase tracking-[0.4em] mb-6">
+                            <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Clock size={14} /> {post.readingTime || 5} MIN</div>
+                            <div className="w-[1px] h-4 bg-white/10" />
+                            <div>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
-                        <h3 className="text-2xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-4 group-hover:text-neon-blue transition-colors line-clamp-3">
+                        <h3 className="text-4xl md:text-5xl font-black font-heading uppercase leading-[0.9] tracking-tighter mb-6 group-hover:text-neon-blue transition-colors line-clamp-3 italic">
                             {post.title}
                         </h3>
-                        <p className="text-gray-400 text-sm font-medium line-clamp-2 mb-8 flex-grow">
+                        <p className="text-gray-400 text-base font-medium line-clamp-2 mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed">
                             {post.shortDescription}
                         </p>
-                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                                    <User size={14} className="text-gray-500" />
+                        <div className="flex items-center justify-between mt-auto pt-8 border-t border-white/5">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <User size={16} className="text-gray-400" />
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">
+                                <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">
                                     {post.author || 'NEWBI TEAM'}
                                 </span>
                             </div>
-                            <ArrowUpRight size={16} className="text-neon-blue opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                            <div 
+                                className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
+                                style={{ '--hover-bg': accentColor }}
+                            >
+                                <ArrowUpRight size={20} />
+                            </div>
                         </div>
                     </div>
                 </Link>
             </motion.div>
-        );
-    }
-
-    return (
-        <motion.div
-            whileHover={{ y: -10 }}
-            className="group relative flex flex-col h-full"
-        >
-            <Link to={detailPath} className="flex flex-col h-full bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl hover:border-white/20 transition-all duration-500">
-                {/* Image Container */}
-                <div className="relative aspect-[16/10] overflow-hidden">
-                    <img 
-                        src={post.coverImage} 
-                        alt={post.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                    
-                    {/* Category Overlay */}
-                    <div className="absolute top-4 left-4">
-                        <span className="px-3 py-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white flex items-center justify-center">
-                            {post.category}
-                        </span>
-                    </div>
-
-                    {/* Quick Access Arrow */}
-                    <div className="absolute top-4 right-4 translate-x-10 -translate-y-10 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-500 bg-white text-black p-3 rounded-2xl shadow-xl">
-                        <ArrowUpRight size={16} />
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-8 flex flex-col flex-grow">
-                    <div className="flex items-center gap-4 text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] mb-4">
-                        <div className="flex items-center gap-1.5"><Clock size={10} /> {post.readingTime || 5} MIN</div>
-                        <div className="w-1 h-1 rounded-full bg-white/20" />
-                        <div className="flex items-center gap-1.5"><Calendar size={10} className="hidden sm:block" /> {new Date(post.publishDate).toLocaleDateString()}</div>
-                    </div>
-
-                    <h3 className="text-xl md:text-2xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-4 group-hover:text-neon-blue transition-colors">
-                        {post.title}
-                    </h3>
-                    
-                    <p className="text-gray-400 text-sm font-medium line-clamp-3 mb-8 flex-grow">
-                        {post.shortDescription}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                                <User size={12} className="text-gray-500" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">
-                                {post.author || 'NEWBI TEAM'}
+        ),
+        standard: (
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="group relative flex flex-col h-full bg-zinc-900/20 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500 shadow-xl"
+            >
+                <Link to={detailPath} className="flex flex-col h-full">
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                        <img 
+                            src={post.coverImage} 
+                            alt={post.title}
+                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                        <div className="absolute top-5 left-5">
+                            <span className="px-4 py-1.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white">
+                                {post.category}
                             </span>
                         </div>
-                        
-                        <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-neon-blue group-hover:gap-2 transition-all">
-                            View <ArrowUpRight size={10} />
+                    </div>
+                    <div className="p-8 md:p-10 flex flex-col flex-grow">
+                        <div className="flex items-center gap-4 text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mb-5">
+                            <div className="flex items-center gap-2"><Clock size={12} /> {post.readingTime || 5} MIN</div>
+                            <div className="w-1 h-1 rounded-full bg-white/20" />
+                            <div>{new Date(post.publishDate).toLocaleDateString()}</div>
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-black font-heading uppercase leading-[1.1] tracking-tighter mb-6 transition-colors line-clamp-2 italic group-hover:text-white" style={{ '--hover-text': accentColor }}>
+                            {post.title}
+                        </h3>
+                        <p className="text-gray-500 text-sm font-medium line-clamp-3 mb-10 flex-grow leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                            {post.shortDescription}
+                        </p>
+                        <div className="flex items-center justify-between mt-auto pt-8 border-t border-white/5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-white transition-colors">
+                                BY {post.author || 'NEWBI TEAM'}
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] transition-transform group-hover:translate-x-2" style={{ color: accentColor }}>
+                                READ <ArrowUpRight size={12} />
+                            </div>
                         </div>
                     </div>
-                </div>
-            </Link>
-        </motion.div>
-    );
+                </Link>
+            </motion.div>
+        ),
+        compact: (
+            <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="group relative"
+            >
+                <Link to={detailPath} className="flex gap-8 items-center p-6 bg-white/[0.02] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                    <div className="w-28 h-28 shrink-0 rounded-[2rem] overflow-hidden border border-white/10 shadow-lg">
+                        <img src={post.coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-4">
+                            <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: accentColor }}>{post.category}</span>
+                            <div className="w-1 h-1 rounded-full bg-white/10" />
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{post.readingTime || 5} MIN</span>
+                        </div>
+                        <h4 className="text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter group-hover:text-white" style={{ '--hover-text': accentColor }}>
+                            {post.title}
+                        </h4>
+                    </div>
+                </Link>
+            </motion.div>
+        )
+    };
+
+    return variants[variant] || variants.standard;
 };
 
 export default BlogCard;
+

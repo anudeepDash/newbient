@@ -56,18 +56,26 @@ const MailPreview = ({ data }) => {
                             <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-[1.1] italic break-words overflow-wrap-anywhere">
                                 {data.headerText || "YOUR_HEADER_HERE"}
                             </h2>
-                            <div className="w-12 h-1 bg-neon-green rounded-full" />
+                            <div className="w-12 h-1 rounded-full" style={{ backgroundColor: data.accentColor || '#39FF14' }} />
                         </div>
 
-                        <div className="text-gray-400 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">
-                            {data.messageBody || "Draft your message payload to the tribe. This area supports multi-line text and structured communication formats."}
-                        </div>
+                        <div 
+                            className="text-gray-400 text-sm md:text-base leading-relaxed font-medium prose prose-invert max-w-none prose-sm break-words"
+                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                            dangerouslySetInnerHTML={{ 
+                                __html: data.messageBody || "Draft your message payload to the tribe. This area supports multi-line text and structured communication formats." 
+                            }}
+                        />
 
                         {data.ctaText && (
                             <div className="pt-4">
                                 <a 
                                     href={data.ctaUrl || "#"}
-                                    className="inline-flex items-center gap-3 px-8 py-4 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-105 transition-all shadow-[0_10px_30px_rgba(57,255,20,0.3)]"
+                                    className="inline-flex items-center gap-3 px-8 py-4 text-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-105 transition-all"
+                                    style={{ 
+                                        backgroundColor: data.accentColor || '#39FF14',
+                                        boxShadow: `0 10px 30px ${data.accentColor}4D`
+                                    }}
                                 >
                                     {data.ctaText} <ExternalLink size={14} />
                                 </a>

@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, Info, X, ShieldAlert } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 
-const NeuralToast = () => {
+const NewbiToast = () => {
     const { toasts, removeToast } = useStore();
 
     return (
@@ -57,4 +57,4 @@ const NeuralToast = () => {
     );
 };
 
-export default NeuralToast;
+export default NewbiToast;

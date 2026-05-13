@@ -36,9 +36,10 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
 };
 
 /**
- * Notify all users with an announcement
+ * Notify all users with an announcement and optionally broadcast via email
  */
-export const notifyAllUsers = async (title, content, link = '', image = '') => {
+export const notifyAllUsers = async (title, content, link = '', image = '', sendEmail = false) => {
+    // 1. Trigger Push & In-App Notification
     await triggerNotification({
         userId: null,
         type: 'announcement',
@@ -47,6 +48,43 @@ export const notifyAllUsers = async (title, content, link = '', image = '') => {
         link,
         image
     });
+
+    // 2. Trigger Mass Email Broadcast if requested
+    if (sendEmail) {
+        try {
+            const usersSnap = await getDocs(query(collection(db, 'users')));
+            const emails = [];
+            usersSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.email) emails.push(data.email);
+            });
+            
+            const uniqueEmails = [...new Set(emails)];
+            
+            if (uniqueEmails.length > 0) {
+                const { sendMassEmail } = await import('./email');
+                const htmlContent = `
+                    <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px;">
+                        ${image ? `<img src="${image}" alt="${title}" style="width: 100%; border-radius: 8px; margin-bottom: 20px;" />` : ''}
+                        <h2 style="color: #000; text-transform: uppercase; font-style: italic;">${title}</h2>
+                        <p style="font-size: 16px; line-height: 1.6; color: #555;">${content}</p>
+                        ${link ? `
+                        <div style="margin: 30px 0;">
+                            <a href="${link.startsWith('http') ? link : `https://newbi.live${link}`}" style="background: #39FF14; color: #000; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">View Details</a>
+                        </div>
+                        ` : ''}
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                        <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
+                    </div>
+                `;
+                
+                await sendMassEmail(uniqueEmails, title, htmlContent);
+                console.log(`[Mass Email Triggered] Dispatched to ${uniqueEmails.length} recipients.`);
+            }
+        } catch (error) {
+            console.error("Error triggering mass email broadcast:", error);
+        }
+    }
 };
 
 /**

@@ -12,7 +12,7 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, collectionGroup, doc, getDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import GlobalLoader from '../components/ui/GlobalLoader';
 
 const DigitalTicket = () => {
     const { id } = useParams();
@@ -80,11 +80,7 @@ const DigitalTicket = () => {
     }, [id]);
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#020202] flex items-center justify-center">
-                <LoadingSpinner size="lg" color="#2bd93e" />
-            </div>
-        );
+        return <GlobalLoader color="#39FF14" />;
     }
 
     if (error || !ticketData) {

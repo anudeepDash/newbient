@@ -57,40 +57,40 @@ export default async function handler(req, res) {
         // 1. TRY GEMINI (SDK)
         if (genAI) {
             try {
-                console.log('[AI PROXY] 🚀 Path: Gemini SDK (3.1 Flash-Lite)');
-                const model3 = genAI.getGenerativeModel({ 
-                    model: "gemini-3.1-flash-lite",
+                console.log('[AI PROXY] 🚀 Path: Gemini SDK (2.0 Flash)');
+                const model2 = genAI.getGenerativeModel({ 
+                    model: "gemini-2.0-flash",
                     generationConfig: { responseMimeType: "application/json" }
                 });
                 
-                const result3 = await model3.generateContent([
+                const result2 = await model2.generateContent([
                     { text: systemPrompt + "\n\nReturn valid JSON." },
                     { text: userPrompt }
                 ]);
                 
-                const text3 = result3.response.text();
-                if (text3 && text3.length > 20) {
-                    console.log('[AI PROXY] ✨ Success: Gemini 3.1 SDK');
-                    return res.status(200).json({ content: text3, provider: 'gemini-3.1' });
+                const text2 = result2.response.text();
+                if (text2 && text2.length > 20) {
+                    console.log('[AI PROXY] ✨ Success: Gemini 2.0 SDK');
+                    return res.status(200).json({ content: text2, provider: 'gemini-2.0' });
                 }
-            } catch (e3) {
-                console.warn('[AI PROXY] ⚠️ Gemini 3.1 Quota/Error. Stepping down to 3.0...');
+            } catch (e2) {
+                console.warn('[AI PROXY] ⚠️ Gemini 2.0 Quota/Error. Stepping down to 1.5...');
                 try {
-                    const model30 = genAI.getGenerativeModel({ 
-                        model: "gemini-3-flash",
+                    const model15 = genAI.getGenerativeModel({ 
+                        model: "gemini-1.5-flash",
                         generationConfig: { responseMimeType: "application/json" }
                     });
-                    const result30 = await model30.generateContent([
+                    const result15 = await model15.generateContent([
                         { text: systemPrompt + "\n\nReturn valid JSON." },
                         { text: userPrompt }
                     ]);
-                    const text30 = result30.response.text();
-                    if (text30 && text30.length > 20) {
-                        console.log('[AI PROXY] ✨ Success: Gemini 3.0 SDK');
-                        return res.status(200).json({ content: text30, provider: 'gemini-3.0' });
+                    const text15 = result15.response.text();
+                    if (text15 && text15.length > 20) {
+                        console.log('[AI PROXY] ✨ Success: Gemini 1.5 SDK (Step-down)');
+                        return res.status(200).json({ content: text15, provider: 'gemini-1.5' });
                     }
-                } catch (e30) {
-                    console.error('[AI PROXY] ❌ Gemini 3 SDK exhausted:', e30.message);
+                } catch (e15) {
+                    console.error('[AI PROXY] ❌ Gemini SDK completely exhausted:', e15.message);
                 }
             }
         } else {
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
                         'X-Title': 'Newbi Entertainment Proxy'
                     },
                     body: JSON.stringify({
-                        model: "google/gemini-3-flash",
+                        model: "google/gemini-2.0-flash-001",
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: userPrompt }

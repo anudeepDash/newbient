@@ -34,6 +34,8 @@ try {
     console.error('[AUTH INIT] 💥 CRITICAL INITIALIZATION ERROR:', error.message);
 }
 
+export { admin };
+
 export const verifyToken = async (req) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
