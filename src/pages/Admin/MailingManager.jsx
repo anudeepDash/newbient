@@ -430,31 +430,14 @@ const MailingManager = () => {
             {showWeeklyGenerator && (
                 <WeeklyNewsletterGenerator 
                     onClose={() => setShowWeeklyGenerator(false)}
-                    onGenerate={(subject, header, body) => {
-                        setMailData(prev => ({
-                            ...prev,
-                            subject,
-                            headerText: header,
-                            messageBody: body
-                        }));
+                    onGenerate={(generatedData) => {
+                        setMailData(generatedData);
                         setShowWeeklyGenerator(false);
                         addToast("WEEKLY_TEMPLATE_LOADED.", "success");
                     }}
                 />
             )}
         </AdminCommunityHubLayout>
-
-        <AnimatePresence>
-            {showWeeklyGenerator && (
-                <WeeklyNewsletterGenerator 
-                    onGenerate={(generatedData) => {
-                        setMailData(generatedData);
-                        addToast("WEEKLY_NEWSLETTER_COMPOSED.", 'success');
-                    }}
-                    onClose={() => setShowWeeklyGenerator(false)}
-                />
-            )}
-        </AnimatePresence>
     );
 };
 
