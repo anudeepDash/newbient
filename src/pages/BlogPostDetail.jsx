@@ -144,37 +144,36 @@ const BlogPostDetail = () => {
 
 
 
-            {/* Futuristic Left-Aligned Navigation Bar */}
             <motion.div 
-                initial={{ x: -100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="fixed top-8 left-8 md:left-24 z-[200] w-auto max-w-[80%]"
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="fixed top-0 left-0 right-0 z-[250] px-4 py-4 md:py-6 md:px-24 md:top-8"
             >
-                <div className="bg-black/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-3 px-8 flex items-center gap-8 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
+                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-3xl p-1.5 md:p-3 flex items-center justify-between gap-3 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
                     <button 
                         onClick={() => navigate('/concertzone')}
-                        className="flex items-center gap-3 h-10 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group shrink-0"
+                        className="flex items-center gap-2 h-9 md:h-10 px-3 md:px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group shrink-0"
                     >
                         <ArrowLeft size={14} style={{ color: accentColor }} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-white">CONCERT ZONE</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white hidden xs:block">BACK</span>
                     </button>
 
-                    <div className="w-[1px] h-6 bg-white/10 hidden md:block" />
+                    <div className="w-[1px] h-5 bg-white/10 hidden sm:block" />
 
-                    <div className="flex items-center gap-6 shrink-0">
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em]" style={{ color: accentColor }}>{post.category}</span>
-                        <div className="h-px w-16 bg-white/20" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 italic">Reading Now</span>
+                    <div className="flex items-center gap-3 md:gap-6 shrink-0 overflow-hidden">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] truncate max-w-[80px] xs:max-w-none" style={{ color: accentColor }}>{post.category}</span>
+                        <div className="h-px w-6 md:w-16 bg-white/20 hidden md:block" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 italic whitespace-nowrap hidden lg:block">Reading Now</span>
                     </div>
 
-                    <div className="hidden lg:block w-[1px] h-6 bg-white/10" />
+                    <div className="hidden xl:block w-[1px] h-6 bg-white/10" />
 
-                    <div className="flex-1 min-w-0 hidden md:block max-w-md">
+                    <div className="flex-1 min-w-0 hidden md:block">
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-white truncate italic opacity-80">{post.title}</h4>
                     </div>
 
-                    <div className="flex items-center gap-6 shrink-0">
-                        <div className="relative w-24 h-[2px] bg-white/10 rounded-full overflow-hidden hidden sm:block">
+                    <div className="flex items-center gap-3 md:gap-6 shrink-0">
+                        <div className="relative w-12 md:w-24 h-[2px] bg-white/10 rounded-full overflow-hidden hidden sm:block">
                             <motion.div 
                                 className="absolute inset-0 origin-left" 
                                 style={{ scaleX, backgroundColor: accentColor }} 
@@ -182,7 +181,7 @@ const BlogPostDetail = () => {
                         </div>
                         <button 
                             onClick={() => setIsShareOpen(true)}
-                            className="h-10 px-6 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg"
+                            className="h-9 md:h-10 px-4 md:px-6 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg"
                         >
                             SHARE
                         </button>
@@ -230,18 +229,18 @@ const BlogPostDetail = () => {
                         transition={{ delay: 0.6, duration: 0.8 }}
                         className="max-w-6xl"
                     >
-                        <div className="flex items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4 md:gap-6 mb-8 md:mb-12">
                             <motion.span 
                                 whileHover={{ scale: 1.05 }}
-                                className="px-8 py-3 text-black text-[13px] font-black uppercase tracking-widest rounded-2xl italic transition-all cursor-pointer"
+                                className="px-5 md:px-8 py-2 md:py-3 text-black text-[11px] md:text-[13px] font-black uppercase tracking-widest rounded-2xl italic transition-all cursor-pointer"
                                 style={{ backgroundColor: accentColor, boxShadow: `0 15px 40px ${accentColor}66` }}
                             >
                                 {post.category}
                             </motion.span>
-                            <div className="h-px w-24 bg-white/20" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/40">Reading Now</span>
+                            <div className="h-px w-12 md:w-24 bg-white/20" />
+                            <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Reading Now</span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading uppercase leading-[1.2] tracking-tight mb-16 italic drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] break-words pr-16 pb-4">
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading uppercase leading-[1.1] tracking-tight mb-12 md:mb-16 italic drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] break-words pr-4 md:pr-16 pb-4">
                             {post.title.split(' ').map((word, i) => (
                                 <span key={i} 
                                     className={i % 2 === 1 ? "text-transparent bg-clip-text not-italic" : "text-white"}
@@ -251,20 +250,20 @@ const BlogPostDetail = () => {
                                 </span>
                             ))}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-16 text-[13px] font-black uppercase tracking-[0.4em] text-white/50">
-                            <div className="flex items-center gap-5">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center group overflow-hidden">
-                                    <User size={24} className="group-hover:text-neon-blue transition-colors" />
+                        <div className="flex flex-wrap items-center gap-8 md:gap-16 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-white/50">
+                            <div className="flex items-center gap-4 md:gap-5">
+                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center group overflow-hidden">
+                                    <User size={20} className="group-hover:text-neon-blue transition-colors md:size-[24px]" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] text-gray-600 mb-1 tracking-widest">AUTHOR</span>
-                                    <span className="text-white text-sm">{post.author || 'NEWBI TEAM'}</span>
+                                    <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">AUTHOR</span>
+                                    <span className="text-white text-xs md:text-sm">{post.author || 'NEWBI TEAM'}</span>
                                 </div>
                             </div>
-                            <div className="hidden md:block w-[1px] h-12 bg-white/10" />
+                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-white/10" />
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-600 mb-1 tracking-widest">PUBLISHED</span>
-                                <span className="text-white text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">PUBLISHED</span>
+                                <span className="text-white text-xs md:text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                             </div>
                         </div>
                     </motion.div>
@@ -281,7 +280,7 @@ const BlogPostDetail = () => {
                 </motion.div>
             </header>
 
-            <div className="max-w-[1800px] mx-auto px-8 md:px-24 grid grid-cols-1 lg:grid-cols-12 gap-24 relative pt-32">
+            <div className="max-w-[1800px] mx-auto px-6 md:px-24 grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24 relative pt-16 md:pt-32">
                 
                 {/* High-Fi Engagement Rail */}
                 <aside className="hidden xl:block lg:col-span-1">
@@ -308,7 +307,7 @@ const BlogPostDetail = () => {
 
                 {/* The Narrative Hub */}
                 <div ref={contentRef} className="lg:col-span-8 xl:col-span-9">
-                    <div className="prose prose-invert prose-2xl max-w-none prose-p:text-gray-300 prose-p:leading-[1.8] prose-p:mb-8 prose-headings:font-heading prose-headings:uppercase prose-headings:italic prose-headings:tracking-tighter prose-headings:mb-8 prose-img:rounded-[4rem] prose-img:shadow-2xl prose-img:border prose-img:border-white/10 prose-a:text-neon-blue prose-a:underline-offset-8 prose-strong:text-white prose-blockquote:border-l-neon-blue prose-blockquote:bg-white/5 prose-blockquote:p-12 prose-blockquote:rounded-[3rem] prose-blockquote:italic selection:bg-neon-blue selection:text-black">
+                    <div className="prose prose-invert prose-lg md:prose-2xl max-w-none prose-p:text-gray-300 prose-p:leading-[1.8] prose-p:mb-8 prose-headings:font-heading prose-headings:uppercase prose-headings:italic prose-headings:tracking-tighter prose-headings:mb-8 prose-img:rounded-3xl md:prose-img:rounded-[4rem] prose-img:shadow-2xl prose-img:border prose-img:border-white/10 prose-a:text-neon-blue prose-a:underline-offset-8 prose-strong:text-white prose-blockquote:border-l-neon-blue prose-blockquote:bg-white/5 prose-blockquote:p-6 md:prose-blockquote:p-12 prose-blockquote:rounded-2xl md:prose-blockquote:rounded-[3rem] prose-blockquote:italic selection:bg-neon-blue selection:text-black">
                         <div dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
 
@@ -334,7 +333,7 @@ const BlogPostDetail = () => {
 
             {/* Horizontal Suggested Articles Segment */}
             {relatedPosts.length > 0 && (
-                <div className="max-w-[1800px] mx-auto px-8 md:px-24 mb-16">
+                <div className="max-w-[1800px] mx-auto px-6 md:px-24 mb-16">
                     <div className="flex items-center gap-5 mb-10 px-4">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 15px ${accentColor}` }} />
                         <h4 className="text-xs font-black uppercase tracking-[0.5em] text-white/40">
@@ -342,10 +341,19 @@ const BlogPostDetail = () => {
                         </h4>
                         <div className="flex-1 h-px bg-white/5 ml-10" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {relatedPosts.map(p => (
-                            <BlogCard key={p.id} post={p} variant="compact" />
-                        ))}
+                    
+                    <div className="relative group">
+                        {/* Mobile Scroll Indicators */}
+                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black via-black/80 to-transparent z-20 pointer-events-none md:hidden" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black via-black/80 to-transparent z-20 pointer-events-none md:hidden" />
+
+                        <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 md:px-0 pb-12 -mb-8 snap-x snap-mandatory scroll-smooth w-full">
+                            {relatedPosts.map(p => (
+                                <div key={p.id} className="min-w-[80vw] xs:min-w-[320px] md:min-w-0 snap-start shrink-0">
+                                    <BlogCard post={p} variant="compact" />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -353,7 +361,7 @@ const BlogPostDetail = () => {
 
 
             {/* Bottom Content Row */}
-            <div className="max-w-[1800px] mx-auto px-8 md:px-24 mt-12">
+            <div className="max-w-[1800px] mx-auto px-6 md:px-24 mt-12">
                 <BlogNewsletter />
             </div>
 
