@@ -20,9 +20,16 @@ export default async function handler(req, res) {
     // Security check: In a real app, verify Firebase ID Token here
     // For now, we rely on Vercel environment variables for SMTP
     
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+    
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.error('[MAIL] ❌ Missing SMTP_USER or SMTP_PASS environment variables!');
+    }
+
     const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT || 587,
+        host: smtpHost,
+        port: smtpPort,
         secure: process.env.SMTP_SECURE === 'true',
         auth: {
             user: process.env.SMTP_USER,
