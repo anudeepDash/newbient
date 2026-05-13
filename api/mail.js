@@ -31,8 +31,10 @@ export default async function handler(req, res) {
     });
 
     try {
+        const fromAddress = process.env.SMTP_FROM || `"Newbi Support" <${process.env.SMTP_USER}>`;
+
         const info = await transporter.sendMail({
-            from: `"Newbi Support" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+            from: fromAddress,
             to,
             bcc,
             subject,

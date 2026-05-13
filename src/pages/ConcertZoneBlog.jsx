@@ -157,7 +157,7 @@ const StoryCard = ({ post }) => {
                     <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 </div>
                 
-                <h3 className="text-xl font-black leading-tight uppercase italic tracking-tighter mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-neon-blue group-hover:to-neon-pink transition-all duration-500 line-clamp-2">
+                <h3 className="text-lg md:text-xl font-black leading-tight uppercase italic tracking-tighter mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-neon-blue group-hover:to-neon-pink transition-all duration-500 line-clamp-2">
                     {post.title}
                 </h3>
                 
@@ -332,74 +332,50 @@ const ConcertZoneBlog = () => {
             </nav>
 
             {/* ═══ MAGAZINE LAYOUT ═══ */}
-            <div className="max-w-[1800px] mx-auto px-6 md:px-16 pt-32 md:pt-40 relative z-10">
+            <div className="max-w-[1800px] mx-auto px-4 md:px-16 pt-32 md:pt-40 relative z-10 overflow-x-hidden">
                 
 
 
                 {/* Redesigned High-Fidelity Masthead */}
-                <header className="mb-32 relative">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative flex flex-col items-start group"
-                    >
-                        {/* Ambient Aura Background */}
-                        <div className="absolute -inset-x-20 -inset-y-40 bg-gradient-to-br from-neon-blue/5 via-transparent to-neon-pink/5 blur-[120px] rounded-full pointer-events-none opacity-50" />
-                        
-                        {/* Category/Context Line */}
-                        <div className="flex items-center gap-4 mb-6 pl-2">
-                            <motion.div 
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-2 h-2 rounded-full shadow-[0_0_15px_rgba(0,255,255,0.8)]" 
-                                style={{ backgroundColor: layout.accentColor }}
-                            />
-                            <span className="text-[11px] font-black uppercase tracking-[0.6em] text-white/30 italic">
-                                {layout.heroSubtitle.split(' ').map((word, i) => (
-                                    <span key={i} className={word === 'CULTURE.' ? "text-white/60" : ""}>{word}{' '}</span>
-                                ))}
-                            </span>
-                        </div>
-
-                        {/* Layered Hero Title */}
-                        <h1 className="relative text-7xl md:text-8xl lg:text-[11rem] font-black font-heading uppercase tracking-tighter leading-[0.8] italic mb-8 flex flex-col lg:flex-row items-start lg:items-baseline select-none">
-                            <span className="relative text-white group-hover:text-neon-blue/90 transition-all duration-700 z-10">
-                                CONCERT
-                                {/* Depth Glow Overlay */}
-                                <span className="absolute inset-0 blur-[20px] opacity-0 group-hover:opacity-30 transition-opacity duration-700 mix-blend-screen" style={{ color: layout.accentColor }}>CONCERT</span>
-                            </span>
-                            <span className="relative lg:ml-6 text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-pink not-italic pb-4">
-                                ZONE.
-                                {/* Metallic Gradient Underline */}
-                                <div className="absolute -bottom-2 left-0 w-full h-[4px] md:h-[6px] bg-gradient-to-r from-neon-blue via-white to-neon-pink opacity-40 blur-[2px] rounded-full" />
-                            </span>
-                        </h1>
-
-                        {/* Technical Metadata Row */}
-                        <div className="flex items-center gap-8 pl-4">
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">{layout.mastheadEst}</span>
-                                <div className="w-[1px] h-3 bg-white/10" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">{layout.mastheadVol}</span>
-                            </div>
-                            <div className="h-[1px] w-32 bg-gradient-to-r from-white/10 to-transparent" />
-                        </div>
-                    </motion.div>
-                </header>
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center md:items-start mb-12 md:mb-20 px-4 w-full"
+                >
+                    <div className="flex items-center gap-4 mb-4 md:mb-6">
+                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
+                    </div>
+                    <h1 className="text-[10vw] xs:text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-tight text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-center md:text-left">
+                        <span>CONCERT</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
+                    </h1>
+                </motion.div>
 
                 {/* Control Bar — Categories + Search Integrated */}
                 <div className="flex flex-col xl:flex-row items-center justify-between gap-8 mb-16">
                     {/* Category Bar — Floating Glass Pill Aesthetic */}
-                    <div className="inline-flex items-center p-1.5 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-full overflow-hidden">
-                        {CATEGORIES.map(cat => (
-                            <button key={cat.id} onClick={() => handleCategoryChange(cat.id)}
-                                className={cn("flex items-center gap-2.5 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                                    activeCategory === cat.id ? "bg-white text-black shadow-[0_10px_25px_rgba(255,255,255,0.2)]" : "text-gray-500 hover:text-white hover:bg-white/5"
-                                )}>
-                                <cat.icon size={14} className={activeCategory === cat.id ? "text-black" : "text-neon-blue/50"} />
-                                {cat.label}
-                            </button>
-                        ))}
+                    <div className="flex-1 overflow-hidden relative group w-full">
+                        {/* Fade Edges for Scroll Suggestion */}
+                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+                        
+                        <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar pb-6 -mb-6 px-4 md:px-0 scroll-smooth">
+                            {CATEGORIES.map((cat) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => handleCategoryChange(cat.id)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0",
+                                        activeCategory === cat.id 
+                                            ? "bg-white text-black border-white shadow-[0_10px_30px_rgba(255,255,255,0.2)]" 
+                                            : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white"
+                                    )}
+                                >
+                                    <cat.icon size={12} className={cn("hidden xs:block md:size-[14px]", activeCategory === cat.id ? "text-black" : "text-neon-blue/60")} />
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="relative group flex-1 max-w-md w-full">
@@ -464,7 +440,7 @@ const ConcertZoneBlog = () => {
                                             <motion.h2 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="text-4xl md:text-7xl font-black font-heading uppercase tracking-tighter leading-[0.85] mb-6 italic group-hover:translate-x-4 transition-transform duration-700"
+                                                className="text-4xl md:text-7xl font-black font-heading uppercase tracking-tighter leading-[0.9] mb-6 italic group-hover:translate-x-4 transition-transform duration-700"
                                             >
                                                 {leadPost.title.split(' ').map((word, i) => (
                                                     <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white not-italic" : "text-white"}>
@@ -472,7 +448,7 @@ const ConcertZoneBlog = () => {
                                                     </span>
                                                 ))}
                                             </motion.h2>
-                                            <p className="text-gray-300 text-lg font-medium max-w-2xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
+                                            <p className="text-gray-300 text-sm md:text-lg font-medium max-w-2xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
                                             <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/30">
                                                 <span className="flex items-center gap-2"><User size={12} className="text-neon-blue" /> {leadPost.author || 'NEWBI TEAM'}</span>
                                                 <div className="w-1 h-1 rounded-full bg-white/20" />
@@ -514,24 +490,37 @@ const ConcertZoneBlog = () => {
                 {/* ═══ GRID SECTION ═══ */}
                 {gridPosts.length > 0 && (
                     <section className="mb-20">
-                        <div className="flex items-center gap-3 mb-8">
+                        <div className="flex items-center gap-3 mb-8 px-6 md:px-0">
                             <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">MORE STORIES</span>
                             <div className="flex-1 h-[1px] bg-white/5" />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                            <AnimatePresence mode="popLayout">
-                                {gridPosts.slice(0, visibleCount).map((post, index) => (
-                                    <motion.div key={post.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
-                                        <StoryCard post={post} />
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                        <div className="relative group">
+                            {/* Mobile Scroll Indicators */}
+                            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#060606] via-[#060606]/80 to-transparent z-20 pointer-events-none md:hidden" />
+
+                            <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar lg:grid lg:grid-cols-3 gap-6 md:gap-10 px-0 pb-12 -mb-8 snap-x snap-mandatory scroll-smooth w-full">
+                                <AnimatePresence mode="popLayout">
+                                    {gridPosts.slice(0, visibleCount).map((post, index) => (
+                                        <motion.div 
+                                            key={post.id} 
+                                            layout 
+                                            initial={{ opacity: 0, y: 10 }} 
+                                            animate={{ opacity: 1, y: 0 }} 
+                                            transition={{ delay: index * 0.04 }}
+                                            className="min-w-[70%] sm:min-w-[280px] lg:min-w-0 snap-start shrink-0"
+                                        >
+                                            <StoryCard post={post} />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
                         </div>
 
                         {gridPosts.length > visibleCount && (
-                            <div className="flex justify-center pt-12">
+                            <div className="flex justify-center pt-12 md:flex hidden">
                                 <button onClick={() => setVisibleCount(prev => prev + 6)}
                                     className="h-10 px-6 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-wider text-[10px] hover:bg-white/10 transition-all rounded-lg flex items-center gap-2">
                                     Load More <ArrowRight size={12} />

@@ -23,7 +23,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="relative group w-full h-[650px] md:h-[850px] rounded-[4rem] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
+                className="relative group w-full h-[550px] md:h-[850px] rounded-[3rem] md:rounded-[4rem] overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.6)]"
             >
                 <Link to={detailPath} className="block w-full h-full">
                     {post.videoUrl ? (
@@ -45,15 +45,15 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
                     
                     {/* Immersive Badge System */}
-                    <div className="absolute top-10 left-10 md:top-16 md:left-16 flex items-center gap-6">
+                    <div className="absolute top-8 left-8 md:top-16 md:left-16 flex flex-wrap items-center gap-4 md:gap-6">
                         <span 
-                            className="px-8 py-3 text-black text-[14px] font-black uppercase tracking-[0.2em] rounded-2xl italic"
+                            className="px-6 md:px-8 py-2 md:py-3 text-black text-[11px] md:text-[14px] font-black uppercase tracking-[0.2em] rounded-xl md:rounded-2xl italic"
                             style={{ backgroundColor: accentColor, boxShadow: `0 20px 40px ${accentColor}66` }}
                         >
                             {post.category}
                         </span>
-                        <div className="flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em]">
-                            <Clock size={16} style={{ color: accentColor }} /> {post.readingTime || 5} MIN
+                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
+                            <Clock size={14} className="md:size-[16px]" style={{ color: accentColor }} /> {post.readingTime || 5} MIN
                         </div>
                     </div>
 
@@ -63,26 +63,26 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                                 initial={{ opacity: 0, x: -30 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="text-6xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase leading-[0.8] tracking-tighter italic transition-all duration-700"
+                                className="text-4xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase leading-[1] md:leading-[0.8] tracking-tighter italic transition-all duration-700"
                                 style={{ 
                                     '--hover-color': accentColor 
                                 }}
                             >
                                 {post.title}
                             </motion.h2>
-                            <p className="text-gray-300 text-xl md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed">
+                            <p className="text-gray-300 text-base md:text-2xl font-medium max-w-3xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity duration-500 leading-relaxed italic">
                                 {post.shortDescription}
                             </p>
-                            <div className="flex flex-wrap items-center gap-10 text-[13px] font-black uppercase tracking-[0.4em] text-white/40">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                        <User size={20} />
+                            <div className="flex flex-wrap items-center gap-6 md:gap-10 text-[11px] md:text-[13px] font-black uppercase tracking-[0.4em] text-white/40">
+                                <div className="flex items-center gap-3 md:gap-4">
+                                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <User size={16} className="md:size-[20px]" />
                                     </div>
-                                    <span>{post.author || 'NEWBI TEAM'}</span>
+                                    <span className="text-[10px] md:text-[13px]">{post.author || 'NEWBI TEAM'}</span>
                                 </div>
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
-                                <div className="flex items-center gap-3">
-                                    <Calendar size={18} /> {new Date(post.publishDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                <div className="hidden xs:block w-1 h-1 md:w-2 md:h-2 rounded-full" style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
+                                <div className="flex items-center gap-2 md:gap-3">
+                                    <Calendar size={14} className="md:size-[18px]" /> <span className="text-[10px] md:text-[13px]">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
                             </div>
                         </div>
@@ -136,32 +136,32 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             </div>
                         )}
                     </div>
-                    <div className="p-10 md:p-14 flex flex-col flex-grow">
-                        <div className="flex items-center gap-5 text-gray-500 text-[11px] font-black uppercase tracking-[0.4em] mb-6">
-                            <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Clock size={14} /> {post.readingTime || 5} MIN</div>
-                            <div className="w-[1px] h-4 bg-white/10" />
+                    <div className="p-8 md:p-14 flex flex-col flex-grow">
+                        <div className="flex items-center gap-4 md:gap-5 text-gray-500 text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] mb-4 md:mb-6">
+                            <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Clock size={12} className="md:size-[14px]" /> {post.readingTime || 5} MIN</div>
+                            <div className="w-[1px] h-3 md:h-4 bg-white/10" />
                             <div>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
-                        <h3 className="text-4xl md:text-5xl font-black font-heading uppercase leading-[0.9] tracking-tighter mb-6 group-hover:text-neon-blue transition-colors line-clamp-3 italic">
+                        <h3 className="text-3xl md:text-5xl font-black font-heading uppercase leading-[1] md:leading-[0.9] tracking-tighter mb-4 md:mb-6 group-hover:text-neon-blue transition-colors line-clamp-3 italic">
                             {post.title}
                         </h3>
-                        <p className="text-gray-400 text-base font-medium line-clamp-2 mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed">
+                        <p className="text-gray-400 text-sm md:text-base font-medium line-clamp-2 mb-8 md:mb-10 opacity-60 group-hover:opacity-100 transition-opacity leading-relaxed italic">
                             {post.shortDescription}
                         </p>
-                        <div className="flex items-center justify-between mt-auto pt-8 border-t border-white/5">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                    <User size={16} className="text-gray-400" />
+                        <div className="flex items-center justify-between mt-auto pt-6 md:pt-8 border-t border-white/5">
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <User size={14} className="text-gray-400 md:size-[16px]" />
                                 </div>
-                                <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                                <span className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-gray-500">
                                     {post.author || 'NEWBI TEAM'}
                                 </span>
                             </div>
                             <div 
-                                className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
+                                className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-white/10 flex items-center justify-center transition-all duration-500 group-hover:text-black"
                                 style={{ '--hover-bg': accentColor }}
                             >
-                                <ArrowUpRight size={20} />
+                                <ArrowUpRight size={18} className="md:size-[20px]" />
                             </div>
                         </div>
                     </div>
@@ -221,17 +221,17 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 viewport={{ once: true }}
                 className="group relative"
             >
-                <Link to={detailPath} className="flex gap-8 items-center p-6 bg-white/[0.02] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
-                    <div className="w-28 h-28 shrink-0 rounded-[2rem] overflow-hidden border border-white/10 shadow-lg">
+                <Link to={detailPath} className="flex gap-4 md:gap-8 items-center p-4 md:p-6 bg-white/[0.02] border border-white/5 rounded-2xl md:rounded-[2.5rem] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-500">
+                    <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl md:rounded-[2rem] overflow-hidden border border-white/10 shadow-lg">
                         <img src={post.coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
                     </div>
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-4">
-                            <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: accentColor }}>{post.category}</span>
-                            <div className="w-1 h-1 rounded-full bg-white/10" />
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{post.readingTime || 5} MIN</span>
+                    <div className="flex flex-col gap-2 md:gap-3 overflow-hidden">
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] whitespace-nowrap" style={{ color: accentColor }}>{post.category}</span>
+                            <div className="w-1 h-1 rounded-full bg-white/10 hidden md:block" />
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">{post.readingTime || 5} MIN</span>
                         </div>
-                        <h4 className="text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter group-hover:text-white" style={{ '--hover-text': accentColor }}>
+                        <h4 className="text-lg md:text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter group-hover:text-white" style={{ '--hover-text': accentColor }}>
                             {post.title}
                         </h4>
                     </div>
