@@ -17,6 +17,7 @@ import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Loader from 'lucide-react/dist/esm/icons/loader';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Star from 'lucide-react/dist/esm/icons/star';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -126,6 +127,13 @@ const FormBuilder = () => {
                     ...formData,
                     createdAt: new Date().toISOString()
                 });
+                await notifyAllUsers(
+                    `NEW FORM: ${formData.title.toUpperCase()}`,
+                    `Please take a moment to review and complete our latest form.`,
+                    '/forms',
+                    formData.image,
+                    true // sendEmail
+                );
             }
             navigate('/admin/forms');
             useStore.getState().addToast(`Form ${id ? 'updated' : 'created'} successfully!`, 'success');

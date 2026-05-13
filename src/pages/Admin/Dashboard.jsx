@@ -42,7 +42,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
 import { cn } from '../../lib/utils';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import GlobalLoader from '../../components/ui/GlobalLoader';
 import artistantLogo from '../../assets/logo/artistant.png';
 
 // --- Helper Components & Utilities ---
@@ -331,11 +331,7 @@ const Dashboard = () => {
         },
     ];
 
-    if (authLoading) return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
-            <LoadingSpinner size="lg" color="#2bd93e" />
-        </div>
-    );
+    if (authLoading) return <GlobalLoader color="#00F0FF" />;
 
     if (!user) return <AuthSection email={email} setEmail={setEmail} password={password} setPassword={setPassword} isResetting={isResetting} setIsResetting={setIsResetting} isRegistering={isRegistering} setIsRegistering={setIsRegistering} handleLogin={handleLogin} />;
 

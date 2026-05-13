@@ -30,6 +30,7 @@ import Music from 'lucide-react/dist/esm/icons/music';
 import MapIcon from 'lucide-react/dist/esm/icons/map';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import VideoIcon from 'lucide-react/dist/esm/icons/video';
+import Pin from 'lucide-react/dist/esm/icons/pin';
 
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
@@ -53,7 +54,7 @@ const UpcomingEventsManager = () => {
         upcomingEvents, addUpcomingEvent, updateUpcomingEvent, 
         deleteUpcomingEvent, updateUpcomingEventOrder, siteSettings, 
         toggleUpcomingSectionVisibility, portfolioCategories, addNotification,
-        volunteerGigs, campaigns, forms 
+        volunteerGigs, campaigns, forms, togglePinUpcomingEvent
     } = useStore();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -239,6 +240,13 @@ const UpcomingEventsManager = () => {
                 await updateUpcomingEvent(editingId, eventData);
             } else {
                 await addUpcomingEvent(eventData, newEvent.alsoPostToAnnouncements);
+                await notifyAllUsers(
+                    `NEW EVENT: ${eventData.title.toUpperCase()}`,
+                    `${eventData.date} @ ${eventData.location}`,
+                    '/events',
+                    eventData.image,
+                    true // sendEmail
+                );
             }
             resetForm();
         } catch (error) {
@@ -1133,6 +1141,19 @@ const UpcomingEventsManager = () => {
                                                 >
                                                     <Mail size={15} />
                                                 </button>
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm(`Resend notification for "${item.title}"?`)) {
+                                                            await notifyAllUsers(`NEW EVENT: ${item.title.toUpperCase()}`, `${item.date} @ ${item.location}`, '/events', item.image, true);
+                                                            useStore.getState().addToast("Notification sent successfully!", 'success');
+                                                        }
+                                                    }}
+                                                    className="w-9 h-9 rounded-xl bg-neon-pink/20 backdrop-blur-md border border-neon-pink/30 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"
+                                                    title="Push Signal"
+                                                >
+                                                    <Sparkles size={15} />
+                                                </button>
                                                 <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
                                                     className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all">
                                                     <Edit size={15} />
@@ -1143,6 +1164,16 @@ const UpcomingEventsManager = () => {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* PIN Indicator */}
+                                        {item.isPinned && (
+                                            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30">
+                                                <div className="px-3 py-1.5 rounded-full bg-neon-blue/20 backdrop-blur-md border border-neon-blue/40 flex items-center gap-2">
+                                                    <Pin size={10} className="text-neon-blue fill-current" />
+                                                    <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Anchored</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Content Body */}
                                         <div className="flex-1 flex flex-col px-1">
@@ -1193,6 +1224,16 @@ const UpcomingEventsManager = () => {
                                                             <Sparkles size={12} />
                                                         </div>
                                                     )}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); togglePinUpcomingEvent(item.id); }}
+                                                        className={cn(
+                                                            "p-2 rounded-lg transition-all ml-1",
+                                                            item.isPinned ? "text-neon-blue" : "text-white/20 hover:text-white"
+                                                        )}
+                                                        title={item.isPinned ? "Unpin Event" : "Pin to Website"}
+                                                    >
+                                                        <Pin size={14} className={item.isPinned ? "fill-current" : ""} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

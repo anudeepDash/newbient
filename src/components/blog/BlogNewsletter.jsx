@@ -3,6 +3,26 @@ import { motion } from 'framer-motion';
 import { Mail, Send, Loader2 } from 'lucide-react';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useStore } from '../../lib/store';
+import WeeklyLogo from './WeeklyLogo';
+
+const TribeBadge = ({ className = "" }) => (
+    <div className={`flex items-center gap-4 ${className}`}>
+        <div className="flex -space-x-3">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-black bg-zinc-800 overflow-hidden shadow-xl ring-1 ring-white/5">
+                    <img src={`https://i.pravatar.cc/150?u=${i + 40}`} alt="" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all" />
+                </div>
+            ))}
+            <div className="w-8 h-8 rounded-full border-2 border-black bg-white flex items-center justify-center text-[8px] font-black text-black shadow-lg">
+                +12K
+            </div>
+        </div>
+        <div className="flex flex-col">
+            <span className="text-[10px] font-black text-white uppercase tracking-tighter italic leading-tight">12.4K+ TRIBE READERS</span>
+            <span className="text-[7px] font-black text-neon-blue/40 uppercase tracking-[0.3em]">JOIN THE INFRASTRUCTURE</span>
+        </div>
+    </div>
+);
 
 const BlogNewsletter = () => {
     const [email, setEmail] = useState('');
@@ -41,79 +61,76 @@ const BlogNewsletter = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none group-hover:bg-neon-blue/10 transition-all duration-500" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-neon-pink/5 blur-[100px] -ml-32 -mb-32 pointer-events-none group-hover:bg-neon-pink/10 transition-all duration-500" />
 
-            <div className="relative z-10 max-w-2xl mx-auto text-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-6"
-                >
-                    <Mail size={16} className="text-neon-blue" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Join the Movement</span>
-                </motion.div>
-
-                <h2 className="text-3xl md:text-5xl font-black font-heading tracking-tight uppercase mb-4">
-                    THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-pink">PULSE</span> NEWSLETTER.
-                </h2>
-                <p className="text-gray-400 text-lg font-medium mb-10">
-                    Get the latest concert news, artist interviews, and exclusive access directly in your inbox.
+            <div className="relative z-10 text-left">
+                <div className="flex flex-col mb-8">
+                    <span className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em] mb-4">STAY UPDATED</span>
+                    <WeeklyLogo />
+                </div>
+                <p className="text-gray-400 text-sm font-medium mb-12 leading-relaxed max-w-lg opacity-70">
+                    Your weekly dose of nightlife culture, artist stories, and behind-the-scenes blueprints. Stay ahead of the beat with the definitive music industry briefing.
                 </p>
+
+                <TribeBadge className="mb-12" />
 
                 {isSuccess ? (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center gap-4 py-6"
+                        className="flex flex-col items-center gap-6 py-8"
                     >
-                        <div className="w-16 h-16 rounded-full bg-neon-green/20 flex items-center justify-center border border-neon-green/30">
+                        <div className="w-20 h-20 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
                             <CheckCircle2 size={32} className="text-neon-green" />
                         </div>
-                        <p className="text-xl font-bold">You're on the list!</p>
+                        <div className="text-center">
+                            <p className="text-2xl font-black font-heading uppercase italic tracking-tighter mb-2">YOU'RE IN.</p>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Check your email for confirmation</p>
+                        </div>
                         <button 
                             onClick={() => setIsSuccess(false)}
-                            className="text-neon-blue text-sm font-black uppercase tracking-widest hover:underline"
+                            className="text-neon-blue text-[9px] font-black uppercase tracking-[0.4em] hover:opacity-80 transition-opacity"
                         >
-                            Subscribe another email
+                            // ADD ANOTHER EMAIL
                         </button>
                     </motion.div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-grow group/input relative">
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div className="md:col-span-5 group/input relative">
                                 <input
                                     type="text"
-                                    placeholder="Your Name (Optional)"
+                                    placeholder="YOUR NAME"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/50 transition-all"
+                                    className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-xl px-6 font-black text-[10px] uppercase tracking-[0.2em] text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
                                 />
                             </div>
-                            <div className="flex-grow group/input relative">
+                            <div className="md:col-span-5 group/input relative">
                                 <input
                                     type="email"
                                     required
-                                    placeholder="Email Address"
+                                    placeholder="EMAIL ADDRESS"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 font-medium text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/50 transition-all"
+                                    className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-xl px-6 font-black text-[10px] uppercase tracking-[0.2em] text-white placeholder:text-white/20 focus:outline-none focus:border-neon-blue/40 transition-all"
                                 />
                             </div>
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="h-14 px-10 bg-white text-black font-black font-heading uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                            >
-                                {isSubmitting ? (
-                                    <Loader2 className="animate-spin" size={20} />
-                                ) : (
-                                    <>
-                                        Subscribe <Send size={18} />
-                                    </>
-                                )}
-                            </button>
+                            <div className="md:col-span-2">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="w-full h-14 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center shadow-xl group/btn"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        <Send size={20} className="group-hover:translate-x-1 transition-transform" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
-                        {error && <p className="text-neon-pink text-xs font-bold uppercase tracking-wider mt-2">{error}</p>}
-                        <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-medium">
-                            NO SPAM. JUST PURE VIBES. UNFOLLOW ANYTIME.
+                        {error && <p className="text-neon-pink text-[10px] font-black uppercase tracking-[0.2em] mt-2">{error}</p>}
+                        <p className="text-gray-600 text-[9px] uppercase tracking-[0.4em] font-black opacity-40 text-left">
+                            NO SPAM // PURE UPDATES // SECURE
                         </p>
                     </form>
                 )}

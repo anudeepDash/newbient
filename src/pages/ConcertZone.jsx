@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import Music from 'lucide-react/dist/esm/icons/music';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Zap from 'lucide-react/dist/esm/icons/zap';
+import Home from 'lucide-react/dist/esm/icons/home';
+import { Link } from 'react-router-dom';
 
 const ConcertZone = () => {
     useEffect(() => {
@@ -22,6 +24,14 @@ const ConcertZone = () => {
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/6 rounded-full blur-[150px] animate-pulse" />
                 <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-purple-600/6 rounded-full blur-[150px] animate-pulse delay-1000" />
+            </div>
+
+            {/* Floating Back to newbi.live */}
+            <div className="fixed top-14 left-5 md:top-16 md:left-8 z-[150]">
+                <Link to="/" className="flex items-center gap-3 md:gap-4 px-4 py-3 md:px-6 md:py-4 bg-black/60 hover:bg-black/80 border border-white/10 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl transition-all shadow-[0_15px_40px_rgba(0,0,0,0.6)] group">
+                    <Home size={16} className="text-neon-blue group-hover:scale-110 transition-transform" />
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400 group-hover:text-white transition-colors">Back to newbi.live</span>
+                </Link>
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto">

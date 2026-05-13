@@ -14,7 +14,6 @@ import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
 import UserCheck from 'lucide-react/dist/esm/icons/user-check';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../../lib/firebase';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -532,7 +531,7 @@ const AdminManager = () => {
                                                                     <>
                                                                         <button onClick={async () => {
                                                                             if (window.confirm(`Reset credentials for ${admin.email}?`)) {
-                                                                                await sendPasswordResetEmail(auth, admin.email);
+                                                                                await useStore.getState().resetPassword(admin.email);
                                                                                 useStore.getState().addToast("Password reset email sent!", 'success');
                                                                             }
                                                                         }} className="p-3 bg-white/5 rounded-xl text-gray-500 hover:text-neon-blue transition-all" title="Reset Credentials"><Shield size={16} /></button>

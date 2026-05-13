@@ -11,7 +11,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized: Valid Firebase ID Token required' });
     }
 
-    const { to, subject, text, html, attachments } = req.body;
+    const { to, bcc, subject, text, html, attachments } = req.body;
 
     if (!to || !subject || (!text && !html)) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -34,6 +34,7 @@ export default async function handler(req, res) {
         const info = await transporter.sendMail({
             from: `"Newbi Support" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
             to,
+            bcc,
             subject,
             text,
             html,

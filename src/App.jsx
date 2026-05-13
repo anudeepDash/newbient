@@ -1,12 +1,13 @@
 import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import ScrollToTop from './components/ScrollToTop';
 import { useStore } from './lib/store'; 
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { requestNotificationPermission, initForegroundMessaging } from './lib/notifications';
 import Layout from './components/Layout';
-import LoadingSpinner from './components/ui/LoadingSpinner';
+import GlobalLoader from './components/ui/GlobalLoader';
 
 import Home from './pages/Home';
 import ConcertZone from './pages/ConcertZone';
@@ -45,6 +46,7 @@ const ActionHandler = lazy(() => import('./pages/Auth/ActionHandler'));
 const ConcertZoneBlog = lazy(() => import('./pages/ConcertZoneBlog'));
 const BlogPostDetail = lazy(() => import('./pages/BlogPostDetail'));
 const BlogManager = lazy(() => import('./pages/Admin/BlogManager'));
+const ConcertZoneStudio = lazy(() => import('./pages/Admin/ConcertZoneStudio'));
 const BlogPostEditor = lazy(() => import('./pages/Admin/BlogPostEditor'));
 const CampaignPublicView = lazy(() => import('./pages/CampaignPublicView'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
@@ -63,15 +65,20 @@ const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
 import AuthOverlay from './components/auth/AuthOverlay';
 import AdminGuard from './components/AdminGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
-import NeuralToast from './components/ui/NeuralToast';
+import NewbiToast from './components/ui/NewbiToast';
 
-
-
-function App() {
+function AppContent() {
   const { subscribeToData, subscribeToNotifications, checkUserRole, loading, authInitialized } = useStore();
+  const location = useLocation();
 
+  const getColorByPath = (path) => {
+    if (path.startsWith('/admin')) return '#00F0FF'; // Neon Blue
+    if (path.startsWith('/concertzone')) return '#FF4F8B'; // Neon Pink
+    if (path.startsWith('/artistant')) return '#A855F7'; // Neon Purple
+    return '#39FF14'; // Neon Green
+  };
 
-
+  const currentColor = getColorByPath(location.pathname);
 
   useEffect(() => {
     const unsubscribeData = subscribeToData();
@@ -94,21 +101,18 @@ function App() {
     };
   }, [subscribeToData, subscribeToNotifications]);
 
-    return (
-    <Router>
-
+  return (
+    <>
       <ScrollToTop />
-      <Suspense fallback={
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
-          <LoadingSpinner size="lg" color="#2bd93e" />
-          <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Initializing Interface...</p>
-        </div>
-      }>
+      
+      <AnimatePresence mode="wait">
+        {loading && <GlobalLoader key="global-loader" color={currentColor} />}
+      </AnimatePresence>
+
+      <Suspense fallback={<GlobalLoader color={currentColor} />}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<MaintenanceGuard isPage featureId="home"><Home /></MaintenanceGuard>} />
-
-            <Route path="concertzone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZone /></MaintenanceGuard>} />
             <Route path="contact" element={<MaintenanceGuard isPage featureId="contact"><Contact /></MaintenanceGuard>} />
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="proposal/:id" element={<MaintenanceGuard isPage featureId="docs"><Proposal /></MaintenanceGuard>} />
@@ -120,16 +124,13 @@ function App() {
             <Route path="giveaway/:slug" element={<MaintenanceGuard isPage featureId="giveaways_public"><GiveawayPage /></MaintenanceGuard>} />
             <Route path="ticket/:id" element={<MaintenanceGuard isPage featureId="ticketing"><DigitalTicket /></MaintenanceGuard>} />
             
-            {/* Concert Zone Media System */}
-            <Route path="concert-zone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
-            <Route path="concert-zone/:category" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
-            <Route path="concert-zone/:category/:slug" element={<MaintenanceGuard isPage featureId="concerts"><BlogPostDetail /></MaintenanceGuard>} />
+            <Route path="concertzone" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
+            <Route path="concertzone/:category" element={<MaintenanceGuard isPage featureId="concerts"><ConcertZoneBlog /></MaintenanceGuard>} />
+            <Route path="concertzone/:category/:slug" element={<MaintenanceGuard isPage featureId="concerts"><BlogPostDetail /></MaintenanceGuard>} />
             <Route path="artistant" element={<MaintenanceGuard isPage featureId="artistant_public"><ArtistAnt /></MaintenanceGuard>} />
             <Route path="terms" element={<Terms />} />
             <Route path="privacy" element={<Privacy />} />
 
-
-            {/* Admin Routes wrapped in AdminGuard */}
             <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
             <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
             <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
@@ -147,9 +148,7 @@ function App() {
             <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
 
-
             <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
-
             <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/forms/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/artists" element={<AdminGuard><MaintenanceGuard featureId="artists"><ArtistManager /></MaintenanceGuard></AdminGuard>} />
@@ -162,22 +161,28 @@ function App() {
             <Route path="admin/campaigns" element={<AdminGuard><MaintenanceGuard featureId="influencer"><CreatorHub /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/giveaways" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/giveaways/:giveawayId/participants" element={<AdminGuard><MaintenanceGuard featureId="giveaways"><GiveawayParticipants /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogManager /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/blog" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
-            {/* Auth Action Handler (Password Reset, Email Verify, etc.) */}
             <Route path="auth/action" element={<ActionHandler />} />
           </Route>
         </Routes>
       </Suspense>
       <AuthOverlay />
-      <NeuralToast />
-    </Router>
+      <NewbiToast />
+    </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}

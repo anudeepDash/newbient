@@ -25,6 +25,7 @@ import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import Star from 'lucide-react/dist/esm/icons/star';
+import { notifyAllUsers } from '../../lib/notificationTriggers';
 
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -137,6 +138,13 @@ const GuestlistManager = () => {
                 await updateGuestlist(editingId, glData);
             } else {
                 await addGuestlist(glData);
+                await notifyAllUsers(
+                    `GUESTLIST OPEN: ${glData.title.toUpperCase()}`,
+                    `Secure your spot for ${glData.title} at ${glData.location}. Limited slots available!`,
+                    '/guestlists',
+                    glData.image,
+                    true // sendEmail
+                );
             }
             useStore.getState().addToast(`Guestlist ${editingId ? 'updated' : 'created'} successfully!`, 'success');
             resetForm();

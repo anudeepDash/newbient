@@ -3,24 +3,24 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
-import LoadingSpinner from './ui/LoadingSpinner';
+import GlobalLoader from './ui/GlobalLoader';
 
 const AdminGuard = ({ children }) => {
     const { user, authInitialized, setAuthModal } = useStore();
     const location = useLocation();
 
-    // Remove automatic modal trigger to prevent it from "keeping on coming" 
-    // especially with fast state retrieval where user might be null for a split second
-    // or when the user explicitly closed it.
+    const getColorByPath = (path) => {
+        if (path.startsWith('/admin')) return '#00F0FF';
+        if (path.startsWith('/concertzone')) return '#FF4F8B';
+        if (path.startsWith('/artistant')) return '#A855F7';
+        return '#39FF14';
+    };
 
     if (!authInitialized) {
-        return (
-            <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
-                <LoadingSpinner size="lg" color="#2bd93e" />
-                <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Authenticating Authority...</p>
-            </div>
-        );
+        return <GlobalLoader color={getColorByPath(location.pathname)} />;
     }
+
+
 
     if (!user || (user.role !== 'super_admin' && user.role !== 'developer' && user.role !== 'editor' && user.role !== 'scanner')) {
         return (
