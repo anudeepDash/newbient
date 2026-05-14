@@ -321,6 +321,7 @@ export const generateWeeklyHTML = (data) => {
                     .responsive-px { padding-left: 15px !important; padding-right: 15px !important; }
                     .mobile-px-15 { padding-left: 15px !important; padding-right: 15px !important; }
                     .mobile-px-10 { padding-left: 10px !important; padding-right: 10px !important; }
+                    .mobile-mx-10 { margin-left: 10px !important; margin-right: 10px !important; }
                     .mobile-stack { display: flex !important; gap: 15px !important; }
                     .mobile-w-full { width: 80px !important; height: 80px !important; }
                 }
