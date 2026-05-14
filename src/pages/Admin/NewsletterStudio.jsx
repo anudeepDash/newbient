@@ -52,7 +52,7 @@ const NewsletterStudio = () => {
         const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
 
         const innerContent = `
-            <div style="margin-bottom: 40px; padding: 20px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-bottom: 1px solid ${borderColor};">
+            <div class="mobile-px-15" style="margin-bottom: 40px; padding: 20px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-bottom: 1px solid ${borderColor};">
                 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
                     <h3 style="font-size: 11px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 5px; margin: 0;">THE BRIEFING</h3>
                     <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};"></div>
@@ -65,8 +65,8 @@ const NewsletterStudio = () => {
                 ` : ''}
                 
                 ${otherPosts.map(post => `
-                    <div style="display: flex; gap: 30px; margin-bottom: 40px; align-items: flex-start;">
-                        <div style="width: 100px; height: 100px; border-radius: 2px; overflow: hidden; flex-shrink: 0; background: #111;">
+                    <div class="mobile-stack" style="display: flex; gap: 30px; margin-bottom: 40px; align-items: flex-start;">
+                        <div class="mobile-w-full" style="width: 100px; height: 100px; border-radius: 2px; overflow: hidden; flex-shrink: 0; background: #111;">
                             <img src="${post.coverImage}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.8)' : 'none'};" />
                         </div>
                         <div style="flex: 1;">
@@ -79,7 +79,7 @@ const NewsletterStudio = () => {
             </div>
 
             ${mainPost ? `
-                <div style="margin-bottom: 80px; padding: 40px;">
+                <div class="mobile-px-15" style="margin-bottom: 80px; padding: 40px;">
                     <div style="position: relative; margin-bottom: 35px;">
                         <img src="${mainPost.coverImage}" style="width: 100%; border-radius: 2px; display: block; filter: ${isDark ? 'brightness(0.9)' : 'none'};" />
                         <div style="position: absolute; bottom: -15px; left: 0;">
@@ -95,7 +95,7 @@ const NewsletterStudio = () => {
             ` : ''}
 
             ${commercialContent ? `
-                <div style="padding: 60px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                <div class="mobile-px-15" style="padding: 60px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-top: 1px solid ${borderColor}; text-align: center;">
                     <div style="font-size: 8px; font-weight: 950; color: ${isDark ? '#333' : '#ccc'}; text-transform: uppercase; letter-spacing: 5px; margin-bottom: 30px;">COMMERCIAL INTEGRATION</div>
                     <div style="font-size: 14px; line-height: 1.8; color: ${isDark ? '#888' : '#666'}; font-style: italic; max-width: 500px; margin: 0 auto;">
                         ${commercialContent}
@@ -381,7 +381,7 @@ const NewsletterStudio = () => {
 
                             <div className={cn(
                                 "mx-auto transition-all duration-500 rounded-[3rem] overflow-hidden border border-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.5)]",
-                                viewMode === 'mobile' ? "max-w-[320px]" : "w-full",
+                                viewMode === 'mobile' ? "max-w-[375px]" : "w-full",
                                 theme === 'dark' ? "bg-black" : "bg-white"
                             )}>
                                 <div className={cn(
