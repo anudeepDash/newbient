@@ -297,7 +297,7 @@ export const generateWeeklyHTML = (data) => {
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
                 .container { max-width: 650px; margin: 0 auto; background-color: ${containerBg}; }
                 .header { padding: 30px 40px 10px; text-align: left; }
-                .header img { max-width: 450px; height: auto; display: block; margin: 0; }
+                .header img { max-width: 450px; height: auto; display: inline-block; margin: 0; }
                 .logo-text { font-size: 72px; font-weight: 900; font-style: italic; color: ${textColor}; letter-spacing: -4px; line-height: 0.85; margin: 0; text-transform: uppercase; }
                 .logo-subtext { font-size: 9px; font-weight: 950; color: ${accent}; letter-spacing: 6px; margin: 8px 0 0 4px; text-transform: uppercase; opacity: 0.9; }
                 .content { padding: 0 0 30px; }
@@ -315,7 +315,7 @@ export const generateWeeklyHTML = (data) => {
 
                 @media screen and (max-width: 600px) {
                     .container { width: 100% !important; }
-                    .header { padding: 25px 15px 10px !important; }
+                    .header { padding: 25px 15px 10px !important; text-align: left !important; }
                     .content { padding: 0 !important; }
                     .footer { padding: 40px 15px !important; }
                     .responsive-px { padding-left: 15px !important; padding-right: 15px !important; }
