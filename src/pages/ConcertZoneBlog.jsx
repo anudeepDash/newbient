@@ -19,14 +19,16 @@ import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
+import AdSenseSlot from '../components/blog/AdSenseSlot';
 
-// Ad Slot placeholder for Google AdSense
-const AdSlot = ({ className = '', format = 'horizontal' }) => (
-    <div className={cn('relative group bg-white/[0.01] border border-dashed border-white/5 rounded-2xl flex items-center justify-center text-gray-800 text-[8px] font-black uppercase tracking-[0.4em] overflow-hidden', format === 'horizontal' ? 'h-24 w-full' : 'h-80 w-full', className)}>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[1500ms]" />
-        {/* Replace with AdSense script: <ins className="adsbygoogle" ... /> */}
-        <span className="relative z-10 opacity-30 group-hover:opacity-60 transition-opacity italic">// SPONSORED SPACE //</span>
-    </div>
+// Ad Slot wrapper
+const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
+    <AdSenseSlot 
+        className={className} 
+        adSlot={slot} 
+        adFormat={format === 'horizontal' ? 'horizontal' : 'auto'}
+        style={{ display: 'block', minHeight: format === 'horizontal' ? '96px' : '280px' }}
+    />
 );
 
 const CATEGORIES = [
@@ -493,7 +495,7 @@ const ConcertZoneBlog = () => {
                 )}
 
                 {/* Ad Slot — Between Sections */}
-                <AdSlot className="my-10" format="horizontal" />
+                <AdSlot className="my-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_TOP} />
 
                 {/* ═══ GRID SECTION ═══ */}
                 {gridPosts.length > 0 && (
@@ -550,7 +552,7 @@ const ConcertZoneBlog = () => {
                 )}
 
                 {/* Ad Slot — Before Newsletter */}
-                <AdSlot className="mb-10" format="horizontal" />
+                <AdSlot className="mb-10" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_HUB_BOTTOM} />
 
                 {/* Newsletter */}
                 <section className="rounded-[3rem] bg-white/[0.01] border border-white/5 p-8 md:p-20 overflow-hidden relative">
