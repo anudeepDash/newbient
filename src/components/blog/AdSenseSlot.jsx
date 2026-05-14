@@ -8,7 +8,7 @@ const AdSenseSlot = ({
     fullWidthResponsive = true,
     style = { display: 'block' }
 }) => {
-    const adClient = import.meta.env.VITE_ADSENSE_CLIENT_ID;
+    const adClient = import.meta.env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-8648872930946692';
 
     useEffect(() => {
         try {
