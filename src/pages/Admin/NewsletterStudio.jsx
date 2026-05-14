@@ -52,7 +52,7 @@ const NewsletterStudio = () => {
         const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
 
         const innerContent = `
-            <div class="mobile-px-15" style="margin-bottom: 40px; padding: 20px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-bottom: 1px solid ${borderColor};">
+            <div class="responsive-px" style="margin-bottom: 40px; padding-top: 20px; padding-bottom: 20px; background: ${isDark ? '#000000' : '#ffffff'}; border-bottom: 1px solid ${borderColor};">
                 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
                     <h3 style="font-size: 11px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 5px; margin: 0;">THE BRIEFING</h3>
                     <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};"></div>
@@ -79,14 +79,14 @@ const NewsletterStudio = () => {
             </div>
 
             ${mainPost ? `
-                <div class="mobile-px-15" style="margin-bottom: 80px; padding: 40px;">
-                    <div style="position: relative; margin-bottom: 35px;">
-                        <img src="${mainPost.coverImage}" style="width: 100%; border-radius: 2px; display: block; filter: ${isDark ? 'brightness(0.9)' : 'none'};" />
-                        <div style="position: absolute; bottom: -15px; left: 0;">
+                <div style="margin-bottom: 80px; background: ${isDark ? '#000000' : '#ffffff'};">
+                    <div style="position: relative;">
+                        <img src="${mainPost.coverImage}" style="width: 100%; display: block; filter: ${isDark ? 'brightness(0.9)' : 'none'};" />
+                        <div style="position: absolute; bottom: 0; left: 0;">
                             <span style="background: ${accent}; padding: 8px 16px; font-size: 10px; font-weight: 950; color: #000; text-transform: uppercase; letter-spacing: 3px;">${mainPost.category || 'FEATURE'}</span>
                         </div>
                     </div>
-                    <div style="padding: 10px 0;">
+                    <div class="responsive-px" style="padding-top: 35px; padding-bottom: 20px;">
                         <h2 style="font-size: 44px; font-weight: 900; margin: 0 0 25px 0; line-height: 0.95; text-transform: uppercase; font-style: italic; letter-spacing: -2px; color: ${isDark ? '#ffffff' : '#000000'} !important;">${mainPost.title}</h2>
                         <p style="font-size: 16px; line-height: 1.8; color: ${isDark ? '#999' : '#000000'} !important; margin-bottom: 40px; font-weight: 400;">${trimDescription(mainPost.shortDescription || mainPost.content || "Experience the latest intelligence from the Concert Zone ecosystem.", 300)}</p>
                         <a href="https://newbi.live/concertzone/${mainPost.category?.toLowerCase().replace(' ', '-')}/${mainPost.slug}" style="display: inline-block; padding: 18px 0; color: ${accent}; text-decoration: none; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: 4px; border-bottom: 3px solid ${accent};">READ FULL NARRATIVE →</a>
@@ -95,7 +95,7 @@ const NewsletterStudio = () => {
             ` : ''}
 
             ${commercialContent ? `
-                <div class="mobile-px-15" style="padding: 60px 40px; background: ${isDark ? '#000000' : '#ffffff'}; border-top: 1px solid ${borderColor}; text-align: center;">
+                <div class="responsive-px" style="padding-top: 60px; padding-bottom: 60px; background: ${isDark ? '#000000' : '#ffffff'}; border-top: 1px solid ${borderColor}; text-align: center;">
                     <div style="font-size: 8px; font-weight: 950; color: ${isDark ? '#333' : '#ccc'}; text-transform: uppercase; letter-spacing: 5px; margin-bottom: 30px;">COMMERCIAL INTEGRATION</div>
                     <div style="font-size: 14px; line-height: 1.8; color: ${isDark ? '#888' : '#666'}; font-style: italic; max-width: 500px; margin: 0 auto;">
                         ${commercialContent}

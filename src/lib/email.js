@@ -300,8 +300,9 @@ export const generateWeeklyHTML = (data) => {
                 .header img { width: 100%; max-width: 450px; height: auto; display: block; }
                 .logo-text { font-size: 72px; font-weight: 900; font-style: italic; color: ${textColor}; letter-spacing: -4px; line-height: 0.85; margin: 0; text-transform: uppercase; }
                 .logo-subtext { font-size: 9px; font-weight: 950; color: ${accent}; letter-spacing: 6px; margin: 8px 0 0 4px; text-transform: uppercase; opacity: 0.9; }
-                .content { padding: 0 40px 30px; }
+                .content { padding: 0 0 30px; }
                 .content p, .content h1, .content h2, .content h3, .content h4, .content div, .content span { color: inherit !important; }
+                .responsive-px { padding-left: 40px !important; padding-right: 40px !important; }
                 .footer { padding: 50px 40px; border-top: 1px solid ${borderColor}; text-align: left; }
                 .footer-text { font-size: 9px; font-weight: 800; color: ${isDark ? '#333' : '#999'}; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
                 .social-links { margin-bottom: 30px; }
@@ -315,8 +316,9 @@ export const generateWeeklyHTML = (data) => {
                 @media screen and (max-width: 600px) {
                     .container { width: 100% !important; }
                     .header { padding: 25px 15px 10px !important; }
-                    .content { padding: 0 0px 30px !important; }
+                    .content { padding: 0 !important; }
                     .footer { padding: 40px 15px !important; }
+                    .responsive-px { padding-left: 15px !important; padding-right: 15px !important; }
                     .mobile-px-15 { padding-left: 15px !important; padding-right: 15px !important; }
                     .mobile-px-10 { padding-left: 10px !important; padding-right: 10px !important; }
                     .mobile-stack { display: flex !important; gap: 15px !important; }
