@@ -19,6 +19,7 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Home from 'lucide-react/dist/esm/icons/home';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
@@ -264,6 +265,13 @@ const BlogPostDetail = () => {
                             <div className="flex flex-col">
                                 <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">PUBLISHED</span>
                                 <span className="text-white text-xs md:text-sm">{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                            <div className="hidden xs:block w-[1px] h-10 md:h-12 bg-white/10" />
+                            <div className="flex flex-col">
+                                <span className="text-[8px] md:text-[10px] text-gray-600 mb-0.5 md:mb-1 tracking-widest">VIEWS</span>
+                                <span className="text-white text-xs md:text-sm flex items-center gap-2">
+                                    <Eye size={14} style={{ color: accentColor }} /> {post.viewCount || 0}
+                                </span>
                             </div>
                         </div>
                     </motion.div>

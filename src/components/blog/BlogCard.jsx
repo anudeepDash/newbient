@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, User, ArrowUpRight, Calendar, Sparkles, Star } from 'lucide-react';
+import { Clock, User, ArrowUpRight, Calendar, Sparkles, Star, Eye } from 'lucide-react';
 
 const CATEGORY_COLORS = {
     'Live Events': '#00ffff', // neon-blue
@@ -54,6 +54,9 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         </span>
                         <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
                             <Clock size={14} className="md:size-[16px]" style={{ color: accentColor }} /> {post.readingTime || 5} MIN
+                        </div>
+                        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em]">
+                            <Eye size={14} className="md:size-[16px]" style={{ color: accentColor }} /> {post.viewCount || 0} VIEWS
                         </div>
                     </div>
 
@@ -140,6 +143,8 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         <div className="flex items-center gap-4 md:gap-5 text-gray-500 text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] mb-4 md:mb-6">
                             <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Clock size={12} className="md:size-[14px]" /> {post.readingTime || 5} MIN</div>
                             <div className="w-[1px] h-3 md:h-4 bg-white/10" />
+                            <div className="flex items-center gap-2 font-black" style={{ color: accentColor }}><Eye size={12} className="md:size-[14px]" /> {post.viewCount || 0}</div>
+                            <div className="w-[1px] h-3 md:h-4 bg-white/10" />
                             <div>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
                         <h3 className="text-3xl md:text-5xl font-black font-heading uppercase leading-[1] md:leading-[0.9] tracking-tighter mb-4 md:mb-6 group-hover:text-neon-blue transition-colors line-clamp-3 italic">
@@ -194,6 +199,8 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         <div className="flex items-center gap-4 text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mb-5">
                             <div className="flex items-center gap-2"><Clock size={12} /> {post.readingTime || 5} MIN</div>
                             <div className="w-1 h-1 rounded-full bg-white/20" />
+                            <div className="flex items-center gap-2"><Eye size={12} /> {post.viewCount || 0}</div>
+                            <div className="w-1 h-1 rounded-full bg-white/20" />
                             <div>{new Date(post.publishDate).toLocaleDateString()}</div>
                         </div>
                         <h3 
@@ -234,7 +241,7 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                         <div className="flex items-center gap-3 md:gap-4">
                             <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] whitespace-nowrap" style={{ color: accentColor }}>{post.category}</span>
                             <div className="w-1 h-1 rounded-full bg-white/10 hidden md:block" />
-                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">{post.readingTime || 5} MIN</span>
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5"><Eye size={10} className="md:size-[12px]" /> {post.viewCount || 0}</span>
                         </div>
                         <h4 
                             className="text-lg md:text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter" 
