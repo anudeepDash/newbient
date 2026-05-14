@@ -291,6 +291,7 @@ export const generateWeeklyHTML = (data) => {
         <html>
         <head>
             <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
@@ -310,6 +311,17 @@ export const generateWeeklyHTML = (data) => {
                 .content p { line-height: 1.8; margin-bottom: 1.5em; }
                 .content a { color: ${accent}; text-decoration: none; font-weight: 700; }
                 .content * { max-width: 100%; }
+
+                @media screen and (max-width: 600px) {
+                    .container { width: 100% !important; }
+                    .header { padding: 25px 15px 10px !important; }
+                    .content { padding: 0 0px 30px !important; }
+                    .footer { padding: 40px 15px !important; }
+                    .mobile-px-15 { padding-left: 15px !important; padding-right: 15px !important; }
+                    .mobile-px-10 { padding-left: 10px !important; padding-right: 10px !important; }
+                    .mobile-stack { display: flex !important; gap: 15px !important; }
+                    .mobile-w-full { width: 80px !important; height: 80px !important; }
+                }
             </style>
         </head>
         <body>
