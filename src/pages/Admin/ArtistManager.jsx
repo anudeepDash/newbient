@@ -45,12 +45,12 @@ import Award from 'lucide-react/dist/esm/icons/award';
 import Layers from 'lucide-react/dist/esm/icons/layers';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import { cn } from '../../lib/utils';
 import StudioSelect from '../../components/ui/StudioSelect';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 const ArtistManager = ({ isEmbedded = false }) => {
     const { artists, upcomingEvents, updateArtist, deleteArtist, castArtistToGig } = useStore();
@@ -114,7 +114,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
         try {
             await updateArtist(id, { profileStatus: newStatus });
             if (selectedArtist && selectedArtist.id === id) {
-                setSelectedArtist({ ...selectedArtist, profileStatus: newStatus });
+                setSelectedArtist(prev => ({ ...prev, profileStatus: newStatus }));
             }
         } catch (error) {
             useStore.getState().addToast("Status update failed.", 'error');
@@ -145,7 +145,6 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
     const handleCastToGig = async (artistId, gigId) => {
         if (!artistId || !gigId) {
-            console.error("Missing IDs for casting:", { artistId, gigId });
             useStore.getState().addToast("Internal Error: Missing Talent or Mission ID", 'error');
             return;
         }
@@ -1143,7 +1142,6 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                         </div>
                         
                         <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4">
                             {upcomingEvents.length === 0 ? (
                                 <div className="p-10 text-center border-2 border-dashed border-white/5 rounded-[3rem] space-y-4">
                                     <Calendar size={32} className="text-gray-800 mx-auto" />

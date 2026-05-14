@@ -1067,7 +1067,7 @@ const UpcomingEventsManager = () => {
                                         initial={{ opacity: 0, scale: 0.92 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.92 }}
-                                        transition={{ duration: 0.4 }}                                         transition={{ duration: 0.4 }}
+                                        transition={{ duration: 0.4 }}
                                         className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 shrink-0 w-[85vw] md:w-auto snap-center"
                                     >
                                         {/* Standardized 16:9 Thumbnail Header */}
