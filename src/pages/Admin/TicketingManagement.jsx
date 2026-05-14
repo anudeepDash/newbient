@@ -126,7 +126,7 @@ const TicketingManagement = () => {
                                         </div>
                                         {event.date && new Date(event.date) < new Date() && (
                                             <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Completed</span>
                                             </div>
                                         )}

@@ -45,6 +45,7 @@ import Award from 'lucide-react/dist/esm/icons/award';
 import Layers from 'lucide-react/dist/esm/icons/layers';
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -64,6 +65,8 @@ const ArtistManager = ({ isEmbedded = false }) => {
     const [viewMode, setViewMode] = useState('grid');
     const [isCastingMode, setIsCastingMode] = useState(false);
     const [showDeleteConfirmId, setShowDeleteConfirmId] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const cities = ['All', ...PREDEFINED_CITIES];
     const categories = ['All', ...ARTIST_CATEGORIES];
@@ -107,6 +110,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
 
     const handleUpdateStatus = async (id, newStatus) => {
+        setIsUpdating(true);
         try {
             await updateArtist(id, { profileStatus: newStatus });
             if (selectedArtist && selectedArtist.id === id) {
@@ -114,10 +118,13 @@ const ArtistManager = ({ isEmbedded = false }) => {
             }
         } catch (error) {
             useStore.getState().addToast("Status update failed.", 'error');
+        } finally {
+            setIsUpdating(false);
         }
     };
 
     const handleDeleteArtist = async (id) => {
+        setIsDeleting(true);
         try {
             await deleteArtist(id);
             setSelectedArtist(null);
@@ -125,6 +132,8 @@ const ArtistManager = ({ isEmbedded = false }) => {
             useStore.getState().addToast("Artist profile deleted successfully.", 'success');
         } catch (error) {
             useStore.getState().addToast("Deletion failed: " + error.message, 'error');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -140,13 +149,16 @@ const ArtistManager = ({ isEmbedded = false }) => {
             useStore.getState().addToast("Internal Error: Missing Talent or Mission ID", 'error');
             return;
         }
+
+        setIsUpdating(true);
         try {
-            console.log(`Initiating casting: Artist[${artistId}] -> Mission[${gigId}]`);
-            await castArtistToGig(artistId, gigId);
-            useStore.getState().addToast("Talent successfully deployed to mission parameters.", 'success');
+            await useStore.getState().castArtistToGig(artistId, gigId);
+            useStore.getState().addToast("TALENT DEPLOYED TO MISSION.", 'success');
         } catch (error) {
-            console.error("Casting execution failed:", error);
-            useStore.getState().addToast("Mission Deployment Failed: " + error.message, 'error');
+            console.error("Casting error:", error);
+            useStore.getState().addToast("Deployment failed: " + error.message, 'error');
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -356,7 +368,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                                 exit={{ opacity: 0, y: -30 }}
                                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                             >
-                                {(viewMode === 'grid' && typeof window !== 'undefined' && window.innerWidth >= 768) ? (
+                                {(viewMode === 'grid') ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start">
                                         {paginatedArtists.map((artist, idx) => (
                                             <motion.div
@@ -501,9 +513,10 @@ const ArtistManager = ({ isEmbedded = false }) => {
                             <div className="flex flex-col gap-4">
                                 <button 
                                     onClick={() => handleDeleteArtist(showDeleteConfirmId)}
-                                    className="w-full h-20 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95"
+                                    disabled={isDeleting}
+                                    className="w-full h-20 bg-red-500 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
                                 >
-                                    DECOMMISSION PROFILE
+                                    {isDeleting ? <LoadingSpinner size="xs" color="white" /> : 'DECOMMISSION PROFILE'}
                                 </button>
                                 <button 
                                     onClick={() => setShowDeleteConfirmId(null)}
@@ -983,17 +996,19 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                         {artist.profileStatus !== 'approved' && (
                             <button 
                                 onClick={() => onUpdateStatus(artist.id, 'approved')} 
-                                className="flex-1 sm:flex-none h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] shadow-[0_20px_50px_rgba(57,255,20,0.3)] hover:scale-[1.03] active:scale-95 transition-all"
+                                disabled={isUpdating}
+                                className="flex-1 sm:flex-none h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] shadow-[0_20px_50px_rgba(57,255,20,0.3)] hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-3"
                             >
-                                AUTHORIZE TALENT
+                                {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'AUTHORIZE TALENT'}
                             </button>
                         )}
                         {artist.profileStatus !== 'rejected' && (
                             <button 
                                 onClick={() => onUpdateStatus(artist.id, 'rejected')} 
-                                className="flex-1 sm:flex-none h-20 px-16 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] hover:bg-white hover:text-black hover:scale-[1.03] active:scale-95 transition-all"
+                                disabled={isUpdating}
+                                className="flex-1 sm:flex-none h-20 px-16 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] hover:bg-white hover:text-black hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-3"
                             >
-                                REJECT PROFILE
+                                {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT PROFILE'}
                             </button>
                         )}
                     </div>
@@ -1128,6 +1143,7 @@ const CastingBoardModal = ({ upcomingEvents, artists, onClose, onCast }) => {
                         </div>
                         
                         <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4">
                             {upcomingEvents.length === 0 ? (
                                 <div className="p-10 text-center border-2 border-dashed border-white/5 rounded-[3rem] space-y-4">
                                     <Calendar size={32} className="text-gray-800 mx-auto" />

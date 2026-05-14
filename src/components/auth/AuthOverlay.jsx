@@ -12,9 +12,9 @@ import {
     Phone, 
     Hash, 
     ArrowRight, 
-    Loader2, 
     CheckCircle2 
 } from 'lucide-react';
+import LoadingSpinner from '../ui/LoadingSpinner';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 
@@ -315,7 +315,7 @@ const AuthOverlay = () => {
                                             </div>
                                         </div>
                                         <Button type="submit" className="w-full h-12" disabled={loading}>
-                                            {loading ? <Loader2 className="animate-spin" /> : 'Send OTP'}
+                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Send OTP'}
                                         </Button>
                                     </form>
                                 ) : (
@@ -336,7 +336,7 @@ const AuthOverlay = () => {
                                             </div>
                                         </div>
                                         <Button type="submit" className="w-full h-12" disabled={loading}>
-                                            {loading ? <Loader2 className="animate-spin" /> : 'Verify & Sign In'}
+                                            {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Verify & Sign In'}
                                         </Button>
                                         <button 
                                             type="button" 
@@ -383,7 +383,7 @@ const AuthOverlay = () => {
                                     </div>
                                 </div>
                                 <Button type="submit" className="w-full h-12" disabled={loading}>
-                                    {loading ? <Loader2 className="animate-spin" /> : 'Complete Registration'}
+                                    {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Complete Registration'}
                                 </Button>
                             </form>
                         ) : (
@@ -453,7 +453,7 @@ const AuthOverlay = () => {
                                 className="w-full h-12 shadow-[0_0_20px_rgba(255,0,128,0.3)]"
                                 disabled={loading}
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
+                                {loading ? <LoadingSpinner size="xs" color="#FFFFFF" /> : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Reset Link'}
                             </Button>
                         </form>
                         )}

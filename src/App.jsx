@@ -60,6 +60,7 @@ const TicketingManagement = lazy(() => import('./pages/Admin/TicketingManagement
 const GuestlistManager = lazy(() => import('./pages/Admin/GuestlistManager'));
 const CreatorHub = lazy(() => import('./pages/Admin/CreatorHub'));
 const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
+const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
 
 // Guards & Components
 import AuthOverlay from './components/auth/AuthOverlay';
@@ -165,6 +166,7 @@ function AppContent() {
             <Route path="admin/concertzone/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><ConcertZoneStudio /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/blog/create" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/blog/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><BlogPostEditor /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
 

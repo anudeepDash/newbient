@@ -1,27 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Filter from 'lucide-react/dist/esm/icons/filter';
-import Edit2 from 'lucide-react/dist/esm/icons/edit-2';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import MoreVertical from 'lucide-react/dist/esm/icons/more-vertical';
-import Newspaper from 'lucide-react/dist/esm/icons/newspaper';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Star from 'lucide-react/dist/esm/icons/star';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import List from 'lucide-react/dist/esm/icons/list';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, MoreVertical, Newspaper, Clock, Star, Mail, Sparkles, CheckCircle2, LayoutGrid, List, Calendar, Radio, Music, FileText, TrendingUp, Users, Zap, MoreHorizontal } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
-import { Calendar, Radio, Music, FileText, TrendingUp, Users, Zap, MoreHorizontal } from 'lucide-react';
 
 const BlogManager = () => {
     const { posts, deletePost, updatePost, subscribers, siteSettings, updateGeneralSettings } = useStore();
@@ -95,7 +80,7 @@ const BlogManager = () => {
                 {/* Status Bar - Refined alignment */}
                 <div className="flex items-center gap-4 mb-12">
                     <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
-                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_rgba(0,255,255,0.5)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_rgba(0,255,255,0.5)]" />
                         <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60">LIVE STATUS</span>
                     </div>
                     <div className="w-px h-4 bg-white/10" />
@@ -221,7 +206,7 @@ const BlogManager = () => {
 
                 {/* Content Display */}
                 {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8">
+                    <div className="flex md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 overflow-x-auto md:overflow-x-visible pb-8 snap-x snap-mandatory">
                         <AnimatePresence mode="popLayout">
                             {filteredPosts.map((post, i) => (
                                 <motion.div
@@ -231,7 +216,7 @@ const BlogManager = () => {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="group relative"
+                                    className="group relative shrink-0 w-[85vw] md:w-auto snap-center"
                                 >
                                     <div className="bg-zinc-900/60 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl hover:border-neon-blue/20 transition-all duration-500 h-full flex flex-col">
                                         {/* Image Header */}
@@ -257,7 +242,7 @@ const BlogManager = () => {
                                                         ? 'bg-neon-green/10 border-neon-green/20 text-neon-green shadow-[0_0_15px_rgba(0,255,0,0.1)]' 
                                                         : 'bg-yellow-400/10 border-yellow-400/20 text-yellow-400'
                                                 }`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${post.status === 'Published' ? 'bg-neon-green animate-pulse' : 'bg-yellow-400'}`} />
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${post.status === 'Published' ? 'bg-neon-green' : 'bg-yellow-400'}`} />
                                                     {post.status}
                                                 </div>
                                             </div>

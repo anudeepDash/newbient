@@ -1,21 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Save from 'lucide-react/dist/esm/icons/save';
-import X from 'lucide-react/dist/esm/icons/x';
-import Image from 'lucide-react/dist/esm/icons/image';
-import Type from 'lucide-react/dist/esm/icons/type';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import User from 'lucide-react/dist/esm/icons/user';
-import Settings from 'lucide-react/dist/esm/icons/settings';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import { Save, X, Image, Type, FileText, Eye, ChevronLeft, Loader2, User, Settings, Sparkles, Zap } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { cn } from '../../lib/utils';
+import { extractDominantColor } from '../../lib/colorUtils';
 
 const BlogPostEditor = () => {
     const { id } = useParams();
@@ -44,6 +35,12 @@ const BlogPostEditor = () => {
         featured: false,
         sendAsNewsletter: false,
         tags: '',
+        accentColor: '#00ffff',
+        ticketingLink: '',
+        ticketingButtonText: 'GET TICKETS',
+        sponsorName: '',
+        sponsorLogo: '',
+        sponsorLink: '',
         coverImageScale: 1,
         coverImagePosX: 50,
         coverImagePosY: 50
@@ -55,7 +52,9 @@ const BlogPostEditor = () => {
             if (post) {
                 setFormData({
                     ...post,
-                    tags: post.tags ? post.tags.join(', ') : ''
+                    tags: post.tags ? post.tags.join(', ') : '',
+                    accentColor: post.accentColor || categoryColors[post.category] || '#00ffff',
+                    ticketingButtonText: post.ticketingButtonText || 'GET TICKETS'
                 });
             }
         }
@@ -136,7 +135,45 @@ const BlogPostEditor = () => {
         'Guides': '#39FF14',
         'Buzz': '#FF4F8B',
     };
-    const accentColor = categoryColors[formData.category] || '#00F0FF';
+    const accentColor = formData.accentColor || '#00F0FF';
+
+    const handlePasteImage = async (e, type) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                setIsUploading(true);
+                try {
+                    const url = await useStore.getState().uploadToCloudinary(file);
+                    if (url) {
+                        if (type === 'cover') {
+                            const dominantColor = await extractDominantColor(url);
+                            setFormData(prev => ({ 
+                                ...prev, 
+                                coverImage: url,
+                                coverImageScale: 1,
+                                coverImagePosX: 50,
+                                coverImagePosY: 50,
+                                accentColor: dominantColor
+                            }));
+                        } else if (type === 'sponsor') {
+                            setFormData(prev => ({ ...prev, sponsorLogo: url }));
+                        }
+                        addToast("Image pasted successfully!", 'success');
+                    }
+                } catch (err) {
+                    console.error("Paste upload failed:", err);
+                    addToast("Upload failed.", "error");
+                } finally {
+                    setIsUploading(false);
+                }
+            }
+        }
+    };
 
     const generateAI = async (type) => {
         if (!formData.content && type !== 'title') {
@@ -166,11 +203,12 @@ const BlogPostEditor = () => {
     };
 
     const tabs = [
-        { id: '1', label: 'Identity', icon: Type, desc: 'Story Naming' },
+        { id: '1', label: 'Identity', icon: Type, desc: 'Naming & Theme' },
         { id: '2', label: 'Narrative', icon: FileText, desc: 'The Core Story' },
         { id: '3', label: 'Visuals', icon: Image, desc: 'Media Assets' },
-        { id: '4', label: 'Discovery', icon: Sparkles, desc: 'SEO & Tags' },
-        { id: '5', label: 'Status', icon: Settings, desc: 'Publishing Controls' }
+        { id: '4', label: 'Discovery', icon: Sparkles, desc: 'SEO & Meta' },
+        { id: '6', label: 'Commercials', icon: Zap, desc: 'Tickets & Sponsors' },
+        { id: '5', label: 'Status', icon: Settings, desc: 'Publishing' }
     ];
 
     const currentTab = tabs.find(t => t.id === activeTab);
@@ -271,7 +309,6 @@ const BlogPostEditor = () => {
                             >
                                 {activeTab === '1' && (
                                     <div className="space-y-10">
-
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Headline</label>
@@ -285,6 +322,55 @@ const BlogPostEditor = () => {
                                                 placeholder="STORY HEADLINE..."
                                                 className="w-full bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-[2rem] text-2xl md:text-4xl font-black uppercase italic tracking-tighter leading-none outline-none focus:border-neon-blue/40 transition-all min-h-[140px]"
                                             />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-8">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Category</label>
+                                                <select 
+                                                    value={formData.category} 
+                                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                    className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all appearance-none"
+                                                >
+                                                    {Object.keys(categoryColors).map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Editor / Author</label>
+                                                <input 
+                                                    type="text"
+                                                    value={formData.author} 
+                                                    onChange={e => setFormData({ ...formData, author: e.target.value })}
+                                                    placeholder="AUTHOR NAME..."
+                                                    className="w-full bg-zinc-900 border border-white/10 p-6 rounded-2xl text-sm font-black uppercase tracking-widest outline-none focus:border-neon-blue/40 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Theme Accent</label>
+                                            <div className="flex flex-wrap gap-4 p-6 bg-white/5 border border-white/10 rounded-3xl">
+                                                {Object.values(categoryColors).concat(['#FFFFFF', '#00FF66', '#FFD700']).map(color => (
+                                                    <button 
+                                                        key={color}
+                                                        onClick={() => setFormData({ ...formData, accentColor: color })}
+                                                        className={cn(
+                                                            "w-12 h-12 rounded-2xl border-4 transition-all",
+                                                            formData.accentColor === color ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60"
+                                                        )}
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                                <div className="w-[1px] h-12 bg-white/10 mx-2" />
+                                                <input 
+                                                    type="color" 
+                                                    value={formData.accentColor} 
+                                                    onChange={e => setFormData({ ...formData, accentColor: e.target.value })}
+                                                    className="w-12 h-12 rounded-2xl bg-transparent border-none cursor-pointer"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -319,18 +405,30 @@ const BlogPostEditor = () => {
                                     <div className="space-y-10">
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Cover Narrative</label>
-                                            <div className="group relative aspect-video rounded-[3rem] overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center text-gray-600 gap-4">
+                                            <div 
+                                                className="group relative aspect-video rounded-[3rem] overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center text-gray-600 gap-4 outline-none focus-within:border-neon-blue/40"
+                                                onPaste={(e) => handlePasteImage(e, 'cover')}
+                                                tabIndex={0}
+                                            >
                                                 {formData.coverImage ? (
-                                                    <img 
-                                                        src={formData.coverImage} 
-                                                        className="w-full h-full" 
-                                                        style={{ 
-                                                            objectFit: 'cover', 
-                                                            transform: `scale(${formData.coverImageScale || 1})`,
-                                                            transformOrigin: `${formData.coverImagePosX || 50}% ${formData.coverImagePosY || 50}%`
-                                                        }}
-                                                        alt="Cover" 
-                                                    />
+                                                    <>
+                                                        <img 
+                                                            src={formData.coverImage} 
+                                                            className="w-full h-full" 
+                                                            style={{ 
+                                                                objectFit: 'cover', 
+                                                                transform: `scale(${formData.coverImageScale || 1})`,
+                                                                transformOrigin: `${formData.coverImagePosX || 50}% ${formData.coverImagePosY || 50}%`
+                                                            }}
+                                                            alt="Cover" 
+                                                        />
+                                                        {/* Framing Guide Overlay */}
+                                                        <div className="absolute inset-0 border-2 border-neon-blue/30 pointer-events-none flex flex-col items-center justify-center">
+                                                            <div className="w-[80%] h-[40%] border border-white/20 rounded-2xl flex items-center justify-center">
+                                                                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">Primary Hero Safe Zone</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
                                                 ) : (
                                                     <>
                                                         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center"><Image size={24} /></div>
@@ -345,7 +443,17 @@ const BlogPostEditor = () => {
                                                         if (file) {
                                                             setIsUploading(true);
                                                             const url = await useStore.getState().uploadToCloudinary(file);
-                                                            if (url) setFormData({ ...formData, coverImage: url, coverImageScale: 1, coverImagePosX: 50, coverImagePosY: 50 });
+                                                            if (url) {
+                                                                const dominantColor = await extractDominantColor(url);
+                                                                setFormData({ 
+                                                                    ...formData, 
+                                                                    coverImage: url, 
+                                                                    coverImageScale: 1, 
+                                                                    coverImagePosX: 50, 
+                                                                    coverImagePosY: 50,
+                                                                    accentColor: dominantColor
+                                                                });
+                                                            }
                                                             setIsUploading(false);
                                                         }
                                                     }}
@@ -478,6 +586,94 @@ const BlogPostEditor = () => {
                                     </div>
                                 )}
 
+                                {activeTab === '6' && (
+                                    <div className="space-y-12">
+                                        {/* Ticketing Section */}
+                                        <div className="p-8 bg-neon-blue/5 border border-neon-blue/10 rounded-[3rem] space-y-8">
+                                            <div className="flex items-center gap-3">
+                                                <Zap size={20} className="text-neon-blue" />
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-white">Ticketing Integration</h3>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Button Text</label>
+                                                    <input 
+                                                        value={formData.ticketingButtonText} 
+                                                        onChange={e => setFormData({ ...formData, ticketingButtonText: e.target.value })}
+                                                        placeholder="GET TICKETS"
+                                                        className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-neon-blue/40"
+                                                    />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Redirect URL</label>
+                                                    <input 
+                                                        value={formData.ticketingLink} 
+                                                        onChange={e => setFormData({ ...formData, ticketingLink: e.target.value })}
+                                                        placeholder="https://..."
+                                                        className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-xs font-bold outline-none focus:border-neon-blue/40"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Sponsor Section */}
+                                        <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[3rem] space-y-8">
+                                            <div className="flex items-center gap-3">
+                                                <Sparkles size={20} className="text-neon-pink" />
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-white">Direct Sponsorship</h3>
+                                            </div>
+                                            <div className="space-y-8">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sponsor Name</label>
+                                                        <input 
+                                                            value={formData.sponsorName} 
+                                                            onChange={e => setFormData({ ...formData, sponsorName: e.target.value })}
+                                                            placeholder="BRAND NAME"
+                                                            className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Brand URL</label>
+                                                        <input 
+                                                            value={formData.sponsorLink} 
+                                                            onChange={e => setFormData({ ...formData, sponsorLink: e.target.value })}
+                                                            placeholder="https://brand.com"
+                                                            className="w-full h-16 bg-zinc-950 border border-white/10 px-6 rounded-2xl text-xs font-bold outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Brand Asset (Logo)</label>
+                                                    <div 
+                                                        className="group relative h-24 bg-zinc-950 border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-gray-700 hover:border-neon-pink/40 transition-all cursor-pointer outline-none"
+                                                        onPaste={(e) => handlePasteImage(e, 'sponsor')}
+                                                        tabIndex={0}
+                                                    >
+                                                        {formData.sponsorLogo ? (
+                                                            <img src={formData.sponsorLogo} className="h-12 object-contain" alt="Logo" />
+                                                        ) : (
+                                                            <p className="text-[9px] font-black uppercase tracking-widest">Drop Sponsor Logo</p>
+                                                        )}
+                                                        <input 
+                                                            type="file" 
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files[0];
+                                                                if (file) {
+                                                                    const url = await useStore.getState().uploadToCloudinary(file);
+                                                                    if (url) setFormData({ ...formData, sponsorLogo: url });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {activeTab === '5' && (
                                     <div className="space-y-6">
                                         {[
@@ -601,7 +797,7 @@ const BlogPostEditor = () => {
 
                             <div className="p-20 pt-24 bg-[#060606]">
                                 <div 
-                                    className="prose prose-invert prose-2xl max-w-none prose-p:text-gray-400 prose-p:leading-relaxed prose-headings:uppercase prose-headings:italic prose-img:rounded-[3rem] prose-img:border prose-img:border-white/10"
+                                    className="article-content article-content-force-white"
                                     dangerouslySetInnerHTML={{ __html: formData.content }}
                                 />
                             </div>

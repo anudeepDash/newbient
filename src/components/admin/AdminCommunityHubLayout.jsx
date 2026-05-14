@@ -32,11 +32,11 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                             <div className="space-y-1 md:space-y-2">
                                 <div className="flex items-center gap-2 md:gap-3">
                                     {studioHeader.logo ? (
-                                        <img src={studioHeader.logo} alt="Logo" className="w-4 h-4 md:w-5 md:h-5 object-contain" />
+                                        <img src={studioHeader.logo} alt="Logo" className="h-8 md:h-16 w-auto object-contain mb-2" />
                                     ) : (
                                         studioHeader.icon ? <studioHeader.icon size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} /> : <Sparkles size={12} className={cn(studioHeader.accentClass, "md:w-4 md:h-4")} />
                                     )}
-                                    <span className={cn(studioHeader.accentClass, "text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em]")}>Operations Hub</span>
+                                    {!studioHeader.logo && <span className={cn(studioHeader.accentClass, "text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em]")}>Operations Hub</span>}
                                 </div>
                                 <h1 className="text-2xl sm:text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
                                     {studioHeader.title} <span className={studioHeader.accentClass}>{studioHeader.subtitle}.</span>

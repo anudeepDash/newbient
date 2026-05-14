@@ -340,19 +340,19 @@ const ConcertZoneBlog = () => {
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center md:items-start mb-12 md:mb-20 px-4 w-full"
+                    className="flex flex-col items-start mb-12 md:mb-20 px-4 w-full"
                 >
                     <div className="flex items-center gap-4 mb-4 md:mb-6">
                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
                     </div>
-                    <h1 className="text-[10vw] xs:text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-tight text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-center md:text-left">
+                    <h1 className="text-[10vw] xs:text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-tight text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
                         <span>CONCERT</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
                     </h1>
                 </motion.div>
 
                 {/* Control Bar — Categories + Search Integrated */}
-                <div className="flex flex-col xl:flex-row items-center justify-between gap-8 mb-16">
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 mb-16">
                     {/* Category Bar — Floating Glass Pill Aesthetic */}
                     <div className="flex-1 overflow-hidden relative group w-full">
                         {/* Fade Edges for Scroll Suggestion */}

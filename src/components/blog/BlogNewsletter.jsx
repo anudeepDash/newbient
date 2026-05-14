@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, Loader2, Instagram, Linkedin, Globe } from 'lucide-react';
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import { Mail, Send, Loader2, Instagram, Linkedin, Globe, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import WeeklyLogo from './WeeklyLogo';
 

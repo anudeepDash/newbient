@@ -93,54 +93,89 @@
   }
 }
 
-/* Blog Article Content Styling */
-.article-content h2 {
-  @apply text-3xl font-black uppercase font-heading text-white mt-12 mb-6;
+/* Blog Article Content Styling - Signature Magazine Look */
+.article-content {
+  font-family: 'Inter', sans-serif;
+}
+
+.article-content h1, .article-content h2 {
+  @apply text-2xl md:text-4xl font-black uppercase font-heading text-white mt-12 mb-6 italic tracking-tighter;
 }
 
 .article-content h3 {
-  @apply text-xl font-black uppercase font-heading text-neon-blue mt-8 mb-4;
+  @apply text-xl md:text-2xl font-black uppercase font-heading text-white mt-8 mb-4 italic tracking-tighter;
 }
 
 .article-content p {
-  @apply mb-6 leading-[1.8] text-gray-300;
+  @apply text-sm md:text-base mb-6 leading-relaxed text-gray-200 font-medium tracking-tight;
 }
 
 .article-content b, .article-content strong {
-  font-weight: 900 !important;
-  color: inherit;
+  @apply font-black text-white;
 }
 
 .article-content i, .article-content em {
   @apply italic text-gray-400;
 }
 
+.article-content a {
+  @apply text-neon-blue hover:underline font-black transition-all underline-offset-8;
+}
+
 .article-content ul {
-  list-style-type: disc !important;
-  list-style-position: outside !important;
-  margin-left: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
+  @apply list-disc list-outside ml-10 mb-10 space-y-4 text-gray-200;
 }
 
 .article-content ol {
-  list-style-type: decimal !important;
-  list-style-position: outside !important;
-  margin-left: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
+  @apply list-decimal list-outside ml-10 mb-10 space-y-4 text-gray-200;
 }
 
 .article-content li {
-  padding-left: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
-  color: #d1d5db; /* text-gray-300 */
+  @apply text-sm md:text-base leading-relaxed font-medium;
 }
 
 .article-content img {
-  @apply rounded-[2rem] border border-white/5 my-12 w-full shadow-2xl;
+  @apply rounded-[2rem] md:rounded-[3rem] border border-white/10 my-16 w-full shadow-2xl;
 }
 
-.article-content a {
-  @apply text-neon-blue hover:underline font-bold transition-all;
+.article-content-force-white * {
+  color: inherit !important;
+}
+
+.article-content-force-white p, 
+.article-content-force-white span, 
+.article-content-force-white div, 
+.article-content-force-white li {
+  color: #e5e7eb !important; /* text-gray-200 */
+}
+
+.article-content-force-white h1,
+.article-content-force-white h2,
+.article-content-force-white h3,
+.article-content-force-white h4,
+.article-content-force-white strong,
+.article-content-force-white b {
+  color: #ffffff !important;
+}
+
+.article-content-force-white * {
+  color: inherit !important;
+}
+
+.article-content-force-white p, 
+.article-content-force-white span, 
+.article-content-force-white div, 
+.article-content-force-white li {
+  color: #e5e7eb !important; /* text-gray-200 */
+}
+
+.article-content-force-white h1,
+.article-content-force-white h2,
+.article-content-force-white h3,
+.article-content-force-white h4,
+.article-content-force-white strong,
+.article-content-force-white b {
+  color: #ffffff !important;
 }
 
 /* Custom Scrollbar for Textarea */

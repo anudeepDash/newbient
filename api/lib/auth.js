@@ -1,8 +1,11 @@
 console.log('[BOOT] 🔐 Auth Library Loading...');
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+let app;
 
 try {
-    if (!admin.apps.length) {
+    if (!getApps().length) {
         const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
         let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
@@ -20,8 +23,8 @@ try {
                 console.error('[AUTH INIT] ❌ Private Key format appears invalid (missing headers)');
             }
 
-            admin.initializeApp({
-                credential: admin.credential.cert({
+            app = initializeApp({
+                credential: cert({
                     projectId,
                     clientEmail,
                     privateKey,
@@ -29,12 +32,16 @@ try {
             });
             console.log('[AUTH INIT] ✅ Firebase Admin initialized successfully');
         }
+    } else {
+        app = getApps()[0];
     }
 } catch (error) {
     console.error('[AUTH INIT] 💥 CRITICAL INITIALIZATION ERROR:', error.message);
 }
 
-export { admin };
+const auth = app ? getAuth(app) : null;
+
+export { auth };
 
 export const verifyToken = async (req) => {
     const authHeader = req.headers.authorization;
@@ -44,7 +51,7 @@ export const verifyToken = async (req) => {
 
     const token = authHeader.split('Bearer ')[1];
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const decodedToken = await auth.verifyIdToken(token);
         return decodedToken;
     } catch (error) {
         console.error('Error verifying Firebase ID token:', error);

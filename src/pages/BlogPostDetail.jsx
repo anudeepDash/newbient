@@ -307,9 +307,40 @@ const BlogPostDetail = () => {
 
                 {/* The Narrative Hub */}
                 <div ref={contentRef} className="lg:col-span-8 xl:col-span-9">
-                    <div className="prose prose-invert prose-lg md:prose-2xl max-w-none prose-p:text-gray-300 prose-p:leading-[1.8] prose-p:mb-8 prose-headings:font-heading prose-headings:uppercase prose-headings:italic prose-headings:tracking-tighter prose-headings:mb-8 prose-img:rounded-3xl md:prose-img:rounded-[4rem] prose-img:shadow-2xl prose-img:border prose-img:border-white/10 prose-a:text-neon-blue prose-a:underline-offset-8 prose-strong:text-white prose-blockquote:border-l-neon-blue prose-blockquote:bg-white/5 prose-blockquote:p-6 md:prose-blockquote:p-12 prose-blockquote:rounded-2xl md:prose-blockquote:rounded-[3rem] prose-blockquote:italic selection:bg-neon-blue selection:text-black">
+                    <div className="article-content article-content-force-white">
                         <div dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
+
+                    {/* Commercial Integrity: Ticketing Integration */}
+                    {post.ticketingLink && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mt-20 p-10 md:p-16 rounded-[3rem] md:rounded-[4rem] bg-white/[0.02] border border-white/10 relative overflow-hidden group"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/5 via-transparent to-transparent pointer-events-none" />
+                            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                                <div className="space-y-4 text-center md:text-left">
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-neon-blue text-[10px] font-black uppercase tracking-widest">
+                                        <Zap size={14} /> LIVE EVENT ACCESS
+                                    </div>
+                                    <h3 className="text-3xl md:text-5xl font-black font-heading uppercase italic tracking-tighter text-white leading-tight">
+                                        Experience this <br /> Narrative Live.
+                                    </h3>
+                                </div>
+                                <a 
+                                    href={post.ticketingLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="h-20 md:h-24 px-12 md:px-20 bg-white text-black font-black uppercase tracking-[0.2em] rounded-3xl md:rounded-[2.5rem] flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)] group/btn"
+                                >
+                                    {post.ticketingButtonText || 'GET TICKETS'}
+                                    <ArrowUpRight size={24} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                                </a>
+                            </div>
+                        </motion.div>
+                    )}
 
                     {/* Metadata Fragments */}
                     {post.tags && post.tags.length > 0 && (
@@ -328,6 +359,34 @@ const BlogPostDetail = () => {
 
                 {/* High-Fidelity Sidebar */}
                 <aside className="lg:col-span-3 space-y-20">
+                    {/* Sponsor Slot */}
+                    {post.sponsorName && (
+                        <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-8 sticky top-48">
+                            <div className="flex items-center gap-3">
+                                <Sparkles size={16} className="text-neon-blue" />
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">SUPPORTED BY</h4>
+                            </div>
+                            
+                            <a 
+                                href={post.sponsorLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block space-y-6 group"
+                            >
+                                {post.sponsorLogo && (
+                                    <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 p-6 flex items-center justify-center overflow-hidden">
+                                        <img src={post.sponsorLogo} className="w-full h-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt={post.sponsorName} />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <p className="text-lg font-black font-heading uppercase italic tracking-tighter text-white group-hover:text-neon-blue transition-colors">{post.sponsorName}</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-2">
+                                        Visit Partner <ExternalLink size={12} />
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+                    )}
                 </aside>
             </div>
 

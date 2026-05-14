@@ -58,6 +58,7 @@ import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Unlock from 'lucide-react/dist/esm/icons/unlock';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV, CSVUploadButton } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
@@ -338,6 +339,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const [rejectionModal, setRejectionModal] = useState(null); 
     const [rejectionReason, setRejectionReason] = useState('');
     const [viewMode, setViewMode] = useState('grid');
+    const [isDeploying, setIsDeploying] = useState(false);
+    const [isProcessingTask, setIsProcessingTask] = useState(false);
+    const [isReviewing, setIsReviewing] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
@@ -455,10 +459,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsDeploying(true);
         try {
             if (editingId) {
                 await updateCampaign(editingId, formData);
-                // Notification logic handled in original code
             } else {
                 await addCampaign(formData);
                 await notifyAllUsers(
@@ -471,6 +475,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
             resetForm();
         } catch (error) {
             useStore.getState().addToast("Storage error.", 'error');
+        } finally {
+            setIsDeploying(false);
         }
     };
 
@@ -524,9 +530,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const handleReviewSubmission = async (campaignId, taskId, creatorUid, status) => {
+        setIsReviewing(true);
         try {
             if (status === 'rejected') {
                 setRejectionModal({ campaignId, taskId, creatorUid });
+                setIsReviewing(false); // Modal takes over
                 return;
             }
             await useStore.getState().reviewTaskSubmission(campaignId, taskId, creatorUid, status);
@@ -543,11 +551,14 @@ const CampaignManager = ({ isEmbedded = false }) => {
             );
         } catch (error) {
             useStore.getState().addToast("Review failed.", 'error');
+        } finally {
+            setIsReviewing(false);
         }
     };
 
     const confirmRejection = async () => {
         if (!rejectionModal) return;
+        setIsReviewing(true);
         try {
             await useStore.getState().reviewTaskSubmission(
                 rejectionModal.campaignId,
@@ -572,6 +583,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
             setRejectionReason('');
         } catch (error) {
             useStore.getState().addToast("Rejection failed.", 'error');
+        } finally {
+            setIsReviewing(false);
         }
     };
 
@@ -691,7 +704,13 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     </div>
                                     <div className="flex gap-4">
                                         <button onClick={resetForm} className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Discard</button>
-                                        <button onClick={handleSubmit} className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all">DEPLOΥ</button>
+                                        <button 
+                                            onClick={handleSubmit} 
+                                            disabled={isDeploying || isUploading}
+                                            className="h-12 px-10 bg-white text-black font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all flex items-center justify-center gap-3 min-w-[140px]"
+                                        >
+                                            {isDeploying ? <LoadingSpinner size="xs" color="black" /> : 'DEPLOΥ'}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -892,7 +911,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
                                         <div 
                                             id="campaign-grid" 
-                                            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start overflow-x-auto md:overflow-visible pb-8 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start pb-8 md:pb-0"
                                         >
                                             {paginatedCampaigns.map((campaign, idx) => (
                                                 <motion.div
@@ -900,7 +919,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.05 }}
-                                                    className="w-[280px] sm:w-full shrink-0 snap-center md:snap-none"
+                                                    className="w-full"
                                                 >
                                                     <CampaignBadgeCard 
                                                         campaign={campaign} 
@@ -1002,7 +1021,13 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Provide specific reasons for rejection..." className="w-full h-40 bg-black border border-white/10 rounded-2xl p-6 text-sm text-white focus:border-red-500/50 outline-none transition-all resize-none mb-6" />
                             <div className="flex gap-4">
                                 <button onClick={() => setRejectionModal(null)} className="flex-1 h-14 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Cancel</button>
-                                <button onClick={confirmRejection} className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all">Confirm Rejection</button>
+                                <button 
+                                    onClick={confirmRejection} 
+                                    disabled={isReviewing}
+                                    className="flex-1 h-14 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-3"
+                                >
+                                    {isReviewing ? <LoadingSpinner size="xs" color="white" /> : 'Confirm Rejection'}
+                                </button>
                             </div>
                         </motion.div>
                     </div>
@@ -1175,8 +1200,20 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                                                             )}
                                                             {status === 'submitted' && (
                                                                 <div className="flex gap-2">
-                                                                    <button onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'approved')} className="w-12 h-12 rounded-xl bg-neon-green/20 text-neon-green border border-neon-green/30 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all"><Check size={18} /></button>
-                                                                    <button onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} className="w-12 h-12 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><X size={18} /></button>
+                                                                    <button 
+                                                                        onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'approved')} 
+                                                                        disabled={isReviewing}
+                                                                        className="w-12 h-12 rounded-xl bg-neon-green/20 text-neon-green border border-neon-green/30 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all"
+                                                                    >
+                                                                        {isReviewing ? <LoadingSpinner size="xs" color="neon-green" /> : <Check size={18} />}
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} 
+                                                                        disabled={isReviewing}
+                                                                        className="w-12 h-12 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                                                    >
+                                                                        {isReviewing ? <LoadingSpinner size="xs" color="red" /> : <X size={18} />}
+                                                                    </button>
                                                                 </div>
                                                             )}
                                                         </div>

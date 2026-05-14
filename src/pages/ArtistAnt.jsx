@@ -7,7 +7,6 @@ import Shield from 'lucide-react/dist/esm/icons/shield';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import Search from 'lucide-react/dist/esm/icons/search';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import MapPinIcon from 'lucide-react/dist/esm/icons/map-pin';
@@ -54,6 +53,8 @@ import { cn } from '../lib/utils';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { PREDEFINED_CITIES } from '../lib/constants';
+import GlobalLoader from '../components/ui/GlobalLoader';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import artistantLogo from '../assets/logo/artistant.png';
 
 // Artistant Theme Colors: Coral/Orange & Purple/Blue
@@ -266,7 +267,7 @@ const ArtistAnt = () => {
     };
 
     if (!authInitialized) {
-        return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-neon-green" size={32} /></div>;
+        return <GlobalLoader color={ARTISTANT_THEME.primary} />;
     }
 
     const isFormView = view === 'artist_form' || view === 'client_form';
@@ -744,7 +745,7 @@ const ArtistAnt = () => {
                                             disabled={isSubmitting} 
                                             className="w-full max-w-5xl h-20 md:h-24 px-12 md:px-20 bg-white text-black font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[11px] rounded-2xl hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-4 shadow-[0_20px_60px_rgba(255,255,255,0.1)]"
                                         >
-                                            {isSubmitting ? <Loader2 className="animate-spin" /> : (
+                                            {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : (
                                                 <>
                                                     {(view === 'artist_form' && step === 3) || (view === 'client_form' && step === 2) ? 'VERIFY & SUBMIT' : 'CONTINUE'}
                                                     <ArrowRight size={16} />
@@ -921,7 +922,7 @@ const ArtistAnt = () => {
                                     disabled={isSubmitting}
                                     className="h-28 px-24 bg-gradient-to-r from-[#FF6B6B] to-[#7B61FF] text-white font-black uppercase tracking-[0.3em] text-[12px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(255,107,107,0.3)]"
                                 >
-                                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'SAVE CHANGES'}
+                                    {isSubmitting ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'SAVE CHANGES'}
                                 </button>
 
                             </div>
@@ -956,7 +957,7 @@ const ArtistAnt = () => {
                                     disabled={isSubmitting}
                                     className="h-22 w-full bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
                                 >
-                                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'YES, DELETE PROFILE'}
+                                    {isSubmitting ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'YES, DELETE PROFILE'}
                                 </button>
                                 <button 
                                     onClick={() => setShowDeleteConfirm(false)}

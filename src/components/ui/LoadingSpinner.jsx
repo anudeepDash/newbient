@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const LoadingSpinner = ({ size = "md", color = "#39FF14" }) => {
     const sizeMap = {
         xs: "h-4 w-4 border-[1.5px]",
-        sm: "h-6 w-6 border-2",
+        sm: "h-5 w-5 border-2",
         md: "h-10 w-10 border-[3px]",
         lg: "h-16 w-16 border-[4px]",
         xl: "h-24 w-24 border-[5px]"
@@ -35,8 +35,11 @@ const LoadingSpinner = ({ size = "md", color = "#39FF14" }) => {
                 className="absolute inset-0 blur-xl opacity-20 rounded-full"
                 style={{ backgroundColor: color }}
             />
+
+            {/* Core Pulse (Optional: Add a tiny dot in middle for xs/sm if needed, but keeping it clean for now) */}
         </div>
     );
 };
 
+export { LoadingSpinner };
 export default LoadingSpinner;
