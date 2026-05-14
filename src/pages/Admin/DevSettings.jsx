@@ -193,7 +193,7 @@ const SystemControlCenter = () => {
                         
                         <Button
                             onClick={toggleGlobalMaintenance}
-                            className={`h-12 px-8 text-xs font-black italic tracking-widest rounded-xl transition-all duration-300 ${maintenanceState.global ? 'bg-red-500 text-white animate-pulse' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                            className={`h-12 px-8 text-xs font-black italic tracking-widest rounded-xl transition-all duration-300 ${maintenanceState.global ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
                         >
                             {maintenanceState.global ? 'TERMINATE MAINTENANCE' : 'ACTIVATE LOCKDOWN'}
                         </Button>

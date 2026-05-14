@@ -1531,7 +1531,10 @@ export const useStore = create((set, get) => ({
             body: JSON.stringify({ email }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Failed to send reset email');
+        if (!response.ok) {
+            const errorMsg = result.details || result.error || 'Failed to send reset email';
+            throw new Error(errorMsg);
+        }
         return result;
     },
 

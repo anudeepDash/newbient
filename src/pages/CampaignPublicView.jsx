@@ -10,7 +10,6 @@ import Users from 'lucide-react/dist/esm/icons/users';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Target from 'lucide-react/dist/esm/icons/target';
@@ -28,6 +27,8 @@ import { cn } from '../lib/utils';
 import { PREDEFINED_CITIES } from '../lib/constants';
 import StudioSelect from '../components/ui/StudioSelect';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import GlobalLoader from '../components/ui/GlobalLoader';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera, color: 'text-pink-400' },
@@ -167,14 +168,7 @@ const CampaignPublicView = () => {
     };
 
     if (!campaign) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <Loader2 className="animate-spin text-neon-blue mx-auto" size={48} />
-                    <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Loading Campaign Details...</p>
-                </div>
-            </div>
-        );
+        return <GlobalLoader color="#00F0FF" />;
     }
 
     const isEligible = verificationStep === 'success';
@@ -301,7 +295,7 @@ const CampaignPublicView = () => {
                                                 <AnimatePresence mode="wait">
                                                     {verificationStep === 'verifying' ? (
                                                         <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-14 bg-white/5 border border-neon-blue/20 rounded-xl flex items-center px-6 gap-4">
-                                                            <Loader2 size={16} className="animate-spin text-neon-blue" />
+                                                            <LoadingSpinner size="xs" color="#00F0FF" />
                                                             <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Verifying qualifications...</span>
                                                         </motion.div>
                                                     ) : verificationStep === 'success' ? (
@@ -351,7 +345,7 @@ const CampaignPublicView = () => {
                                                             <textarea required value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell us about yourself..." className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-5 text-white focus:outline-none focus:border-neon-blue text-[11px] font-medium resize-none shadow-inner" />
                                                         </div>
                                                         <Button type="submit" disabled={isJoining} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-[0.3em] rounded-xl shadow-xl hover:scale-[1.02] transition-all border-none text-xs">
-                                                            {isJoining ? 'Submitting...' : 'Submit Creator Application'}
+                                                            {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : 'Submit Creator Application'}
                                                         </Button>
                                                     </motion.form>
                                                 )}

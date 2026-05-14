@@ -244,9 +244,22 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                 exit={{ opacity: 0, y: -30 }}
                                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                             >
-                                {(viewMode === 'grid' && typeof window !== 'undefined' && window.innerWidth >= 768) ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
-                                        {paginatedRequests.map((request, idx) => (
+                                <div className={cn(
+                                    viewMode === 'grid' 
+                                        ? "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8" 
+                                        : "flex flex-col gap-3"
+                                )}>
+                                    {viewMode === 'list' && (
+                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
+                                            <div className="flex-1 pl-14">Client Inquirer</div>
+                                            <div className="w-48 hidden md:block">Engagement</div>
+                                            <div className="w-40 hidden lg:block text-right pr-10">Budget</div>
+                                            <div className="w-10 shrink-0"></div>
+                                        </div>
+                                    )}
+
+                                    {paginatedRequests.map((request, idx) => (
+                                        viewMode === 'grid' ? (
                                             <motion.div
                                                 key={request.id}
                                                 initial={{ opacity: 0, y: 30 }}
@@ -258,27 +271,16 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
                                                     onSelect={() => setSelectedRequest(request)} 
                                                 />
                                             </motion.div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
-                                            <div className="flex-1 pl-14">Client Inquirer</div>
-                                            <div className="w-48 hidden md:block">Engagement</div>
-                                            <div className="w-40 hidden lg:block text-right pr-10">Budget</div>
-                                            <div className="w-10 shrink-0"></div>
-                                        </div>
-
-                                        {paginatedRequests.map((request, idx) => (
+                                        ) : (
                                             <RequestListItem 
                                                 key={request.id} 
                                                 request={request} 
                                                 idx={idx} 
                                                 onSelect={() => setSelectedRequest(request)} 
                                             />
-                                        ))}
-                                    </div>
-                                )}
+                                        )
+                                    ))}
+                                </div>
 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (

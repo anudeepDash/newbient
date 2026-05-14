@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Pin from 'lucide-react/dist/esm/icons/pin';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import X from 'lucide-react/dist/esm/icons/x';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Megaphone from 'lucide-react/dist/esm/icons/megaphone';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import Radio from 'lucide-react/dist/esm/icons/radio';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Music from 'lucide-react/dist/esm/icons/music';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import { Plus, Trash2, Pin, LayoutGrid, Save, Sparkles, ChevronUp, ChevronDown, X, Clock, Eye, Edit, Mail, Megaphone, Calendar, Radio, FileText, Music, RotateCcw } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
@@ -224,7 +206,7 @@ const AnnouncementsManager = () => {
                         </div>
                         <div className="w-px h-10 bg-white/5 shrink-0" />
                         <div className="text-center shrink-0">
-                            <p className="text-3xl font-black text-neon-pink animate-pulse font-heading leading-none">{announcements.filter(a => a.priority === 'Critical').length}</p>
+                            <p className="text-3xl font-black text-neon-pink font-heading leading-none">{announcements.filter(a => a.priority === 'Critical').length}</p>
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Critical</p>
                         </div>
                     </div>
@@ -498,7 +480,7 @@ const AnnouncementsManager = () => {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                                    <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
                                         <AnimatePresence mode="popLayout">
                                         {announcements.map((item, index) => {
                                             return (
@@ -510,7 +492,7 @@ const AnnouncementsManager = () => {
                                                     exit={{ opacity: 0, scale: 0.92 }}
                                                     transition={{ duration: 0.4 }}
                                                     className={cn(
-                                                        "group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-neon-pink/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)]",
+                                                        "group relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-950 border border-white/5 hover:border-neon-pink/20 transition-all duration-500 shadow-[0_20px_60px_rgba(0,0,0,0.5)] shrink-0 w-[85vw] md:w-auto snap-center",
                                                         item.isPinned && "border-neon-pink/40 shadow-[0_0_30px_rgba(255,46,144,0.1)]"
                                                     )}
                                                 >
@@ -607,7 +589,7 @@ const AnnouncementsManager = () => {
                                                             {item.priority !== 'Normal' && (
                                                                 <span className={cn(
                                                                     "px-2.5 py-1 text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md",
-                                                                    item.priority === 'Critical' ? "bg-red-500/10 border-red-500/30 text-red-500 animate-pulse" : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
+                                                                    item.priority === 'Critical' ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
                                                                 )}>
                                                                     {item.priority}
                                                                 </span>

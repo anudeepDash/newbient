@@ -2,10 +2,12 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
     Bold, Italic, List, ListOrdered, Undo2, Redo2, 
     Type, AlignLeft, AlignCenter, AlignRight, 
-    Link as LinkIcon, Image as ImageIcon, Sparkles
+    Link as LinkIcon, Image as ImageIcon, Sparkles,
+    Loader2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useEditorHistory } from '../../hooks/useEditorHistory';
+import { useStore } from '../../lib/store';
 
 const StudioRichEditor = ({ 
     value, 
@@ -18,6 +20,7 @@ const StudioRichEditor = ({
 }) => {
     const editorRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     
     // Sync external value with internal contenteditable only when necessary
     useEffect(() => {
@@ -169,9 +172,29 @@ const StudioRichEditor = ({
                             if (url) execCommand('createLink', url);
                         }} title="Insert Link" />
                         <ToolbarButton icon={ImageIcon} onClick={() => {
-                            const url = prompt("Enter image URL:");
-                            if (url) execCommand('insertImage', url);
-                        }} title="Insert Image Link" />
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    setIsUploading(true);
+                                    try {
+                                        const url = await useStore.getState().uploadToCloudinary(file);
+                                        if (url) {
+                                            document.execCommand('insertImage', false, url);
+                                            updateValue(editorRef.current.innerHTML);
+                                        }
+                                    } catch (err) {
+                                        console.error("Toolbar upload failed:", err);
+                                        useStore.getState().addToast?.("Upload failed.", "error");
+                                    } finally {
+                                        setIsUploading(false);
+                                    }
+                                }
+                            };
+                            input.click();
+                        }} title="Upload Image" />
                     </div>
 
                 </div>
@@ -184,17 +207,115 @@ const StudioRichEditor = ({
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     onKeyDown={handleKeyDown}
+                    onPaste={async (e) => {
+                        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                        let hasImages = false;
+                        
+                        for (let i = 0; i < items.length; i++) {
+                            const item = items[i];
+                            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                                hasImages = true;
+                                e.preventDefault();
+                                const file = item.getAsFile();
+                                if (!file) continue;
+
+                                // Save selection
+                                const selection = window.getSelection();
+                                let savedRange = null;
+                                if (selection.rangeCount > 0) {
+                                    savedRange = selection.getRangeAt(0).cloneRange();
+                                }
+
+                                setIsUploading(true);
+                                try {
+                                    const url = await useStore.getState().uploadToCloudinary(file);
+                                    if (url) {
+                                        // Restore selection
+                                        if (savedRange) {
+                                            selection.removeAllRanges();
+                                            selection.addRange(savedRange);
+                                        }
+                                        // Insert image at cursor
+                                        document.execCommand('insertImage', false, url);
+                                        updateValue(editorRef.current.innerHTML);
+                                    }
+                                } catch (err) {
+                                    console.error("Paste upload failed:", err);
+                                    useStore.getState().addToast?.("Upload failed.", "error");
+                                } finally {
+                                    setIsUploading(false);
+                                }
+                            }
+                        }
+                    }}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
+                    onDrop={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const files = e.dataTransfer.files;
+                        if (files && files.length > 0) {
+                            // Find drop position
+                            const selection = window.getSelection();
+                            let dropRange = null;
+                            if (document.caretRangeFromPoint) {
+                                dropRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+                            } else if (e.rangeParent) {
+                                dropRange = document.createRange();
+                                dropRange.setStart(e.rangeParent, e.rangeOffset);
+                            }
+
+                            for (let i = 0; i < files.length; i++) {
+                                const file = files[i];
+                                if (file.type.startsWith('image/')) {
+                                    setIsUploading(true);
+                                    try {
+                                        const url = await useStore.getState().uploadToCloudinary(file);
+                                        if (url) {
+                                            // Restore drop position
+                                            if (dropRange) {
+                                                selection.removeAllRanges();
+                                                selection.addRange(dropRange);
+                                            }
+                                            document.execCommand('insertImage', false, url);
+                                            updateValue(editorRef.current.innerHTML);
+                                        }
+                                    } catch (err) {
+                                        console.error("Drop upload failed:", err);
+                                        useStore.getState().addToast?.("Upload failed.", "error");
+                                    } finally {
+                                        setIsUploading(false);
+                                    }
+                                }
+                            }
+                        }
+                    }}
                     className={cn(
-                        "w-full p-6 text-[11px] font-medium text-gray-300 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words",
-                        "min-h-[150px]"
+                        "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white",
+                        "min-h-[150px]",
+                        isUploading && "opacity-50 pointer-events-none"
                     )}
                     style={{ minHeight, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 />
 
                 {/* Placeholder Overlay */}
-                {!value && !isFocused && (
+                {!value && !isFocused && !isUploading && (
                     <div className="absolute top-[84px] left-6 pointer-events-none text-gray-700 text-[11px] font-medium italic">
                         {placeholder}
+                    </div>
+                )}
+
+                {/* Uploading Overlay */}
+                {isUploading && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3">
+                        <div className="relative">
+                            <div className={cn("absolute inset-0 blur-xl opacity-50 rounded-full", `bg-${accentColor}`)} />
+                            <Loader2 className={cn("animate-spin relative z-10", `text-${accentColor}`)} size={32} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">Processing Media...</span>
                     </div>
                 )}
             </div>

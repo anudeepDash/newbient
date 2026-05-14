@@ -33,7 +33,6 @@ import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import ImageIcon from 'lucide-react/dist/esm/icons/image';
 import Clipboard from 'lucide-react/dist/esm/icons/clipboard';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import Award from 'lucide-react/dist/esm/icons/award';
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
@@ -43,6 +42,8 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import GlobalLoader from '../components/ui/GlobalLoader';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CampaignCard from '../components/ui/CampaignCard';
 
 const TASK_TYPES = {
@@ -288,7 +289,7 @@ const TaskDetailModal = ({ task, campaignId, profileUid, onClose, isSubmitting, 
                                             disabled={isSubmitting || (!contentLink && !proofFile)}
                                             className="w-full h-20 rounded-2xl bg-white text-black text-sm font-black font-heading uppercase tracking-[0.2em] shadow-2xl hover:bg-neon-blue transition-all disabled:opacity-50"
                                         >
-                                            {isSubmitting ? <Loader2 className="animate-spin" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
+                                            {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : status === 'rejected' ? 'Re-verify Submission' : 'Submit Performance'}
                                         </Button>
                                     </div>
                                 </>
@@ -384,7 +385,7 @@ const CreatorSettingsView = ({ profile }) => {
                             disabled={isSaving}
                             className="h-16 flex-1 bg-red-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-3"
                         >
-                            {isSaving ? <Loader2 className="animate-spin" /> : 'Confirm Deletion'}
+                            {isSaving ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Confirm Deletion'}
                         </button>
                         <button 
                             onClick={() => setShowDeleteConfirm(false)}
@@ -440,7 +441,7 @@ const CreatorSettingsView = ({ profile }) => {
                                 </div>
 
                                 <button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all shadow-xl flex items-center justify-center gap-3">
-                                    {isSaving ? <Loader2 className="animate-spin" /> : <><RefreshCw size={18} /> Synchronize Profile</>}
+                                    {isSaving ? <LoadingSpinner size="xs" color="#000000" /> : <><RefreshCw size={18} /> Synchronize Profile</>}
                                 </button>
                             </div>
                         </form>
@@ -741,7 +742,7 @@ const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApply
                             disabled={isApplying}
                             className="w-full h-20 bg-white text-black font-black uppercase tracking-[0.3em] rounded-[2rem] shadow-[0_0_40px_rgba(255,20,147,0.3)] hover:shadow-[0_0_60px_rgba(255,20,147,0.5)] transition-all text-xs mb-4"
                         >
-                            {isApplying ? <Loader2 className="animate-spin" /> : 'Apply to Campaign'}
+                            {isApplying ? <LoadingSpinner size="xs" color="#000000" /> : 'Apply to Campaign'}
                         </Button>
                     )}
                     {isShortlisted && campaign.whatsappLink && (
@@ -834,7 +835,7 @@ const CreatorDashboard = () => {
     };
 
 
-    if (!profile) return null;
+    if (!profile) return <GlobalLoader color="#38b6ff" />;
 
     const availableCampaigns = campaigns.filter(c =>
         c.status === 'Open' &&

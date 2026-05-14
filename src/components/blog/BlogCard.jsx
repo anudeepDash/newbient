@@ -196,7 +196,12 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             <div className="w-1 h-1 rounded-full bg-white/20" />
                             <div>{new Date(post.publishDate).toLocaleDateString()}</div>
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-black font-heading uppercase leading-[1.1] tracking-tighter mb-6 transition-colors line-clamp-2 italic group-hover:text-white" style={{ '--hover-text': accentColor }}>
+                        <h3 
+                            className="text-2xl md:text-3xl font-black font-heading uppercase leading-[1.1] tracking-tighter mb-6 transition-colors line-clamp-2 italic" 
+                            style={{ color: 'white', transition: 'color 0.3s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
+                        >
                             {post.title}
                         </h3>
                         <p className="text-gray-500 text-sm font-medium line-clamp-3 mb-10 flex-grow leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
@@ -231,7 +236,12 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                             <div className="w-1 h-1 rounded-full bg-white/10 hidden md:block" />
                             <span className="text-[8px] md:text-[9px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">{post.readingTime || 5} MIN</span>
                         </div>
-                        <h4 className="text-lg md:text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter group-hover:text-white" style={{ '--hover-text': accentColor }}>
+                        <h4 
+                            className="text-lg md:text-2xl font-black font-heading uppercase leading-[1.1] transition-colors line-clamp-2 italic tracking-tighter" 
+                            style={{ color: 'white', transition: 'color 0.3s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = accentColor}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
+                        >
                             {post.title}
                         </h4>
                     </div>

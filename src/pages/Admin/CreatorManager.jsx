@@ -35,6 +35,7 @@ import Target from 'lucide-react/dist/esm/icons/target';
 import Check from 'lucide-react/dist/esm/icons/check';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
@@ -52,6 +53,8 @@ const CreatorManager = ({ isEmbedded = false }) => {
     const [filterStatus, setFilterStatus] = useState('All');
     const [filterFollowers, setFilterFollowers] = useState('All');
     const [selectedCreator, setSelectedCreator] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); 
 
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
@@ -100,6 +103,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
     }, [creators]);
 
     const handleUpdateStatus = async (uid, newStatus) => {
+        setIsUpdating(true);
         try {
             await updateCreator(uid, { profileStatus: newStatus });
             if (selectedCreator && selectedCreator.uid === uid) {
@@ -107,16 +111,21 @@ const CreatorManager = ({ isEmbedded = false }) => {
             }
         } catch (error) {
             useStore.getState().addToast("Couldn't update the status. Please try again.", 'error');
+        } finally {
+            setIsUpdating(false);
         }
     };
 
     const handleDeleteCreator = async (uid) => {
         if (window.confirm("Permanently delete this creator profile?")) {
+            setIsDeleting(true);
             try {
                 await deleteCreator(uid);
                 setSelectedCreator(null);
             } catch (error) {
                 useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
+            } finally {
+                setIsDeleting(false);
             }
         }
     };
@@ -335,7 +344,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
 
                                         <div 
                                             id="creator-grid" 
-                                            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start overflow-x-auto md:overflow-visible pb-8 md:pb-0 snap-x horizontal-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+                                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 items-start pb-8 md:pb-0"
                                         >
                                             {paginatedCreators.map((creator, idx) => (
                                                 <motion.div
@@ -343,7 +352,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.05 }}
-                                                    className="w-[280px] sm:w-full shrink-0 snap-center md:snap-none"
+                                                    className="w-full"
                                                 >
                                                     <CreatorBadgeCard 
                                                         creator={creator} 
@@ -768,28 +777,31 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete }) => (
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button 
                             onClick={() => onUpdateStatus(creator.uid, 'approved')}
+                            disabled={isUpdating}
                             className={cn(
-                                "flex-1 sm:px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all",
+                                "flex-1 sm:px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3",
                                 creator.profileStatus === 'approved' ? "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5" : "bg-neon-green text-black shadow-[0_10px_30px_rgba(57,255,20,0.2)] hover:scale-105"
                             )}
                         >
-                            {creator.profileStatus === 'approved' ? 'ALREADY VERIFIED' : 'VERIFY CREATOR'}
+                            {isUpdating ? <LoadingSpinner size="xs" color="black" /> : (creator.profileStatus === 'approved' ? 'ALREADY VERIFIED' : 'VERIFY CREATOR')}
                         </button>
                         <button 
                             onClick={() => onUpdateStatus(creator.uid, 'rejected')}
+                            disabled={isUpdating}
                             className={cn(
-                                "flex-1 sm:px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border",
+                                "flex-1 sm:px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border flex items-center justify-center gap-3",
                                 creator.profileStatus === 'rejected' ? "bg-white/5 text-gray-600 cursor-not-allowed border-white/5" : "bg-black border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/5"
                             )}
                         >
-                            REJECT
+                            {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT'}
                         </button>
                     </div>
                     <button 
                         onClick={() => onDelete(creator.uid)}
+                        disabled={isDeleting}
                         className="w-full sm:w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
                     >
-                        <Trash2 size={20} />
+                        {isDeleting ? <LoadingSpinner size="xs" color="white" /> : <Trash2 size={20} />}
                     </button>
                 </div>
             </div>

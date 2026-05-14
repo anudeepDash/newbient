@@ -1,42 +1,18 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
-import Plus from 'lucide-react/dist/esm/icons/plus';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import Save from 'lucide-react/dist/esm/icons/save';
-import Eye from 'lucide-react/dist/esm/icons/eye';
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
-import Loader from 'lucide-react/dist/esm/icons/loader';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
-import ImageIcon from 'lucide-react/dist/esm/icons/image';
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import X from 'lucide-react/dist/esm/icons/x';
-import Upload from 'lucide-react/dist/esm/icons/upload';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Ticket from 'lucide-react/dist/esm/icons/ticket';
-import Link2 from 'lucide-react/dist/esm/icons/link-2';
-import Copy from 'lucide-react/dist/esm/icons/copy';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
-import Mail from 'lucide-react/dist/esm/icons/mail';
-import Radio from 'lucide-react/dist/esm/icons/radio';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
-import FileText from 'lucide-react/dist/esm/icons/file-text';
-import Music from 'lucide-react/dist/esm/icons/music';
-import MapIcon from 'lucide-react/dist/esm/icons/map';
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
-import VideoIcon from 'lucide-react/dist/esm/icons/video';
-import Pin from 'lucide-react/dist/esm/icons/pin';
+import { 
+    LayoutGrid, Plus, Trash2, Edit, Save, Eye, EyeOff, Sparkles, Clock, MapPin, 
+    IndianRupee, Image as ImageIcon, ChevronDown, ChevronUp, X, Upload, Zap, Ticket, 
+    Link2, Copy, CheckCircle, Mail, Radio, Calendar, FileText, Music, Map as MapIcon, 
+    RotateCcw, Video as VideoIcon, Pin 
+} from 'lucide-react';
 
 import { useStore } from '../../lib/store';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import LivePreview from '../../components/admin/LivePreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -863,7 +839,7 @@ const UpcomingEventsManager = () => {
                                                                             <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                                                                                 <div className="flex justify-between items-center px-1">
                                                                                     <div className="flex items-center gap-2">
-                                                                                        <span className="w-2 h-2 rounded-full bg-neon-blue animate-pulse" />
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neon-blue" />
                                                                                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Mapping: {newEvent.ticketCategories.find(c => c.id === mappingCategoryId)?.name || 'SELECTED TIER'}</span>
                                                                                     </div>
                                                                                     <span className="text-[9px] font-medium text-gray-500 italic">Click on the layout below to place the hotspot.</span>
@@ -1025,7 +1001,7 @@ const UpcomingEventsManager = () => {
                                                                 Cancel
                                                             </button>
                                                             <Button type="submit" disabled={uploading} className="h-14 px-12 sm:px-24 bg-neon-blue text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_15px_40px_rgba(0,255,255,0.3)] text-[11px] hover:scale-105 active:scale-95 transition-all w-full sm:w-auto">
-                                                                {uploading ? <Loader className="animate-spin" size={18} /> : (editingId ? 'SAVE CHANGES' : 'PUBLISH EVENT')}
+                                                                {uploading ? <LoadingSpinner size="xs" color="black" /> : (editingId ? 'SAVE CHANGES' : 'PUBLISH EVENT')}
                                                             </Button>
                                                         </div>
                                                     </form>
@@ -1082,7 +1058,7 @@ const UpcomingEventsManager = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                            <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
                                 <AnimatePresence mode="popLayout">
                                 {upcomingEvents.map((item, index) => (
                                     <motion.div
@@ -1091,7 +1067,8 @@ const UpcomingEventsManager = () => {
                                         initial={{ opacity: 0, scale: 0.92 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.92 }}
-                                        transition={{ duration: 0.4 }}                                        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500"
+                                        transition={{ duration: 0.4 }}                                         transition={{ duration: 0.4 }}
+                                        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 shrink-0 w-[85vw] md:w-auto snap-center"
                                     >
                                         {/* Standardized 16:9 Thumbnail Header */}
                                         <div className="relative mb-6 shrink-0 group-hover:scale-[1.01] transition-transform duration-700">

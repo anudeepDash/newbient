@@ -13,13 +13,13 @@ import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Camera from 'lucide-react/dist/esm/icons/camera';
 import Activity from 'lucide-react/dist/esm/icons/activity';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import GlobalLoader from '../components/ui/GlobalLoader';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const CreatorJoin = () => {
     const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary, loading } = useStore();
@@ -110,7 +110,7 @@ const CreatorJoin = () => {
     };
 
     if (!authInitialized || loading) {
-        return <div className="min-h-screen bg-black flex items-center justify-center"><Sparkles className="animate-pulse text-neon-blue" size={48} /></div>;
+        return <GlobalLoader color="#00F0FF" />;
     }
 
     if (hasJoined) {
@@ -361,9 +361,9 @@ const CreatorJoin = () => {
                                         disabled={isSubmitting}
                                         className="h-20 px-16 rounded-2xl text-sm font-black font-heading uppercase tracking-[0.2em] bg-neon-blue text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all flex items-center gap-4 disabled:opacity-50"
                                     >
-                                        {isSubmitting ? <Loader2 className="animate-spin" /> : 
+                                        {isSubmitting ? <LoadingSpinner size="xs" color="#000000" /> : 
                                          step === 3 ? 'Finalize Registration' : 'Continue'}
-                                        {step < 3 && <ArrowRight size={18} />}
+                                        {step < 3 && !isSubmitting && <ArrowRight size={18} />}
                                     </button>
                                 </div>
                             </form>

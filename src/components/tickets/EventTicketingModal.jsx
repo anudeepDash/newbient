@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Ticket, Plus, Minus, ArrowRight, 
-    ChevronLeft, Loader2, CheckCircle2, ShieldCheck, Zap,
+    ChevronLeft, CheckCircle2, ShieldCheck, Zap,
     Info, CreditCard, Lock, Share2, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -756,7 +756,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                                     disabled={isValidatingCoupon || !couponInput.trim()}
                                                                     className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all disabled:opacity-30 shrink-0"
                                                                 >
-                                                                    {isValidatingCoupon ? <Loader2 size={10} className="animate-spin" /> : 'Apply'}
+                                                                    {isValidatingCoupon ? <LoadingSpinner size="xs" color="#FFFFFF" /> : 'Apply'}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -775,7 +775,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     disabled={loading || (activeTab === 'tickets' && totalAmount === 0 && hasCategories && !appliedCoupon)}
                                                     className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
                                                 >
-                                                    {loading ? <Loader2 className="animate-spin" /> : 'CONTINUE'}
+                                                    {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'CONTINUE'}
                                                     <ArrowRight size={20} />
                                                 </Button>
                                             </div>
@@ -825,7 +825,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                         disabled={loading || !formData.name || !formData.phone}
                                         className="w-full h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-2xl md:rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" /> : 'VERIFY & CONTINUE'}
+                                        {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'VERIFY & CONTINUE'}
                                         <ArrowRight size={20} />
                                     </Button>
                                 </div>
@@ -855,7 +855,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     />
                                     <div className="flex flex-col gap-4">
                                         <Button onClick={handleVerifyOTP} disabled={verifying || otpCode.length !== 6} className="h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-2xl md:rounded-3xl">
-                                            {verifying ? <Loader2 className="animate-spin" /> : 'VERIFY CODE'}
+                                            {verifying ? <LoadingSpinner size="xs" color="#000000" /> : 'VERIFY CODE'}
                                         </Button>
                                         <button 
                                             onClick={() => { setStep('identity'); setConfirmationResult(null); setOtpCode(''); }} 
@@ -942,7 +942,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 <Input value={paymentRef} onChange={e => setPaymentRef(e.target.value)} className="h-14 bg-white/5 border-white/10 text-xs tracking-widest rounded-xl" placeholder="ENTER 12-DIGIT ID" />
                                             </div>
                                             <Button onClick={submitTickets} disabled={loading || !paymentRef} className="w-full h-16 bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                                                {loading ? <Loader2 className="animate-spin" /> : 'CONFIRM PAYMENT'}
+                                                {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'CONFIRM PAYMENT'}
                                             </Button>
                                         </div>
                                     </div>
