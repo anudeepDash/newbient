@@ -91,7 +91,7 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
     return (
         <Link to={`/concertzone/${slug}/${post.slug}`} 
             className={cn(
-                "group relative flex gap-5 items-center py-5 px-4 bg-white/[0.01] border border-white/0 transition-all duration-500 rounded-2xl overflow-hidden",
+                "group relative flex gap-3 md:gap-5 items-center py-4 md:py-5 px-2 md:px-4 bg-white/[0.01] border border-white/0 transition-all duration-500 rounded-2xl overflow-hidden",
                 isActive ? "bg-white/[0.05] border-white/10" : "hover:border-white/5 hover:bg-white/[0.03]"
             )}
         >
@@ -340,13 +340,13 @@ const ConcertZoneBlog = () => {
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-start mb-12 md:mb-20 px-4 w-full"
+                    className="flex flex-col items-start mb-12 md:mb-20 px-4 md:px-0 w-full"
                 >
                     <div className="flex items-center gap-4 mb-4 md:mb-6">
                         <div className="w-1.5 h-1.5 rounded-full bg-neon-blue shadow-[0_0_10px_#00ffff]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">The Editorial Hub</span>
                     </div>
-                    <h1 className="text-[10vw] xs:text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-tight text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
+                    <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black font-heading uppercase italic tracking-tighter leading-[0.85] text-white flex flex-row flex-wrap md:flex-nowrap items-center justify-start gap-x-3 md:gap-8 w-full overflow-hidden text-left">
                         <span>CONCERT</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white">ZONE.</span>
                     </h1>
                 </motion.div>
@@ -394,7 +394,7 @@ const ConcertZoneBlog = () => {
                 {leadPost && (
                     <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
                         {/* Lead Story — 2/3 width */}
-                        <div className="lg:col-span-2 relative group overflow-hidden rounded-[3rem]">
+                        <div className="lg:col-span-2 relative group overflow-hidden rounded-[2.5rem] md:rounded-[3rem]">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={leadPost.id}
@@ -404,7 +404,7 @@ const ConcertZoneBlog = () => {
                                     transition={{ duration: 0.8, ease: "easeOut" }}
                                     className="relative"
                                 >
-                                    <Link to={`/concertzone/${leadSlug}/${leadPost.slug}`} className="block relative rounded-[3rem] overflow-hidden aspect-[16/10] border border-white/5 group-hover:border-white/20 transition-all duration-700">
+                                    <Link to={`/concertzone/${leadSlug}/${leadPost.slug}`} className="block relative rounded-[2.5rem] md:rounded-[3rem] overflow-hidden aspect-[4/5] sm:aspect-[16/10] border border-white/5 group-hover:border-white/20 transition-all duration-700">
                                         {leadPost.videoUrl ? (
                                             <video 
                                                 src={leadPost.videoUrl} 
@@ -436,11 +436,11 @@ const ConcertZoneBlog = () => {
                                             </span>
                                         </div>
 
-                                        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
+                                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
                                             <motion.h2 
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="text-4xl md:text-7xl font-black font-heading uppercase tracking-tighter leading-[0.9] mb-6 italic group-hover:translate-x-4 transition-transform duration-700"
+                                                className="text-3xl sm:text-4xl md:text-7xl font-black font-heading uppercase tracking-tighter leading-[0.9] mb-4 md:mb-6 italic group-hover:translate-x-4 transition-transform duration-700"
                                             >
                                                 {leadPost.title.split(' ').map((word, i) => (
                                                     <span key={i} className={i % 2 === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white not-italic" : "text-white"}>
@@ -448,7 +448,7 @@ const ConcertZoneBlog = () => {
                                                     </span>
                                                 ))}
                                             </motion.h2>
-                                            <p className="text-gray-300 text-sm md:text-lg font-medium max-w-2xl line-clamp-2 opacity-60 group-hover:opacity-100 transition-opacity mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
+                                            <p className="text-gray-300 text-xs md:text-lg font-medium max-w-2xl line-clamp-3 md:line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity mb-6 md:mb-8 leading-relaxed italic">{leadPost.shortDescription}</p>
                                             <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/30">
                                                 <span className="flex items-center gap-2"><User size={12} className="text-neon-blue" /> {leadPost.author || 'NEWBI TEAM'}</span>
                                                 <div className="w-1 h-1 rounded-full bg-white/20" />
@@ -466,8 +466,8 @@ const ConcertZoneBlog = () => {
 
                         {/* Sidebar — 1/3 width */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 h-full">
-                                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/5">
+                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-2 md:p-4 h-full">
+                                <div className="flex items-center gap-2 mb-3 py-3 px-2 border-b border-white/5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-pink shadow-[0_0_10px_rgba(255,0,85,0.5)]" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-white">Featured Stories</span>
                                 </div>
