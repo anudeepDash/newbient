@@ -16,6 +16,7 @@ import User from 'lucide-react/dist/esm/icons/user';
 import Star from 'lucide-react/dist/esm/icons/star';
 import Home from 'lucide-react/dist/esm/icons/home';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
+import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 
@@ -116,6 +117,8 @@ const MiniCard = ({ post, isActive, progress = 0 }) => {
                 <div className="flex items-center gap-2 mb-1.5">
                     <span className={cn("text-[8px] font-black uppercase tracking-[0.2em]", isActive ? "text-neon-blue" : "text-neon-blue/80")}>{post.category}</span>
                     <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600 flex items-center gap-1"><Eye size={10} className="text-neon-blue/40" /> {post.viewCount || 0}</span>
+                    <div className="w-1 h-1 rounded-full bg-white/10" />
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-600">{post.readingTime || 5} MIN</span>
                 </div>
                 <h4 className={cn("text-sm font-black leading-tight uppercase italic tracking-tighter transition-colors line-clamp-2", isActive ? "text-white" : "text-white/60 group-hover:text-white")}>{post.title}</h4>
@@ -153,6 +156,8 @@ const StoryCard = ({ post }) => {
             <div className="p-6">
                 <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4">
                     <span className="flex items-center gap-1.5"><Clock size={10} className="text-neon-blue" /> {post.readingTime || 5} MIN</span>
+                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <span className="flex items-center gap-1.5"><Eye size={10} className="text-neon-blue" /> {post.viewCount || 0}</span>
                     <div className="w-1 h-1 rounded-full bg-white/10" />
                     <span>{new Date(post.publishDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                 </div>
@@ -433,6 +438,9 @@ const ConcertZoneBlog = () => {
                                             <span className="px-5 py-2 bg-neon-blue text-black text-[10px] font-black uppercase tracking-widest rounded-2xl italic shadow-[0_10px_30px_rgba(0,255,255,0.3)]">{leadPost.category}</span>
                                             <span className="px-5 py-2 bg-black/60 backdrop-blur-xl text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 flex items-center gap-2">
                                                 <Clock size={12} className="text-neon-blue" /> {leadPost.readingTime || 5} MIN
+                                            </span>
+                                            <span className="px-5 py-2 bg-black/60 backdrop-blur-xl text-white/70 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 flex items-center gap-2">
+                                                <Eye size={12} className="text-neon-blue" /> {leadPost.viewCount || 0}
                                             </span>
                                         </div>
 
