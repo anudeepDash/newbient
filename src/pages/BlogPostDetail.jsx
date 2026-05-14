@@ -24,6 +24,7 @@ import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import BlogCard from '../components/blog/BlogCard';
+import AdSenseSlot from '../components/blog/AdSenseSlot';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import { TEST_POSTS } from './ConcertZoneBlog';
 
@@ -35,6 +36,15 @@ const CATEGORY_COLORS = {
     'Community': '#10b981',   // green
     'default': '#00ffff'
 };
+
+const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
+    <AdSenseSlot 
+        className={className} 
+        adSlot={slot} 
+        adFormat={format === 'horizontal' ? 'horizontal' : 'auto'}
+        style={{ display: 'block', minHeight: format === 'horizontal' ? '96px' : '280px' }}
+    />
+);
 
 const BlogPostDetail = () => {
     const { category, slug } = useParams();
@@ -363,6 +373,9 @@ const BlogPostDetail = () => {
 
                     {/* Visual Separator */}
                     <div className="h-px w-full bg-gradient-to-r from-white/5 via-white/10 to-white/5 mt-12" />
+                    
+                    {/* Editorial Ad Slot */}
+                    <AdSlot className="mt-16 mb-8" format="horizontal" slot={import.meta.env.VITE_ADSENSE_SLOT_ARTICLE_FOOTER} />
                 </div>
 
                 {/* High-Fidelity Sidebar */}
