@@ -169,8 +169,10 @@ const ProposalGenerator = () => {
 
     const getPaginatedPages = () => {
         const pages = [];
-        pages.push({ type: 'cover', items: [] });
-        if (!isHidden('roadmap') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
+        if (!isHidden('cover')) {
+            pages.push({ type: 'cover', items: [] });
+        }
+        if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
@@ -317,7 +319,7 @@ const ProposalGenerator = () => {
     const paginatedPages = getPaginatedPages();
 
     const tabs = [
-        { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: null },
+        { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: 'cover' },
         { id: '2', label: 'Architecture', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
         { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
         { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
@@ -743,7 +745,7 @@ const ProposalGenerator = () => {
                                                     <div className="flex-1"><textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." /></div>
                                                     <div className="flex items-center gap-6">
                                                         <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50" /></div>
-                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">â‚¹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
+                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
                                                         <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
                                                     </div>
                                                 </div>
@@ -1117,7 +1119,7 @@ const ProposalGenerator = () => {
                                                             <tr key={i}>
                                                                 <td className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td>
                                                                 <td className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td>
-                                                                <td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">â‚¹{item.price.toLocaleString()}</td>
+                                                                <td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
