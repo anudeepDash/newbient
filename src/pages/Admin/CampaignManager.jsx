@@ -146,7 +146,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
     );
 };
 
-const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign }) => (
+const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink }) => (
     <motion.div 
         layout
         onClick={onSelect}
@@ -195,7 +195,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">REWARDS</p>
                     <p className="text-lg font-black text-white tracking-tighter truncate uppercase italic">{campaign.reward}</p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-1.5 shrink-0">
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
@@ -203,20 +203,30 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                                 onDelete(campaign.id);
                             }
                         }}
-                        className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                        className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                         title="Delete Campaign"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                     </button>
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
                             onCopyLink();
                         }}
-                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                         title="Share Campaign"
                     >
-                        <Share2 size={16} />
+                        <Share2 size={14} />
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(campaign);
+                        }}
+                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                        title="Edit Campaign"
+                    >
+                        <Edit size={14} />
                     </button>
                     <button 
                         onClick={(e) => {
@@ -225,16 +235,23 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "w-10 h-10 rounded-xl border transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl",
+                            "w-9 h-9 rounded-xl border transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl",
                             campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                         )}
                         title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                     >
-                        {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
+                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
                     </button>
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-neon-blue group-hover:border-neon-blue/30 group-hover:bg-neon-blue/10 transition-all shadow-xl backdrop-blur-3xl">
-                        <ChevronRight size={16} />
-                    </div>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect();
+                        }}
+                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all shadow-xl backdrop-blur-3xl"
+                        title="View Campaign Page"
+                    >
+                        <ChevronRight size={14} />
+                    </button>
                 </div>
             </div>
         </div>
@@ -309,6 +326,16 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
+                        onEdit(campaign);
+                    }}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    title="Edit Campaign"
+                >
+                    <Edit size={16} />
+                </button>
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
                         const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
                         updateCampaign(campaign.id, { ...campaign, status: newStatus });
                     }}
@@ -324,9 +351,16 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
             <StatusPill status={campaign.status} />
         </div>
 
-        <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/5 border border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110">
+        <button 
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+            }}
+            className="hidden sm:flex w-12 h-12 rounded-2xl bg-white/5 border border-white/5 items-center justify-center group-hover:bg-white group-hover:text-black transition-all group-hover:scale-110"
+            title="View Campaign Page"
+        >
             <ChevronRight size={20} />
-        </div>
+        </button>
     </motion.div>
 );
 
@@ -657,7 +691,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
             <div className={cn("px-4 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
                 {/* Control Panel */}
-                {!isCreating && (
+                {!isCreating && !expandedCampaignId && (
                     <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
                         
                         {/* Search Engine */}
@@ -900,6 +934,31 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     </div>
                                 </div>
                             </motion.div>
+                        ) : expandedCampaignId ? (
+                            <motion.div
+                                key="detail-view"
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -30 }}
+                                className="max-w-7xl mx-auto"
+                            >
+                                <CampaignDetailView 
+                                    campaignId={expandedCampaignId}
+                                    onClose={() => setExpandedCampaignId(null)}
+                                    onEdit={(c) => { handleEdit(c); setExpandedCampaignId(null); }}
+                                    onToggleShortlist={handleToggleShortlist}
+                                    onReviewSubmission={handleReviewSubmission}
+                                    onDelete={(id) => {
+                                        if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
+                                            deleteCampaign(id);
+                                            setExpandedCampaignId(null);
+                                        }
+                                    }}
+                                    updateCampaign={updateCampaign}
+                                    onCopyLink={() => handleCopyLink(expandedCampaignId)}
+                                    onCopyTaskLink={(taskId) => handleCopyTaskLink(expandedCampaignId, taskId)}
+                                />
+                            </motion.div>
                         ) : campaigns.length === 0 ? (
                             <motion.div 
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1022,25 +1081,6 @@ const CampaignManager = ({ isEmbedded = false }) => {
             {renderContent()}
             
             <AnimatePresence>
-                {expandedCampaignId && (
-                    <CampaignDetailModal 
-                        campaignId={expandedCampaignId}
-                        onClose={() => setExpandedCampaignId(null)}
-                        onEdit={(c) => { handleEdit(c); setExpandedCampaignId(null); }}
-                        onToggleShortlist={handleToggleShortlist}
-                        onReviewSubmission={handleReviewSubmission}
-                        onDelete={(id) => {
-                            if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
-                                deleteCampaign(id);
-                                setExpandedCampaignId(null);
-                            }
-                        }}
-                        updateCampaign={updateCampaign}
-                        onCopyLink={() => handleCopyLink(expandedCampaignId)}
-                        onCopyTaskLink={(taskId) => handleCopyTaskLink(expandedCampaignId, taskId)}
-                    />
-
-                )}
                 {rejectionModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 backdrop-blur-md" />
@@ -1063,12 +1103,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
             </AnimatePresence>
         </>
     );
-};
+}/* --- Detailed Mission Modal --- */
 
-/* --- Detailed Mission Modal --- */
-
-const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign, onCopyLink, onCopyTaskLink }) => {
-
+const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign, onCopyLink, onCopyTaskLink }) => {
     const { campaigns, creators } = useStore();
     const campaign = campaigns.find(c => c.id === campaignId);
     const [activeTab, setActiveTab] = useState('applicants'); // applicants | tasks
@@ -1079,204 +1116,297 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
     const approvedCreators = appliedCreators.filter(c => (c.shortlistedCampaigns || []).includes(campaign.id));
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 backdrop-blur-2xl" onClick={onClose} />
-            <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-7xl h-full md:h-[90vh] overflow-hidden flex flex-col shadow-[0_50px_150px_rgba(0,0,0,1)]"
-            >
-                {/* Header Section */}
-                <div className="p-10 md:p-14 border-b border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 shrink-0 bg-[#0A0A0A]/40">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <StatusPill status={campaign.status} />
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">CAMPAIGN ID: {campaign.id.slice(0, 8)}</span>
-                        </div>
-                        <h2 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter leading-none">{campaign.title}</h2>
-                        <div className="flex items-center gap-4 text-neon-blue font-black text-[11px] uppercase tracking-widest">
-                            <MapPin size={14} /> {campaign.targetCity}
-                        </div>
-                    </div>
-                    <div className="flex gap-4">
-                        <button 
-                            onClick={() => {
-                                const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
-                                updateCampaign(campaign.id, { ...campaign, status: newStatus });
-                            }}
-                            className={cn(
-                                "h-14 px-8 border rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3",
-                                campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+        <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className="w-full space-y-8 pb-20 pt-4"
+        >
+            {/* Back Navigation Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                <button 
+                    onClick={onClose} 
+                    className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-white/5 border border-white/10 hover:bg-white hover:text-black transition-all text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black shadow-lg backdrop-blur-xl w-fit"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    BACK TO CAMPAIGNS
+                </button>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <button 
+                        onClick={() => {
+                            const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
+                            updateCampaign(campaign.id, { ...campaign, status: newStatus });
+                        }}
+                        className={cn(
+                            "h-12 px-6 border rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-xl backdrop-blur-xl",
+                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                        )}
+                    >
+                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
+                        {campaign.status === 'Open' ? 'ACTIVE (CLICK TO CLOSE)' : 'CLOSED (CLICK TO OPEN)'}
+                    </button>
+                    <button 
+                        onClick={onCopyLink} 
+                        className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl backdrop-blur-xl"
+                        title="Share Campaign"
+                    >
+                        <Share2 size={18} />
+                    </button>
+                    <button 
+                        onClick={() => onEdit(campaign)} 
+                        className="h-12 px-6 bg-white/10 border border-white/20 text-white font-black uppercase tracking-widest rounded-full hover:bg-white hover:text-black transition-all text-xs flex items-center gap-2 shadow-xl backdrop-blur-xl"
+                    >
+                        <Edit size={14} /> EDIT BRIEF
+                    </button>
+                    <button 
+                        onClick={() => onDelete(campaign.id)} 
+                        className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                        title="Delete Campaign"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Campaign Hero Card */}
+            <div className="relative bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-neon-blue/10 via-neon-pink/10 to-purple-500/10 blur-[120px] pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 w-full lg:w-auto">
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-[2rem] bg-black border border-white/10 overflow-hidden shrink-0 shadow-2xl group relative flex items-center justify-center font-black text-white/20 text-xs tracking-widest">
+                            {campaign.thumbnail ? (
+                                <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                            ) : (
+                                <span>NO IMAGE</span>
                             )}
-                        >
-                            {campaign.status === 'Open' ? <Unlock size={18} /> : <Lock size={18} />}
-                            {campaign.status === 'Open' ? 'CLOSE CAMPAIGN' : 'OPEN CAMPAIGN'}
-                        </button>
-                        <button 
-                            onClick={onCopyLink} 
-                            className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl"
-                        >
-                            <Share2 size={24} />
-                        </button>
-                        <button 
-                            onClick={() => onDelete(campaign.id)} 
-                            className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-xl"
-                        >
-                            <Trash2 size={24} />
-                        </button>
-                        <button onClick={() => onEdit(campaign)} className="h-14 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all">EDIT CAMPAIGN</button>
-                        <button onClick={onClose} className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group">
-                            <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
-                        </button>
+                            <div className="absolute top-3 right-3">
+                                <StatusPill status={campaign.status} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 flex-1 min-w-0">
+                            <div>
+                                <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
+                                    <Target size={14} /> CAMPAIGN BRIEF
+                                </div>
+                                <h1 className="text-3xl sm:text-5xl font-black text-white uppercase italic tracking-tighter leading-tight">
+                                    {campaign.title}
+                                </h1>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-xs font-black uppercase tracking-widest">
+                                <span className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-300 shadow-inner">
+                                    <MapPin size={14} className="text-neon-pink" /> {campaign.targetCity || 'GLOBAL'}
+                                </span>
+                                <span className="flex items-center gap-2 bg-neon-green/10 border border-neon-green/20 px-4 py-2 rounded-xl text-neon-green shadow-inner">
+                                    <IndianRupee size={14} /> {campaign.reward}
+                                </span>
+                                <span className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-xl text-purple-400 shadow-inner">
+                                    <Users size={14} /> {campaign.minInstagramFollowers ? `${campaign.minInstagramFollowers}+ FOLLOWERS REQ.` : 'ANY FOLLOWERS'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
+                    {campaign.whatsappLink && (
+                        <a 
+                            href={campaign.whatsappLink} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="group flex items-center gap-4 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-black text-green-500 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl backdrop-blur-xl shrink-0 w-full lg:w-auto justify-center"
+                        >
+                            <ExternalLink size={18} className="group-hover:rotate-45 transition-transform" />
+                            JOIN WHATSAPP GROUP
+                        </a>
+                    )}
                 </div>
 
-                {/* Tabs */}
-                <div className="px-10 md:px-14 py-6 border-b border-white/5 flex gap-10 shrink-0">
+                {campaign.description && (
+                    <div className="mt-8 pt-8 border-t border-white/5 text-gray-400 text-sm leading-relaxed prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: campaign.description }} />
+                )}
+            </div>
+
+            {/* Tabs & Content */}
+            <div className="space-y-8">
+                <div className="flex gap-4 border-b border-white/5 pb-4">
                     {['applicants', 'tasks'].map(tab => (
                         <button 
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={cn(
-                                "relative py-4 text-[11px] font-black uppercase tracking-[0.3em] transition-colors",
-                                activeTab === tab ? "text-white" : "text-gray-500 hover:text-white"
+                                "relative px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all",
+                                activeTab === tab ? "bg-white text-black shadow-xl" : "bg-white/5 text-gray-500 hover:text-white border border-white/5"
                             )}
                         >
                             {tab === 'applicants' ? `APPLICATIONS (${appliedCreators.length})` : `CAMPAIGN TASKS (${campaign.tasks?.length || 0})`}
-                            {activeTab === tab && <motion.div layoutId="modal-tab-line" className="absolute bottom-0 left-0 right-0 h-1 bg-neon-blue rounded-full shadow-[0_0_10px_rgba(46,191,255,0.5)]" />}
                         </button>
                     ))}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 md:p-14">
-                    {activeTab === 'applicants' ? (
-                        <div className="space-y-6">
-                            {appliedCreators.length === 0 ? (
-                                <div className="py-32 text-center flex flex-col items-center gap-6 opacity-40">
-                                    <Users size={64} />
-                                    <p className="text-xl font-black uppercase tracking-tighter">No Applications Received Yet</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
-                                    {appliedCreators.map(creator => {
-                                        const isShortlisted = (creator.shortlistedCampaigns || []).includes(campaign.id);
-                                        return (
-                                            <div key={creator.uid} className={cn("p-8 rounded-[2.5rem] border transition-all duration-500 group relative overflow-hidden", isShortlisted ? "bg-neon-blue/5 border-neon-blue/20" : "bg-white/[0.02] border-white/5 hover:border-white/20")}>
-                                                <div className="flex items-start justify-between mb-8">
-                                                    <div className="w-16 h-16 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-xl font-black italic">{creator.name.charAt(0)}</div>
-                                                    <button 
-                                                        onClick={() => onToggleShortlist(creator.uid, campaign.id)}
-                                                        className={cn(
-                                                            "px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all",
-                                                            isShortlisted ? "bg-neon-blue text-white border-neon-blue shadow-[0_0_20px_rgba(46,191,255,0.3)]" : "bg-white/5 text-gray-500 border-white/10 hover:text-white hover:border-white/30"
-                                                        )}
-                                                    >
-                                                        {isShortlisted ? 'SHORTLISTED' : 'SHORTLIST'}
-                                                    </button>
-                                                </div>
-                                                <h4 className="text-xl font-black text-white uppercase italic tracking-tight mb-2">{creator.name}</h4>
-                                                <div className="flex items-center gap-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                                    <Instagram size={14} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} FOLLOWERS
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="space-y-12">
-                            {(campaign.tasks || []).map((task, idx) => (
-                                <div key={task.id} className="space-y-8">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-neon-blue">{idx + 1}</div>
-                                        <div>
-                                            <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{task.title}</h4>
-                                            <div className="flex items-center gap-3">
-                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">{task.platform} TASK</p>
-                                                {task.deadline && (
-                                                    <span className="text-[9px] font-bold text-red-500/60 uppercase tracking-widest bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
-                                                        DEADLINE: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                                    </span>
-                                                )}
-                                                <button 
-                                                    onClick={() => onCopyTaskLink(task.id)}
-                                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-neon-blue hover:border-neon-blue/30 transition-all"
-                                                    title="Share Task"
-                                                >
-                                                    <Share2 size={12} />
-                                                </button>
-                                            </div>
+                <AnimatePresence mode="wait">
+                    <motion.div 
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {activeTab === 'applicants' ? (
+                            <div className="space-y-6">
+                                {appliedCreators.length === 0 ? (
+                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
+                                        <Users size={48} className="text-gray-600" />
+                                        <div className="space-y-1">
+                                            <p className="text-lg font-black uppercase tracking-tighter text-white">No Applications Received Yet</p>
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Creators who apply will appear here for shortlisting</p>
                                         </div>
                                     </div>
-
-                                    {/* Task Verification Dashboard */}
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden">
-                                        <div className="p-8 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
-                                            <h5 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em]">TASK VERIFICATION</h5>
-                                            <div className="px-4 py-1.5 bg-neon-blue/10 rounded-full text-[8px] font-black text-neon-blue uppercase tracking-widest border border-neon-blue/20">Awaiting {Object.values(task.submissions || {}).filter(s => s.status === 'submitted').length} Reviews</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+                                        {appliedCreators.map(creator => {
+                                            const isShortlisted = (creator.shortlistedCampaigns || []).includes(campaign.id);
+                                            return (
+                                                <div key={creator.uid} className={cn("p-8 rounded-[2.5rem] border transition-all duration-500 group relative overflow-hidden backdrop-blur-xl", isShortlisted ? "bg-neon-blue/10 border-neon-blue/30 shadow-[0_10px_30px_rgba(46,191,255,0.1)]" : "bg-[#0A0A0A]/60 border-white/5 hover:border-white/20")}>
+                                                    <div className="flex items-start justify-between mb-8">
+                                                        <div className="w-16 h-16 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-xl font-black italic text-white shadow-inner">{creator.name.charAt(0)}</div>
+                                                        <button 
+                                                            onClick={() => onToggleShortlist(creator.uid, campaign.id)}
+                                                            className={cn(
+                                                                "px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shadow-lg",
+                                                                isShortlisted ? "bg-neon-blue text-black border-neon-blue font-black" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white hover:text-black hover:border-white"
+                                                            )}
+                                                        >
+                                                            {isShortlisted ? '✓ SHORTLISTED' : '+ SHORTLIST'}
+                                                        </button>
+                                                    </div>
+                                                    <h4 className="text-xl font-black text-white uppercase italic tracking-tight mb-3 group-hover:text-neon-blue transition-colors">{creator.name}</h4>
+                                                    <div className="flex items-center gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white/5 border border-white/5 px-4 py-2 rounded-xl w-fit">
+                                                        <Instagram size={14} className="text-neon-pink" /> {Number(creator.instagramFollowers || 0).toLocaleString()} FOLLOWERS
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-12">
+                                {(campaign.tasks || []).length === 0 ? (
+                                    <div className="py-24 text-center bg-[#0A0A0A]/40 border border-white/5 rounded-[2.5rem] flex flex-col items-center gap-6 opacity-60">
+                                        <Target size={48} className="text-gray-600" />
+                                        <div className="space-y-1">
+                                            <p className="text-lg font-black uppercase tracking-tighter text-white">No Tasks Configured</p>
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Edit the campaign brief to add tasks for creators</p>
                                         </div>
-                                        <div className="p-8 space-y-6">
-                                            {approvedCreators.length === 0 ? (
-                                                <p className="text-center py-10 text-gray-700 text-[10px] font-black uppercase tracking-widest italic">No shortlisted creators assigned to this task.</p>
-                                            ) : approvedCreators.map(creator => {
-                                                const sub = task.submissions?.[creator.uid];
-                                                const status = sub?.status || 'not_started';
-                                                
-                                                return (
-                                                    <div key={creator.uid} className="flex items-center justify-between p-6 bg-black/40 rounded-[2rem] border border-white/5 group hover:border-white/10 transition-all">
-                                                        <div className="flex items-center gap-6">
-                                                            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center font-black italic">{creator.name.charAt(0)}</div>
-                                                            <div>
-                                                                <p className="text-sm font-black text-white uppercase italic">{creator.name}</p>
-                                                                <p className={cn("text-[9px] font-black uppercase tracking-widest", 
-                                                                    status === 'approved' ? "text-neon-green" : 
-                                                                    status === 'submitted' ? "text-neon-blue" : 
-                                                                    status === 'rejected' ? "text-red-500" : "text-gray-700"
-                                                                )}>{status.replace('_', ' ')}</p>
+                                    </div>
+                                ) : (campaign.tasks || []).map((task, idx) => (
+                                    <div key={task.id} className="space-y-6 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-xl">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                                            <div className="flex items-center gap-6">
+                                                <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center font-black text-neon-blue text-lg shadow-inner">{idx + 1}</div>
+                                                <div>
+                                                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-1">{task.title}</h4>
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">{task.platform} TASK</p>
+                                                        {task.deadline && (
+                                                            <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-lg border border-red-500/20">
+                                                                DEADLINE: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => onCopyTaskLink(task.id)}
+                                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-widest w-fit"
+                                                title="Share Task Link"
+                                            >
+                                                <Share2 size={14} /> SHARE TASK
+                                            </button>
+                                        </div>
+
+                                        {task.description && (
+                                            <div className="text-gray-400 text-xs leading-relaxed prose prose-invert max-w-none bg-black/40 p-6 rounded-2xl border border-white/5" dangerouslySetInnerHTML={{ __html: task.description }} />
+                                        )}
+
+                                        {/* Task Verification Dashboard */}
+                                        <div className="space-y-4 pt-4">
+                                            <div className="flex items-center justify-between px-2">
+                                                <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] flex items-center gap-2">
+                                                    <CheckCircle2 size={14} className="text-neon-blue" /> TASK VERIFICATION & SUBMISSIONS
+                                                </h5>
+                                                <div className="px-4 py-1.5 bg-neon-blue/10 rounded-full text-[9px] font-black text-neon-blue uppercase tracking-widest border border-neon-blue/20">
+                                                    Awaiting {Object.values(task.submissions || {}).filter(s => s.status === 'submitted').length} Reviews
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {approvedCreators.length === 0 ? (
+                                                    <div className="p-8 text-center bg-black/40 rounded-[2rem] border border-white/5 text-gray-600 text-[10px] font-black uppercase tracking-widest italic">
+                                                        No shortlisted creators assigned to this campaign yet.
+                                                    </div>
+                                                ) : approvedCreators.map(creator => {
+                                                    const sub = task.submissions?.[creator.uid];
+                                                    const status = sub?.status || 'not_started';
+                                                    
+                                                    return (
+                                                        <div key={creator.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-black/60 rounded-[2rem] border border-white/5 group hover:border-white/10 transition-all gap-4 shadow-lg backdrop-blur-xl">
+                                                            <div className="flex items-center gap-6">
+                                                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black italic text-white shadow-inner">{creator.name.charAt(0)}</div>
+                                                                <div>
+                                                                    <p className="text-base font-black text-white uppercase italic tracking-tight mb-1">{creator.name}</p>
+                                                                    <span className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border", 
+                                                                        status === 'approved' ? "bg-neon-green/10 text-neon-green border-neon-green/30" : 
+                                                                        status === 'submitted' ? "bg-neon-blue/10 text-neon-blue border-neon-blue/30 animate-pulse" : 
+                                                                        status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/30" : "bg-white/5 text-gray-500 border-white/10"
+                                                                    )}>
+                                                                        {status.replace('_', ' ')}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex flex-wrap items-center gap-3">
+                                                                {sub?.submissionUrl && (
+                                                                    <a href={sub.submissionUrl} target="_blank" rel="noreferrer" className="h-11 px-6 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white hover:text-black transition-all shadow-md">
+                                                                        <ExternalLink size={14} /> VIEW SUBMISSION
+                                                                    </a>
+                                                                )}
+                                                                {status === 'submitted' && (
+                                                                    <div className="flex gap-2">
+                                                                        <button 
+                                                                            onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'approved')} 
+                                                                            disabled={isReviewing}
+                                                                            className="h-11 px-6 rounded-xl bg-neon-green/20 text-neon-green border border-neon-green/30 flex items-center gap-2 hover:bg-neon-green hover:text-black transition-all text-[9px] font-black uppercase tracking-widest shadow-md"
+                                                                            title="Approve Submission"
+                                                                        >
+                                                                            {isReviewing ? <LoadingSpinner size="xs" color="neon-green" /> : <Check size={16} />} APPROVE
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} 
+                                                                            disabled={isReviewing}
+                                                                            className="h-11 px-6 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-2 hover:bg-red-50 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest shadow-md"
+                                                                            title="Reject Submission"
+                                                                        >
+                                                                            {isReviewing ? <LoadingSpinner size="xs" color="red" /> : <X size={16} />} REJECT
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
-
-                                                        <div className="flex items-center gap-4">
-                                                            {sub?.submissionUrl && (
-                                                                <a href={sub.submissionUrl} target="_blank" rel="noreferrer" className="h-12 px-6 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white hover:text-black transition-all">
-                                                                    <ExternalLink size={14} /> VIEW CONTENT
-                                                                </a>
-                                                            )}
-                                                            {status === 'submitted' && (
-                                                                <div className="flex gap-2">
-                                                                    <button 
-                                                                        onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'approved')} 
-                                                                        disabled={isReviewing}
-                                                                        className="w-12 h-12 rounded-xl bg-neon-green/20 text-neon-green border border-neon-green/30 flex items-center justify-center hover:bg-neon-green hover:text-black transition-all"
-                                                                    >
-                                                                        {isReviewing ? <LoadingSpinner size="xs" color="neon-green" /> : <Check size={18} />}
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={() => onReviewSubmission(campaign.id, task.id, creator.uid, 'rejected')} 
-                                                                        disabled={isReviewing}
-                                                                        className="w-12 h-12 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
-                                                                    >
-                                                                        {isReviewing ? <LoadingSpinner size="xs" color="red" /> : <X size={18} />}
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-        </div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </motion.div>
     );
 };
 

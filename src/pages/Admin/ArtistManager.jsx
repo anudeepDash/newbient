@@ -492,6 +492,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={(id) => setShowDeleteConfirmId(id)}
                         onExport={exportToCSV}
+                        isUpdating={isUpdating}
                     />
                 )}
                 {showDeleteConfirmId && (
@@ -796,7 +797,7 @@ const safeOpen = (url) => {
     window.open(`${protocol}${url}`, '_blank');
 };
 
-const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport }) => {
+const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport, isUpdating }) => {
 
 
     const youtubeId = getYoutubeId(artist?.youtube);
