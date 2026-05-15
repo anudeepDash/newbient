@@ -190,44 +190,60 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between gap-4">
-                <div className="min-w-0 pr-2">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">REWARDS</p>
-                    <p className="text-lg font-black text-white tracking-tighter truncate uppercase italic">{campaign.reward}</p>
+            <div className="mt-auto pt-6 border-t border-white/5 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1 pr-2">
+                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">REWARDS</p>
+                        <p className="text-xl font-black text-neon-green tracking-tighter uppercase italic truncate">{campaign.reward}</p>
+                    </div>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect();
+                        }}
+                        className="flex items-center gap-1.5 px-4 h-10 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-black transition-all text-[10px] font-black uppercase tracking-widest group/btn shadow-xl backdrop-blur-3xl shrink-0"
+                        title="View Campaign Page"
+                    >
+                        <span>MANAGE</span>
+                        <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                    </button>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
-                                onDelete(campaign.id);
-                            }
-                        }}
-                        className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
-                        title="Delete Campaign"
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onCopyLink();
-                        }}
-                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
-                        title="Share Campaign"
-                    >
-                        <Share2 size={14} />
-                    </button>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(campaign);
-                        }}
-                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
-                        title="Edit Campaign"
-                    >
-                        <Edit size={14} />
-                    </button>
+
+                <div className="flex items-center justify-between gap-1.5 pt-4 border-t border-white/5 bg-white/[0.01] -mx-2 px-2 py-2 rounded-2xl">
+                    <div className="flex items-center gap-1.5">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
+                                    onDelete(campaign.id);
+                                }
+                            }}
+                            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            title="Delete Campaign"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCopyLink();
+                            }}
+                            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            title="Share Campaign"
+                        >
+                            <Share2 size={14} />
+                        </button>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(campaign);
+                            }}
+                            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            title="Edit Campaign"
+                        >
+                            <Edit size={14} />
+                        </button>
+                    </div>
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
@@ -235,22 +251,13 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "w-9 h-9 rounded-xl border transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl",
+                            "px-3 h-9 rounded-xl border transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-3xl",
                             campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                         )}
                         title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                     >
-                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
-                    </button>
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect();
-                        }}
-                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all shadow-xl backdrop-blur-3xl"
-                        title="View Campaign Page"
-                    >
-                        <ChevronRight size={14} />
+                        {campaign.status === 'Open' ? <Unlock size={12} /> : <Lock size={12} />}
+                        <span>{campaign.status}</span>
                     </button>
                 </div>
             </div>
