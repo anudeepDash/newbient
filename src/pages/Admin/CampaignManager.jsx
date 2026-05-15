@@ -160,8 +160,8 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                     <img src={campaign.thumbnail} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm">
-                        <div className="text-2xl font-black text-white/5 uppercase italic select-none tracking-[0.2em]">
-                            MISSION ASSET
+                    <div className="text-2xl font-black text-white/5 uppercase italic select-none tracking-[0.2em]">
+                            CAMPAIGN IMAGE
                         </div>
                     </div>
                 )}
@@ -173,7 +173,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
 
         <div className="flex-1 flex flex-col px-1">
             <div className="mb-6">
-                <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2 opacity-60">ACTIVE MISSION</p>
+                <p className="text-[9px] font-black text-neon-blue uppercase tracking-[0.4em] mb-2 opacity-60">CAMPAIGN</p>
                 <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-[0.9] group-hover:text-neon-blue transition-colors duration-500 line-clamp-2">
                     {campaign.title}
                 </h3>
@@ -186,27 +186,37 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </div>
                 <div className="flex items-center gap-3 text-yellow-500/80 text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/5 px-4 py-2.5 rounded-2xl border border-yellow-500/10 shadow-inner w-fit">
                     <Zap size={12} className="text-yellow-500" />
-                    <span>{campaign.tasks?.length || 0} OPERATIONAL UNITS</span>
+                    <span>{campaign.tasks?.length || 0} TASKS</span>
                 </div>
             </div>
 
             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between gap-4">
                 <div className="min-w-0 pr-2">
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">REWARD PACKAGE</p>
+                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">REWARDS</p>
                     <p className="text-lg font-black text-white tracking-tighter truncate uppercase italic">{campaign.reward}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                     <button 
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                            if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
                                 onDelete(campaign.id);
                             }
                         }}
                         className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
-                        title="Delete Mission"
+                        title="Delete Campaign"
                     >
                         <Trash2 size={16} />
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onCopyLink();
+                        }}
+                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                        title="Share Campaign"
+                    >
+                        <Share2 size={16} />
                     </button>
                     <button 
                         onClick={(e) => {
@@ -218,7 +228,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             "w-10 h-10 rounded-xl border transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl",
                             campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                         )}
-                        title={campaign.status === 'Open' ? "Close Mission" : "Open Mission"}
+                        title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                     >
                         {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
                     </button>
@@ -263,12 +273,12 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
 
         <div className="w-48 hidden md:block">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 bg-white/5 border border-white/5 px-4 py-2 rounded-xl group-hover:bg-white/10 transition-colors">
-                ACTIVE MISSION
+                CAMPAIGN
             </span>
         </div>
 
         <div className="w-40 hidden lg:block text-right pr-10">
-            <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest mb-1">OPERATIONAL UNITS</p>
+            <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest mb-1">TASKS</p>
             <p className="text-lg font-black text-white font-mono">{campaign.tasks?.length || 0}</p>
         </div>
 
@@ -277,14 +287,24 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                    if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
                             onDelete(campaign.id);
                         }
                     }}
                     className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
-                    title="Delete Mission"
+                    title="Delete Campaign"
                 >
                     <Trash2 size={16} />
+                </button>
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onCopyLink();
+                    }}
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    title="Share Campaign"
+                >
+                    <Share2 size={16} />
                 </button>
                 <button 
                     onClick={(e) => {
@@ -296,7 +316,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                         "w-10 h-10 rounded-xl border transition-all flex items-center justify-center",
                         campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                     )}
-                    title={campaign.status === 'Open' ? "Close Mission" : "Open Mission"}
+                    title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                 >
                     {campaign.status === 'Open' ? <Unlock size={16} /> : <Lock size={16} />}
                 </button>
@@ -509,6 +529,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
         useStore.getState().addToast("Campaign link copied to clipboard!", 'success');
     };
 
+    const handleCopyTaskLink = (campaignId, taskId) => {
+        const url = `${window.location.origin}/campaign/${campaignId}?taskId=${taskId}`;
+        navigator.clipboard.writeText(url);
+        useStore.getState().addToast("Task link copied to clipboard!", 'success');
+    };
+
     const handleToggleShortlist = async (creatorUid, campaignId) => {
         try {
             const isShortlisting = !useStore.getState().creators.find(c => c.uid === creatorUid)?.shortlistedCampaigns?.includes(campaignId);
@@ -602,10 +628,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             Administrative Campaign Hub
                         </div>
                         <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
-                            MISSION <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">OPERATIONS.</span>
+                            CAMPAIGN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">OPERATIONS.</span>
                         </h1>
                         <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            Deploy and manage strategic creator missions. Monitor real-time task submissions, verify content, and orchestrate global followers.
+                            Deploy and manage strategic creator campaigns. Monitor real-time task submissions, verify content, and orchestrate global followers.
                         </p>
                         <div className="pt-4">
                             <AdminDashboardLink />
@@ -618,14 +644,14 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         </div>
                         <div className="space-y-1">
                             <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">CAMPAIGN <span className="text-neon-blue">OVERVIEW</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Monitor and manage your active mission performance</p>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Monitor and manage your active campaign performance</p>
                         </div>
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
-                    <StatCard compact={isEmbedded} icon={<Zap size={24} />} label="LIVE MISSIONS" value={stats.active} color="green" description={`${stats.total} Total Units`} />
-                    <StatCard compact={isEmbedded} icon={<Clock size={24} />} label="PENDING REVIEW" value={stats.pending} color="yellow" description="Awaiting Task Verification" />
+                    <StatCard compact={isEmbedded} icon={<Zap size={24} />} label="ACTIVE CAMPAIGNS" value={stats.active} color="green" description={`${stats.total} Total Units`} />
+                    <StatCard compact={isEmbedded} icon={<Clock size={24} />} label="PENDING REVIEW" value={stats.pending} color="yellow" description="Awaiting Verification" />
                 </div>
             </div>
 
@@ -640,7 +666,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-blue transition-colors" size={16} />
                             <input
                                 type="text"
-                                placeholder="SEARCH MISSIONS..."
+                                placeholder="SEARCH CAMPAIGNS..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full h-14 pl-14 pr-6 bg-black/60 border border-white/10 group-hover:border-white/20 focus:border-neon-blue/60 rounded-full text-[10px] font-black uppercase tracking-[0.2em] outline-none transition-all placeholder:text-gray-700 text-white min-w-0"
@@ -676,7 +702,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
                                 <Plus size={16} />
-                                NEW MISSION
+                                NEW CAMPAIGN
                             </div>
                         </button>
                     </div>
@@ -699,7 +725,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             <ArrowLeft size={20} />
                                         </button>
                                         <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">
-                                            {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">MISSION BRIEF</span>
+                                            {editingId ? 'EDIT' : 'NEW'} <span className="text-neon-blue">CAMPAIGN BRIEF</span>
                                         </h2>
                                     </div>
                                     <div className="flex gap-4">
@@ -719,7 +745,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                         <Card className="p-8 md:p-10 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl space-y-8">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MISSION TITLE</label>
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">TITLE</label>
                                                     <Input required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Summer Brand Rush" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                                 </div>
                                                 <div className="space-y-2">
@@ -738,7 +764,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MISSION THUMBNAIL (OR CTRL+V)</label>
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">CAMPAIGN IMAGE (OR CTRL+V)</label>
                                                 <div className="flex gap-4 items-center">
                                                     {formData.thumbnail && (
                                                         <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0">
@@ -762,27 +788,27 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                             </div>
 
                                             <StudioRichEditor 
-                                                label="OPERATIONAL BRIEF"
+                                                label="DESCRIPTION"
                                                 required
                                                 value={formData.description}
                                                 onChange={val => setFormData({ ...formData, description: val })}
-                                                placeholder="Describe the mission requirements and goals..."
+                                                placeholder="Describe the campaign requirements and goals..."
                                                 minHeight="180px"
                                             />
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">REWARD DETAIL</label>
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">REWARDS</label>
                                                     <Input required value={formData.reward} onChange={e => setFormData({ ...formData, reward: e.target.value })} placeholder="e.g. ₹5,000 + Products" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MIN FOLLOWERS</label>
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">MINIMUM FOLLOWERS</label>
                                                     <Input type="number" required value={formData.minInstagramFollowers} onChange={e => setFormData({ ...formData, minInstagramFollowers: parseInt(e.target.value) })} placeholder="e.g. 5000" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">COMMUNICATION HUB (WHATSAPP)</label>
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">WHATSAPP GROUP LINK</label>
                                                 <Input value={formData.whatsappLink} onChange={e => setFormData({ ...formData, whatsappLink: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                             </div>
 
@@ -795,8 +821,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                         <Star size={24} className={cn(formData.isPinned && "fill-current")} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">FEATURE AS SPOTLIGHT</h4>
-                                                        <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW IN THE FEATURED SECTION AT TOP</p>
+                                                        <h4 className="text-white text-sm font-black uppercase tracking-widest italic leading-tight">PIN TO TOP</h4>
+                                                        <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold tracking-[0.1em]">SHOW AT THE TOP OF THE LIST</p>
                                                     </div>
                                                 </div>
                                                 <button 
@@ -815,10 +841,10 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                         <Card className="p-8 md:p-10 bg-[#0A0A0A]/60 backdrop-blur-3xl border-white/5 rounded-[2.5rem] shadow-2xl">
                                             <div className="flex items-center justify-between mb-8">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                                                    <Zap size={18} className="text-neon-blue" /> MISSION TASKS
+                                                    <Zap size={18} className="text-neon-blue" /> TASKS
                                                 </h3>
                                                 <button type="button" onClick={() => setFormData({ ...formData, tasks: [...formData.tasks, { id: Date.now().toString(), title: '', description: '', taskType: 'custom', platform: 'instagram', priority: 'required', creativeAssets: [], creativeLinks: [], submissions: {} }] })} className="h-10 px-5 rounded-xl border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                                                    + Add Unit
+                                                    + Add Task
                                                 </button>
                                             </div>
 
@@ -883,8 +909,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     <Target size={48} className="text-gray-700" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-gray-500 italic">No Missions Found</h3>
-                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Deploy a mission to begin operations</p>
+                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-gray-500 italic">No Campaigns Found</h3>
+                                    <p className="text-gray-700 text-sm font-black uppercase tracking-widest">Deploy a campaign to begin operations</p>
                                 </div>
                             </motion.div>
                         ) : (
@@ -938,9 +964,9 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center gap-6 px-10 py-6 text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] border-b border-white/5">
                                             <div className="w-16 shrink-0">Asset</div>
-                                            <div className="flex-1 pl-1">Mission Brief</div>
+                                            <div className="flex-1 pl-1">Campaign Brief</div>
                                             <div className="w-48 hidden md:block">Status</div>
-                                            <div className="w-40 hidden lg:block text-right pr-10">Unit Units</div>
+                                            <div className="w-40 hidden lg:block text-right pr-10">Tasks</div>
                                             <div className="w-12 shrink-0"></div>
                                         </div>
                                         {paginatedCampaigns.map((campaign, idx) => (
@@ -1004,12 +1030,14 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         onToggleShortlist={handleToggleShortlist}
                         onReviewSubmission={handleReviewSubmission}
                         onDelete={(id) => {
-                            if (window.confirm('Are you sure you want to delete this mission? This cannot be undone.')) {
+                            if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
                                 deleteCampaign(id);
                                 setExpandedCampaignId(null);
                             }
                         }}
                         updateCampaign={updateCampaign}
+                        onCopyLink={() => handleCopyLink(expandedCampaignId)}
+                        onCopyTaskLink={(taskId) => handleCopyTaskLink(expandedCampaignId, taskId)}
                     />
 
                 )}
@@ -1039,7 +1067,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
 /* --- Detailed Mission Modal --- */
 
-const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign }) => {
+const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, onReviewSubmission, onDelete, updateCampaign, onCopyLink, onCopyTaskLink }) => {
 
     const { campaigns, creators } = useStore();
     const campaign = campaigns.find(c => c.id === campaignId);
@@ -1064,7 +1092,7 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
                             <StatusPill status={campaign.status} />
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">DEPLOYMENT ID: {campaign.id.slice(0, 8)}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">CAMPAIGN ID: {campaign.id.slice(0, 8)}</span>
                         </div>
                         <h2 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter leading-none">{campaign.title}</h2>
                         <div className="flex items-center gap-4 text-neon-blue font-black text-[11px] uppercase tracking-widest">
@@ -1083,7 +1111,13 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                             )}
                         >
                             {campaign.status === 'Open' ? <Unlock size={18} /> : <Lock size={18} />}
-                            {campaign.status === 'Open' ? 'CLOSE MISSION' : 'OPEN MISSION'}
+                            {campaign.status === 'Open' ? 'CLOSE CAMPAIGN' : 'OPEN CAMPAIGN'}
+                        </button>
+                        <button 
+                            onClick={onCopyLink} 
+                            className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-xl"
+                        >
+                            <Share2 size={24} />
                         </button>
                         <button 
                             onClick={() => onDelete(campaign.id)} 
@@ -1091,7 +1125,7 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                         >
                             <Trash2 size={24} />
                         </button>
-                        <button onClick={() => onEdit(campaign)} className="h-14 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all">EDIT MISSION</button>
+                        <button onClick={() => onEdit(campaign)} className="h-14 px-10 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all">EDIT CAMPAIGN</button>
                         <button onClick={onClose} className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group">
                             <X size={24} className="group-hover:rotate-90 transition-transform duration-500" />
                         </button>
@@ -1110,7 +1144,7 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                                 activeTab === tab ? "text-white" : "text-gray-500 hover:text-white"
                             )}
                         >
-                            {tab === 'applicants' ? `APPLICATIONS (${appliedCreators.length})` : `MISSION TASKS (${campaign.tasks?.length || 0})`}
+                            {tab === 'applicants' ? `APPLICATIONS (${appliedCreators.length})` : `CAMPAIGN TASKS (${campaign.tasks?.length || 0})`}
                             {activeTab === tab && <motion.div layoutId="modal-tab-line" className="absolute bottom-0 left-0 right-0 h-1 bg-neon-blue rounded-full shadow-[0_0_10px_rgba(46,191,255,0.5)]" />}
                         </button>
                     ))}
@@ -1161,19 +1195,33 @@ const CampaignDetailModal = ({ campaignId, onClose, onEdit, onToggleShortlist, o
                                         <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-neon-blue">{idx + 1}</div>
                                         <div>
                                             <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{task.title}</h4>
-                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">{task.platform} UNIT</p>
+                                            <div className="flex items-center gap-3">
+                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">{task.platform} TASK</p>
+                                                {task.deadline && (
+                                                    <span className="text-[9px] font-bold text-red-500/60 uppercase tracking-widest bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
+                                                        DEADLINE: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                )}
+                                                <button 
+                                                    onClick={() => onCopyTaskLink(task.id)}
+                                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-neon-blue hover:border-neon-blue/30 transition-all"
+                                                    title="Share Task"
+                                                >
+                                                    <Share2 size={12} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Task Verification Dashboard */}
                                     <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden">
                                         <div className="p-8 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
-                                            <h5 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em]">OPERATIONAL VERIFICATION</h5>
+                                            <h5 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em]">TASK VERIFICATION</h5>
                                             <div className="px-4 py-1.5 bg-neon-blue/10 rounded-full text-[8px] font-black text-neon-blue uppercase tracking-widest border border-neon-blue/20">Awaiting {Object.values(task.submissions || {}).filter(s => s.status === 'submitted').length} Reviews</div>
                                         </div>
                                         <div className="p-8 space-y-6">
                                             {approvedCreators.length === 0 ? (
-                                                <p className="text-center py-10 text-gray-700 text-[10px] font-black uppercase tracking-widest italic">No shortlisted operators assigned to this unit.</p>
+                                                <p className="text-center py-10 text-gray-700 text-[10px] font-black uppercase tracking-widest italic">No shortlisted creators assigned to this task.</p>
                                             ) : approvedCreators.map(creator => {
                                                 const sub = task.submissions?.[creator.uid];
                                                 const status = sub?.status || 'not_started';
@@ -1263,8 +1311,8 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
-                        <p className="text-[13px] font-black text-white uppercase tracking-tight truncate">{task.title || `Task Unit ${index + 1}`}</p>
-                        {task.priority === 'required' && <span className="px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-full text-[7px] font-black uppercase tracking-widest text-neon-blue">CRITICAL</span>}
+                        <p className="text-[13px] font-black text-white uppercase tracking-tight truncate">{task.title || `Task ${index + 1}`}</p>
+                        {task.priority === 'required' && <span className="px-3 py-1 bg-neon-blue/10 border border-neon-blue/20 rounded-full text-[7px] font-black uppercase tracking-widest text-neon-blue">MANDATORY</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-1.5">
                         <PlatformIcon size={12} className="text-gray-600" />
@@ -1284,16 +1332,25 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
                         <div className="px-6 pb-8 space-y-6 border-t border-white/5 pt-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Unit Title</label>
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Task Title</label>
                                     <Input required value={task.title} onChange={e => onUpdate(index, 'title', e.target.value)} placeholder="e.g. Instagram Reel" className="h-12 bg-black/40 border-white/10 rounded-xl" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Platform</label>
                                     <StudioSelect value={task.platform || 'instagram'} options={PLATFORMS.map(p => ({ value: p.value, label: p.label.toUpperCase() }))} onChange={val => onUpdate(index, 'platform', val)} className="h-12" accentColor="neon-blue" />
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Task Deadline</label>
+                                    <StudioDatePicker 
+                                        value={task.deadline} 
+                                        onChange={val => onUpdate(index, 'deadline', val)} 
+                                        className="h-12 bg-black/40 border-white/10 rounded-xl"
+                                        placeholder="Set deadline"
+                                    />
+                                </div>
                             </div>
 
-                            <StudioRichEditor label="Unit Brief" value={task.description} onChange={val => onUpdate(index, 'description', val)} placeholder="Describe what the creator should do..." minHeight="120px" />
+                            <StudioRichEditor label="Task Description" value={task.description} onChange={val => onUpdate(index, 'description', val)} placeholder="Describe what the creator should do..." minHeight="120px" />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">

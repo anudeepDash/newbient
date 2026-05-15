@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -29,6 +29,7 @@ import StudioSelect from '../components/ui/StudioSelect';
 import useDynamicMeta from '../hooks/useDynamicMeta';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import TaskSubmissionModal from '../components/ui/TaskSubmissionModal';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera, color: 'text-pink-400' },
@@ -48,6 +49,7 @@ const PLATFORMS = {
 const CampaignPublicView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { campaigns, user, authInitialized, creators, addCreator, updateCreator, setAuthModal } = useStore();
     
     const [campaign, setCampaign] = useState(null);
@@ -66,6 +68,9 @@ const CampaignPublicView = () => {
         categories: '',
         bio: ''
     });
+
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const found = campaigns.find(c => c.id === id);
@@ -167,21 +172,94 @@ const CampaignPublicView = () => {
         }
     };
 
+    const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
+        if (!contentLink && !proofFile) {
+            useStore.getState().addToast("Please provide a content link or upload proof.", 'error');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            let proofUrl = '';
+            if (proofFile) {
+                proofUrl = await useStore.getState().uploadToCloudinary(proofFile);
+            }
+            await useStore.getState().submitTaskProof(campaign.id, taskId, user.uid, {
+                contentLink,
+                proofUrl
+            });
+            useStore.getState().addToast("Deliverable submitted successfully!", 'success');
+            setSelectedTask(null);
+        } catch (error) {
+            useStore.getState().addToast("Submission failed. Please try again.", 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const taskId = searchParams.get('taskId');
+        if (taskId && campaign) {
+            setTimeout(() => {
+                const element = document.getElementById(`task-${taskId}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
+                    
+                    const isJoined = profile && (profile.joinedCampaigns || []).includes(id);
+                    if (isJoined) {
+                        const targetTask = campaign.tasks?.find(t => t.id === taskId);
+                        if (targetTask) setSelectedTask(targetTask);
+                    }
+
+                    setTimeout(() => {
+                        element.classList.remove('ring-2', 'ring-neon-blue', 'ring-offset-4', 'ring-offset-black');
+                    }, 3000);
+                }
+            }, 500);
+        }
+    }, [location.search, campaign, profile]);
+
     if (!campaign) {
         return <GlobalLoader color="#00F0FF" />;
     }
 
     const isEligible = verificationStep === 'success';
+    const isJoined = profile && (profile.joinedCampaigns || []).includes(id);
     const campaignTasks = campaign.tasks || [];
     const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
 
+    const getSubmissionStatus = (task, uid) => {
+        const sub = task.submissions?.[uid];
+        if (sub) return sub.status;
+        if ((task.verifiedBy || []).includes(uid)) return 'approved';
+        if ((task.completedBy || []).includes(uid)) return 'submitted';
+        return 'not_started';
+    };
+
+    const approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, user?.uid) === 'approved').length;
+    const progress = campaignTasks.length > 0 ? (approvedTotal / campaignTasks.length) * 100 : 0;
+
     return (
-        <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden pt-12">
+        <div className="min-h-screen bg-[#050505] text-white pt-12 pb-40 overflow-y-auto">
             {/* Ambient Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-white/[0.02] rounded-full blur-[100px]" />
             </div>
+
+            {/* Hero Image Section */}
+            {campaign.thumbnail && (
+                <div className="relative w-full h-[40vh] md:h-[60vh] overflow-hidden mt-8">
+                    <img 
+                        src={campaign.thumbnail} 
+                        alt={campaign.title} 
+                        className="w-full h-full object-cover opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/50 via-transparent to-transparent" />
+                </div>
+            )}
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
@@ -190,7 +268,7 @@ const CampaignPublicView = () => {
                         <div className="space-y-6">
                             <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
                                 <Instagram size={16} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Creator Opportunity</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Join Campaign</span>
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black font-heading leading-tight uppercase tracking-tight">{campaign.title}</h1>
                             <div className="flex flex-wrap gap-10 py-4 border-y border-white/5">
@@ -199,25 +277,25 @@ const CampaignPublicView = () => {
                                     <div className="flex items-center gap-2 text-white font-bold uppercase"><MapPin size={14} className="text-neon-blue" /> {campaign.targetCity}</div>
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Campaign Reward</span>
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Rewards</span>
                                     <div className="flex items-center gap-2 text-neon-green font-bold uppercase"><Zap size={14} /> {campaign.reward}</div>
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Target Followers</span>
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Min. Followers</span>
                                     <div className="flex items-center gap-2 text-white font-bold uppercase"><Users size={14} className="text-neon-blue" /> {Number(campaign.minInstagramFollowers || 0).toLocaleString()}+</div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Brief</h3>
+                            <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Description</h3>
                             <div className="article-content text-gray-400 text-lg md:text-xl font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: campaign.description }} />
                         </div>
 
                         {campaignTasks.length > 0 && (
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Deliverables</h3>
+                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Campaign Tasks</h3>
                                     <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">
                                         {requiredTasks.length} Required · {campaignTasks.length - requiredTasks.length} Optional
                                     </span>
@@ -227,22 +305,50 @@ const CampaignPublicView = () => {
                                         const typeInfo = TASK_TYPES[task.taskType] || TASK_TYPES.custom;
                                         const TypeIcon = typeInfo.icon;
                                         const platInfo = PLATFORMS[task.platform] || PLATFORMS.other;
+                                        const status = getSubmissionStatus(task, user?.uid);
+
                                         return (
                                             <motion.div
                                                 key={task.id || idx}
+                                                id={`task-${task.id}`}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.08 }}
-                                                className="p-6 bg-white/[0.03] border border-white/5 rounded-2xl flex items-start gap-4 group transition-all hover:border-neon-blue/20"
+                                                onClick={() => isJoined && setSelectedTask(task)}
+                                                className={cn(
+                                                    "p-6 bg-white/[0.03] border border-white/5 rounded-2xl flex items-start gap-4 group transition-all",
+                                                    isJoined ? "cursor-pointer hover:border-neon-blue/40 hover:bg-white/[0.05]" : "hover:border-neon-blue/20"
+                                                )}
                                             >
-                                                <div className={cn("w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5 group-hover:border-neon-blue/30 transition-colors", typeInfo.color)}>
+                                                <div className={cn(
+                                                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-white/5 transition-colors",
+                                                    status === 'approved' ? "bg-neon-green/20 text-neon-green" :
+                                                    status === 'submitted' ? "bg-yellow-500/10 text-yellow-500" :
+                                                    "bg-white/5 group-hover:border-neon-blue/30",
+                                                    typeInfo.color
+                                                )}>
                                                     <TypeIcon size={20} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center flex-wrap gap-2 mb-2">
-                                                        <p className="font-bold text-[14px] text-white uppercase tracking-tight">{task.title}</p>
+                                                         <p className="font-bold text-[14px] text-white uppercase tracking-tight">{task.title}</p>
                                                         {task.priority === 'required' && (
                                                             <span className="px-2 py-0.5 bg-neon-blue/10 border border-neon-blue/20 rounded-md text-[7px] font-black uppercase tracking-widest text-neon-blue">★ Required</span>
+                                                        )}
+                                                        {task.deadline && (
+                                                            <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded-md text-[7px] font-black uppercase tracking-widest text-red-400">
+                                                                Deadline: {new Date(task.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                            </span>
+                                                        )}
+                                                        {isJoined && (
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 border rounded-md text-[7px] font-black uppercase tracking-widest",
+                                                                status === 'approved' ? "bg-neon-green/10 border-neon-green/20 text-neon-green" :
+                                                                status === 'submitted' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
+                                                                "bg-white/5 border-white/10 text-gray-500"
+                                                            )}>
+                                                                {status.toUpperCase().replace('_', ' ')}
+                                                            </span>
                                                         )}
                                                     </div>
                                                     {task.description && <div className="article-content text-[11px] text-gray-500 mt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: task.description }} />}
@@ -253,6 +359,11 @@ const CampaignPublicView = () => {
                                                         <span className="px-2 py-0.5 bg-white/5 rounded-md text-[7px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1">
                                                             {React.createElement(typeInfo.icon, { size: 8 })} {typeInfo.label}
                                                         </span>
+                                                        {isJoined && (
+                                                            <span className="px-2 py-0.5 bg-neon-blue/5 text-neon-blue rounded-md text-[7px] font-black uppercase tracking-widest flex items-center gap-1 ml-auto">
+                                                                View & Submit <ArrowRight size={8} />
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -266,116 +377,178 @@ const CampaignPublicView = () => {
                     {/* Right Column: Interactive Form */}
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="lg:sticky lg:top-32">
                         <div className="bg-zinc-900/50 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                            <div className="relative z-10 space-y-10">
-                                <div className="flex items-center gap-4 pb-8 border-b border-white/5">
-                                    <div className="w-12 h-12 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
-                                        <Sparkles className="text-neon-blue" size={20} />
+                            {isJoined ? (
+                                <div className="relative z-10 space-y-10">
+                                    <div className="flex items-center gap-4 pb-8 border-b border-white/5">
+                                        <div className="w-12 h-12 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
+                                            <CheckCircle2 className="text-neon-green" size={20} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">Active Campaign</h2>
+                                            <p className="text-neon-green text-[9px] font-bold uppercase tracking-widest mt-1">Profile Synchronized</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">Creator Application</h2>
-                                        <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mt-1">Submit your profile for review</p>
+
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Campaign Progress</span>
+                                                <span className="text-[12px] font-black text-neon-blue">{Math.round(progress)}%</span>
+                                            </div>
+                                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                    initial={{ width: 0 }} 
+                                                    animate={{ width: `${progress}%` }} 
+                                                    className="h-full bg-neon-blue" 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                                                <span className="text-gray-500">Deliverables</span>
+                                                <span className="text-white">{approvedTotal} / {campaignTasks.length}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                                                <span className="text-gray-500">Status</span>
+                                                <span className="text-neon-blue">Assigned</span>
+                                            </div>
+                                        </div>
+
+                                        <Button 
+                                            onClick={() => navigate('/creator-dashboard')}
+                                            className="w-full h-16 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all text-[10px]"
+                                        >
+                                            View in Dashboard
+                                        </Button>
                                     </div>
                                 </div>
+                            ) : (
+                                <div className="relative z-10 space-y-10">
+                                    <div className="flex items-center gap-4 pb-8 border-b border-white/5">
+                                        <div className="w-12 h-12 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
+                                            <Sparkles className="text-neon-blue" size={20} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-black font-heading text-white uppercase tracking-tight">Creator Application</h2>
+                                            <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mt-1">Submit your profile for review</p>
+                                        </div>
+                                    </div>
 
-                                <AnimatePresence mode="wait">
-                                    {!joinSuccess ? (
-                                        <motion.div key="application-flow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Handle</label>
-                                                        <Input value={form.instagram} onChange={e => setForm({...form, instagram: e.target.value})} placeholder="@username" className="h-14 bg-black/40 border-white/10 rounded-xl text-[11px] font-bold" disabled={isEligible} />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Current Followers</label>
-                                                        <Input type="number" value={form.followers} onChange={e => setForm({...form, followers: e.target.value})} placeholder="Enter count" className="h-14 bg-black/40 border-white/10 rounded-xl text-[11px] font-bold" disabled={isEligible} />
-                                                    </div>
-                                                </div>
-
-                                                <AnimatePresence mode="wait">
-                                                    {verificationStep === 'verifying' ? (
-                                                        <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-14 bg-white/5 border border-neon-blue/20 rounded-xl flex items-center px-6 gap-4">
-                                                            <LoadingSpinner size="xs" color="#00F0FF" />
-                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Verifying qualifications...</span>
-                                                        </motion.div>
-                                                    ) : verificationStep === 'success' ? (
-                                                        <motion.div key="verified" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="h-14 bg-green-500/5 border border-green-500/20 rounded-xl flex items-center px-6 gap-4">
-                                                            <ShieldCheck size={16} className="text-green-500" />
-                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-green-500">Eligibility Confirmed</span>
-                                                        </motion.div>
-                                                    ) : (
-                                                        <Button key="verify-btn" onClick={handleInstagramVerify} disabled={isVerifying} className="w-full h-14 bg-white text-black font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neon-blue hover:text-white transition-all text-xs">
-                                                            {verificationStep === 'failed' ? 'Retry Verification' : 'Check Eligibility'}
-                                                        </Button>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-
-                                            <AnimatePresence>
-                                                {isEligible && (
-                                                    <motion.form key="submission-form" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} onSubmit={handleJoin} className="space-y-6 pt-6 border-t border-white/5">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
-                                                                <Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Full name" className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">WhatsApp / Phone</label>
-                                                                <Input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+91..." className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <StudioSelect 
-                                                                    value={form.city} 
-                                                                    options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
-                                                                    onChange={val => setForm({...form, city: val})} 
-                                                                    placeholder="SELECT CITY"
-                                                                    className="h-14"
-                                                                    accentColor="neon-blue"
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
-                                                                <Input required value={form.categories} onChange={e => setForm({...form, categories: e.target.value})} placeholder="Fashion, Travel, Tech..." className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
-                                                            </div>
+                                    <AnimatePresence mode="wait">
+                                        {!joinSuccess ? (
+                                            <motion.div key="application-flow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Handle</label>
+                                                            <Input value={form.instagram} onChange={e => setForm({...form, instagram: e.target.value})} placeholder="@username" className="h-14 bg-black/40 border-white/10 rounded-xl text-[11px] font-bold" disabled={isEligible} />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Creator Bio</label>
-                                                            <textarea required value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell us about yourself..." className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-5 text-white focus:outline-none focus:border-neon-blue text-[11px] font-medium resize-none shadow-inner" />
+                                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Current Followers</label>
+                                                            <Input type="number" value={form.followers} onChange={e => setForm({...form, followers: e.target.value})} placeholder="Enter count" className="h-14 bg-black/40 border-white/10 rounded-xl text-[11px] font-bold" disabled={isEligible} />
                                                         </div>
-                                                        <Button type="submit" disabled={isJoining} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-[0.3em] rounded-xl shadow-xl hover:scale-[1.02] transition-all border-none text-xs">
-                                                            {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : 'Submit Creator Application'}
-                                                        </Button>
-                                                    </motion.form>
-                                                )}
-                                            </AnimatePresence>
+                                                    </div>
 
-                                            {!isEligible && verificationStep === 'failed' && (
-                                                <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-4">
-                                                    <Ban className="text-red-500 shrink-0" size={20} />
-                                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest leading-relaxed">Profile qualifications not met. You must have at least {Number(campaign.minInstagramFollowers || 0).toLocaleString()} followers to apply.</p>
+                                                    <AnimatePresence mode="wait">
+                                                        {verificationStep === 'verifying' ? (
+                                                            <motion.div key="verifying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-14 bg-white/5 border border-neon-blue/20 rounded-xl flex items-center px-6 gap-4">
+                                                                <LoadingSpinner size="xs" color="#00F0FF" />
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Verifying qualifications...</span>
+                                                            </motion.div>
+                                                        ) : verificationStep === 'success' ? (
+                                                            <motion.div key="verified" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="h-14 bg-green-500/5 border border-green-500/20 rounded-xl flex items-center px-6 gap-4">
+                                                                <ShieldCheck size={16} className="text-green-500" />
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest text-green-500">Eligibility Confirmed</span>
+                                                            </motion.div>
+                                                        ) : (
+                                                            <Button key="verify-btn" onClick={handleInstagramVerify} disabled={isVerifying} className="w-full h-14 bg-white text-black font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neon-blue hover:text-white transition-all text-xs">
+                                                                {verificationStep === 'failed' ? 'Retry Verification' : 'Check Eligibility'}
+                                                            </Button>
+                                                        )}
+                                                    </AnimatePresence>
                                                 </div>
-                                            )}
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div key="success-state" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 space-y-6">
-                                            <div className="w-20 h-20 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center mx-auto mb-8">
-                                                <CheckCircle2 className="text-neon-blue" size={40} />
-                                            </div>
-                                            <h2 className="text-3xl font-black font-heading text-white uppercase tracking-tight">Application Sent</h2>
-                                            <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this campaign. We will review your analytics and notify you via email.</p>
-                                            <Button onClick={() => navigate('/creator-dashboard')} className="w-full h-14 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all text-[10px] mt-8">
-                                                Go to Dashboard
-                                            </Button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
+
+                                                <AnimatePresence>
+                                                    {isEligible && (
+                                                        <motion.form key="submission-form" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} onSubmit={handleJoin} className="space-y-6 pt-6 border-t border-white/5">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                                                                    <Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Full name" className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">WhatsApp / Phone</label>
+                                                                    <Input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+91..." className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div className="space-y-2">
+                                                                    <StudioSelect 
+                                                                        value={form.city} 
+                                                                        options={PREDEFINED_CITIES.map(c => ({ value: c, label: c.toUpperCase() }))}
+                                                                        onChange={val => setForm({...form, city: val})} 
+                                                                        placeholder="SELECT CITY"
+                                                                        className="h-14"
+                                                                        accentColor="neon-blue"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
+                                                                    <Input required value={form.categories} onChange={e => setForm({...form, categories: e.target.value})} placeholder="Fashion, Travel, Tech..." className="h-14 bg-black/40 border-white/5 rounded-xl text-[11px] font-bold" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">Creator Bio</label>
+                                                                <textarea required value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell us about yourself..." className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-5 text-white focus:outline-none focus:border-neon-blue text-[11px] font-medium resize-none shadow-inner" />
+                                                            </div>
+                                                            <Button type="submit" disabled={isJoining} className="w-full h-16 bg-neon-blue text-black font-black uppercase tracking-[0.3em] rounded-xl shadow-xl hover:scale-[1.02] transition-all border-none text-xs">
+                                                                {isJoining ? <LoadingSpinner size="xs" color="#000000" /> : 'Submit Creator Application'}
+                                                            </Button>
+                                                        </motion.form>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                {!isEligible && verificationStep === 'failed' && (
+                                                    <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-4">
+                                                        <Ban className="text-red-500 shrink-0" size={20} />
+                                                        <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest leading-relaxed">Profile qualifications not met. You must have at least {Number(campaign.minInstagramFollowers || 0).toLocaleString()} followers to apply.</p>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div key="success-state" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 space-y-6">
+                                                <div className="w-20 h-20 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center mx-auto mb-8">
+                                                    <CheckCircle2 className="text-neon-blue" size={40} />
+                                                </div>
+                                                <h2 className="text-3xl font-black font-heading text-white uppercase tracking-tight">Application Sent</h2>
+                                                <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">Your creator profile has been submitted for this campaign. We will review your analytics and notify you via email.</p>
+                                                <Button onClick={() => navigate('/creator-dashboard')} className="w-full h-14 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all text-[10px] mt-8">
+                                                    Go to Dashboard
+                                                </Button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 </div>
             </div>
+            <AnimatePresence>
+                {selectedTask && (
+                    <TaskSubmissionModal 
+                        task={selectedTask}
+                        campaignId={campaign.id}
+                        profileUid={user?.uid}
+                        onClose={() => setSelectedTask(null)}
+                        isSubmitting={isSubmitting}
+                        onSubmit={handleTaskSubmit}
+                        taskTypes={TASK_TYPES}
+                        platforms={PLATFORMS}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };
