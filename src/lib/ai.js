@@ -322,7 +322,7 @@ const SCHEMAS = {
         campaignName: "string — Project, Event, or Mission title",
         campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
         coverDescription: "string — 2-3 sentence cover summary, plain text only",
-        scopeOfWork: "string — MANDATORY. A beautifully structured, persuasive markdown string that transforms the raw text into a premium business document. You MUST invent appropriate professional section titles using Markdown headings (##). Rewrite and elevate the language to sound elite. Use bullet points and bold text for readability."
+        scopeOfWork: "string — MANDATORY. A beautifully structured, persuasive markdown string. You MUST invent appropriate professional section titles using Markdown headings (##). NEVER use bullet points for headers. Use bullet points ONLY for lists. Rewrite and elevate the language."
     },
     contract: {
         parties: {
@@ -386,7 +386,8 @@ RULES:
     - ALL text: plain text, NO HTML
     - Extract identity fields like clientName, campaignName etc.
     - For 'scopeOfWork', this is MANDATORY. You MUST add appropriate professional titles using Markdown headers (## Title).
-    - You MUST rewrite, arrange, and enhance the text to sound like a premium, persuasive business proposal. Elevate the language.
+    - NEVER use bullet points (* or -) for section titles. Use bullet points ONLY for actual lists under the sections.
+    - You MUST rewrite, arrange, and elevate the language to sound like a premium, persuasive business proposal.
     - DO NOT just regurgitate the exact text. Transform it into a polished, structured masterpiece while retaining all key details.
     - Return valid JSON matching the schema`,
 
