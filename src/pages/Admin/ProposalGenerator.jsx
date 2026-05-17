@@ -1063,68 +1063,60 @@ const ProposalGenerator = () => {
                                                 <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
                                             </div>
                                         </div>
-                                            <div className="relative group/editor">
-                                                <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
-                                                    
+                                            <div className="space-y-4 relative group/editor">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
                                                 </div>
-                                                <StudioRichEditor 
-                                                    label="Cover Memorandum"
+                                                <textarea 
                                                     value={formData.coverDescription} 
-                                                    onChange={val => setFormData({...formData, coverDescription: val})} 
-                                                    className={isHidden('coverDescription') ? 'opacity-30' : ''} 
+                                                    onChange={e => setFormData({...formData, coverDescription: e.target.value})} 
+                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('coverDescription') && 'opacity-30')} 
                                                     placeholder="Cover page description for this proposal..." 
-                                                    minHeight="180px" 
-                                                    accentColor="neon-green"
+                                                    style={{ minHeight: "180px" }}
                                                 />
                                             </div>
                                     </div>
                                 )}
                                 {activeTab === '2' && (
                                     <div className="space-y-12">
-                                        <div className="relative group/editor">
-                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
-                                                
+                                        <div className="space-y-4 relative group/editor">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
                                             </div>
-                                            <StudioRichEditor 
-                                                label="Executive Summary"
+                                            <textarea 
                                                 value={formData.overview} 
-                                                onChange={val => setFormData({...formData, overview: val})} 
-                                                className={isHidden('overview') ? 'opacity-30' : ''} 
+                                                onChange={e => setFormData({...formData, overview: e.target.value})} 
+                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('overview') && 'opacity-30')} 
                                                 placeholder="Strategic vision..." 
-                                                minHeight="200px" 
-                                                accentColor="neon-green"
+                                                style={{ minHeight: "200px" }}
                                             />
                                         </div>
-                                        <div className="relative group/editor">
-                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
-                                                
+                                        <div className="space-y-4 relative group/editor">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective</label>
                                             </div>
-                                            <StudioRichEditor 
-                                                label="Primary Objective"
+                                            <textarea 
                                                 value={formData.primaryGoal} 
-                                                onChange={val => setFormData({...formData, primaryGoal: val})} 
-                                                className={isHidden('primaryGoal') ? 'opacity-30' : ''} 
+                                                onChange={e => setFormData({...formData, primaryGoal: e.target.value})} 
+                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('primaryGoal') && 'opacity-30')} 
                                                 placeholder="Project Goal" 
-                                                minHeight="120px" 
-                                                accentColor="neon-green"
+                                                style={{ minHeight: "120px" }}
                                             />
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === '3' && (
                                     <div className="space-y-12">
-                                        <div className="relative group/editor">
-                                            <div className="absolute right-0 -top-10 opacity-0 group-hover/editor:opacity-100 transition-opacity z-10">
-                                                
+                                        <div className="space-y-4 relative group/editor">
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scope of Work</label>
                                             </div>
-                                            <StudioRichEditor 
-                                                label="Scope of Work"
+                                            <textarea 
                                                 value={formData.scopeOfWork} 
-                                                onChange={val => setFormData({...formData, scopeOfWork: val})} 
-                                                className={isHidden('scopeOfWork') ? 'opacity-30' : ''} 
+                                                onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} 
+                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('scopeOfWork') && 'opacity-30')} 
                                                 placeholder="Use bullet points for each scope item. Group under headings." 
-                                                minHeight="400px" 
-                                                accentColor="neon-green"
+                                                style={{ minHeight: "400px" }}
                                             />
                                         </div>
                                     </div>
@@ -1308,7 +1300,12 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="lg:col-span-2 space-y-4">
                                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Settlement Terms</label>
-                                                    <StudioRichEditor value={formData.terms} onChange={val => setFormData({...formData, terms: val})} className={cn("transition-opacity", isHidden('terms') && 'opacity-30')} minHeight="200px" accentColor="neon-green" />
+                                                    <textarea 
+                                                        value={formData.terms} 
+                                                        onChange={e => setFormData({...formData, terms: e.target.value})} 
+                                                        className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('terms') && 'opacity-30')} 
+                                                        style={{ minHeight: "200px" }}
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
