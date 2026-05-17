@@ -724,14 +724,34 @@ export const useStore = create((set, get) => ({
     // Invoices
     addInvoice: async (invoice) => {
         const user = get().user;
-        return await addDoc(collection(db, 'invoices'), {
-            ...invoice,
-            createdBy: user?.uid,
-            createdByEmail: user?.email
-        });
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...invoice, createdBy: user?.uid || null, createdByEmail: user?.email || null });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'invoices'), cleaned);
     },
     updateInvoice: async (id, updates) => {
-        await updateDoc(doc(db, 'invoices', id), updates);
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'invoices', id), cleaned);
     },
     updateInvoiceStatus: async (id, status) => {
         await updateDoc(doc(db, 'invoices', id), { status });
@@ -743,13 +763,25 @@ export const useStore = create((set, get) => ({
     // Proposals
     addProposal: async (proposal) => {
         const user = get().user;
-        return await addDoc(collection(db, 'proposals'), {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
             ...proposal,
             accessLogs: [],
             createdAt: new Date().toISOString(),
-            createdBy: user?.uid,
-            createdByEmail: user?.email
+            createdBy: user?.uid || null,
+            createdByEmail: user?.email || null
         });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'proposals'), cleaned);
     },
     logDocumentAccess: async (type, id, metadata) => {
         const col = type === 'proposal' ? 'proposals' : 'agreements';
@@ -763,7 +795,19 @@ export const useStore = create((set, get) => ({
         }
     },
     updateProposal: async (id, updates) => {
-        await updateDoc(doc(db, 'proposals', id), updates);
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'proposals', id), cleaned);
     },
     updateProposalStatus: async (id, status) => {
         await updateDoc(doc(db, 'proposals', id), { status });
@@ -778,31 +822,67 @@ export const useStore = create((set, get) => ({
 
         const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, rejectionMetadata: _____, createdBy: ______, createdByEmail: _______, ...duplicateData } = original;
         const user = get().user;
-        return await addProposal({
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
             ...duplicateData,
             clientName: `${original.clientName} (REVISED)`,
             status: 'Draft',
             createdAt: new Date().toISOString(),
-            createdBy: user?.uid,
-            createdByEmail: user?.email
+            createdBy: user?.uid || null,
+            createdByEmail: user?.email || null
         });
+        delete cleaned.id;
+        return await addProposal(cleaned);
     },
 
     // Agreements
     addAgreement: async (agreement) => {
         const user = get().user;
-        return await addDoc(collection(db, 'agreements'), {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
             ...agreement,
             accessLogs: [],
-            versions: agreement.versions || [], // Redline history
-            negotiationHistory: agreement.negotiationHistory || [], // Negotiation history
+            versions: agreement.versions || [],
+            negotiationHistory: agreement.negotiationHistory || [],
             createdAt: new Date().toISOString(),
-            createdBy: user?.uid,
-            createdByEmail: user?.email
+            createdBy: user?.uid || null,
+            createdByEmail: user?.email || null
         });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'agreements'), cleaned);
     },
     updateAgreement: async (id, updates) => {
-        await updateDoc(doc(db, 'agreements', id), updates);
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'agreements', id), cleaned);
     },
     updateAgreementStatus: async (id, status) => {
         await updateDoc(doc(db, 'agreements', id), { status });
@@ -817,15 +897,27 @@ export const useStore = create((set, get) => ({
 
         const { id: _, createdAt: __, accessLogs: ___, approvalMetadata: ____, createdBy: _____, createdByEmail: ______, ...duplicateData } = original;
         const user = get().user;
-        return await addAgreement({
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
             ...duplicateData,
             agreementNumber: `${original.agreementNumber}-REV`,
             status: 'Draft',
-            parentAgreementId: id, // Track revisions
+            parentAgreementId: id,
             createdAt: new Date().toISOString(),
-            createdBy: user?.uid,
-            createdByEmail: user?.email
+            createdBy: user?.uid || null,
+            createdByEmail: user?.email || null
         });
+        delete cleaned.id;
+        return await addAgreement(cleaned);
     },
 
     // Forms
