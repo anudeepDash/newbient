@@ -219,23 +219,28 @@ const ProposalGenerator = () => {
             const estimateBlockHeight = (text) => {
                 let h = 0;
                 const lines = text.split('\n');
+                let inList = false;
                 for (let line of lines) {
                     line = line.trim();
-                    if (!line) { h += 12; continue; }
+                    if (!line) { h += 12; inList = false; continue; }
                     const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
                     if (headingMatch) {
+                        inList = false;
                         h += headingMatch[1].length <= 2 ? 72 : 48;
                         if (headingMatch[2].length > 40) h += 24; 
                     } else if (line.match(/^[•\-\*]\s/)) {
-                        h += (Math.ceil((line.length - 2) / 85) * 24) + 16; 
+                        h += (Math.ceil((line.length - 2) / 100) * 24);
+                        if (!inList) { h += 24; inList = true; }
+                        else { h += 6; }
                     } else {
-                        h += (Math.ceil(line.length / 95) * 24) + 16;
+                        inList = false;
+                        h += (Math.ceil(line.length / 110) * 24) + 16;
                     }
                 }
                 return h;
             };
 
-            const MAX_PAGE_HEIGHT = 750;
+            const MAX_PAGE_HEIGHT = 840;
             const totalHeight = estimateBlockHeight(formData.scopeOfWork);
             
             if (totalHeight <= MAX_PAGE_HEIGHT) {
