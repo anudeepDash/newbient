@@ -729,7 +729,7 @@ const ProposalGenerator = () => {
 
             <main className="flex-1 flex overflow-x-clip">
                 {/* Sidebar - Desktop */}
-                {!isBulkMode && (
+                {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
                     <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
                         <div className="space-y-2">
                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
@@ -747,7 +747,7 @@ const ProposalGenerator = () => {
                 )}
 
                 {/* Mobile Bottom Navigation */}
-                {!isBulkMode && (
+                {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
                     <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                         {tabs.map(tab => (
                             <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
@@ -763,7 +763,7 @@ const ProposalGenerator = () => {
                 {/* Editor Area */}
                 <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
-                        {isBulkMode ? (
+                        {isBulkMode && (
                             <div className="space-y-12">
                                 {/* Top Intro Card */}
                                 <div className="p-8 md:p-12 bg-zinc-900/40 border border-white/10 rounded-[3rem] relative overflow-hidden shadow-2xl space-y-8 group">
@@ -943,14 +943,18 @@ const ProposalGenerator = () => {
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        )}
+
+                        {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
                             <>
-                                <AIPromptBox 
-                                    onGenerate={handleGenerateProposal} 
-                                    isGenerating={isGenerating && generatingSection === 'all'} 
-                                    type="proposal" 
-                                    forceClear={promptBoxClear}
-                                />
+                                {!isBulkMode && (
+                                    <AIPromptBox 
+                                        onGenerate={handleGenerateProposal} 
+                                        isGenerating={isGenerating && generatingSection === 'all'} 
+                                        type="proposal" 
+                                        forceClear={promptBoxClear}
+                                    />
+                                )}
 
                         <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
                             <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
