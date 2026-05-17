@@ -322,7 +322,7 @@ const SCHEMAS = {
         campaignName: "string — Project, Event, or Mission title",
         campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
         coverDescription: "string — 2-3 sentence cover summary, plain text only",
-        scopeOfWork: "string — A beautifully arranged markdown string containing ALL the EXACT details and text from the prompt. Arrange it professionally with Markdown headings (##), bold text, and bullet points. DO NOT omit any information. DO NOT summarize heavily. Just arrange and format the provided data perfectly into a cohesive document."
+        scopeOfWork: "string — MANDATORY. A beautifully arranged markdown string containing ALL the EXACT details and text from the prompt. Arrange it professionally with Markdown headings (##), bold text, and bullet points. DO NOT omit any information. DO NOT summarize heavily."
     },
     contract: {
         parties: {
@@ -385,7 +385,7 @@ RULES:
     RULES:
     - ALL text: plain text, NO HTML
     - Extract identity fields like clientName, campaignName etc.
-    - For 'scopeOfWork', arrange ALL the provided text beautifully using Markdown. Use ## headings for logical sections, bullet points, and bold text. Do not invent details not present in the text.
+    - For 'scopeOfWork', this is MANDATORY. Arrange ALL the provided text beautifully using Markdown. Use ## headings for logical sections, bullet points, and bold text.
     - DO NOT summarize heavily. Keep the detailed text provided by the user, just format it perfectly into a premium document.
     - Return valid JSON matching the schema`,
 

@@ -387,7 +387,7 @@ const ProposalGenerator = () => {
                 contentCount: { reels: 0, posts: 0, stories: 0 },
                 deliverables: [],
                 clientRequirements: [],
-                scopeOfWork: data.scopeOfWork || '',
+                scopeOfWork: data.scopeOfWork && data.scopeOfWork.length > 10 ? data.scopeOfWork : bulkRawText,
                 terms: '',
                 paymentDetails: '',
                 gstRate: 18,
