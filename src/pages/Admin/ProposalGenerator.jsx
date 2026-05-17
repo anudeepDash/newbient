@@ -213,13 +213,44 @@ const ProposalGenerator = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const scopeLines = formData.scopeOfWork.split('\n');
-            const linesPerPage = 28;
-            if (scopeLines.length <= linesPerPage) {
-                pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
+            const maxChars = formData.isBulkGenerated ? 2500 : 1600;
+            
+            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 35) {
+                 pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
             } else {
-                for (let s = 0; s < scopeLines.length; s += linesPerPage) {
-                    pages.push({ type: 'scope', items: [], scopeText: scopeLines.slice(s, s + linesPerPage).join('\n'), scopePage: Math.floor(s / linesPerPage) + 1 });
+                const blocks = formData.scopeOfWork.split(/\n\n/);
+                let currentPageText = '';
+                let currentLength = 0;
+                let pageIndex = 1;
+                
+                for (let i = 0; i < blocks.length; i++) {
+                    const block = blocks[i].trim();
+                    if (!block) continue;
+                    
+                    if (block.length > maxChars && currentPageText === '') {
+                         const subBlocks = block.split('\n');
+                         for(let sb of subBlocks) {
+                             if(currentLength + sb.length > maxChars && currentPageText !== '') {
+                                 pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                 currentPageText = sb + '\n';
+                                 currentLength = sb.length;
+                             } else {
+                                 currentPageText += sb + '\n';
+                                 currentLength += sb.length;
+                             }
+                         }
+                         currentPageText += '\n'; 
+                    } else if (currentLength + block.length > maxChars && currentPageText !== '') {
+                         pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                         currentPageText = block + '\n\n';
+                         currentLength = block.length;
+                    } else {
+                         currentPageText += block + '\n\n';
+                         currentLength += block.length;
+                    }
+                }
+                if (currentPageText.trim()) {
+                     pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
                 }
             }
         }
