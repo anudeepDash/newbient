@@ -411,13 +411,79 @@ const Proposal = () => {
         }
         
         if (!isHidden('scopeOfWork') && displayProposal.scopeOfWork) {
-            const scopeLines = displayProposal.scopeOfWork.split('\n');
-            const linesPerPage = 28;
-            if (scopeLines.length <= linesPerPage) {
+            const estimateBlockHeight = (text) => {
+                let h = 0;
+                const rawLines = text.split('\n');
+                const lines = [];
+                rawLines.forEach(rl => {
+                    const parts = rl.split(/\s(?=\d+\.\s)/);
+                    if (parts.length > 1) lines.push(...parts);
+                    else lines.push(rl);
+                });
+
+                let inList = false;
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) { h += 12; inList = false; continue; }
+                    
+                    if (line.match(/^[-*_]{3,}$/)) {
+                        inList = false;
+                        h += 66;
+                        continue;
+                    }
+
+                    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+                    if (headingMatch) {
+                        inList = false;
+                        h += headingMatch[1].length <= 2 ? 72 : 48;
+                        if (headingMatch[2].length > 40) h += 24; 
+                    } else if (line.match(/^[•\-\*]\s/)) {
+                        h += (Math.ceil((line.length - 2) / 100) * 24);
+                        if (!inList) { h += 24; inList = true; }
+                        else { h += 6; }
+                    } else {
+                        inList = false;
+                        h += (Math.ceil(line.length / 110) * 24) + 16;
+                    }
+                }
+                return h;
+            };
+
+            const MAX_PAGE_HEIGHT = 780;
+            const totalHeight = estimateBlockHeight(displayProposal.scopeOfWork);
+            
+            if (totalHeight <= MAX_PAGE_HEIGHT) {
                 pages.push({ type: 'scope', items: [], scopeText: displayProposal.scopeOfWork });
             } else {
-                for (let s = 0; s < scopeLines.length; s += linesPerPage) {
-                    pages.push({ type: 'scope', items: [], scopeText: scopeLines.slice(s, s + linesPerPage).join('\n'), scopePage: Math.floor(s / linesPerPage) + 1 });
+                const rawLines = displayProposal.scopeOfWork.split('\n');
+                let currentChunk = [];
+                let currentChunkHeight = 0;
+                let pageIndex = 1;
+
+                for (let i = 0; i < rawLines.length; i++) {
+                    const line = rawLines[i];
+                    const lineH = estimateBlockHeight(line + '\n');
+                    if (currentChunkHeight + lineH > MAX_PAGE_HEIGHT && currentChunk.length > 0) {
+                        pages.push({
+                            type: 'scope',
+                            items: [],
+                            scopeText: currentChunk.join('\n'),
+                            scopePage: pageIndex++
+                        });
+                        currentChunk = [line];
+                        currentChunkHeight = lineH;
+                    } else {
+                        currentChunk.push(line);
+                        currentChunkHeight += lineH;
+                    }
+                }
+                if (currentChunk.length > 0) {
+                    pages.push({
+                        type: 'scope',
+                        items: [],
+                        scopeText: currentChunk.join('\n'),
+                        scopePage: pageIndex
+                    });
                 }
             }
         }
@@ -495,8 +561,7 @@ const Proposal = () => {
                                     )}
                                 </div>
                             </div>
-
-                            <div className="flex-1 overflow-y-auto scrollbar-hide relative">
+                            <div className="flex-1 overflow-hidden relative">
                                 <div className="absolute inset-0 flex flex-col px-1">
                                     {page.type === 'cover' && (
                                     <div className="h-full flex flex-col justify-start space-y-20 py-8">
@@ -526,10 +591,12 @@ const Proposal = () => {
 
                                 {page.type === 'scope' && (
                                     <div className="h-full flex flex-col py-8">
-                                        <div className="space-y-4 mb-12">
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                            <div className="w-16 h-1 bg-black" />
-                                        </div>
+                                        {!displayProposal.isBulkGenerated && (
+                                            <div className="space-y-4 mb-12">
+                                                <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                                <div className="w-16 h-1 bg-black" />
+                                            </div>
+                                        )}
                                         <div className="flex-1 flex flex-col">
                                             <div className="relative">
                                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
@@ -836,10 +903,12 @@ const Proposal = () => {
 
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                        <div className="w-16 h-1 bg-black" />
-                                    </div>
+                                    {!displayProposal.isBulkGenerated && (
+                                        <div className="space-y-4 mb-12">
+                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                            <div className="w-16 h-1 bg-black" />
+                                        </div>
+                                    )}
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
