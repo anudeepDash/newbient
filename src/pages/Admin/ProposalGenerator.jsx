@@ -1793,11 +1793,11 @@ const ProposalGenerator = () => {
                                     )}
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
-                                            <div className="pl-10">
+                                            {!formData.isBulkGenerated && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />}
+                                            <div className={formData.isBulkGenerated ? "pl-0" : "pl-10"}>
                                                 {!formData.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                 {!formData.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                {renderContent(page.scopeText || '')}
+                                                {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
                                             </div>
                                         </div>
                                     </div>
