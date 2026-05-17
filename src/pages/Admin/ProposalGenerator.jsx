@@ -254,7 +254,7 @@ const ProposalGenerator = () => {
                 return h;
             };
 
-            const MAX_PAGE_HEIGHT = 840;
+            const MAX_PAGE_HEIGHT = 780;
             const totalHeight = estimateBlockHeight(formData.scopeOfWork);
             
             if (totalHeight <= MAX_PAGE_HEIGHT) {
@@ -1503,7 +1503,7 @@ const ProposalGenerator = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 overflow-y-auto scrollbar-hide relative">
+                                    <div className="flex-1 overflow-hidden relative">
                                         <div className="absolute inset-0 flex flex-col px-1">
                                         {paginatedPages[currentPreviewPage]?.type === 'cover' && (
                                             <div className="h-full flex flex-col justify-start space-y-20 py-8">
