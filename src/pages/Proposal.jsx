@@ -913,21 +913,27 @@ const Proposal = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                        <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
-                                        <div className="flex-1">
-                                            {idx === paginatedPages.length - 1 ? (
+                                    {idx === paginatedPages.length - 1 && displayProposal.showSignatures && (
+                                        <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
+                                            <div className="w-10 h-10 bg-black flex items-center justify-center shrink-0"><span className="text-[8px] font-black text-neon-green">NB</span></div>
+                                            <div className="flex-1">
                                                 <div className="space-y-4">
                                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Official Authorization</p>
-                                                    <div className="h-20 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center">
-                                                        <span className="text-2xl font-signature text-gray-300">{signatureName || 'Signature Required'}</span>
+                                                    <div className="h-20 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
+                                                        {displayProposal.status === 'Accepted' ? (
+                                                            displayProposal.approvalMetadata?.clientSignature ? (
+                                                                <img src={displayProposal.approvalMetadata.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                            ) : (
+                                                                <span className="text-2xl font-signature text-black">{displayProposal.approvalMetadata?.signedBy}</span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-2xl font-signature text-gray-300">{signatureName || 'Signature Required'}</span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            ) : (
-                                                <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             )}
 
