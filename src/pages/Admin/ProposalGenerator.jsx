@@ -615,8 +615,14 @@ const ProposalGenerator = () => {
                 continue;
             }
 
-            if (line.startsWith('## ')) {
-                elements.push(<p key={i} className="text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5">{line.slice(3)}</p>);
+            const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const headingClass = level <= 2 
+                    ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5"
+                    : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2";
+                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
             } else if (line.match(/^[•\-\*]\s/)) {
                 const items = [];
                 while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
