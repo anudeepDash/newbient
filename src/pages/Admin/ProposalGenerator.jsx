@@ -368,58 +368,31 @@ const ProposalGenerator = () => {
         setBulkProgress({ current: 1, total: 1 });
         
         try {
-            const data = await generateFullDocument('proposal', bulkRawText, 'Premium', {});
+            const data = await generateFullDocument('bulk_proposal', bulkRawText, 'Premium', {});
             
-            const generatedItems = data.items?.length > 0 ? data.items.map((item, idx) => ({
-                id: Date.now() + 200 + idx,
-                description: item.description || item.name || '',
-                qty: Number(item.qty) || 1,
-                unit: item.unit || 'Unit',
-                price: Number(item.price) || 0
-            })) : [];
-
-            const sub = generatedItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
-            const gst = (sub * 18) / 100;
-            const tot = sub + gst;
-            
-            const hiddenFields = [];
-            if (!data.overview && !data.primaryGoal) hiddenFields.push('strategy');
-            if (!data.scopeOfWork) hiddenFields.push('scopeOfWork');
-            if (!data.deliverables || data.deliverables.length === 0) hiddenFields.push('proposal');
-            if (generatedItems.length === 0) hiddenFields.push('inventory');
-            if (!data.terms && !data.paymentDetails) hiddenFields.push('commercials');
-
             const finalProposal = {
                 clientName: data.clientName || 'Master Client',
                 clientAddress: data.clientAddress || 'Corporate Headquarters',
                 campaignName: data.campaignName || 'Strategic Initiative',
                 campaignDuration: data.campaignDuration || 'TBD',
                 proposalNumber: `NBQ-BLK-${Math.floor(1000 + Math.random() * 9000)}`,
-                coverDescription: data.coverDescription || 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment.',
-                overview: data.overview || '',
-                primaryGoal: data.primaryGoal || '',
-                numericTargets: data.numericTargets || '',
-                audienceAge: data.audienceAge || '',
-                audienceLocation: data.audienceLocation || '',
-                audienceInterests: data.audienceInterests || '',
-                selectedChannels: data.selectedChannels || [],
-                contentCount: data.contentCount || { reels: 0, posts: 0, stories: 0 },
-                deliverables: data.deliverables?.length ? data.deliverables.map((d, idx) => ({
-                    id: Date.now() + idx,
-                    item: d.item || d.name || '',
-                    qty: d.qty || '1',
-                    timeline: d.timeline || 'TBD'
-                })) : [],
-                clientRequirements: data.clientRequirements?.length ? data.clientRequirements.map((r, idx) => ({
-                    id: Date.now() + 100 + idx,
-                    description: r.description || r.requirement || ''
-                })) : [],
+                coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
+                overview: '',
+                primaryGoal: '',
+                numericTargets: '',
+                audienceAge: '',
+                audienceLocation: '',
+                audienceInterests: '',
+                selectedChannels: [],
+                contentCount: { reels: 0, posts: 0, stories: 0 },
+                deliverables: [],
+                clientRequirements: [],
                 scopeOfWork: data.scopeOfWork || '',
-                terms: data.terms || '',
-                paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
+                terms: '',
+                paymentDetails: '',
                 gstRate: 18,
-                advanceRequested: data.terms ? 50 : 0,
-                showGst: generatedItems.length > 0,
+                advanceRequested: 0,
+                showGst: false,
                 showSeal: false,
                 showSignatures: false,
                 signatureType: 'handwritten',
@@ -428,12 +401,13 @@ const ProposalGenerator = () => {
                 senderName: 'Authorized Signatory',
                 senderDesignation: 'Director of Operations',
                 status: 'Draft',
-                hiddenFields: hiddenFields,
+                hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
                 selectedLogo: 'entertainment',
-                items: generatedItems,
-                subtotal: sub,
-                gstAmount: gst,
-                totalAmount: tot
+                items: [],
+                subtotal: 0,
+                gstAmount: 0,
+                totalAmount: 0,
+                isBulkGenerated: true
             };
             
             setBulkProposals(prev => {
@@ -441,7 +415,7 @@ const ProposalGenerator = () => {
                 setSelectedBulkIndex(newVault.length - 1);
                 return newVault;
             });
-            addToast(`Successfully converted bulk data into a premium structured proposal!`, 'success');
+            addToast(`Successfully arranged bulk data into a premium document!`, 'success');
         } catch (err) {
             addToast(`Failed to process bulk data: ${err.message}`, 'error');
         }
@@ -1446,10 +1420,12 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
-                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3>
-                                                </div>
+                                                {!formData.isBulkGenerated && (
+                                                    <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p>
+                                                        <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3>
+                                                    </div>
+                                                )}
                                                 <div className="flex-1">
                                                     <div className="pl-0">
                                                         {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
@@ -1680,16 +1656,18 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                        <div className="w-16 h-1 bg-black" />
-                                    </div>
+                                    {!formData.isBulkGenerated && (
+                                        <div className="space-y-4 mb-12">
+                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                            <div className="w-16 h-1 bg-black" />
+                                        </div>
+                                    )}
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
                                             <div className="pl-10">
-                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                {!formData.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                {!formData.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
                                                 {renderContent(page.scopeText || '')}
                                             </div>
                                         </div>
