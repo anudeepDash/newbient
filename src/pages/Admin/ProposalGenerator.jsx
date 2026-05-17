@@ -216,9 +216,9 @@ const ProposalGenerator = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const maxChars = formData.isBulkGenerated ? 1100 : 1100;
+            const maxChars = formData.isBulkGenerated ? 2800 : 2000;
             
-            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 25) {
+            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 40) {
                  pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
             } else {
                 const blocks = formData.scopeOfWork.split(/\n\n/);
