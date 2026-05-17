@@ -154,12 +154,18 @@ const ProposalGenerator = () => {
 
     const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
 
+    const hasInitializedRef = useRef(false);
     useEffect(() => {
-        if (id && proposals.length > 0) {
+        hasInitializedRef.current = false;
+    }, [id]);
+
+    useEffect(() => {
+        if (id && proposals.length > 0 && !hasInitializedRef.current) {
             const proposal = proposals.find(p => p.id === id);
             if (proposal) {
                 setSingleFormData({ ...proposal, hiddenFields: proposal.hiddenFields || [], selectedLogo: proposal.selectedLogo || 'entertainment' });
                 setSingleItems(proposal.items || []);
+                hasInitializedRef.current = true;
             }
         }
     }, [id, proposals]);
