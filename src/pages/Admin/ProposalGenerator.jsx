@@ -216,26 +216,47 @@ const ProposalGenerator = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const maxChars = formData.isBulkGenerated ? 2800 : 2000;
+            const estimateBlockHeight = (text) => {
+                let h = 0;
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) { h += 12; continue; }
+                    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+                    if (headingMatch) {
+                        h += headingMatch[1].length <= 2 ? 72 : 48;
+                        if (headingMatch[2].length > 40) h += 24; 
+                    } else if (line.match(/^[•\-\*]\s/)) {
+                        h += (Math.ceil((line.length - 2) / 60) * 24) + 16; 
+                    } else {
+                        h += (Math.ceil(line.length / 80) * 24) + 16;
+                    }
+                }
+                return h;
+            };
+
+            const totalHeight = estimateBlockHeight(formData.scopeOfWork);
+            const MAX_PAGE_HEIGHT = 700;
             
-            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 40) {
+            if (totalHeight <= MAX_PAGE_HEIGHT) {
                  pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
             } else {
                 const blocks = formData.scopeOfWork.split(/\n\n/);
                 let currentPageText = '';
-                let currentLength = 0;
+                let currentHeight = 0;
                 let pageIndex = 1;
 
-                const splitByWords = (text, limit) => {
+                const splitByHeight = (text, limit) => {
                     const words = text.split(' ');
                     const chunks = [];
                     let currentChunk = '';
                     for (let w of words) {
-                        if (currentChunk.length + w.length + 1 > limit) {
+                        const testChunk = currentChunk ? currentChunk + ' ' + w : w;
+                        if (estimateBlockHeight(testChunk) > limit) {
                             if (currentChunk) chunks.push(currentChunk.trim());
                             currentChunk = w + ' ';
                         } else {
-                            currentChunk += w + ' ';
+                            currentChunk = testChunk;
                         }
                     }
                     if (currentChunk) chunks.push(currentChunk.trim());
@@ -246,29 +267,32 @@ const ProposalGenerator = () => {
                     const block = blocks[i].trim();
                     if (!block) continue;
 
-                    if (currentLength + block.length > maxChars && currentPageText !== '') {
+                    const blockHeight = estimateBlockHeight(block) + 12;
+
+                    if (currentHeight + blockHeight > MAX_PAGE_HEIGHT && currentPageText !== '') {
                          pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
                          currentPageText = '';
-                         currentLength = 0;
+                         currentHeight = 0;
                     }
                     
-                    if (block.length > maxChars) {
-                         const subBlocks = splitByWords(block, maxChars);
+                    if (blockHeight > MAX_PAGE_HEIGHT) {
+                         const subBlocks = splitByHeight(block, MAX_PAGE_HEIGHT);
                          for(let sb of subBlocks) {
-                             if(currentLength + sb.length > maxChars && currentPageText !== '') {
+                             const sbHeight = estimateBlockHeight(sb);
+                             if(currentHeight + sbHeight > MAX_PAGE_HEIGHT && currentPageText !== '') {
                                  pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
                                  currentPageText = sb + ' ';
-                                 currentLength = sb.length;
+                                 currentHeight = sbHeight;
                              } else {
                                  currentPageText += sb + ' ';
-                                 currentLength += sb.length;
+                                 currentHeight += sbHeight;
                              }
                          }
                          currentPageText += '\n\n'; 
-                         currentLength += 2;
+                         currentHeight += 12;
                     } else {
                          currentPageText += block + '\n\n';
-                         currentLength += block.length + 2;
+                         currentHeight += blockHeight;
                     }
                 }
                 if (currentPageText.trim()) {
