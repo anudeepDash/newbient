@@ -1807,12 +1807,7 @@ const ProposalGenerator = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-auto pt-12 flex items-center gap-4 border-t border-gray-100">
-                                        <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[8px] font-black text-neon-green">NB</span></div>
-                                        <div>
-                                            <p className="text-[11px] font-black text-black">Newbi Entertainment</p>
-                                        </div>
-                                    </div>
+                                    {/* Removed bottom black box from ProposalGenerator PDF export container */}
                                 </div>
                             )}
                             {page.type === 'proposal' && (
