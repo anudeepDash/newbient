@@ -322,7 +322,7 @@ const SCHEMAS = {
         campaignName: "string — Project, Event, or Mission title",
         campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
         coverDescription: "string — 2-3 sentence cover summary, plain text only",
-        scopeOfWork: "string — MANDATORY. A beautifully arranged markdown string containing ALL the EXACT details and text from the prompt. Arrange it professionally with Markdown headings (##), bold text, and bullet points. DO NOT omit any information. DO NOT summarize heavily."
+        scopeOfWork: "string — MANDATORY. A beautifully structured, persuasive markdown string that transforms the raw text into a premium business document. You MUST invent appropriate professional section titles using Markdown headings (##). Rewrite and elevate the language to sound elite. Use bullet points and bold text for readability."
     },
     contract: {
         parties: {
@@ -380,13 +380,14 @@ RULES:
 - terms: 4-5 numbered items on separate lines, include "Advance Fee" instead of "activation fee"
 - Return valid JSON matching the schema`,
 
-    bulk_proposal: `You are an elite document formatter for Newbi Entertainment. Take the provided bulk data and arrange it beautifully without summarizing it or omitting information.
+    bulk_proposal: `You are an elite business copywriter and document structurer for Newbi Entertainment. Transform the provided raw data into a beautifully structured, persuasive premium business document.
     
     RULES:
     - ALL text: plain text, NO HTML
     - Extract identity fields like clientName, campaignName etc.
-    - For 'scopeOfWork', this is MANDATORY. Arrange ALL the provided text beautifully using Markdown. Use ## headings for logical sections, bullet points, and bold text.
-    - DO NOT summarize heavily. Keep the detailed text provided by the user, just format it perfectly into a premium document.
+    - For 'scopeOfWork', this is MANDATORY. You MUST add appropriate professional titles using Markdown headers (## Title).
+    - You MUST rewrite, arrange, and enhance the text to sound like a premium, persuasive business proposal. Elevate the language.
+    - DO NOT just regurgitate the exact text. Transform it into a polished, structured masterpiece while retaining all key details.
     - Return valid JSON matching the schema`,
 
     contract: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
