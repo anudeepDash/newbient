@@ -402,6 +402,15 @@ RULES:
     - Make ALL content specific to the user's prompt
     - Return valid JSON matching the schema`,
 
+    revision: `You are an elite AI document editor for Newbi Entertainment. You will receive an existing business document in JSON format and a user's revision instruction.
+    
+    RULES:
+    - Modify the JSON document EXACLTY according to the user's instructions.
+    - If asked to add something, generate high-quality, professional content that matches the tone of the document.
+    - If asked to remove something, remove it cleanly.
+    - Retain ALL other information exactly as it was. Do not delete or summarize unrelated fields.
+    - Return ONLY the updated valid JSON object.`,
+
     agreement: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
     
     RULES:
@@ -495,6 +504,50 @@ CRITICAL: Every field must have specific, relevant content based on the request.
         return getAbsoluteFailproofMock(typeKey, prompt);
     }
 };
+
+/**
+ * Refine an existing document based on a conversational prompt.
+ */
+export const reviseDocument = async (currentData, revisionPrompt, tone = 'Premium') => {
+    if (!currentData || !revisionPrompt || revisionPrompt.trim().length < 2) {
+        throw new NBError(ERROR_CODES.EMPTY_PROMPT, 'Invalid revision data');
+    }
+
+    const systemPrompt = SYSTEM_PROMPTS.revision;
+    const userPrompt = `Here is the current document in JSON format:
+${JSON.stringify(currentData, null, 2)}
+
+Instruction: "${revisionPrompt}"
+Tone: ${tone}
+
+Please apply the instruction to the document and return ONLY the updated JSON.`;
+
+    try {
+        const rawResponse = await Promise.race([
+            executeAIPulse(systemPrompt, userPrompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 15000))
+        ]);
+
+        console.log('[NEWBI AI] Got revision response, parsing JSON...');
+        const parsed = finalExtract(rawResponse);
+        
+        // Ensure numeric fields in items
+        if (parsed.items) {
+            parsed.items = parsed.items.map(item => ({
+                ...item,
+                qty: Number(item.qty) || 1,
+                price: Number(item.price) || 0
+            }));
+        }
+
+        console.log(`[NEWBI AI] ✓ Document revised successfully`);
+        return stripHTML(parsed);
+    } catch (error) {
+        console.warn('[NEWBI AI] ⚠️ Document revision failed:', error.message);
+        throw new NBError(ERROR_CODES.PARSING_FAILED, 'Failed to revise document. Please try again.');
+    }
+};
+
 
 /**
  * Improve/rewrite a specific text field.

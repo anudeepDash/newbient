@@ -45,7 +45,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
-import { generateFullDocument } from '../../lib/ai';
+import { generateFullDocument, reviseDocument } from '../../lib/ai';
 import AIPromptBox from '../../components/admin/AIPromptBox';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 
@@ -73,6 +73,9 @@ const ProposalGenerator = () => {
     const [isBulkGenerating, setIsBulkGenerating] = useState(false);
     const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
     const [selectedBulkIndex, setSelectedBulkIndex] = useState(0);
+
+    const [refinementPrompt, setRefinementPrompt] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -519,6 +522,34 @@ const ProposalGenerator = () => {
     };
 
     const paginatedPages = getPaginatedPages();
+
+    const handleRefine = async () => {
+        if (!refinementPrompt.trim() || isRefining) return;
+        setIsRefining(true);
+        try {
+            const currentDoc = (isBulkMode && bulkProposals.length > 0) ? bulkProposals[selectedBulkIndex] : singleFormData;
+            const updatedDoc = await reviseDocument(currentDoc, refinementPrompt, 'Premium');
+            
+            if (isBulkMode && bulkProposals.length > 0) {
+                setBulkProposals(prev => {
+                    const newVault = [...prev];
+                    newVault[selectedBulkIndex] = { ...currentDoc, ...updatedDoc };
+                    return newVault;
+                });
+                if (singleFormData.id === currentDoc.id) {
+                    setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
+                }
+            } else {
+                setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
+            }
+            addToast('Document successfully refined!', 'success');
+            setRefinementPrompt('');
+        } catch (err) {
+            addToast(`Refinement failed: ${err.message}`, 'error');
+        } finally {
+            setIsRefining(false);
+        }
+    };
 
     const tabs = [
         { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: 'cover' },
@@ -1351,6 +1382,39 @@ const ProposalGenerator = () => {
                                 <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
                                 {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
                             </button>
+                        </div>
+
+                        {/* AI Refinement Chatbot */}
+                        <div className="mt-8 mb-12 p-6 bg-zinc-900/50 border border-white/5 focus-within:border-neon-green/30 rounded-3xl relative overflow-hidden transition-all duration-300">
+                            <div className="flex flex-col gap-4 relative z-10">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-neon-green/10 rounded-xl">
+                                            <Sparkles size={14} className="text-neon-green" />
+                                        </div>
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Follow-up Refinement</h4>
+                                    </div>
+                                    {isRefining && <span className="text-[9px] font-bold text-neon-green animate-pulse uppercase tracking-widest">Revising Document...</span>}
+                                </div>
+                                <div className="flex gap-3">
+                                    <input 
+                                        type="text" 
+                                        value={refinementPrompt} 
+                                        onChange={e => setRefinementPrompt(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleRefine()}
+                                        placeholder="e.g. 'Add a timeline for Phase 3' or 'Change the client name'" 
+                                        className="flex-1 bg-black/60 border border-white/5 rounded-2xl px-5 py-3.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-neon-green/50 transition-all"
+                                        disabled={isRefining}
+                                    />
+                                    <button 
+                                        onClick={handleRefine}
+                                        disabled={isRefining || !refinementPrompt.trim()}
+                                        className="px-6 py-3.5 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-neon-green hover:text-black hover:border-neon-green transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center min-w-[60px]"
+                                    >
+                                        {isRefining ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         </>
                         )}
