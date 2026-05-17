@@ -218,11 +218,25 @@ const ProposalGenerator = () => {
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
             const estimateBlockHeight = (text) => {
                 let h = 0;
-                const lines = text.split('\n');
+                const rawLines = text.split('\n');
+                const lines = [];
+                rawLines.forEach(rl => {
+                    const parts = rl.split(/\s(?=\d+\.\s)/);
+                    if (parts.length > 1) lines.push(...parts);
+                    else lines.push(rl);
+                });
+
                 let inList = false;
                 for (let line of lines) {
                     line = line.trim();
                     if (!line) { h += 12; inList = false; continue; }
+                    
+                    if (line.match(/^[-*_]{3,}$/)) {
+                        inList = false;
+                        h += 66; // my-8 (64px) + line (1.5px)
+                        continue;
+                    }
+
                     const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
                     if (headingMatch) {
                         inList = false;
