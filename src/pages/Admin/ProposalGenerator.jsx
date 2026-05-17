@@ -227,76 +227,41 @@ const ProposalGenerator = () => {
                         h += headingMatch[1].length <= 2 ? 72 : 48;
                         if (headingMatch[2].length > 40) h += 24; 
                     } else if (line.match(/^[•\-\*]\s/)) {
-                        h += (Math.ceil((line.length - 2) / 60) * 24) + 16; 
+                        h += (Math.ceil((line.length - 2) / 85) * 24) + 16; 
                     } else {
-                        h += (Math.ceil(line.length / 80) * 24) + 16;
+                        h += (Math.ceil(line.length / 95) * 24) + 16;
                     }
                 }
                 return h;
             };
 
+            const MAX_PAGE_HEIGHT = 750;
             const totalHeight = estimateBlockHeight(formData.scopeOfWork);
-            const MAX_PAGE_HEIGHT = 700;
             
             if (totalHeight <= MAX_PAGE_HEIGHT) {
                  pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
             } else {
-                const blocks = formData.scopeOfWork.split(/\n\n/);
                 let currentPageText = '';
-                let currentHeight = 0;
                 let pageIndex = 1;
-
-                const splitByHeight = (text, limit) => {
-                    const words = text.split(' ');
-                    const chunks = [];
-                    let currentChunk = '';
-                    for (let w of words) {
-                        const testChunk = currentChunk ? currentChunk + ' ' + w : w;
-                        if (estimateBlockHeight(testChunk) > limit) {
-                            if (currentChunk) chunks.push(currentChunk.trim());
-                            currentChunk = w + ' ';
-                        } else {
-                            currentChunk = testChunk;
-                        }
-                    }
-                    if (currentChunk) chunks.push(currentChunk.trim());
-                    return chunks;
-                };
+                const words = formData.scopeOfWork.split(' ');
                 
-                for (let i = 0; i < blocks.length; i++) {
-                    const block = blocks[i].trim();
-                    if (!block) continue;
-
-                    const blockHeight = estimateBlockHeight(block) + 12;
-
-                    if (currentHeight + blockHeight > MAX_PAGE_HEIGHT && currentPageText !== '') {
-                         pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                         currentPageText = '';
-                         currentHeight = 0;
-                    }
-                    
-                    if (blockHeight > MAX_PAGE_HEIGHT) {
-                         const subBlocks = splitByHeight(block, MAX_PAGE_HEIGHT);
-                         for(let sb of subBlocks) {
-                             const sbHeight = estimateBlockHeight(sb);
-                             if(currentHeight + sbHeight > MAX_PAGE_HEIGHT && currentPageText !== '') {
-                                 pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                                 currentPageText = sb + ' ';
-                                 currentHeight = sbHeight;
-                             } else {
-                                 currentPageText += sb + ' ';
-                                 currentHeight += sbHeight;
-                             }
-                         }
-                         currentPageText += '\n\n'; 
-                         currentHeight += 12;
+                for (let i = 0; i < words.length; i++) {
+                    const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
+                    if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                        if (currentPageText) {
+                            pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                            currentPageText = words[i];
+                        } else {
+                            pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                            currentPageText = '';
+                        }
                     } else {
-                         currentPageText += block + '\n\n';
-                         currentHeight += blockHeight;
+                        currentPageText = testText;
                     }
                 }
+                
                 if (currentPageText.trim()) {
-                     pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                    pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
                 }
             }
         }
