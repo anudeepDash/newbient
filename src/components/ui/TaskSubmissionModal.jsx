@@ -111,9 +111,11 @@ const TaskSubmissionModal = ({
                                 <div className="relative rounded-[2rem] overflow-hidden border border-white/10 group">
                                     <img src={creativeAssets[currentSlide]} alt="" className="w-full aspect-video object-cover" />
                                     {creativeAssets.length > 1 && (
-                                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                                             {creativeAssets.map((_, i) => (
-                                                <button key={i} onClick={() => setCurrentSlide(i)} className={cn("w-2 h-2 rounded-full transition-all", i === currentSlide ? "bg-white w-6" : "bg-white/30")} />
+                                                <button key={i} onClick={() => setCurrentSlide(i)} className="w-11 h-11 flex items-center justify-center focus:outline-none">
+                                                    <span className={cn("h-2 rounded-full transition-all", i === currentSlide ? "bg-white w-6" : "bg-white/30 w-2")} />
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -125,7 +127,7 @@ const TaskSubmissionModal = ({
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Universal Caption</h4>
-                                    <button onClick={handleCopy} className={cn("text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all", copiedCaption ? "text-neon-green" : "text-neon-blue hover:text-white")}>
+                                    <button onClick={handleCopy} className={cn("min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/10 border border-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all", copiedCaption ? "text-neon-green" : "text-neon-blue hover:text-white")}>
                                         {copiedCaption ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy Text</>}
                                     </button>
                                 </div>
@@ -140,7 +142,7 @@ const TaskSubmissionModal = ({
                                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">External Assets</h4>
                                 <div className="grid grid-cols-1 gap-2">
                                     {creativeLinks.map((link, i) => (
-                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-xl hover:bg-neon-blue hover:text-black transition-all group">
+                                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 min-h-[44px] bg-white/[0.03] border border-white/5 rounded-xl hover:bg-neon-blue hover:text-black transition-all group">
                                             <span className="text-[11px] font-bold truncate">{link}</span>
                                             <ExternalLink size={14} />
                                         </a>
@@ -153,8 +155,8 @@ const TaskSubmissionModal = ({
 
                 {/* Right Side: Execution & Progress */}
                 <div className="flex-1 md:w-1/2 p-6 md:p-12 overflow-y-auto bg-gradient-to-br from-white/[0.02] to-transparent relative">
-                    <button onClick={onClose} className="absolute top-6 md:top-8 right-6 md:right-8 w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/5">
-                        <X size={18} />
+                    <button onClick={onClose} className="absolute top-6 md:top-8 right-6 md:right-8 w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all border border-white/5 z-50 shadow-xl">
+                        <X size={20} />
                     </button>
 
                     <div className="h-full flex flex-col">

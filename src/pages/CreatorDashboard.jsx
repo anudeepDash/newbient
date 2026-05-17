@@ -40,7 +40,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -289,279 +289,16 @@ const CreatorSettingsView = ({ profile }) => {
     );
 };
 
-// --- Mission Panel (Slide-over) ---
-const MissionPanel = ({ campaign, profile, onClose, onOpenTask, onApply, isApplying }) => {
-    const isJoined = (profile.joinedCampaigns || []).includes(campaign.id);
-    const isShortlisted = (profile.shortlistedCampaigns || []).includes(campaign.id);
-    const campaignTasks = campaign.tasks || [];
-    const [isExpanded, setIsExpanded] = useState(false);
-    
-    // Progress calculations
-    const requiredTasks = campaignTasks.filter(t => t.priority !== 'optional');
-    const approvedRequired = requiredTasks.filter(t => getSubmissionStatus(t, profile.uid) === 'approved').length;
-    const approvedTotal = campaignTasks.filter(t => getSubmissionStatus(t, profile.uid) === 'approved').length;
-    const progress = campaignTasks.length > 0 ? (approvedTotal / campaignTasks.length) * 100 : 0;
-    const isFullyComplete = requiredTasks.length > 0 && approvedRequired === requiredTasks.length;
-
-    return (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/90 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-xl bg-[#0a0a0a] lg:border-l border-white/10 h-[100dvh] lg:h-full overflow-hidden flex flex-col shadow-[-50px_0_100px_rgba(0,0,0,0.5)]"
-            >
-                {/* Thumbnail */}
-                <div className="aspect-video relative overflow-hidden bg-black shrink-0">
-                    {campaign.thumbnail ? (
-                        <img 
-                            src={campaign.thumbnail} 
-                            alt={campaign.title} 
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                            <span className="text-[10px] font-black text-white/5 uppercase tracking-[0.5em] italic">Mission Asset</span>
-                        </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
-                    
-                    {/* Floating Close Button */}
-                    <button 
-                        onClick={onClose} 
-                        className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all z-10 shadow-2xl"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-
-                {/* Panel Header */}
-                <div className="px-6 md:px-10 pt-10 pb-8 border-b border-white/10 bg-[#0a0a0a] shrink-0">
-                    <div className="flex items-start justify-between gap-6 mb-8">
-                        <div className="flex-1 min-w-0">
-                            <span className="text-[9px] md:text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] opacity-60">Creator Workspace</span>
-                            <h2 className="text-2xl md:text-3xl font-black font-heading uppercase tracking-tight text-white mt-1.5 italic leading-none pr-4">
-                                {campaign.title}
-                            </h2>
-                            <div className="mt-4">
-                                <div className={cn(
-                                    "text-[10px] md:text-xs font-bold uppercase tracking-wider leading-relaxed transition-all duration-300 overflow-hidden relative text-gray-500",
-                                    !isExpanded && "max-h-[60px] md:max-h-[80px]"
-                                )}>
-                                    {campaign.description ? (
-                                        <div className="article-content" dangerouslySetInnerHTML={{ __html: campaign.description }} />
-                                    ) : (
-                                        <span>No additional details provided for this campaign.</span>
-                                    )}
-                                    
-                                    {!isExpanded && campaign.description && campaign.description.length > 80 && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
-                                    )}
-                                </div>
-                                
-                                {campaign.description && (campaign.description.split('\n').length > 3 || campaign.description.length > 80) && (
-                                    <button 
-                                        onClick={() => setIsExpanded(!isExpanded)}
-                                        className="text-[9px] font-black text-neon-blue/80 hover:text-white uppercase tracking-[0.3em] mt-3 transition-colors flex items-center gap-2 group"
-                                    >
-                                        {isExpanded ? 'MINIMIZE DESCRIPTION' : 'VIEW FULL DETAILS'}
-                                        <div className="w-4 h-px bg-neon-blue/20 group-hover:w-8 transition-all" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Quick Specs Row */}
-                    <div className="flex items-center gap-6 mb-6">
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Min. Followers</span>
-                            <span className="text-white font-bold uppercase text-[10px] tracking-tight">{Number(campaign.minInstagramFollowers || 0).toLocaleString()}+</span>
-                        </div>
-                        <div className="h-6 w-px bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">Bounty Scale</span>
-                            <span className="text-neon-green font-bold uppercase text-[10px] tracking-tight">{campaign.reward}</span>
-                        </div>
-                    </div>
-
-                    {/* Progress Segment */}
-                    {isShortlisted && campaignTasks.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                    {approvedTotal}/{campaignTasks.length} DELIVERABLES COMPLETED
-                                </span>
-                                <span className={cn("text-[12px] font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
-                                    {Math.round(progress)}%
-                                </span>
-                            </div>
-                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 1.5, ease: 'circOut' }}
-                                    className={cn("h-full rounded-full", isFullyComplete ? 'bg-neon-green' : 'bg-gradient-to-r from-neon-blue to-white/20')}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Task List */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
-                    <style dangerouslySetInnerHTML={{ __html: `
-                        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-                        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
-                    `}} />
-
-                    {profile.profileStatus !== 'approved' ? (
-                        <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
-                            <ShieldCheck size={40} className="text-neon-blue mx-auto animate-pulse" />
-                            <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Identity Review</h4>
-                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    WE ARE VERIFYING YOUR PROFILE. ACCESS TO CAMPAIGNS WILL BE UNLOCKED UPON APPROVAL.
-                                </p>
-                            </div>
-                        </div>
-                    ) : !isJoined ? (
-                        <div className="space-y-10">
-                            {/* Detailed Brief Section */}
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-[1px] w-6 bg-neon-blue/40" />
-                                    <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.5em]">Campaign Details // Full Brief</h3>
-                                </div>
-                                
-                                <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 relative overflow-hidden backdrop-blur-2xl">
-                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-blue/20" />
-                                    <div className="article-content text-sm md:text-base font-medium text-gray-400 leading-relaxed italic">
-                                        {campaign.description ? (
-                                            <div dangerouslySetInnerHTML={{ __html: campaign.description }} />
-                                        ) : "No briefing provided for this workspace."}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : !isShortlisted ? (
-                        <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
-                            <Clock size={40} className="text-yellow-500 mx-auto animate-pulse" />
-                            <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Selection Phase</h4>
-                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    APPLICATION RECEIVED. WE WILL NOTIFY YOU ONCE YOU ARE SHORTLISTED.
-                                </p>
-                            </div>
-                        </div>
-                    ) : campaignTasks.length === 0 ? (
-                        <div className="p-10 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem] text-center space-y-6">
-                            <Zap size={40} className="text-neon-blue mx-auto animate-pulse" />
-                            <div>
-                                <h4 className="text-xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Application Approved</h4>
-                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed max-w-[240px] mx-auto uppercase tracking-widest mt-3">
-                                    YOU ARE SELECTED! TASKS FOR THIS CAMPAIGN WILL BE UPDATED SOON.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        campaignTasks.map((task, idx) => {
-                            const status = getSubmissionStatus(task, profile.uid);
-                            const TypeInfo = TASK_TYPES[task.taskType] || TASK_TYPES.custom;
-                            return (
-                                <motion.button
-                                    key={task.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    onClick={() => onOpenTask(task)}
-                                    className={cn(
-                                        "w-full p-6 rounded-[2rem] border flex items-center gap-5 transition-all group relative overflow-hidden",
-                                        status === 'approved' ? 'bg-neon-green/[0.03] border-neon-green/10' :
-                                        status === 'submitted' ? 'bg-yellow-500/[0.03] border-yellow-500/10' :
-                                        status === 'rejected' ? 'bg-red-500/[0.03] border-red-500/10' :
-                                        'bg-white/[0.02] border-white/5 hover:border-neon-blue/20 hover:bg-white/[0.04]'
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
-                                        status === 'approved' ? 'bg-neon-green/20 text-neon-green' :
-                                        status === 'submitted' ? 'bg-yellow-500/10 text-yellow-500' :
-                                        status === 'rejected' ? 'bg-red-500/10 text-red-500' :
-                                        'bg-white/5 text-gray-500'
-                                    )}>
-                                        {status === 'approved' ? <CheckCircle2 size={18} /> : <TypeInfo.icon size={18} />}
-                                    </div>
-                                    
-                                    <div className="flex-1 text-left min-w-0">
-                                        <h4 className={cn(
-                                            "text-[13px] font-black uppercase tracking-tight truncate",
-                                            status === 'approved' ? 'text-gray-600' : 'text-white'
-                                        )}>{task.title}</h4>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{TypeInfo.label}</span>
-                                            <div className="w-1 h-1 rounded-full bg-white/10" />
-                                            <span className={cn(
-                                                "text-[8px] font-black uppercase tracking-widest",
-                                                status === 'approved' ? 'text-neon-green' :
-                                                status === 'submitted' ? 'text-yellow-500' :
-                                                status === 'rejected' ? 'text-red-500' :
-                                                'text-gray-700'
-                                            )}>
-                                                {status === 'not_started' ? 'Pending' : status.toUpperCase()}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <ChevronRight size={16} className="text-gray-800 group-hover:text-neon-blue group-hover:translate-x-1 transition-all" />
-                                </motion.button>
-                            );
-                        })
-                    )}
-                </div>
-
-                <div className="p-8 border-t border-white/10 shrink-0 bg-black">
-                    {!isJoined && profile.profileStatus === 'approved' && (
-                        <Button 
-                            onClick={() => onApply(campaign.id)}
-                            disabled={isApplying}
-                            className="w-full h-20 bg-white text-black font-black uppercase tracking-[0.3em] rounded-[2rem] shadow-[0_0_40px_rgba(255,20,147,0.3)] hover:shadow-[0_0_60px_rgba(255,20,147,0.5)] transition-all text-xs mb-4"
-                        >
-                            {isApplying ? <LoadingSpinner size="xs" color="#000000" /> : 'Apply to Campaign'}
-                        </Button>
-                    )}
-                    {isShortlisted && campaign.whatsappLink && (
-                        <a href={campaign.whatsappLink} target="_blank" rel="noopener noreferrer">
-                            <Button className="w-full h-16 bg-[#25D366]/5 text-[#25D366] border border-[#25D366]/10 hover:bg-[#25D366]/10 font-black text-[10px] uppercase tracking-[0.2em] gap-3 rounded-[1.5rem] shadow-lg">
-                                <MessageCircle size={18} /> Join Hub Communications
-                            </Button>
-                        </a>
-                    )}
-                </div>
-            </motion.div>
-        </div>
-    );
-};
 
 
 const CreatorDashboard = () => {
     const { user, authInitialized, creators, campaigns, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [profile, setProfile] = useState(null);
-    const [activeDashboardTab, setActiveDashboardTab] = useState('workspace'); // 'workspace' or 'settings'
+    const activeDashboardTab = location.pathname.includes('/settings') ? 'settings' : 'workspace';
     const [activeTab, setActiveTab] = useState('opportunities');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedTask, setSelectedTask] = useState(null);
-    const [missionCampaign, setMissionCampaign] = useState(null);
-    const [isApplying, setIsApplying] = useState(false);
     const [isWorkspacePanelOpen, setIsWorkspacePanelOpen] = useState(false);
 
     useEffect(() => {
@@ -570,62 +307,12 @@ const CreatorDashboard = () => {
             if (existingProfile) {
                 setProfile(existingProfile);
             } else {
-                navigate('/creator');
+                navigate('/creator/join');
             }
         } else if (authInitialized && !loading && !user) {
-            navigate('/creator');
+            navigate('/creator/join');
         }
     }, [user, authInitialized, loading, creators, navigate]);
-
-    // Keep mission and task synced with latest data
-    useEffect(() => {
-        if (missionCampaign) {
-            const updated = campaigns.find(c => c.id === missionCampaign.id);
-            if (updated) {
-                setMissionCampaign(updated);
-                if (selectedTask) {
-                    const updatedTask = (updated.tasks || []).find(t => t.id === selectedTask.id);
-                    if (updatedTask) setSelectedTask(updatedTask);
-                }
-            }
-        }
-    }, [campaigns]);
-
-    const handleTaskSubmit = async (taskId, contentLink, proofFile) => {
-        if (!contentLink && !proofFile) {
-            useStore.getState().addToast("Please provide a content link or upload proof.", 'error');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            let proofUrl = '';
-            if (proofFile) {
-                proofUrl = await uploadToCloudinary(proofFile);
-            }
-            await useStore.getState().submitTaskProof(missionCampaign.id, taskId, profile.uid, {
-                contentLink,
-                proofUrl
-            });
-            setSelectedTask(null);
-        } catch (error) {
-            useStore.getState().addToast("Submission failed. Please try again.", 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-
-    const handleApply = async (campaignId) => {
-        setIsApplying(true);
-        try {
-            await useStore.getState().applyToCampaign(profile.uid, campaignId);
-            // We can keep the panel open, it will auto-update state due to Firebase subscription
-        } catch (error) {
-            useStore.getState().addToast("Couldn't submit your application. Please try again.", 'error');
-        } finally {
-            setIsApplying(false);
-        }
-    };
 
 
     if (!profile) return <GlobalLoader color="#38b6ff" />;
@@ -665,7 +352,7 @@ const CreatorDashboard = () => {
                     <div className="flex items-center gap-1.5 md:gap-3 bg-white/[0.02] p-1.5 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl shadow-2xl min-w-max">
                         <div className="flex items-center p-1 bg-black/20 rounded-full border border-white/5">
                             <button 
-                                onClick={() => setActiveDashboardTab('workspace')}
+                                onClick={() => navigate('/creator-dashboard')}
                                 className={cn(
                                     "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
                                     activeDashboardTab === 'workspace' ? "text-black" : "text-gray-500 hover:text-white"
@@ -681,7 +368,7 @@ const CreatorDashboard = () => {
                                 Workspace
                             </button>
                             <button 
-                                onClick={() => setActiveDashboardTab('settings')}
+                                onClick={() => navigate('/creator-dashboard/settings')}
                                 className={cn(
                                     "px-5 md:px-8 py-3 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10",
                                     activeDashboardTab === 'settings' ? "text-black" : "text-gray-500 hover:text-white"
@@ -787,7 +474,7 @@ const CreatorDashboard = () => {
                                 </div>
                             </div>
                             <button 
-                                onClick={() => setActiveDashboardTab('settings')}
+                                onClick={() => navigate('/creator-dashboard/settings')}
                                 className="w-16 h-16 bg-white/5 hover:bg-white hover:text-black rounded-2xl flex items-center justify-center transition-all m-1 group/btn border border-white/5 shadow-inner"
                             >
                                 <Settings size={20} className="group-hover/btn:rotate-90 transition-transform duration-500" />
@@ -831,7 +518,7 @@ const CreatorDashboard = () => {
                             <div id="priority-campaigns-scroll" className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 pb-4 scrollbar-hide snap-x">
                                 {shortlistedCampaignsList.map(c => (
                                     <div key={c.id} className="min-w-[280px] w-[280px] md:min-w-0 md:w-auto snap-start">
-                                        <CampaignCard campaign={c} profile={profile} type="joined" onOpenMission={setMissionCampaign} />
+                                        <CampaignCard campaign={c} profile={profile} type="joined" onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} />
                                     </div>
                                 ))}
                             </div>
@@ -914,7 +601,7 @@ const CreatorDashboard = () => {
                                             campaign={c} 
                                             profile={profile} 
                                             type={activeTab === 'opportunities' ? 'available' : 'joined'} 
-                                            onOpenMission={setMissionCampaign} 
+                                            onOpenMission={(camp) => navigate(`/campaign/${camp.id}`)} 
                                         />
                                     </motion.div>
                                 ))}
@@ -954,28 +641,7 @@ const CreatorDashboard = () => {
 
             {/* Overlays */}
             <AnimatePresence mode="wait">
-                {missionCampaign && (
-                    <MissionPanel
-                        campaign={missionCampaign}
-                        profile={profile}
-                        onClose={() => setMissionCampaign(null)}
-                        onOpenTask={(task) => setSelectedTask(task)}
-                        onApply={handleApply}
-                        isApplying={isApplying}
-                    />
-                )}
-                {selectedTask && (
-                    <TaskSubmissionModal 
-                        task={selectedTask}
-                        campaignId={missionCampaign?.id}
-                        profileUid={profile.uid}
-                        onClose={() => setSelectedTask(null)}
-                        isSubmitting={isSubmitting}
-                        onSubmit={handleTaskSubmit}
-                        taskTypes={TASK_TYPES}
-                        platforms={PLATFORMS}
-                    />
-                )}
+
                 {isWorkspacePanelOpen && (
                     <WorkspaceOverviewPanel 
                         profile={profile}

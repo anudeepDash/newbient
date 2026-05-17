@@ -68,12 +68,18 @@ const ProposalGenerator = () => {
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [bulkRawText, setBulkRawText] = useState('');
 
+    const [isBulkMode, setIsBulkMode] = useState(false);
+    const [bulkProposals, setBulkProposals] = useState([]);
+    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+    const [selectedBulkIndex, setSelectedBulkIndex] = useState(0);
+
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
         { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
     ];
 
-    const [formData, setFormData] = useState({
+    const [singleFormData, setSingleFormData] = useState({
         clientName: '',
         clientAddress: '',
         campaignName: '',
@@ -108,18 +114,49 @@ const ProposalGenerator = () => {
         selectedLogo: 'entertainment' 
     });
 
-    const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
-
-    const [items, setItems] = useState([
+    const [singleItems, setSingleItems] = useState([
         { id: 1, description: 'Project Phase 01: Initial Strategic Planning', qty: 1, unit: 'Phase', price: 0 }
     ]);
+
+    const formData = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? bulkProposals[selectedBulkIndex] : singleFormData;
+    const items = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? (bulkProposals[selectedBulkIndex]?.items || []) : singleItems;
+
+    const setFormData = (updater) => {
+        if (isBulkMode && bulkProposals.length > 0) {
+            setBulkProposals(prevBulk => {
+                const updatedBulk = [...prevBulk];
+                const current = updatedBulk[selectedBulkIndex];
+                const nextState = typeof updater === 'function' ? updater(current) : updater;
+                updatedBulk[selectedBulkIndex] = { ...current, ...nextState };
+                return updatedBulk;
+            });
+        } else {
+            setSingleFormData(updater);
+        }
+    };
+
+    const setItems = (updater) => {
+        if (isBulkMode && bulkProposals.length > 0) {
+            setBulkProposals(prevBulk => {
+                const updatedBulk = [...prevBulk];
+                const current = updatedBulk[selectedBulkIndex];
+                const nextItems = typeof updater === 'function' ? updater(current.items || []) : updater;
+                updatedBulk[selectedBulkIndex] = { ...current, items: nextItems };
+                return updatedBulk;
+            });
+        } else {
+            setSingleItems(updater);
+        }
+    };
+
+    const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
 
     useEffect(() => {
         if (id && proposals.length > 0) {
             const proposal = proposals.find(p => p.id === id);
             if (proposal) {
-                setFormData({ ...proposal, hiddenFields: proposal.hiddenFields || [], selectedLogo: proposal.selectedLogo || 'entertainment' });
-                setItems(proposal.items || []);
+                setSingleFormData({ ...proposal, hiddenFields: proposal.hiddenFields || [], selectedLogo: proposal.selectedLogo || 'entertainment' });
+                setSingleItems(proposal.items || []);
             }
         }
     }, [id, proposals]);
@@ -156,7 +193,7 @@ const ProposalGenerator = () => {
         <button 
             onClick={() => toggleFieldVisibility(field)}
             className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-[8px] font-black uppercase tracking-[0.1em]",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all text-[9px] font-black uppercase tracking-[0.1em]",
                 isHidden(field) 
                     ? "bg-red-500/5 border-red-500/20 text-red-400 hover:bg-red-500/10" 
                     : "bg-[#39FF14]/5 border-[#39FF14]/20 text-[#39FF14]/70 hover:bg-[#39FF14]/10 hover:text-[#39FF14]"
@@ -316,6 +353,143 @@ const ProposalGenerator = () => {
         }
     };
 
+    const handleBulkGenerate = async () => {
+        if (!bulkRawText || !bulkRawText.trim()) {
+            addToast("Please enter raw requirements or client data for bulk generation.", "error");
+            return;
+        }
+        setIsBulkGenerating(true);
+        const prompts = bulkRawText
+            .split(/\n[-_]{2,}\n|\n\n/)
+            .map(p => p.trim())
+            .filter(p => p.length > 10);
+
+        const validPrompts = prompts.length > 0 ? prompts : [bulkRawText.trim()];
+        setBulkProgress({ current: 0, total: validPrompts.length });
+        
+        const newProposals = [];
+        for (let i = 0; i < validPrompts.length; i++) {
+            setBulkProgress({ current: i + 1, total: validPrompts.length });
+            try {
+                const data = await generateFullDocument('bulk_proposal', validPrompts[i], 'Premium', {});
+                
+                newProposals.push({
+                    clientName: data.clientName || `Client 0${i+1}`,
+                    clientAddress: data.clientAddress || 'Corporate Headquarters',
+                    campaignName: data.campaignName || `Strategic Initiative 0${i+1}`,
+                    campaignDuration: data.campaignDuration || '3 Months',
+                    proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                    coverDescription: data.coverDescription || 'This comprehensive commercial instrument details the strategic execution architecture and deployment framework proposed by Newbi Entertainment.',
+                    overview: '',
+                    primaryGoal: '',
+                    numericTargets: '',
+                    audienceAge: '',
+                    audienceLocation: '',
+                    audienceInterests: '',
+                    selectedChannels: [],
+                    contentCount: { reels: 0, posts: 0, stories: 0 },
+                    deliverables: [],
+                    clientRequirements: [],
+                    scopeOfWork: data.scopeOfWork || 'End-to-end strategic management and deployment.',
+                    terms: '',
+                    paymentDetails: '',
+                    gstRate: 18,
+                    advanceRequested: 0,
+                    showGst: false,
+                    showSeal: false,
+                    showSignatures: false,
+                    signatureType: 'handwritten',
+                    providerSignature: '',
+                    clientSignature: '',
+                    senderName: 'Authorized Signatory',
+                    senderDesignation: 'Director of Operations',
+                    status: 'Draft',
+                    hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
+                    selectedLogo: 'entertainment',
+                    items: [],
+                    subtotal: 0,
+                    gstAmount: 0,
+                    totalAmount: 0,
+                    isBulkGenerated: true
+                });
+            } catch (err) {
+                addToast(`Failed to generate proposal ${i+1}: ${err.message}`, 'error');
+            }
+        }
+        
+        if (newProposals.length > 0) {
+            setBulkProposals(prev => [...prev, ...newProposals]);
+            setSelectedBulkIndex(0);
+            addToast(`Successfully generated ${newProposals.length} proposals in bulk!`, 'success');
+        }
+        setIsBulkGenerating(false);
+    };
+
+    const handleSaveAllBulk = async () => {
+        if (bulkProposals.length === 0) return;
+        setIsSaving(true);
+        let savedCount = 0;
+        try {
+            for (const prop of bulkProposals) {
+                const proposalData = JSON.parse(JSON.stringify({
+                    ...prop,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }));
+                await addProposal(proposalData);
+                savedCount++;
+            }
+            addToast(`Successfully saved all ${savedCount} proposals to the Vault!`, 'success');
+            navigate('/admin/proposals');
+        } catch (error) {
+            addToast(`Error saving bulk proposals: ${error.message}`, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const generateAllBulkPDFs = async () => {
+        if (bulkProposals.length === 0) return;
+        setIsSaving(true);
+        const originalScale = previewScale;
+        const originalIndex = selectedBulkIndex;
+        setPreviewScale(1);
+        
+        try {
+            const [jsPDFModule, html2canvasModule] = await Promise.all([
+                import('jspdf'),
+                import('html2canvas')
+            ]);
+            const jsPDF = jsPDFModule.default;
+            const html2canvas = html2canvasModule.default;
+
+            for (let b = 0; b < bulkProposals.length; b++) {
+                setSelectedBulkIndex(b);
+                await new Promise(r => setTimeout(r, 800));
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pages = document.querySelectorAll('.pdf-export-only .proposal-page-render');
+                
+                if (pages.length > 0) {
+                    for (let i = 0; i < pages.length; i++) {
+                        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' });
+                        if (i > 0) pdf.addPage();
+                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297, '', 'FAST');
+                    }
+                    pdf.save(`Newbi-Quotation-${bulkProposals[b].clientName || `Bulk-${b+1}`}.pdf`);
+                }
+            }
+            addToast(`Successfully exported all ${bulkProposals.length} proposals as PDFs!`, 'success');
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to export bulk PDFs: " + error.message, 'error');
+        } finally {
+            setPreviewScale(originalScale);
+            setSelectedBulkIndex(originalIndex);
+            setIsSaving(false);
+        }
+    };
+
     const paginatedPages = getPaginatedPages();
 
     const tabs = [
@@ -449,6 +623,30 @@ const ProposalGenerator = () => {
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
                         <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
                     </div>
+
+                    {/* Mode Switcher */}
+                    <div className="flex items-center bg-zinc-900/80 border border-white/10 rounded-2xl p-1 gap-1 shadow-inner ml-2 md:ml-6 shrink-0">
+                        <button 
+                            onClick={() => setIsBulkMode(false)}
+                            className={cn(
+                                "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5",
+                                !isBulkMode ? "bg-neon-green text-black shadow-[0_0_20px_rgba(57,255,20,0.3)]" : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            <FileText size={14} />
+                            <span className="hidden sm:inline">Single Mode</span>
+                        </button>
+                        <button 
+                            onClick={() => setIsBulkMode(true)}
+                            className={cn(
+                                "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5",
+                                isBulkMode ? "bg-neon-green text-black shadow-[0_0_20px_rgba(57,255,20,0.3)]" : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            <FileSpreadsheet size={14} />
+                            <span className="hidden sm:inline">AI Bulk Mode</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
@@ -472,65 +670,250 @@ const ProposalGenerator = () => {
 
             <main className="flex-1 flex overflow-x-clip">
                 {/* Sidebar - Desktop */}
-                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
-                    <div className="space-y-2">
-                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
+                {!isBulkMode && (
+                    <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
+                            {tabs.map(tab => (
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                                    <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
+                                        <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
+                )}
+
+                {/* Mobile Bottom Navigation */}
+                {!isBulkMode && (
+                    <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
-                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
-                                </div>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
+                                <tab.icon size={20} />
+                                <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
+                                {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
                             </button>
                         ))}
                     </div>
-                </aside>
-
-                {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
-                    {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
-                            <tab.icon size={20} />
-                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
-                        </button>
-                    ))}
-                </div>
+                )}
 
 
                 {/* Editor Area */}
                 <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
-                        
-                        <AIPromptBox 
-                            onGenerate={handleGenerateProposal} 
-                            isGenerating={isGenerating && generatingSection === 'all'} 
-                            type="proposal" 
-                            forceClear={promptBoxClear}
-                        />
+                        {isBulkMode ? (
+                            <div className="space-y-12">
+                                {/* Top Intro Card */}
+                                <div className="p-8 md:p-12 bg-zinc-900/40 border border-white/10 rounded-[3rem] relative overflow-hidden shadow-2xl space-y-8 group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 rounded-full blur-3xl group-hover:bg-neon-green/10 transition-all" />
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Sparkles size={16} className="text-neon-green" />
+                                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Batch Automation</p>
+                                            </div>
+                                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic text-white">AI Bulk Orchestrator<span className="text-neon-green">.</span></h2>
+                                            <p className="text-xs md:text-sm font-medium text-gray-400 max-w-3xl leading-relaxed">
+                                                Paste raw unstructured requirements, meeting notes, CSV data, or a list of client requests. Our AI will automatically parse, structure, and generate distinct, client-ready professional proposals in batch.
+                                            </p>
+                                        </div>
+                                    </div>
 
-                        <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
-                            <div className="space-y-4">
+                                    <div className="space-y-4 relative z-10">
+                                        <div className="flex justify-between items-center px-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
+                                            <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20">
+                                                {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
+                                            </span>
+                                        </div>
+                                        <textarea 
+                                            value={bulkRawText}
+                                            onChange={e => setBulkRawText(e.target.value)}
+                                            rows={8}
+                                            placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
+                                            className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-3xl p-6 text-sm font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4 relative z-10">
+                                        <div className="flex items-center gap-3 text-xs font-bold text-gray-500">
+                                            <Cpu size={16} className="text-neon-green" />
+                                            <span>Multi-Threaded AI Pulse Engine</span>
+                                        </div>
+
+                                        <button 
+                                            onClick={handleBulkGenerate}
+                                            disabled={isBulkGenerating || !bulkRawText.trim()}
+                                            className="w-full sm:w-auto px-8 py-4 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 flex items-center justify-center gap-3"
+                                        >
+                                            {isBulkGenerating ? (
+                                                <>
+                                                    <RefreshCw className="animate-spin" size={16} />
+                                                    <span>Generating {bulkProgress.current} of {bulkProgress.total}...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles size={16} />
+                                                    <span>Execute Batch Generation</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {isBulkGenerating && (
+                                        <div className="space-y-2 relative z-10 pt-4">
+                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                <span>AI Pulse Generation Progress</span>
+                                                <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
+                                                <div 
+                                                    className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_12px_#39FF14]"
+                                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Generated Bulk Proposals Grid */}
+                                {bulkProposals.length > 0 && (
+                                    <div className="space-y-8 pt-8 border-t border-white/5">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+                                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Generated Batch Vault.</h3>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{bulkProposals.length} Proposals Ready for Review & Persistence</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                                <button 
+                                                    onClick={generateAllBulkPDFs}
+                                                    disabled={isSaving}
+                                                    className="flex-1 sm:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                >
+                                                    {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
+                                                    <span>Export All PDFs</span>
+                                                </button>
+                                                <button 
+                                                    onClick={handleSaveAllBulk}
+                                                    disabled={isSaving}
+                                                    className="flex-1 sm:flex-none px-6 py-3 bg-neon-green text-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(57,255,20,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                >
+                                                    {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
+                                                    <span>Save All to Vault</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {bulkProposals.map((prop, idx) => (
+                                                <div 
+                                                    key={idx}
+                                                    onClick={() => setSelectedBulkIndex(idx)}
+                                                    className={cn(
+                                                        "p-6 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between gap-6 relative group overflow-hidden",
+                                                        selectedBulkIndex === idx 
+                                                            ? "bg-zinc-900/80 border-neon-green shadow-[0_10px_30px_rgba(57,255,20,0.15)] scale-[1.02]" 
+                                                            : "bg-zinc-900/30 border-white/5 hover:border-white/20 hover:bg-zinc-900/50"
+                                                    )}
+                                                >
+                                                    {selectedBulkIndex === idx && (
+                                                        <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-green shadow-[0_0_10px_#39FF14]" />
+                                                    )}
+
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-[10px] font-black font-mono px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-neon-green">
+                                                                {prop.proposalNumber}
+                                                            </span>
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setBulkProposals(bulkProposals.filter((_, i) => i !== idx));
+                                                                    if (selectedBulkIndex >= bulkProposals.length - 1) {
+                                                                        setSelectedBulkIndex(Math.max(0, bulkProposals.length - 2));
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="space-y-1">
+                                                            <h4 className="text-base font-black text-white uppercase tracking-tight truncate leading-snug">
+                                                                {prop.clientName || `Client 0${idx+1}`}
+                                                            </h4>
+                                                            <p className="text-xs font-bold text-gray-400 italic truncate">
+                                                                {prop.campaignName || `Project 0${idx+1}`}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-4 text-[10px] font-bold text-gray-500 pt-2 border-t border-white/5">
+                                                            <span>Duration: {prop.campaignDuration || '3 Months'}</span>
+                                                            <span>•</span>
+                                                            <span>{prop.items?.length || 1} Items</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-end justify-between pt-4 border-t border-white/5">
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Est. Value</p>
+                                                            <p className="text-lg font-black font-mono text-white leading-none">
+                                                                ₹{(prop.totalAmount || 0).toLocaleString()}
+                                                            </p>
+                                                        </div>
+
+                                                        <span className={cn(
+                                                            "text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5",
+                                                            selectedBulkIndex === idx ? "text-neon-green" : "text-gray-500 group-hover:text-white"
+                                                        )}>
+                                                            <span>{selectedBulkIndex === idx ? 'Active Preview' : 'Select'}</span>
+                                                            <ArrowRight size={12} />
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <AIPromptBox 
+                                    onGenerate={handleGenerateProposal} 
+                                    isGenerating={isGenerating && generatingSection === 'all'} 
+                                    type="proposal" 
+                                    forceClear={promptBoxClear}
+                                />
+
+                        <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
+                            <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-[2px] bg-neon-green/40" />
-                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80">
+                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 truncate">
                                         Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
                                     </p>
                                 </div>
-                                <div className="space-y-2">
-                                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                <div className="space-y-2 min-w-0">
+                                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
                                         {currentTab?.label}<span className="text-neon-green">.</span>
                                     </h2>
-                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
+                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
                                         {currentTab?.desc}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+                            <div className="flex flex-col items-start 2xl:items-end gap-4 w-full 2xl:w-auto shrink-0 pt-2 2xl:pt-0">
                                 {/* Compact Progress Line */}
-                                <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                                <div className="w-full sm:w-48 h-0.5 bg-white/5 rounded-full overflow-hidden shrink-0">
                                     <div 
                                         className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
                                         style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
@@ -538,7 +921,7 @@ const ProposalGenerator = () => {
                                 </div>
 
                                 {currentTab?.visibilityKey && (
-                                    <div className="flex items-center gap-2 translate-y-1">
+                                    <div className="flex flex-wrap items-center gap-2 translate-y-1">
                                         <button 
                                             onClick={async () => {
                                                 setGeneratingSection(currentTab.id);
@@ -555,7 +938,7 @@ const ProposalGenerator = () => {
                                                 }
                                             }}
                                             disabled={isGenerating}
-                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 text-gray-400 rounded-full hover:bg-neon-green/10 hover:text-neon-green transition-all text-[8px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-neon-green/20"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-gray-400 rounded-full hover:bg-neon-green/10 hover:text-neon-green transition-all text-[9px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-neon-green/20"
                                         >
                                             {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={10} /> : <Sparkles size={10} />}
                                             Refine
@@ -941,6 +1324,8 @@ const ProposalGenerator = () => {
                                 {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
                             </button>
                         </div>
+                        </>
+                        )}
                     </div>
                 </main>
 
@@ -1039,8 +1424,8 @@ const ProposalGenerator = () => {
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
                                                 <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3>
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">{formData.isBulkGenerated ? "Bulk Synthesis" : "Project Definition"}</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">{formData.isBulkGenerated ? "Proposal Details." : "Scope of Work."}</h3>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="pl-0">
@@ -1273,15 +1658,15 @@ const ProposalGenerator = () => {
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
                                     <div className="space-y-4 mb-12">
-                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
+                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{formData.isBulkGenerated ? "Proposal Details." : "Scope of Work."}</h3>
                                         <div className="w-16 h-1 bg-black" />
                                     </div>
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
                                             <div className="pl-10">
-                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">{formData.isBulkGenerated ? "Bulk Synthesis" : "Execution Framework"}</p>}
+                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">{formData.isBulkGenerated ? "Bulk Synthesis (Continued)" : "Execution Framework (Continued)"}</p>}
                                                 {renderContent(page.scopeText || '')}
                                             </div>
                                         </div>

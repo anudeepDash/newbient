@@ -52,16 +52,14 @@ const UpcomingEvents = () => {
                 if (element) {
                     setTimeout(() => {
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 800);
+                    }, 500);
                 }
                 
-                // Auto-open modal if 'buy' param is present
-                if (shouldBuy && !maintenanceState.features?.tickets) {
-                    setTimeout(() => {
-                        setSelectedEvent(event);
-                        setIsModalOpen(true);
-                    }, 1200);
-                }
+                // Auto-open modal for dynamic link viewing
+                setTimeout(() => {
+                    setSelectedEvent(event);
+                    setIsModalOpen(true);
+                }, 800);
             }
         } else if (upcomingEvents.length > 0 && window.location.hash) {
             const hashId = window.location.hash.slice(1);
@@ -231,7 +229,7 @@ const UpcomingEvents = () => {
                             };
 
                             return (
-                                <div key={event.id} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
+                                <div key={event.id} id={`event-card-${event.id}`} className="w-[320px] md:w-[380px] flex-shrink-0 snap-start">
                                     <div className="block w-full h-full relative cursor-default group">
                                         <EventCard 
                                             item={event}

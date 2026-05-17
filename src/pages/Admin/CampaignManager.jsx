@@ -66,6 +66,8 @@ import LivePreview from '../../components/admin/LivePreview';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 
 const TASK_TYPES = [
     { value: 'content_post', label: 'Content Post', icon: Camera },
@@ -146,7 +148,7 @@ const StatCard = ({ icon, label, value, color, description, compact = false }) =
     );
 };
 
-const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink }) => (
+const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating }) => (
     <motion.div 
         layout
         onClick={onSelect}
@@ -201,7 +203,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                             e.stopPropagation();
                             onSelect();
                         }}
-                        className="flex items-center gap-1.5 px-4 h-10 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-black transition-all text-[10px] font-black uppercase tracking-widest group/btn shadow-xl backdrop-blur-3xl shrink-0"
+                        className="flex items-center gap-1.5 px-4 h-11 rounded-2xl bg-white text-black hover:bg-neon-blue hover:text-black transition-all text-[10px] font-black uppercase tracking-widest group/btn shadow-xl backdrop-blur-3xl shrink-0"
                         title="View Campaign Page"
                     >
                         <span>MANAGE</span>
@@ -212,51 +214,55 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 <div className="flex items-center justify-between gap-1.5 pt-4 border-t border-white/5 bg-white/[0.01] -mx-2 px-2 py-2 rounded-2xl">
                     <div className="flex items-center gap-1.5">
                         <button 
+                            disabled={isUpdating}
                             onClick={(e) => {
                                 e.stopPropagation();
+                                if (isUpdating) return;
                                 if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
                                     onDelete(campaign.id);
                                 }
                             }}
-                            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl disabled:opacity-50"
                             title="Delete Campaign"
                         >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                         </button>
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCopyLink();
                             }}
-                            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                             title="Share Campaign"
                         >
-                            <Share2 size={14} />
+                            <Share2 size={16} />
                         </button>
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onEdit(campaign);
                             }}
-                            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
+                            className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center shadow-xl backdrop-blur-3xl"
                             title="Edit Campaign"
                         >
-                            <Edit size={14} />
+                            <Edit size={16} />
                         </button>
                     </div>
                     <button 
+                        disabled={isUpdating}
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (isUpdating) return;
                             const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
                             updateCampaign(campaign.id, { ...campaign, status: newStatus });
                         }}
                         className={cn(
-                            "px-3 h-9 rounded-xl border transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-3xl",
-                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                            "px-4 h-11 rounded-xl border transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-3xl disabled:opacity-50",
+                            campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-white"
                         )}
                         title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                     >
-                        {campaign.status === 'Open' ? <Unlock size={12} /> : <Lock size={12} />}
+                        {campaign.status === 'Open' ? <Unlock size={14} /> : <Lock size={14} />}
                         <span>{campaign.status}</span>
                     </button>
                 </div>
@@ -266,7 +272,7 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
 );
 
 
-const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink }) => (
+const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCampaign, onCopyLink, isUpdating }) => (
     <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -309,13 +315,15 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
         <div className="hidden sm:flex w-48 items-center justify-end gap-3">
             <div className="flex gap-2">
                 <button 
+                    disabled={isUpdating}
                     onClick={(e) => {
                         e.stopPropagation();
-                    if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
+                        if (isUpdating) return;
+                        if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
                             onDelete(campaign.id);
                         }
                     }}
-                    className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center disabled:opacity-50"
                     title="Delete Campaign"
                 >
                     <Trash2 size={16} />
@@ -325,7 +333,7 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                         e.stopPropagation();
                         onCopyLink();
                     }}
-                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
                     title="Share Campaign"
                 >
                     <Share2 size={16} />
@@ -335,20 +343,22 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
                         e.stopPropagation();
                         onEdit(campaign);
                     }}
-                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-neon-blue hover:border-neon-blue/30 hover:bg-neon-blue/10 transition-all flex items-center justify-center"
                     title="Edit Campaign"
                 >
                     <Edit size={16} />
                 </button>
                 <button 
+                    disabled={isUpdating}
                     onClick={(e) => {
                         e.stopPropagation();
+                        if (isUpdating) return;
                         const newStatus = campaign.status === 'Open' ? 'Closed' : 'Open';
                         updateCampaign(campaign.id, { ...campaign, status: newStatus });
                     }}
                     className={cn(
-                        "w-10 h-10 rounded-xl border transition-all flex items-center justify-center",
-                        campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                        "w-11 h-11 rounded-xl border transition-all flex items-center justify-center disabled:opacity-50",
+                        campaign.status === 'Open' ? "bg-neon-green/10 border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black" : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-50 hover:text-white"
                     )}
                     title={campaign.status === 'Open' ? "Close Campaign" : "Open Campaign"}
                 >
@@ -388,12 +398,16 @@ const StatusPill = ({ status }) => {
 
 /* --- Main Campaign Manager Component --- */
 
-const CampaignManager = ({ isEmbedded = false }) => {
+const CampaignManager = () => {
     const { campaigns, addCampaign, updateCampaign, deleteCampaign, user, uploadToCloudinary } = useStore();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isCreating, setIsCreating] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [expandedCampaignId, setExpandedCampaignId] = useState(null);
+    const isCreating = location.pathname.endsWith('/create') || location.pathname.includes('/edit/');
+    const editingId = location.pathname.includes('/edit/') ? params.id : null;
+    const expandedCampaignId = location.pathname.includes('/manage/') ? params.id : null;
+    const [isUpdating, setIsUpdating] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isUploadingTaskAsset, setIsUploadingTaskAsset] = useState(false);
     const [modalTab, setModalTab] = useState('applicants'); 
@@ -407,10 +421,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const itemsPerPage = 12;
 
     const personnelTabs = [
-        { name: 'Community', path: '/admin/volunteer-gigs', icon: Users },
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
-        { name: 'Artistant', path: '/admin/artists', icon: Mic2 },
     ];
 
     const [formData, setFormData] = useState({
@@ -464,6 +476,32 @@ const CampaignManager = ({ isEmbedded = false }) => {
         };
     }, [campaigns]);
 
+    useEffect(() => {
+        if (editingId && campaigns.length > 0) {
+            const campaign = campaigns.find(c => c.id === editingId);
+            if (campaign) {
+                setFormData({ 
+                    ...campaign, 
+                    tasks: (campaign.tasks || []).map((t, i) => ({
+                        ...t,
+                        taskType: t.taskType || 'custom',
+                        platform: t.platform || 'instagram',
+                        deadline: t.deadline || '',
+                        priority: t.priority || 'required',
+                        captionScript: t.captionScript || '',
+                        creativeAssets: t.creativeAssets || [],
+                        creativeLinks: t.creativeLinks || [],
+                        submissions: t.submissions || {},
+                        order: t.order ?? i,
+                    })),
+                    minInstagramFollowers: campaign.minInstagramFollowers || 0,
+                    thumbnail: campaign.thumbnail || '',
+                    isPinned: campaign.isPinned || false
+                });
+            }
+        }
+    }, [editingId, campaigns]);
+
     const resetForm = () => {
         setFormData({ 
             title: '', 
@@ -479,8 +517,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
             tasks: [],
             isPinned: false
         });
-        setIsCreating(false);
-        setEditingId(null);
+        navigate('/admin/campaigns');
     };
 
     const handleFileChange = async (e) => {
@@ -542,26 +579,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const handleEdit = (campaign) => {
-        setFormData({ 
-            ...campaign, 
-            tasks: (campaign.tasks || []).map((t, i) => ({
-                ...t,
-                taskType: t.taskType || 'custom',
-                platform: t.platform || 'instagram',
-                deadline: t.deadline || '',
-                priority: t.priority || 'required',
-                captionScript: t.captionScript || '',
-                creativeAssets: t.creativeAssets || [],
-                creativeLinks: t.creativeLinks || [],
-                submissions: t.submissions || {},
-                order: t.order ?? i,
-            })),
-            minInstagramFollowers: campaign.minInstagramFollowers || 0,
-            thumbnail: campaign.thumbnail || '',
-            isPinned: campaign.isPinned || false
-        });
-        setEditingId(campaign.id);
-        setIsCreating(true);
+        navigate(`/admin/campaigns/edit/${campaign.id}`);
     };
 
     const handleCopyLink = (id) => {
@@ -577,6 +595,8 @@ const CampaignManager = ({ isEmbedded = false }) => {
     };
 
     const handleToggleShortlist = async (creatorUid, campaignId) => {
+        if (isUpdating) return;
+        setIsUpdating(true);
         try {
             const isShortlisting = !useStore.getState().creators.find(c => c.uid === creatorUid)?.shortlistedCampaigns?.includes(campaignId);
             await useStore.getState().toggleShortlistStatus(campaignId, creatorUid);
@@ -593,8 +613,89 @@ const CampaignManager = ({ isEmbedded = false }) => {
             }
         } catch (error) {
             useStore.getState().addToast("Failed to toggle shortlist.", 'error');
+        } finally {
+            setIsUpdating(false);
         }
     };
+
+    const handleDeleteCampaign = async (id) => {
+        if (isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await deleteCampaign(id);
+            if (expandedCampaignId === id) {
+                navigate('/admin/campaigns');
+            }
+        } catch (error) {
+            useStore.getState().addToast("Failed to delete campaign.", 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleUpdateCampaignStatus = async (id, updatedData) => {
+        if (isUpdating) return;
+        setIsUpdating(true);
+        try {
+            await updateCampaign(id, updatedData);
+        } catch (error) {
+            useStore.getState().addToast("Failed to update status.", 'error');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleUpdateTask = React.useCallback((idx, field, val) => {
+        setFormData(prev => {
+            const newTasks = [...prev.tasks];
+            newTasks[idx] = { ...newTasks[idx], [field]: val };
+            return { ...prev, tasks: newTasks };
+        });
+    }, []);
+
+    const handleRemoveTask = React.useCallback((index) => {
+        setFormData(prev => {
+            const newTasks = [...prev.tasks];
+            newTasks.splice(index, 1);
+            return { ...prev, tasks: newTasks };
+        });
+    }, []);
+
+    const handleMoveTaskUp = React.useCallback((index) => {
+        if (index === 0) return;
+        setFormData(prev => {
+            const newTasks = [...prev.tasks];
+            [newTasks[index], newTasks[index-1]] = [newTasks[index-1], newTasks[index]];
+            return { ...prev, tasks: newTasks };
+        });
+    }, []);
+
+    const handleMoveTaskDown = React.useCallback((index) => {
+        setFormData(prev => {
+            if (index === prev.tasks.length - 1) return prev;
+            const newTasks = [...prev.tasks];
+            [newTasks[index], newTasks[index+1]] = [newTasks[index+1], newTasks[index]];
+            return { ...prev, tasks: newTasks };
+        });
+    }, []);
+
+    const handleUploadTaskCreative = React.useCallback(async (idx, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingTaskAsset(true);
+        try {
+            const url = await uploadToCloudinary(file);
+            setFormData(prev => {
+                const tasks = [...prev.tasks];
+                tasks[idx] = { ...tasks[idx], creativeAssets: [...(tasks[idx].creativeAssets || []), url] };
+                return { ...prev, tasks };
+            });
+        } catch (err) {
+            useStore.getState().addToast("Upload failed", 'error');
+        } finally {
+            setIsUploadingTaskAsset(false);
+        }
+    }, [uploadToCloudinary]);
 
     const handleReviewSubmission = async (campaignId, taskId, creatorUid, status) => {
         setIsReviewing(true);
@@ -658,45 +759,49 @@ const CampaignManager = ({ isEmbedded = false }) => {
     const renderContent = () => (
         <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             {/* Header Section */}
-            <div className={cn(
-                "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-32 md:pt-48 px-4 md:px-12"
-            )}>
-                {!isEmbedded ? (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.5em] text-[10px] uppercase">
-                            <Layers size={14} />
-                            Administrative Campaign Hub
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
-                            CAMPAIGN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">OPERATIONS.</span>
-                        </h1>
-                        <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            Deploy and manage strategic creator campaigns. Monitor real-time task submissions, verify content, and orchestrate global followers.
-                        </p>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12 pt-32 md:pt-48 px-4 md:px-12">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.5em] text-[10px] uppercase">
+                        <Layers size={14} />
+                        Administrative Campaign Hub
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
+                        CAMPAIGN <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">OPERATIONS.</span>
+                    </h1>
+                    <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
+                        Deploy and manage strategic creator campaigns. Monitor real-time task submissions, verify content, and orchestrate global followers.
+                    </p>
+                    <div className="pt-4 flex flex-wrap items-center gap-4">
+                        <AdminDashboardLink />
+                        <div className="flex items-center gap-1 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 backdrop-blur-3xl shadow-2xl">
+                            {personnelTabs.map(tab => {
+                                const Icon = tab.icon;
+                                const isActive = tab.name === 'Campaigns';
+                                return (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => navigate(tab.path)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all",
+                                            isActive ? "bg-neon-blue text-black shadow-lg" : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Icon size={14} />
+                                        {tab.name}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                            <Target size={24} className="text-neon-blue" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">CAMPAIGN <span className="text-neon-blue">OVERVIEW</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Monitor and manage your active campaign performance</p>
-                        </div>
-                    </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
-                    <StatCard compact={isEmbedded} icon={<Zap size={24} />} label="ACTIVE CAMPAIGNS" value={stats.active} color="green" description={`${stats.total} Total Units`} />
-                    <StatCard compact={isEmbedded} icon={<Clock size={24} />} label="PENDING REVIEW" value={stats.pending} color="yellow" description="Awaiting Verification" />
+                    <StatCard icon={<Zap size={24} />} label="ACTIVE CAMPAIGNS" value={stats.active} color="green" description={`${stats.total} Total Units`} />
+                    <StatCard icon={<Clock size={24} />} label="PENDING REVIEW" value={stats.pending} color="yellow" description="Awaiting Verification" />
                 </div>
             </div>
 
-            <div className={cn("px-4 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
+            <div className="px-4 md:px-12 pt-0">
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
                     <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
@@ -737,7 +842,7 @@ const CampaignManager = ({ isEmbedded = false }) => {
                         </div>
 
                         <button 
-                            onClick={() => { resetForm(); setIsCreating(true); }}
+                            onClick={() => navigate('/admin/campaigns/create')}
                             className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -896,43 +1001,11 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                         task={task}
                                                         index={index}
                                                         totalTasks={formData.tasks.length}
-                                                        onUpdate={(idx, field, val) => {
-                                                            const newTasks = [...formData.tasks];
-                                                            newTasks[idx] = { ...newTasks[idx], [field]: val };
-                                                            setFormData({ ...formData, tasks: newTasks });
-                                                        }}
-                                                        onRemove={() => {
-                                                            const newTasks = [...formData.tasks];
-                                                            newTasks.splice(index, 1);
-                                                            setFormData({ ...formData, tasks: newTasks });
-                                                        }}
-                                                        onMoveUp={() => {
-                                                            if (index === 0) return;
-                                                            const newTasks = [...formData.tasks];
-                                                            [newTasks[index], newTasks[index-1]] = [newTasks[index-1], newTasks[index]];
-                                                            setFormData({ ...formData, tasks: newTasks });
-                                                        }}
-                                                        onMoveDown={() => {
-                                                            if (index === formData.tasks.length - 1) return;
-                                                            const newTasks = [...formData.tasks];
-                                                            [newTasks[index], newTasks[index+1]] = [newTasks[index+1], newTasks[index]];
-                                                            setFormData({ ...formData, tasks: newTasks });
-                                                        }}
-                                                        onUploadCreative={async (idx, e) => {
-                                                            const file = e.target.files[0];
-                                                            if (!file) return;
-                                                            setIsUploadingTaskAsset(true);
-                                                            try {
-                                                                const url = await uploadToCloudinary(file);
-                                                                const tasks = [...formData.tasks];
-                                                                tasks[idx] = { ...tasks[idx], creativeAssets: [...(tasks[idx].creativeAssets || []), url] };
-                                                                setFormData({ ...formData, tasks });
-                                                            } catch (err) {
-                                                                useStore.getState().addToast("Upload failed", 'error');
-                                                            } finally {
-                                                                setIsUploadingTaskAsset(false);
-                                                            }
-                                                        }}
+                                                        onUpdate={handleUpdateTask}
+                                                        onRemove={handleRemoveTask}
+                                                        onMoveUp={handleMoveTaskUp}
+                                                        onMoveDown={handleMoveTaskDown}
+                                                        onUploadCreative={handleUploadTaskCreative}
                                                         isUploading={isUploadingTaskAsset}
                                                     />
                                                 ))}
@@ -951,17 +1024,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
                             >
                                 <CampaignDetailView 
                                     campaignId={expandedCampaignId}
-                                    onClose={() => setExpandedCampaignId(null)}
-                                    onEdit={(c) => { handleEdit(c); setExpandedCampaignId(null); }}
+                                    onClose={() => navigate('/admin/campaigns')}
+                                    onEdit={(c) => handleEdit(c)}
                                     onToggleShortlist={handleToggleShortlist}
                                     onReviewSubmission={handleReviewSubmission}
-                                    onDelete={(id) => {
-                                        if (window.confirm('Are you sure you want to delete this campaign? This cannot be undone.')) {
-                                            deleteCampaign(id);
-                                            setExpandedCampaignId(null);
-                                        }
-                                    }}
-                                    updateCampaign={updateCampaign}
+                                    onDelete={handleDeleteCampaign}
+                                    updateCampaign={handleUpdateCampaignStatus}
                                     onCopyLink={() => handleCopyLink(expandedCampaignId)}
                                     onCopyTaskLink={(taskId) => handleCopyTaskLink(expandedCampaignId, taskId)}
                                 />
@@ -1015,11 +1083,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                 >
                                                     <CampaignBadgeCard 
                                                         campaign={campaign} 
-                                                        onSelect={() => setExpandedCampaignId(campaign.id)}
+                                                        onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
                                                         onEdit={() => handleEdit(campaign)}
-                                                        onDelete={deleteCampaign}
-                                                        updateCampaign={updateCampaign}
+                                                        onDelete={handleDeleteCampaign}
+                                                        updateCampaign={handleUpdateCampaignStatus}
                                                         onCopyLink={() => handleCopyLink(campaign.id)}
+                                                        isUpdating={isUpdating}
                                                     />
 
                                                 </motion.div>
@@ -1040,11 +1109,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
                                                 key={campaign.id}
                                                 campaign={campaign}
                                                 idx={idx}
-                                                onSelect={() => setExpandedCampaignId(campaign.id)}
+                                                onSelect={() => navigate('/admin/campaigns/manage/' + campaign.id)}
                                                 onEdit={() => handleEdit(campaign)}
-                                                onDelete={deleteCampaign}
-                                                updateCampaign={updateCampaign}
+                                                onDelete={handleDeleteCampaign}
+                                                updateCampaign={handleUpdateCampaignStatus}
                                                 onCopyLink={() => handleCopyLink(campaign.id)}
+                                                isUpdating={isUpdating}
                                             />
 
                                         ))}
@@ -1077,14 +1147,12 @@ const CampaignManager = ({ isEmbedded = false }) => {
 
     return (
         <>
-            {!isEmbedded && (
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(46,191,255,0.08),transparent_50%)]" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
-                    <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" />
-                    <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-            )}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(46,191,255,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
+                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" />
+                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
+            </div>
             {renderContent()}
             
             <AnimatePresence>
@@ -1415,11 +1483,23 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
             </div>
         </motion.div>
     );
+
+    return (
+        <>
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(46,191,255,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
+                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" />
+                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
+            </div>
+            {renderContent()}
+        </>
+    );
 };
 
 /* --- Task Editor Sub-component --- */
 
-const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp, onMoveDown, onUploadCreative, isUploading }) => {
+const TaskEditorCard = React.memo(({ task, index, totalTasks, onUpdate, onRemove, onMoveUp, onMoveDown, onUploadCreative, isUploading }) => {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const TaskTypeIcon = getTaskTypeIcon(task.taskType);
@@ -1438,8 +1518,8 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
             <div className="flex items-center gap-4 p-6 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="flex items-center gap-3 shrink-0">
                     <div className="flex flex-col gap-1">
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(); }} disabled={index === 0} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={e => { e.stopPropagation(); onMoveDown(); }} disabled={index === totalTasks - 1} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
+                        <button type="button" onClick={e => { e.stopPropagation(); onMoveUp(index); }} disabled={index === 0} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={12} /></button>
+                        <button type="button" onClick={e => { e.stopPropagation(); onMoveDown(index); }} disabled={index === totalTasks - 1} className="text-gray-700 hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={12} /></button>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center">
                         <TaskTypeIcon size={20} className="text-neon-blue" />
@@ -1458,7 +1538,7 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
-                    <button type="button" onClick={() => onRemove()} className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"><Trash2 size={16} /></button>
+                    <button type="button" onClick={() => onRemove(index)} className="w-11 h-11 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"><Trash2 size={16} /></button>
                     <ChevronDown size={20} className={cn("text-gray-600 transition-transform duration-500", isExpanded && "rotate-180")} />
                 </div>
             </div>
@@ -1520,6 +1600,6 @@ const TaskEditorCard = ({ task, index, totalTasks, onUpdate, onRemove, onMoveUp,
             </AnimatePresence>
         </motion.div>
     );
-};
+});
 
 export default CampaignManager;

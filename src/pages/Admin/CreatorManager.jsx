@@ -42,9 +42,13 @@ import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import StudioSelect from '../../components/ui/StudioSelect';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
-const CreatorManager = ({ isEmbedded = false }) => {
+const CreatorManager = () => {
     const { creators, updateCreator, deleteCreator } = useStore();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
@@ -57,7 +61,23 @@ const CreatorManager = ({ isEmbedded = false }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); 
 
+    const personnelTabs = [
+        { name: 'Creators', path: '/admin/creators', icon: Star },
+        { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
+    ];
+
     const cities = ['All', ...new Set([...PREDEFINED_CITIES, ...creators.map(c => c.city)])];
+
+    useEffect(() => {
+        if (params.id && creators.length > 0) {
+            const found = creators.find(c => c.uid === params.id);
+            if (found) {
+                setSelectedCreator(found);
+            }
+        } else if (!params.id) {
+            setSelectedCreator(null);
+        }
+    }, [params.id, creators]);
 
     const filteredCreators = useMemo(() => {
         return creators.filter(c => {
@@ -121,7 +141,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
             setIsDeleting(true);
             try {
                 await deleteCreator(uid);
-                setSelectedCreator(null);
+                navigate('/admin/creators');
             } catch (error) {
                 useStore.getState().addToast("Couldn't delete the creator. Please try again.", 'error');
             } finally {
@@ -161,45 +181,49 @@ const CreatorManager = ({ isEmbedded = false }) => {
     const renderContent = () => (
         <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             {/* Header Section */}
-            <div className={cn(
-                "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-32 md:pt-48 px-4 md:px-12"
-            )}>
-                {!isEmbedded ? (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase">
-                            <Layers size={14} />
-                            Creator Management Center
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
-                            TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue">NETWORK.</span>
-                        </h1>
-                        <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            Monitor and moderate your global network of content creators. Filter by followers, location, and specialization to deploy the right talent.
-                        </p>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12 pt-32 md:pt-48 px-4 md:px-12">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase">
+                        <Layers size={14} />
+                        Creator Management Center
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
+                        TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue">NETWORK.</span>
+                    </h1>
+                    <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
+                        Monitor and moderate your global network of content creators. Filter by followers, location, and specialization to deploy the right talent.
+                    </p>
+                    <div className="pt-4 flex flex-wrap items-center gap-4">
+                        <AdminDashboardLink />
+                        <div className="flex items-center gap-1 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 backdrop-blur-3xl shadow-2xl">
+                            {personnelTabs.map(tab => {
+                                const Icon = tab.icon;
+                                const isActive = tab.name === 'Creators';
+                                return (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => navigate(tab.path)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all",
+                                            isActive ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Icon size={14} />
+                                        {tab.name}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
-                            <Users size={24} className="text-neon-pink" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">CREATOR <span className="text-neon-pink">NETWORK</span></h2>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Analyze and manage your creator community</p>
-                        </div>
-                    </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
-                    <StatCard compact={isEmbedded} icon={<Users size={24} />} label="ACTIVE NETWORK" value={stats.total} color="purple" description={`${stats.approved} Verified Creators`} />
-                    <StatCard compact={isEmbedded} icon={<TrendingUp size={24} />} label="GROSS FOLLOWERS" value={`${(stats.followers / 1000000).toFixed(1)}M`} color="pink" description="Aggregated Social Capital" />
+                    <StatCard icon={<Users size={24} />} label="ACTIVE NETWORK" value={stats.total} color="purple" description={`${stats.approved} Verified Creators`} />
+                    <StatCard icon={<TrendingUp size={24} />} label="GROSS FOLLOWERS" value={`${(stats.followers / 1000000).toFixed(1)}M`} color="pink" description="Aggregated Social Capital" />
                 </div>
             </div>
 
-            <div className={cn("px-4 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
+            <div className="px-4 md:px-12 pt-0">
                 {/* Control Panel */}
                 <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
                     
@@ -356,7 +380,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
                                                 >
                                                     <CreatorBadgeCard 
                                                         creator={creator} 
-                                                        onSelect={() => setSelectedCreator(creator)} 
+                                                        onSelect={() => navigate(`/admin/creators/${creator.uid}`)} 
                                                     />
                                                 </motion.div>
                                             ))}
@@ -380,7 +404,7 @@ const CreatorManager = ({ isEmbedded = false }) => {
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.03 }}
                                             >
-                                                <CreatorListItem creator={creator} onSelect={() => setSelectedCreator(creator)} />
+                                                <CreatorListItem creator={creator} onSelect={() => navigate(`/admin/creators/${creator.uid}`)} />
                                             </motion.div>
                                         ))}
                                     </div>
@@ -432,20 +456,18 @@ const CreatorManager = ({ isEmbedded = false }) => {
 
     return (
         <>
-            {!isEmbedded && (
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.08),transparent_50%)]" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
-                    <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" />
-                    <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-            )}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
+                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" />
+                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
+            </div>
             {renderContent()}
             <AnimatePresence>
                 {selectedCreator && (
                     <CreatorDetailModal 
                         creator={selectedCreator} 
-                        onClose={() => setSelectedCreator(null)} 
+                        onClose={() => navigate('/admin/creators')} 
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteCreator}
                         isUpdating={isUpdating}
@@ -516,7 +538,7 @@ const CreatorBadgeCard = ({ creator, onSelect }) => (
     <motion.div 
         layout
         onClick={onSelect}
-        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-pink/40 rounded-[2rem] sm:rounded-[3.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-auto sm:h-[520px]"
+        className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-pink/40 rounded-[2rem] sm:rounded-[3.5rem] p-5 sm:p-6 cursor-pointer overflow-hidden transition-all duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.9)] flex flex-col h-full min-h-[520px]"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-neon-pink/5 via-transparent to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         
@@ -568,7 +590,7 @@ const CreatorBadgeCard = ({ creator, onSelect }) => (
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                    <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all">
                         <ChevronRight size={16} />
                     </div>
                 </div>
@@ -729,7 +751,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                             <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{Number(creator.instagramFollowers || 0).toLocaleString()} Followers</p>
                                         </div>
                                     </div>
-                                    <a href={`https://instagram.com/${creator.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
+                                    <a href={`https://instagram.com/${creator.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
                                         <ExternalLink size={16} />
                                     </a>
                                 </div>
@@ -743,7 +765,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                             <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{Number(creator.youtubeSubscribers || 0).toLocaleString()} Subscribers</p>
                                         </div>
                                     </div>
-                                    <a href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
+                                    <a href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noreferrer" className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
                                         <ExternalLink size={16} />
                                     </a>
                                 </div>
