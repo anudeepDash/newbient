@@ -404,9 +404,11 @@ const Proposal = () => {
 
     const getPaginatedPages = () => {
         const pages = [];
-        pages.push({ type: 'cover', items: [] });
+        if (!isHidden('cover')) {
+            pages.push({ type: 'cover', items: [] });
+        }
         
-        if (!isHidden('roadmap') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
+        if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             pages.push({ type: 'strategy', items: [] });
         }
         
@@ -455,35 +457,27 @@ const Proposal = () => {
             if (totalHeight <= MAX_PAGE_HEIGHT) {
                 pages.push({ type: 'scope', items: [], scopeText: displayProposal.scopeOfWork });
             } else {
-                const rawLines = displayProposal.scopeOfWork.split('\n');
-                let currentChunk = [];
-                let currentChunkHeight = 0;
+                let currentPageText = '';
                 let pageIndex = 1;
-
-                for (let i = 0; i < rawLines.length; i++) {
-                    const line = rawLines[i];
-                    const lineH = estimateBlockHeight(line + '\n');
-                    if (currentChunkHeight + lineH > MAX_PAGE_HEIGHT && currentChunk.length > 0) {
-                        pages.push({
-                            type: 'scope',
-                            items: [],
-                            scopeText: currentChunk.join('\n'),
-                            scopePage: pageIndex++
-                        });
-                        currentChunk = [line];
-                        currentChunkHeight = lineH;
+                const words = displayProposal.scopeOfWork.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
+                    if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                        if (currentPageText) {
+                            pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                            currentPageText = words[i];
+                        } else {
+                            pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                            currentPageText = '';
+                        }
                     } else {
-                        currentChunk.push(line);
-                        currentChunkHeight += lineH;
+                        currentPageText = testText;
                     }
                 }
-                if (currentChunk.length > 0) {
-                    pages.push({
-                        type: 'scope',
-                        items: [],
-                        scopeText: currentChunk.join('\n'),
-                        scopePage: pageIndex
-                    });
+                
+                if (currentPageText.trim()) {
+                    pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
                 }
             }
         }
@@ -601,8 +595,8 @@ const Proposal = () => {
                                             <div className="relative">
                                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
                                                 <div className="pl-10">
-                                                    {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                    {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                    {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                    {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
                                                     {renderContent(page.scopeText || '', 'text-[12px] font-medium text-black')}
                                                 </div>
                                             </div>
@@ -913,8 +907,8 @@ const Proposal = () => {
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
                                             <div className="pl-10">
-                                                {!page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                                {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
+                                                {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
                                                 {renderContent(page.scopeText || '', 'text-[12px] font-medium text-black')}
                                             </div>
                                         </div>
