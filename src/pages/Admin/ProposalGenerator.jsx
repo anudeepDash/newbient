@@ -216,40 +216,59 @@ const ProposalGenerator = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const maxChars = formData.isBulkGenerated ? 2500 : 1600;
+            const maxChars = formData.isBulkGenerated ? 1100 : 1100;
             
-            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 35) {
+            if (formData.scopeOfWork.length <= maxChars && formData.scopeOfWork.split('\n').length < 25) {
                  pages.push({ type: 'scope', items: [], scopeText: formData.scopeOfWork });
             } else {
                 const blocks = formData.scopeOfWork.split(/\n\n/);
                 let currentPageText = '';
                 let currentLength = 0;
                 let pageIndex = 1;
+
+                const splitByWords = (text, limit) => {
+                    const words = text.split(' ');
+                    const chunks = [];
+                    let currentChunk = '';
+                    for (let w of words) {
+                        if (currentChunk.length + w.length + 1 > limit) {
+                            if (currentChunk) chunks.push(currentChunk.trim());
+                            currentChunk = w + ' ';
+                        } else {
+                            currentChunk += w + ' ';
+                        }
+                    }
+                    if (currentChunk) chunks.push(currentChunk.trim());
+                    return chunks;
+                };
                 
                 for (let i = 0; i < blocks.length; i++) {
                     const block = blocks[i].trim();
                     if (!block) continue;
+
+                    if (currentLength + block.length > maxChars && currentPageText !== '') {
+                         pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                         currentPageText = '';
+                         currentLength = 0;
+                    }
                     
-                    if (block.length > maxChars && currentPageText === '') {
-                         const subBlocks = block.split('\n');
+                    if (block.length > maxChars) {
+                         const subBlocks = splitByWords(block, maxChars);
                          for(let sb of subBlocks) {
                              if(currentLength + sb.length > maxChars && currentPageText !== '') {
                                  pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                                 currentPageText = sb + '\n';
+                                 currentPageText = sb + ' ';
                                  currentLength = sb.length;
                              } else {
-                                 currentPageText += sb + '\n';
+                                 currentPageText += sb + ' ';
                                  currentLength += sb.length;
                              }
                          }
-                         currentPageText += '\n'; 
-                    } else if (currentLength + block.length > maxChars && currentPageText !== '') {
-                         pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                         currentPageText = block + '\n\n';
-                         currentLength = block.length;
+                         currentPageText += '\n\n'; 
+                         currentLength += 2;
                     } else {
                          currentPageText += block + '\n\n';
-                         currentLength += block.length;
+                         currentLength += block.length + 2;
                     }
                 }
                 if (currentPageText.trim()) {
@@ -1457,7 +1476,7 @@ const ProposalGenerator = () => {
                                 left: 0
                             }}>
                                 <AnimatePresence mode="wait">
-                                <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px]">
+                                <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
                                     <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
                                         <div className="flex flex-col gap-6 items-start">
                                             <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
