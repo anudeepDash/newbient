@@ -89,7 +89,7 @@ const EventCard = ({ item, onAction, handleShare }) => {
                         </div>
                     )}
 
-                    <h3 className="text-3xl md:text-4xl font-black font-heading tracking-tighter uppercase italic text-white leading-none group-hover:translate-x-1 transition-transform duration-500">
+                    <h3 className="event-title text-3xl md:text-4xl font-black font-heading tracking-tighter uppercase italic text-white leading-none group-hover:translate-x-1 transition-transform duration-500">
                         {item.title}
                     </h3>
 

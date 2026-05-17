@@ -316,6 +316,14 @@ const SCHEMAS = {
         items: [{ description: "string — Service line item", qty: "number", unit: "string", price: "number — INR price (Estimated Cost)" }],
         terms: "string — Numbered terms on separate lines"
     },
+    bulk_proposal: {
+        clientName: "string — Client/company name",
+        clientAddress: "string — Full business address",
+        campaignName: "string — Project, Event, or Mission title",
+        campaignDuration: "string — e.g. '3 Months' or 'Oct 15-20, 2024'",
+        coverDescription: "string — 2-3 sentence cover summary, plain text only",
+        scopeOfWork: "string — A beautifully formatted markdown string containing ALL the details from the text. Use headings (##), bullet points (-), and bold text (**bold**) as needed to organize the entire proposal content based on the prompt. DO NOT invent investments, deliverables, or costs unless explicitly mentioned in the text."
+    },
     contract: {
         parties: {
             firstParty: { name: "Newbi Entertainment", address: "string", role: "Service Provider", email: "string" },
@@ -371,6 +379,15 @@ RULES:
 - clientRequirements: 2-4 items
 - terms: 4-5 numbered items on separate lines, include "Advance Fee" instead of "activation fee"
 - Return valid JSON matching the schema`,
+
+    bulk_proposal: `You are an elite proposal writer for Newbi Entertainment. Generate a custom, free-flowing business proposal based EXACTLY on the provided data.
+    
+    RULES:
+    - ALL text: plain text, NO HTML
+    - Extract identity fields like clientName, campaignName etc.
+    - For 'scopeOfWork', write the ENTIRE proposal body beautifully formatted in Markdown using ## headings, bullet points, etc.
+    - DO NOT invent "investments", "deliverables", or "commercials" unless explicitly mentioned in the text. Build entirely according to the given data.
+    - Return valid JSON matching the schema`,
 
     contract: `You are an expert legal drafter for Newbi Entertainment, a premium entertainment & marketing company in India.
     

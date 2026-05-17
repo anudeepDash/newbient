@@ -2,19 +2,101 @@ import { useStore } from './store';
 import { db } from './firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
+const getNotificationIcon = (type, title) => {
+    let category = 'announcement';
+    const t = (title || '').toUpperCase();
+    const typeStr = (type || '').toLowerCase();
+    
+    if (typeStr === 'message' || t.includes('MESSAGE')) category = 'message';
+    else if (typeStr === 'ticket' || t.includes('TICKET')) category = 'ticket';
+    else if (typeStr === 'campaign' || t.includes('CAMPAIGN')) category = 'campaign';
+    else if (typeStr === 'event' || t.includes('EVENT')) category = 'event';
+    else if (typeStr === 'volunteer' || t.includes('VOLUNTEER') || t.includes('SQUAD')) category = 'volunteer';
+    else if (typeStr === 'guestlist' || t.includes('GUESTLIST')) category = 'guestlist';
+    else if (typeStr === 'giveaway' || t.includes('GIVEAWAY')) category = 'giveaway';
+    else if (typeStr === 'form' || t.includes('FORM')) category = 'form';
+    else if (typeStr === 'blog' || t.includes('BLOG') || t.includes('POST')) category = 'blog';
+    else if (typeStr === 'task' || t.includes('TASK')) category = 'task';
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        const grad = ctx.createLinearGradient(0, 0, 256, 256);
+        if (category === 'message') {
+            grad.addColorStop(0, '#00C9FF'); grad.addColorStop(1, '#92FE9D');
+        } else if (category === 'ticket') {
+            grad.addColorStop(0, '#F7971E'); grad.addColorStop(1, '#FFD200');
+        } else if (category === 'campaign') {
+            grad.addColorStop(0, '#FF416C'); grad.addColorStop(1, '#FF4B2B');
+        } else if (category === 'event') {
+            grad.addColorStop(0, '#8A2387'); grad.addColorStop(1, '#E94057');
+        } else if (category === 'volunteer') {
+            grad.addColorStop(0, '#11998e'); grad.addColorStop(1, '#38ef7d');
+        } else if (category === 'guestlist') {
+            grad.addColorStop(0, '#b92b27'); grad.addColorStop(1, '#1565C0');
+        } else if (category === 'giveaway') {
+            grad.addColorStop(0, '#ffe000'); grad.addColorStop(1, '#799F0C');
+        } else if (category === 'form') {
+            grad.addColorStop(0, '#3a7bd5'); grad.addColorStop(1, '#3a6073');
+        } else if (category === 'blog') {
+            grad.addColorStop(0, '#DA22FF'); grad.addColorStop(1, '#9733EE');
+        } else if (category === 'task') {
+            grad.addColorStop(0, '#f12711'); grad.addColorStop(1, '#f5af19');
+        } else {
+            grad.addColorStop(0, '#39FF14'); grad.addColorStop(1, '#0072FF');
+        }
+
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(0, 0, 256, 256);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(128, 128, 116, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 110px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let symbol = '📢';
+        if (category === 'message') symbol = '💬';
+        else if (category === 'ticket') symbol = '🎟️';
+        else if (category === 'campaign') symbol = '🚀';
+        else if (category === 'event') symbol = '📅';
+        else if (category === 'volunteer') symbol = '🤝';
+        else if (category === 'guestlist') symbol = '✨';
+        else if (category === 'giveaway') symbol = '🎁';
+        else if (category === 'form') symbol = '📋';
+        else if (category === 'blog') symbol = '📰';
+        else if (category === 'task') symbol = '✅';
+
+        ctx.fillText(symbol, 128, 138);
+
+        return canvas.toDataURL('image/png');
+    } catch (e) {
+        console.error("Canvas icon generation failed, fallback to favicon", e);
+        return '/favicon.png';
+    }
+};
+
 /**
  * Triggers an in-app and potentially a push notification.
  */
 export const triggerNotification = async ({ userId, type, title, content, link, image }) => {
     const { addNotification } = useStore.getState();
+    const resolvedImage = image || getNotificationIcon(type, title);
     
     const notificationData = {
         userId: userId || null, // null means global
-        type,
+        type: type || 'announcement',
         title,
         content,
         link: link || '',
-        image: image || '',
+        image: resolvedImage,
     };
 
     await addNotification(notificationData);
@@ -25,8 +107,8 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
         try {
             new Notification(title, {
                 body: content,
-                icon: image || '/logo_full.png',
-                badge: '/logo_full.png', // Small icon for mobile status bar
+                icon: resolvedImage,
+                badge: '/favicon.png', // Small icon for mobile status bar
                 data: { link: link || '' } 
             });
         } catch (e) {
@@ -38,11 +120,11 @@ export const triggerNotification = async ({ userId, type, title, content, link, 
 /**
  * Notify all users with an announcement and optionally broadcast via email
  */
-export const notifyAllUsers = async (title, content, link = '', image = '', sendEmail = false) => {
+export const notifyAllUsers = async (title, content, link = '', image = '', sendEmail = false, type = 'announcement') => {
     // 1. Trigger Push & In-App Notification
     await triggerNotification({
         userId: null,
-        type: 'announcement',
+        type,
         title,
         content,
         link,
@@ -90,7 +172,7 @@ export const notifyAllUsers = async (title, content, link = '', image = '', send
 /**
  * Notify all admins
  */
-export const notifyAdmins = async (title, content, link = '') => {
+export const notifyAdmins = async (title, content, link = '', type = 'message') => {
     try {
         const adminsQ = query(collection(db, 'admins'));
         const snapshot = await getDocs(adminsQ);
@@ -100,7 +182,7 @@ export const notifyAdmins = async (title, content, link = '') => {
             if (adminData.uid) {
                 return triggerNotification({
                     userId: adminData.uid,
-                    type: 'message',
+                    type,
                     title,
                     content,
                     link
