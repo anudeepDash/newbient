@@ -20,8 +20,16 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import useDynamicMeta from '../hooks/useDynamicMeta';
+import CreatorLogo from '../components/CreatorLogo';
 
 const CreatorJoin = () => {
+    useDynamicMeta({
+        title: "Join Creator Network",
+        description: "Register to join Newbi's Elite Creator Network.",
+        url: window.location.href
+    });
+
     const { user, authInitialized, setAuthModal, addCreator, creators, uploadToCloudinary, loading } = useStore();
     const navigate = useNavigate();
 
@@ -49,11 +57,7 @@ const CreatorJoin = () => {
         if (user && creators && !loading) {
             const existingProfile = creators.find(c => c.uid === user.uid);
             if (existingProfile) {
-                if (existingProfile.profileStatus === 'approved') {
-                    navigate('/creator-dashboard');
-                } else {
-                    setHasJoined(true);
-                }
+                navigate('/creator-dashboard');
             }
         }
     }, [user, creators, loading, navigate]);
@@ -136,9 +140,9 @@ const CreatorJoin = () => {
     }
 
     const steps = [
-        { id: 1, title: 'IDENTITY PROFILE', icon: Users },
-        { id: 2, title: 'AUDIENCE ANALYTICS', icon: Instagram },
-        { id: 3, title: 'COMMERCIAL SPEC', icon: Camera }
+        { id: 1, title: 'PROFILE DETAILS', icon: Users },
+        { id: 2, title: 'SOCIAL HANDLES', icon: Instagram },
+        { id: 3, title: 'BIO & PORTFOLIO', icon: Camera }
     ];
 
     return (
@@ -152,26 +156,18 @@ const CreatorJoin = () => {
             <div className="relative z-10 max-w-5xl mx-auto">
                 {/* Cinema Header */}
                 <div className="text-center mb-24">
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-12"
-                    >
-                        <Zap size={14} className="text-neon-blue" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">Creator Registration Phase II</span>
-                    </motion.div>
-
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                         className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter uppercase italic leading-[0.9] text-white pr-4"
                     >
-                        STUDIO <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">CERTIFICATION.</span>
+                        CREATOR <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-blue">REGISTRATION.</span>
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
                         className="text-gray-500 max-w-4xl mx-auto text-lg md:text-2xl font-bold leading-relaxed uppercase tracking-widest"
                     >
-                        Apply for professional backing. Gain access to high-tier brand missions, exclusive studio resources, and automated commercial settlements.
+                        Register your creator profile. Share your social handles and city location to start applying for active campaigns.
                     </motion.p>
                 </div>
 
@@ -179,8 +175,8 @@ const CreatorJoin = () => {
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto text-center">
                         <div className="p-16 bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] shadow-2xl">
                             <Activity className="w-20 h-20 text-neon-blue mx-auto mb-10" />
-                            <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">AUTHENTICATION REQUIRED</h3>
-                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">Identity verification is mandatory to enter the creator hub. Sign in to proceed.</p>
+                            <h3 className="text-4xl font-black font-heading mb-6 italic uppercase">SIGN IN REQUIRED</h3>
+                            <p className="text-gray-500 mb-12 font-medium text-lg leading-relaxed uppercase tracking-tight">You need to sign in to submit your creator registration.</p>
                             <button onClick={() => setAuthModal(true)} className="h-20 px-16 rounded-2xl text-base font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] flex items-center gap-4 mx-auto">
                                 Sign In <ArrowRight size={20} />
                             </button>
@@ -231,8 +227,8 @@ const CreatorJoin = () => {
                                         <div className="flex items-center gap-5 mb-10">
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Users size={24} /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Identity Profile</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Legitimacy Verification</p>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Profile Details</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Basic Information</p>
                                             </div>
                                         </div>
 
@@ -253,8 +249,8 @@ const CreatorJoin = () => {
                                                 </label>
                                             </div>
                                             <div className="text-center space-y-1 relative z-10">
-                                                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">Profile Identity</h4>
-                                                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Upload your professional headshot</p>
+                                                <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">Profile Photo</h4>
+                                                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Upload a profile picture for your creator page</p>
                                             </div>
                                         </div>
 
@@ -292,8 +288,8 @@ const CreatorJoin = () => {
                                         <div className="flex items-center gap-5 mb-10">
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-neon-blue"><Instagram size={24} /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic text-neon-blue">Social Impact</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Analytics & Followers</p>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic text-neon-blue">Social Handles</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Connect your social media accounts</p>
                                             </div>
                                         </div>
                                         <div className="space-y-10">
@@ -328,8 +324,8 @@ const CreatorJoin = () => {
                                         <div className="flex items-center gap-5 mb-10">
                                             <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white"><Camera size={24} /></div>
                                             <div>
-                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Commercial Spec</h3>
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Marketable Authority</p>
+                                                <h3 className="text-3xl font-black font-heading uppercase tracking-tighter italic">Bio & Portfolio</h3>
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Brief bio and links</p>
                                             </div>
                                         </div>
                                         <div className="space-y-8">
