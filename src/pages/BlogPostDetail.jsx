@@ -88,6 +88,16 @@ const BlogPostDetail = () => {
             .slice(0, 3);
     }, [posts, post]);
 
+    useEffect(() => {
+        if (post?.id && !post.id.includes('-test')) {
+            useStore.getState().incrementPostView?.(post.id);
+        }
+    }, [post?.id]);
+
+    const accentColor = useMemo(() => {
+        return post?.accentColor || CATEGORY_COLORS[post?.category] || CATEGORY_COLORS.default;
+    }, [post]);
+
     if (!post) {
         return (
             <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
@@ -104,16 +114,6 @@ const BlogPostDetail = () => {
             </div>
         );
     }
-
-    useEffect(() => {
-        if (post?.id && !post.id.includes('-test')) {
-            useStore.getState().incrementPostView?.(post.id);
-        }
-    }, [post?.id]);
-
-    const accentColor = useMemo(() => {
-        return post?.accentColor || CATEGORY_COLORS[post?.category] || CATEGORY_COLORS.default;
-    }, [post]);
 
     const handleShare = (platform) => {
         const url = window.location.href;
@@ -364,11 +364,14 @@ const BlogPostDetail = () => {
                     {/* Metadata Fragments */}
                     {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-4 mt-12">
-                            {post.tags.map(tag => (
-                                <span key={tag} className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
-                                    {tag}
-                                </span>
-                            ))}
+                            {post.tags.map((tag, idx) => {
+                                const label = typeof tag === 'string' ? tag : (tag?.name || tag?.label || String(tag));
+                                return (
+                                    <span key={label || idx} className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
+                                        {label}
+                                    </span>
+                                );
+                            })}
                         </div>
                     )}
 
