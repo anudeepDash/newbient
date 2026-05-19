@@ -577,3 +577,40 @@ export const regenerateField = async (type, fieldLabel, originalPrompt, fieldCon
         return "Content pending review.";
     }
 };
+
+/**
+ * Generate a rich, compelling editorial briefing for the Weekly Newsletter.
+ */
+export const generateNewsletterBriefing = async (selectedPosts = [], guidancePrompt = '', tone = 'Premium') => {
+    try {
+        const storiesList = selectedPosts.map((post, index) => 
+            `Story #${index + 1}:\nTitle: ${post.title}\nCategory: ${post.category}\nSummary: ${post.shortDescription || post.content?.replace(/<[^>]*>/g, '').substring(0, 150)}`
+        ).join('\n\n');
+
+        const sys = `You are the chief editor of Concert Zone, India's premier music, nightlife, and culture publication.
+Write a highly engaging, sharp, premium, and intellectual lead editorial briefing note (2-3 paragraphs) for this week's newsletter.
+The briefing note should introduce the theme of the newsletter, hook the readers, and weave the following selected stories together seamlessly.
+
+ADDITIONAL CREATIVE DIRECTION OR THEME REQUESTED BY THE ADMIN:
+"${guidancePrompt || 'None specified'}"
+
+RULES:
+- Tone: ${tone} (editorial, premium, culturally aware, engaging, and authoritative).
+- Format: Return ONLY raw HTML containing paragraphs (<p>...</p>) and bold/italic elements (<strong>, <em>) if necessary. Do not include any wrapper div, HTML, body, head, or markdown code blocks (fences).
+- Do not output a title or greeting. Start directly with the first paragraph.
+- Write naturally like a premium Substack, Puck, or Pitchfork writer. Focus on flow and substance.`;
+
+        const user = `Here are the selected stories for this week's edition:\n\n${storiesList}\n\nWrite the editorial briefing.`;
+        const result = await executeAIPulse(sys, user);
+        
+        // Strip markdown code fences if generated
+        let cleanHTML = result.trim();
+        if (cleanHTML.startsWith('```')) {
+            cleanHTML = cleanHTML.replace(/^```(html|json)?/i, '').replace(/```$/i, '').trim();
+        }
+        return cleanHTML;
+    } catch (error) {
+        console.error("AI briefing generation failed:", error);
+        return `<p>Welcome to this week's briefing from the Concert Zone ecosystem. We've compiled the premier highlights, stories, and cultural pulse for your curation. Scroll down to read our full selection.</p>`;
+    }
+};

@@ -280,11 +280,13 @@ export const generateWeeklyHTML = (data) => {
 
     const isDark = theme === 'dark';
     const bgColor = isDark ? '#000000' : '#ffffff';
-    const containerBg = isDark ? '#000000' : '#ffffff';
-    const textColor = isDark ? '#f8fafc' : '#000000';
-    const subTextColor = isDark ? '#94a3b8' : '#333333';
-    const borderColor = isDark ? '#1e293b' : '#eeeeee';
-    const accent = isDark ? '#00f2ff' : '#008899'; // Darker cyan for light mode for better legibility
+    const containerBg = isDark ? '#080808' : '#fafafa';
+    const textColor = isDark ? '#f8fafc' : '#111111';
+    const subTextColor = isDark ? '#94a3b8' : '#4b5563';
+    const borderColor = isDark ? '#1e293b' : '#e5e7eb';
+    const cardBg = isDark ? '#111111' : '#ffffff';
+    const accent = isDark ? '#00f2ff' : '#008899';
+    const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
 
     return `
         <!DOCTYPE html>
@@ -292,38 +294,165 @@ export const generateWeeklyHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Weekly by Concert Zone</title>
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-                .container { max-width: 650px; margin: 0 auto; background-color: ${containerBg}; }
-                .header { padding: 30px 40px 10px; text-align: left; }
-                .header img { width: 100%; max-width: 450px; height: auto; display: block; }
-                .logo-text { font-size: 72px; font-weight: 900; font-style: italic; color: ${textColor}; letter-spacing: -4px; line-height: 0.85; margin: 0; text-transform: uppercase; }
-                .logo-subtext { font-size: 9px; font-weight: 950; color: ${accent}; letter-spacing: 6px; margin: 8px 0 0 4px; text-transform: uppercase; opacity: 0.9; }
-                .content { padding: 0 0 30px; }
-                .content p, .content h1, .content h2, .content h3, .content h4, .content div, .content span { color: inherit !important; }
-                .responsive-px { padding-left: 40px !important; padding-right: 40px !important; }
-                .footer { padding: 50px 40px; border-top: 1px solid ${borderColor}; text-align: left; }
-                .footer-text { font-size: 9px; font-weight: 800; color: ${isDark ? '#333' : '#999'}; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
-                .social-links { margin-bottom: 30px; }
-                .social-icon { display: inline-block; margin-right: 25px; }
-                .social-img { width: 16px; height: 16px; opacity: 0.4; ${isDark ? 'filter: invert(1);' : ''} }
-                .unsubscribe-link { font-size: 8px; font-weight: 700; color: ${accent}; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; }
-                .content p { line-height: 1.8; margin-bottom: 1.5em; }
-                .content a { color: ${accent}; text-decoration: none; font-weight: 700; }
-                .content * { max-width: 100%; }
-
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+                    background-color: ${bgColor}; 
+                    color: ${textColor}; 
+                    margin: 0; 
+                    padding: 0; 
+                    -webkit-font-smoothing: antialiased; 
+                }
+                .container { 
+                    max-width: 600px; 
+                    margin: 40px auto; 
+                    background-color: ${containerBg}; 
+                    border: 1px solid ${borderColor}; 
+                    border-radius: 32px; 
+                    overflow: hidden; 
+                    box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+                }
+                .header { 
+                    padding: 40px 40px 20px; 
+                    text-align: center; 
+                    border-bottom: 1px solid ${borderColor};
+                }
+                .header img { 
+                    width: 100%; 
+                    max-width: 320px; 
+                    height: auto; 
+                    display: inline-block; 
+                }
+                .date-badge {
+                    display: inline-block;
+                    margin-top: 15px;
+                    padding: 4px 12px;
+                    background: ${isDark ? 'rgba(0,242,255,0.1)' : 'rgba(0,136,153,0.1)'};
+                    border: 1px solid ${isDark ? 'rgba(0,242,255,0.2)' : 'rgba(0,136,153,0.2)'};
+                    border-radius: 12px;
+                    font-size: 9px;
+                    font-weight: 900;
+                    letter-spacing: 3px;
+                    color: ${accent};
+                }
+                .content { 
+                    padding: 40px 0; 
+                }
+                .content p, .content h1, .content h2, .content h3, .content h4, .content div, .content span { 
+                    color: inherit !important; 
+                }
+                .responsive-px { 
+                    padding-left: 40px !important; 
+                    padding-right: 40px !important; 
+                }
+                .footer { 
+                    padding: 40px 40px; 
+                    border-top: 1px solid ${borderColor}; 
+                    text-align: center; 
+                    background-color: ${isDark ? '#040404' : '#f3f4f6'};
+                }
+                .footer-text { 
+                    font-size: 9px; 
+                    font-weight: 800; 
+                    color: ${isDark ? '#475569' : '#9ca3af'}; 
+                    text-transform: uppercase; 
+                    letter-spacing: 3px; 
+                    margin-bottom: 20px; 
+                    line-height: 1.6;
+                }
+                .social-links { 
+                    margin-bottom: 25px; 
+                }
+                .social-icon { 
+                    display: inline-block; 
+                    margin: 0 10px; 
+                    transition: transform 0.2s;
+                }
+                .social-icon:hover {
+                    transform: scale(1.1);
+                }
+                .social-img { 
+                    width: 18px; 
+                    height: 18px; 
+                    opacity: 0.6; 
+                    ${isDark ? 'filter: invert(1);' : ''} 
+                }
+                .unsubscribe-link { 
+                    font-size: 8px; 
+                    font-weight: 700; 
+                    color: ${accent}; 
+                    text-decoration: none; 
+                    text-transform: uppercase; 
+                    letter-spacing: 1px; 
+                    border-bottom: 1px solid transparent;
+                    transition: border-color 0.2s;
+                }
+                .unsubscribe-link:hover {
+                    border-bottom-color: ${accent};
+                }
+                .content p { 
+                    line-height: 1.8; 
+                    margin-bottom: 1.5em; 
+                    font-size: 15px;
+                }
+                .content a { 
+                    color: ${accent}; 
+                    text-decoration: none; 
+                    font-weight: 700; 
+                }
+                .content * { 
+                    max-width: 100%; 
+                }
+                
+                /* Premium interactive card hover styles */
+                .story-card {
+                    background: ${cardBg};
+                    border: 1px solid ${borderColor};
+                    border-radius: 20px;
+                    transition: all 0.3s ease;
+                }
+                .story-card:hover {
+                    border-color: ${accent} !important;
+                    box-shadow: 0 10px 25px rgba(0, 242, 255, 0.05);
+                }
+                
+                /* Interactive details summary accordion */
+                details {
+                    background: ${isDark ? '#0e0e0e' : '#f9fafb'};
+                    border: 1px solid ${borderColor};
+                    border-radius: 16px;
+                    padding: 16px;
+                    margin-bottom: 20px;
+                    transition: all 0.3s;
+                }
+                summary {
+                    font-weight: 800;
+                    font-size: 12px;
+                    letter-spacing: 2px;
+                    color: ${accent};
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    outline: none;
+                }
+                details[open] {
+                    border-color: ${accent};
+                }
+                
                 @media screen and (max-width: 600px) {
-                    .container { width: 100% !important; }
-                    .header { padding: 25px 15px 10px !important; }
-                    .content { padding: 0 !important; }
-                    .footer { padding: 40px 15px !important; }
-                    .responsive-px { padding-left: 15px !important; padding-right: 15px !important; }
-                    .mobile-px-15 { padding-left: 15px !important; padding-right: 15px !important; }
-                    .mobile-px-10 { padding-left: 10px !important; padding-right: 10px !important; }
-                    .mobile-mx-10 { margin-left: 10px !important; margin-right: 10px !important; }
-                    .mobile-stack { display: flex !important; gap: 15px !important; }
-                    .mobile-w-full { width: 80px !important; height: 80px !important; }
+                    .container { 
+                        width: 100% !important; 
+                        margin: 0 !important;
+                        border-radius: 0 !important;
+                        border: none !important;
+                    }
+                    .header { padding: 30px 20px 15px !important; }
+                    .content { padding: 25px 0 !important; }
+                    .footer { padding: 35px 20px !important; }
+                    .responsive-px { padding-left: 20px !important; padding-right: 20px !important; }
+                    .mobile-stack { display: block !important; }
+                    .mobile-w-full { width: 100% !important; max-width: 100% !important; margin-bottom: 15px !important; }
                 }
             </style>
         </head>
@@ -332,6 +461,9 @@ export const generateWeeklyHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <img src="${getBaseUrl()}/weekly_logo_${isDark ? 'dark' : 'light'}.png" alt="WEEKLY BY CONCERT ZONE">
+                    <div>
+                        <span class="date-badge">${dateStr}</span>
+                    </div>
                 </div>
                 <div class="content">
                     ${messageBody}
@@ -342,8 +474,8 @@ export const generateWeeklyHTML = (data) => {
                         <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
                         <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
                     </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} CONCERT ZONE // INTELLECTUAL PROPERTY OF NEWBI ENT.</p>
-                    <a href="https://newbi.live/unsubscribe" class="unsubscribe-link">UNSUBSCRIBE FROM NEWSLETTER</a>
+                    <p class="footer-text">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT.</p>
+                    <a href="https://newbi.live/unsubscribe" class="unsubscribe-link">UNSUBSCRIBE FROM WEEKLY BRIEFINGS</a>
                 </div>
             </div>
         </body>
@@ -354,23 +486,86 @@ export const generateWeeklyHTML = (data) => {
 
 /**
  * Sends a mass email to multiple recipients via BCC to protect privacy.
+ * Batches recipients into groups of 45 to stay under SMTP provider limits
+ * (Gmail/Workspace caps at ~100 recipients per message).
  * Supports account switching via accountType parameter.
  */
-export const sendMassEmail = async (bccArray, subject, htmlContent, accountType = 'official') => {
-    try {
-        const result = await apiFetch('/api/mail', {
-            to: accountType === 'weekly' ? 'weekly@newbi.live' : 'partnership@newbi.live',
-            bcc: bccArray.join(','),
-            subject: subject,
-            html: htmlContent,
-            accountType: accountType,
-            headers: {
-                'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
-            }
-        });
-        return result.success ? { success: true } : { success: false, error: result.error };
-    } catch (error) {
-        console.error(`Failed to send ${accountType} mass email:`, error);
-        return { success: false, error };
+export const sendMassEmail = async (bccArray, subject, htmlContent, accountType = 'official', onProgress = null) => {
+    const BATCH_SIZE = 45;
+    const DELAY_BETWEEN_BATCHES_MS = 1500;
+    const toAddress = accountType === 'weekly' ? 'weekly@newbi.live' : 'partnership@newbi.live';
+
+    // Deduplicate and filter empty emails
+    const uniqueEmails = [...new Set(bccArray.filter(Boolean).map(e => e.trim().toLowerCase()))];
+
+    if (uniqueEmails.length === 0) {
+        return { success: false, error: 'No valid recipients' };
     }
+
+    // Split into batches
+    const batches = [];
+    for (let i = 0; i < uniqueEmails.length; i += BATCH_SIZE) {
+        batches.push(uniqueEmails.slice(i, i + BATCH_SIZE));
+    }
+
+    console.log(`[Mass Mail] Sending to ${uniqueEmails.length} recipients in ${batches.length} batch(es) via ${accountType}`);
+
+    let successCount = 0;
+    let failCount = 0;
+    const errors = [];
+
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        try {
+            const result = await apiFetch('/api/mail', {
+                to: toAddress,
+                bcc: batch.join(','),
+                subject: subject,
+                html: htmlContent,
+                accountType: accountType,
+                headers: {
+                    'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
+                }
+            });
+
+            if (result.success) {
+                successCount += batch.length;
+                console.log(`[Mass Mail] ✅ Batch ${i + 1}/${batches.length} sent (${batch.length} recipients)`);
+            } else {
+                failCount += batch.length;
+                errors.push(`Batch ${i + 1}: ${result.error}`);
+                console.error(`[Mass Mail] ❌ Batch ${i + 1} failed:`, result.error);
+            }
+        } catch (error) {
+            failCount += batch.length;
+            errors.push(`Batch ${i + 1}: ${error.message}`);
+            console.error(`[Mass Mail] ❌ Batch ${i + 1} exception:`, error);
+        }
+
+        // Report progress if callback provided
+        if (onProgress) {
+            onProgress({
+                currentBatch: i + 1,
+                totalBatches: batches.length,
+                sent: successCount,
+                failed: failCount,
+                total: uniqueEmails.length
+            });
+        }
+
+        // Delay between batches to avoid SMTP rate limits (skip after last batch)
+        if (i < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
+        }
+    }
+
+    const allSucceeded = failCount === 0;
+    return {
+        success: allSucceeded,
+        sent: successCount,
+        failed: failCount,
+        total: uniqueEmails.length,
+        batches: batches.length,
+        error: errors.length > 0 ? errors.join('; ') : undefined
+    };
 };

@@ -84,14 +84,11 @@ const LiveCampaigns = () => {
                 {/* DIRECTORY HEADER */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-12">
                     <div className="space-y-4 max-w-3xl">
-                        <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.4em] text-neon-blue shadow-xl">
-                            <Sparkles size={14} className="animate-spin-slow" /> LIVE MISSION BOARD
-                        </div>
                         <h1 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-none">
                             DISCOVER <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-white">CAMPAIGNS.</span>
                         </h1>
                         <p className="text-gray-400 text-sm md:text-base font-bold uppercase tracking-widest leading-relaxed">
-                            Browse verified, escrow-backed brand opportunities. Filter by platform, city, and follower requirements to claim your next high-ticket collaboration.
+                            Browse active brand opportunities. Filter by platform, city, and follower requirements to apply for your next partnership.
                         </p>
                     </div>
 
@@ -106,7 +103,7 @@ const LiveCampaigns = () => {
                             onClick={() => navigate('/creator/join')}
                             className="h-16 px-8 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                         >
-                            Apply for Certification <ArrowRight size={16} className="ml-2" />
+                            Register Profile <ArrowRight size={16} className="ml-2" />
                         </Button>
                     </div>
                 </div>

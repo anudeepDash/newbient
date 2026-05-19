@@ -58,6 +58,46 @@
             "destination": "/api/og?formId=:id"
         },
         {
+            "source": "/proposal/:id",
+            "destination": "/api/og?proposalId=:id"
+        },
+        {
+            "source": "/invoice/:id",
+            "destination": "/api/og?invoiceId=:id"
+        },
+        {
+            "source": "/agreement/:id",
+            "destination": "/api/og?agreementId=:id"
+        },
+        {
+            "source": "/contact",
+            "destination": "/api/og?page=contact"
+        },
+        {
+            "source": "/concertzone",
+            "destination": "/api/og?page=concertzone"
+        },
+        {
+            "source": "/concertzone/:category",
+            "destination": "/api/og?page=concertzone&category=:category"
+        },
+        {
+            "source": "/concertzone/:category/:slug",
+            "destination": "/api/og?blogSlug=:slug"
+        },
+        {
+            "source": "/creator",
+            "destination": "/api/og?page=creator"
+        },
+        {
+            "source": "/creator/join",
+            "destination": "/api/og?page=creator-join"
+        },
+        {
+            "source": "/creator-dashboard",
+            "destination": "/api/og?page=creator-dashboard"
+        },
+        {
             "source": "/community-join",
             "has": [{ "type": "query", "key": "gig" }],
             "destination": "/api/og"

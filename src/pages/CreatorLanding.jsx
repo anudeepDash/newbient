@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import CreatorLogo from '../components/CreatorLogo';
 
 const CreatorLanding = () => {
     useDynamicMeta({
@@ -82,7 +81,9 @@ const CreatorLanding = () => {
             <header className="fixed top-0 left-0 right-0 h-20 bg-black/40 backdrop-blur-3xl border-b border-white/10 z-50 px-6 md:px-12 flex items-center justify-between shadow-2xl">
                 <div className="flex items-center gap-3">
                     <Link to="/creator" className="flex items-center gap-3 group">
-                        <CreatorLogo className="w-10 h-10 group-hover:scale-105 transition-transform" />
+                        <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-black text-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] group-hover:scale-105 transition-transform">
+                            NB
+                        </div>
                         <span className="text-xl font-black uppercase tracking-tighter italic text-white hidden sm:inline">
                             Newbi <span className="text-neon-blue">Creator.</span>
                         </span>
@@ -95,29 +96,40 @@ const CreatorLanding = () => {
                     <a href="#faqs" className="hover:text-white transition-colors">FAQs</a>
                 </nav>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <Link 
                         to="/"
                         className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 group shadow-lg"
                     >
                         <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform text-neon-pink" />
-                        <span className="hidden sm:inline">Back to newbi.live</span>
+                        <span className="hidden sm:inline">newbi.live</span>
                         <span className="sm:hidden">Back</span>
                     </Link>
                     <Button 
                         onClick={() => navigate('/campaigns')}
-                        className="h-10 px-5 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all hidden sm:flex items-center gap-2"
+                        className="h-10 px-5 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all hidden md:flex items-center gap-2"
                     >
                         <Globe size={14} className="text-neon-blue" />
                         <span>Directory</span>
                     </Button>
-                    <Button 
-                        onClick={() => navigate('/creator/join')}
-                        className="h-10 md:h-12 px-6 md:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(46,191,255,0.4)] transition-all flex items-center gap-2 group"
-                    >
-                        <span>Apply Now</span>
-                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </Button>
+                    {creatorProfile ? (
+                        <Button 
+                            onClick={() => navigate('/creator-dashboard')}
+                            className="h-10 md:h-12 px-6 md:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(46,191,255,0.4)] transition-all flex items-center gap-2 group"
+                        >
+                            <LayoutDashboard size={14} />
+                            <span>Open Dashboard</span>
+                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => navigate('/creator/join')}
+                            className="h-10 md:h-12 px-6 md:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(46,191,255,0.4)] transition-all flex items-center gap-2 group"
+                        >
+                            <span>Apply Now</span>
+                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                    )}
                 </div>
             </header>
 
@@ -457,23 +469,34 @@ const CreatorLanding = () => {
                     <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-neon-pink/30 rounded-full blur-[150px] pointer-events-none animate-pulse delay-700" />
 
                     <div className="relative z-10 max-w-3xl mx-auto space-y-10">
-                        <div className="w-20 h-20 bg-black/40 border border-white/10 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl backdrop-blur-2xl p-4 hover:scale-105 transition-all">
-                            <CreatorLogo className="w-full h-full" />
+                        <div className="w-20 h-20 bg-white text-black rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl">
+                            <Sparkles size={36} className="text-black animate-spin-slow" />
                         </div>
                         <h2 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-[0.9]">
-                            READY TO JOIN <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">NEWBI CREATOR?</span>
+                            {creatorProfile ? 'YOUR' : 'READY TO JOIN'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">{creatorProfile ? 'CREATOR HUB.' : 'NEWBI CREATOR?'}</span>
                         </h2>
                         <p className="text-gray-300 text-base md:text-xl font-bold uppercase tracking-widest leading-relaxed max-w-2xl mx-auto">
-                            Connect your profile, explore open brand campaigns, and track all your deliverables.
+                            {creatorProfile ? 'Access your dashboard to manage campaigns, submit deliverables, and track your progress.' : 'Connect your profile, explore open brand campaigns, and track all your deliverables.'}
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                            <Button 
-                                onClick={() => navigate('/creator/join')}
-                                className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
-                            >
-                                <span>Register Profile</span> 
-                                <ArrowRight size={20} />
-                            </Button>
+                            {creatorProfile ? (
+                                <Button 
+                                    onClick={() => navigate('/creator-dashboard')}
+                                    className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
+                                >
+                                    <LayoutDashboard size={20} />
+                                    <span>Open Dashboard</span> 
+                                    <ArrowRight size={20} />
+                                </Button>
+                            ) : (
+                                <Button 
+                                    onClick={() => navigate('/creator/join')}
+                                    className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
+                                >
+                                    <span>Register Profile</span> 
+                                    <ArrowRight size={20} />
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </motion.section>

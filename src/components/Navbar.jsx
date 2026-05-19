@@ -19,7 +19,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-        { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
@@ -30,7 +30,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-        { name: 'CREATOR', path: user ? '/creator-dashboard' : '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 

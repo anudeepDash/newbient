@@ -21,7 +21,6 @@ import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import CreatorLogo from '../components/CreatorLogo';
 
 const CreatorJoin = () => {
     useDynamicMeta({

@@ -46,6 +46,7 @@ import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CampaignCard from '../components/ui/CampaignCard';
 import TaskSubmissionModal from '../components/ui/TaskSubmissionModal';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera },
@@ -167,9 +168,9 @@ const CreatorSettingsView = ({ profile }) => {
                 <div className="py-20 flex flex-col items-center justify-center space-y-8 bg-red-500/5 border border-red-500/10 rounded-[3rem] p-12">
                     <div className="text-center space-y-4">
                         <AlertCircle size={64} className="text-red-500 mx-auto" />
-                        <h4 className="text-4xl font-black font-heading uppercase italic tracking-tighter text-white">Security Protocol: Deactivation</h4>
+                        <h4 className="text-4xl font-black font-heading uppercase italic tracking-tighter text-white">Delete Profile</h4>
                         <p className="text-[12px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto">
-                            Warning: This will permanently remove your creator profile and eligibility for upcoming missions. This action is irreversible.
+                            Warning: This will permanently remove your creator profile and all associated data. This action is irreversible.
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
@@ -201,8 +202,8 @@ const CreatorSettingsView = ({ profile }) => {
                                         <Users size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Identity Profile</h3>
-                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Public Commercial Identity</p>
+                                        <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Profile Details</h3>
+                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Your public profile information</p>
                                     </div>
                                 </div>
 
@@ -234,7 +235,7 @@ const CreatorSettingsView = ({ profile }) => {
                                 </div>
 
                                 <button type="submit" disabled={isSaving} className="w-full h-16 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-neon-blue transition-all shadow-xl flex items-center justify-center gap-3">
-                                    {isSaving ? <LoadingSpinner size="xs" color="#000000" /> : <><RefreshCw size={18} /> Synchronize Profile</>}
+                                    {isSaving ? <LoadingSpinner size="xs" color="#000000" /> : <><RefreshCw size={18} /> Save Changes</>}
                                 </button>
                             </div>
                         </form>
@@ -248,8 +249,8 @@ const CreatorSettingsView = ({ profile }) => {
                                     <ImageIcon size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Identity Asset</h3>
-                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Profile Visuals</p>
+                                    <h3 className="text-2xl font-black font-heading uppercase italic tracking-tighter">Profile Photo</h3>
+                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Your display picture</p>
                                 </div>
                             </div>
 
@@ -300,6 +301,12 @@ const CreatorDashboard = () => {
     const [activeTab, setActiveTab] = useState('opportunities');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isWorkspacePanelOpen, setIsWorkspacePanelOpen] = useState(false);
+
+    useDynamicMeta({
+        title: location.pathname.includes('/settings') ? "Creator Settings" : "Creator Dashboard",
+        description: "Manage your creator profile and track campaigns.",
+        url: window.location.href
+    });
 
     useEffect(() => {
         if (authInitialized && !loading && user) {
@@ -439,14 +446,14 @@ const CreatorDashboard = () => {
                             <div>
                                 <div className="flex items-center gap-3 text-neon-blue font-black tracking-[0.4em] text-[10px] uppercase mb-2">
                                     <Zap size={14} className="animate-pulse" />
-                                    Active Workspace
+                                    Creator Dashboard
                                 </div>
                                 <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible">
                                     Hello, <span className="inline-block pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
                                 </h2>
                                 <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest mt-4 flex items-center gap-3">
                                     <span className="w-8 h-px bg-white/10" />
-                                    Command center synchronized
+                                    Manage your campaigns and submissions
                                 </p>
                             </div>
                         </div>
@@ -499,8 +506,8 @@ const CreatorDashboard = () => {
                                         <Briefcase className="text-neon-blue" size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter pr-4">Priority Campaigns</h3>
-                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Executive fulfillment required</p>
+                                        <h3 className="text-3xl font-black font-heading uppercase italic text-white tracking-tighter pr-4">Active Campaigns</h3>
+                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Campaigns you've been shortlisted for</p>
                                     </div>
                                 </div>
 
@@ -613,8 +620,8 @@ const CreatorDashboard = () => {
                                 <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
                                     <Sparkles size={40} />
                                 </div>
-                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">Nothing discovered yet.</h4>
-                                <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">Keep your impact high. New opportunities are unlocked based on your specialized ranking.</p>
+                                <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">No campaigns yet.</h4>
+                                <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">New campaigns matching your city and niche will appear here when available.</p>
                             </div>
                         )}
                     </motion.div>
@@ -630,7 +637,7 @@ const CreatorDashboard = () => {
                     >
                         <div className="flex items-center gap-4 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase mb-12">
                             <Settings size={14} className="animate-spin-slow" />
-                            Security & Identity Parameters
+                            Profile Settings
                         </div>
                         
                         <CreatorSettingsView profile={profile} />
@@ -698,8 +705,8 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                             <LayoutDashboard size={24} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black uppercase tracking-tighter italic pr-2">Workspace Hub</h3>
-                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Global Status & Logs</p>
+                            <h3 className="text-lg font-black uppercase tracking-tighter italic pr-2">Overview</h3>
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Stats & Activity</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="w-12 h-12 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all">
@@ -716,9 +723,9 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_#38b6ff]" />
-                                    <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Operational Parameters</p>
+                                    <p className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em]">Your Stats</p>
                                 </div>
-                                <h4 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Command Center</h4>
+                                <h4 className="text-3xl font-black font-heading uppercase italic tracking-tighter text-white pr-4">Dashboard Overview</h4>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -729,7 +736,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                             <statusConfig.icon size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Identity Protocol</p>
+                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Account Status</p>
                                             <p className={cn("text-sm font-black uppercase tracking-wider", statusConfig.color)}>{statusConfig.label}</p>
                                         </div>
                                     </div>
@@ -761,7 +768,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                 {/* Deliverables Progress */}
                                 <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Deliverables Sync</p>
+                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Submission Progress</p>
                                         <p className="text-[9px] font-black text-white uppercase tracking-widest">{stats.approvedTasks}/{stats.totalTasks}</p>
                                     </div>
                                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">

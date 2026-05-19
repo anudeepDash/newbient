@@ -18,8 +18,15 @@ import { notifyAdmins } from '../lib/notificationTriggers';
 import { sendContactAutoReply } from '../lib/email';
 import { cn } from '../lib/utils';
 import { useStore } from '../lib/store';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 const Contact = () => {
+    useDynamicMeta({
+        title: "Contact Us",
+        description: "Get in touch with Newbi Entertainment & Marketing.",
+        url: window.location.href
+    });
+
     const { siteDetails } = useStore();
     const [formData, setFormData] = useState({
         name: '',
@@ -69,14 +76,6 @@ const Contact = () => {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row items-center justify-between mb-32 gap-12">
                     <div className="max-w-2xl text-center md:text-left">
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-8"
-                        >
-                            <Sparkles size={16} className="text-neon-blue" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Global Reach</span>
-                        </motion.div>
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}

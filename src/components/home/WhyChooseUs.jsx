@@ -49,14 +49,14 @@ const WhyChooseUs = () => {
     }, [isAutoScrolling]);
 
     return (
-        <section className="py-16 md:py-32 bg-[#020202] relative px-4 overflow-hidden">
+        <section className="py-10 md:py-16 bg-[#020202] relative px-4 overflow-hidden">
             {/* Background Decor */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
             <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-neon-green/5 blur-[100px] rounded-full" />
             <div className="absolute -right-20 bottom-0 w-96 h-96 bg-neon-blue/5 blur-[120px] rounded-full" />
 
             <div className="max-w-7xl mx-auto relative z-10">
-                <div className="text-center mb-24">
+                <div className="text-center mb-12 md:mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}

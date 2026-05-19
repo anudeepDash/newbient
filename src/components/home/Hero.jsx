@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles, Zap, Target, Star } from 'lucide-react';
 import logo from '../../assets/logo.png';
 const Hero = () => {
     return (
-        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-32 bg-[#020202]">
+        <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-32 md:pt-40 pb-16 md:pb-24 bg-[#020202]">
             {/* Immersive Background Effects */}
             <div className="absolute inset-0 z-0">
                 {/* Dynamic Glows */}
@@ -53,7 +53,7 @@ const Hero = () => {
             </div>
 
             {/* Content Container */}
-            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-0 md:pt-4 pb-32">
+            <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-0 md:pt-4 pb-28 md:pb-32">
                 {/* Floating Logo with Aura */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -67,15 +67,7 @@ const Hero = () => {
 
                 {/* Cyberpunk Title */}
                 <div className="mb-8 space-y-4">
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8, delay: 0.3 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4 whitespace-nowrap"
-                    >
-                        <div className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-ping shrink-0"></div>
-                        <span className="text-[9px] font-heading font-black uppercase tracking-[0.2em] text-gray-400">College Activations • Marketing • Events</span>
-                    </motion.div>
+
 
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}
@@ -126,7 +118,7 @@ const Hero = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5, duration: 1 }}
-                className="absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4"
+                className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4"
             >
                 <div className="flex flex-col items-center gap-1">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">SCROLL TO EXPLORE</span>

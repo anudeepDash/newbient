@@ -4,10 +4,63 @@ import { useStore } from '../lib/store';
 import { ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 import GlobalLoader from './ui/GlobalLoader';
+import useDynamicMeta from '../hooks/useDynamicMeta';
+
+const getAdminTitle = (pathname) => {
+    const path = pathname.replace(/\/$/, '');
+    if (path === '/admin') return 'Admin Dashboard';
+    if (path === '/admin/system-command') return 'System Settings';
+    if (path === '/admin/manage-admins') return 'Manage Admins';
+    if (path === '/admin/invoices') return 'Invoice Management';
+    if (path === '/admin/create-invoice') return 'Create Invoice';
+    if (path.startsWith('/admin/edit-invoice/')) return 'Edit Invoice';
+    if (path === '/admin/announcements') return 'Announcements';
+    if (path === '/admin/concertzone') return 'Concert Manager';
+    if (path === '/admin/messages') return 'Messages';
+    if (path === '/admin/mailing') return 'Mailing Manager';
+    if (path === '/admin/proposals') return 'Proposals';
+    if (path === '/admin/create-proposal') return 'Create Proposal';
+    if (path.startsWith('/admin/edit-proposal/')) return 'Edit Proposal';
+    if (path === '/admin/agreements') return 'Agreements';
+    if (path === '/admin/agreements/new') return 'New Agreement';
+    if (path.startsWith('/admin/agreements/edit/')) return 'Edit Agreement';
+    if (path === '/admin/forms') return 'Forms';
+    if (path === '/admin/forms/create') return 'Create Form';
+    if (path.startsWith('/admin/forms/edit/')) return 'Edit Form';
+    if (path === '/admin/artists') return 'Artists';
+    if (path === '/admin/client-requests') return 'Client Requests';
+    if (path === '/admin/artistant') return 'Artistant Hub';
+    if (path === '/admin/volunteer-gigs') return 'Volunteer Gigs';
+    if (path === '/admin/guestlists') return 'Guestlist';
+    if (path === '/admin/upcoming-events') return 'Upcoming Events';
+    if (path === '/admin/creators') return 'Creators';
+    if (path.startsWith('/admin/creators/')) return 'Creator Details';
+    if (path === '/admin/campaigns') return 'Campaigns';
+    if (path === '/admin/campaigns/create') return 'Create Campaign';
+    if (path.startsWith('/admin/campaigns/edit/')) return 'Edit Campaign';
+    if (path.startsWith('/admin/campaigns/manage/')) return 'Manage Campaign';
+    if (path === '/admin/giveaways') return 'Giveaways';
+    if (path.includes('/participants')) return 'Giveaway Participants';
+    if (path === '/admin/blog') return 'Concert Zone Studio';
+    if (path === '/admin/concertzone/studio') return 'Concert Zone Studio';
+    if (path === '/admin/blog/create') return 'Create Blog Post';
+    if (path.startsWith('/admin/blog/edit/')) return 'Edit Blog Post';
+    if (path === '/admin/newsletter/studio') return 'Newsletter Studio';
+    if (path === '/admin/scanner') return 'Event Scanner';
+    if (path === '/admin/ticketing') return 'Ticketing Management';
+    return 'Admin Command';
+};
 
 const AdminGuard = ({ children }) => {
     const { user, authInitialized, setAuthModal } = useStore();
     const location = useLocation();
+
+    const adminTitle = getAdminTitle(location.pathname);
+    useDynamicMeta({
+        title: adminTitle,
+        description: "Newbi Administrative Command.",
+        url: window.location.href
+    });
 
     const getColorByPath = (path) => {
         if (path.startsWith('/admin')) return '#00F0FF';
