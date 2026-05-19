@@ -294,8 +294,14 @@ export const generateWeeklyHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <title>Weekly by Concert Zone</title>
             <style>
+                :root {
+                    color-scheme: light dark;
+                    supported-color-schemes: light dark;
+                }
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { 
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -323,8 +329,9 @@ export const generateWeeklyHTML = (data) => {
                     width: 100%; 
                     max-width: 320px; 
                     height: auto; 
-                    display: inline-block; 
                 }
+                .logo-light { display: ${isDark ? 'none' : 'inline-block'}; }
+                .logo-dark { display: ${isDark ? 'inline-block' : 'none'}; }
                 .date-badge {
                     display: inline-block;
                     margin-top: 15px;
@@ -454,13 +461,92 @@ export const generateWeeklyHTML = (data) => {
                     .mobile-stack { display: block !important; }
                     .mobile-w-full { width: 100% !important; max-width: 100% !important; margin-bottom: 15px !important; }
                 }
+
+                /* Responsive Light/Dark Mode Overrides */
+                @media (prefers-color-scheme: dark) {
+                    ${!isDark ? `
+                        body { background-color: #000000 !important; color: #f8fafc !important; }
+                        .container { background-color: #080808 !important; border-color: #1e293b !important; }
+                        .footer { background-color: #040404 !important; border-color: #1e293b !important; }
+                        .footer-text { color: #475569 !important; }
+                        .unsubscribe-link { color: #00f2ff !important; }
+                        .story-card { background: #111111 !important; border-color: #1e293b !important; }
+                        .date-badge {
+                            background: rgba(0,242,255,0.1) !important;
+                            border-color: rgba(0,242,255,0.2) !important;
+                            color: #00f2ff !important;
+                        }
+                        .content a { color: #00f2ff !important; }
+                        details { background: #0e0e0e !important; border-color: #1e293b !important; }
+                        .logo-light { display: none !important; }
+                        .logo-dark { display: inline-block !important; }
+                    ` : ''}
+                }
+
+                @media (prefers-color-scheme: light) {
+                    ${isDark ? `
+                        body { background-color: #ffffff !important; color: #111111 !important; }
+                        .container { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                        .footer { background-color: #f3f4f6 !important; border-color: #e5e7eb !important; }
+                        .footer-text { color: #9ca3af !important; }
+                        .unsubscribe-link { color: #008899 !important; }
+                        .story-card { background: #ffffff !important; border-color: #e5e7eb !important; }
+                        .date-badge {
+                            background: rgba(0,136,153,0.1) !important;
+                            border-color: rgba(0,136,153,0.2) !important;
+                            color: #008899 !important;
+                        }
+                        .content a { color: #008899 !important; }
+                        details { background: #f9fafb !important; border-color: #e5e7eb !important; }
+                        .logo-light { display: inline-block !important; }
+                        .logo-dark { display: none !important; }
+                    ` : ''}
+                }
+
+                /* Outlook/Windows Web App Specific Dark Mode Overrides */
+                ${isDark ? `
+                    [data-ogsc] body { background-color: #ffffff !important; color: #111111 !important; }
+                    [data-ogsc] .container { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                    [data-ogsc] .footer { background-color: #f3f4f6 !important; border-color: #e5e7eb !important; }
+                    [data-ogsc] .footer-text { color: #9ca3af !important; }
+                    [data-ogsc] .unsubscribe-link { color: #008899 !important; }
+                    [data-ogsc] .story-card { background: #ffffff !important; border-color: #e5e7eb !important; }
+                    [data-ogsc] .date-badge {
+                        background: rgba(0,136,153,0.1) !important;
+                        border-color: rgba(0,136,153,0.2) !important;
+                        color: #008899 !important;
+                    }
+                    [data-ogsc] .content a { color: #008899 !important; }
+                    [data-ogsc] details { background: #f9fafb !important; border-color: #e5e7eb !important; }
+                    [data-ogsc] .logo-light { display: inline-block !important; }
+                    [data-ogsc] .logo-dark { display: none !important; }
+                ` : `
+                    [data-ogsc] body { background-color: #000000 !important; color: #f8fafc !important; }
+                    [data-ogsc] .container { background-color: #080808 !important; border-color: #1e293b !important; }
+                    [data-ogsc] .footer { background-color: #040404 !important; border-color: #1e293b !important; }
+                    [data-ogsc] .footer-text { color: #475569 !important; }
+                    [data-ogsc] .unsubscribe-link { color: #00f2ff !important; }
+                    [data-ogsc] .story-card { background: #111111 !important; border-color: #1e293b !important; }
+                    [data-ogsc] .date-badge {
+                        background: rgba(0,242,255,0.1) !important;
+                        border-color: rgba(0,242,255,0.2) !important;
+                        color: #00f2ff !important;
+                    }
+                    [data-ogsc] .content a { color: #00f2ff !important; }
+                    [data-ogsc] details { background: #0e0e0e !important; border-color: #1e293b !important; }
+                    [data-ogsc] .logo-light { display: none !important; }
+                    [data-ogsc] .logo-dark { display: inline-block !important; }
+                `}
             </style>
         </head>
         <body>
             <span class="preheader">${summary}</span>
             <div class="container">
                 <div class="header">
-                    <img src="${getBaseUrl()}/weekly_logo_${isDark ? 'dark' : 'light'}.png" alt="WEEKLY BY CONCERT ZONE">
+                    <!-- Light Mode Logo -->
+                    <img src="${getBaseUrl()}/weekly_logo_light.png" class="logo-light" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'none' : 'inline-block'}; max-width: 320px; width: 100%; height: auto;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${getBaseUrl()}/weekly_logo_dark.png" class="logo-dark" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'inline-block' : 'none'}; max-width: 320px; width: 100%; height: auto;">
                     <div>
                         <span class="date-badge">${dateStr}</span>
                     </div>

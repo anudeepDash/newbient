@@ -15,7 +15,7 @@ const NewsletterStudio = () => {
     const [selectedPosts, setSelectedPosts] = useState([]);
     const [viewMode, setViewMode] = useState('desktop');
     const [sending, setSending] = useState(false);
-    const [theme, setTheme] = useState('dark');
+    const [theme, setTheme] = useState('light');
     const [recipientType, setRecipientType] = useState('subscribers');
     const [editorialText, setEditorialText] = useState('');
     const [commercialContent, setCommercialContent] = useState('');
