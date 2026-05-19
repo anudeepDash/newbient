@@ -102,7 +102,7 @@ const Privacy = () => {
                     className="mt-20 text-center border-t border-white/5 pt-12"
                 >
                     <p className="text-gray-500 text-sm font-black uppercase tracking-[0.2em]">
-                        For privacy concerns, contact <a href="mailto:privacy@newbi.ent" className="text-white hover:text-neon-pink transition-colors">privacy@newbi.ent</a>
+                        For privacy concerns, contact <a href="mailto:privacy@newbi.live" className="text-white hover:text-neon-pink transition-colors">privacy@newbi.live</a>
                     </p>
                 </motion.div>
             </div>
