@@ -143,7 +143,7 @@ const Terms = () => {
                     className="mt-20 text-center border-t border-white/5 pt-12"
                 >
                     <p className="text-gray-500 text-sm font-black uppercase tracking-[0.2em]">
-                        For legal inquiries, contact us at <a href="mailto:legal@newbi.ent" className="text-white hover:text-neon-blue transition-colors">legal@newbi.ent</a>
+                        For legal inquiries, contact us at <a href="mailto:legal@newbi.live" className="text-white hover:text-neon-blue transition-colors">legal@newbi.live</a>
                     </p>
                 </motion.div>
             </div>
