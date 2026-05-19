@@ -16,6 +16,7 @@ import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
 import Heart from 'lucide-react/dist/esm/icons/heart';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import Home from 'lucide-react/dist/esm/icons/home';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Instagram from 'lucide-react/dist/esm/icons/instagram';
@@ -365,7 +366,7 @@ const BlogPostDetail = () => {
                         <div className="flex flex-wrap gap-4 mt-12">
                             {post.tags.map(tag => (
                                 <span key={tag} className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-neon-blue hover:border-neon-blue/20 hover:bg-neon-blue/5 transition-all cursor-pointer">
-                                    // {tag}
+                                    {tag}
                                 </span>
                             ))}
                         </div>
@@ -493,7 +494,7 @@ const BlogPostDetail = () => {
                             </div>
 
                             <button onClick={() => setIsShareOpen(false)} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white/10 transition-all text-gray-400 hover:text-white">
-                                // CLOSE CONSOLE
+                                CLOSE
                             </button>
                         </motion.div>
                     </motion.div>
