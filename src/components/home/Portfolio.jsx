@@ -61,7 +61,7 @@ const Portfolio = () => {
 
     return (
         <section
-            className="py-16 md:py-32 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
+            className="py-10 md:py-16 bg-[#020202] text-white relative overflow-hidden border-t border-white/5"
             onMouseEnter={() => { setIsAutoPlaying(false); setIsAutoScrolling(false); }}
             onMouseLeave={() => { setIsAutoPlaying(true); setIsAutoScrolling(true); }}
         >
@@ -73,7 +73,7 @@ const Portfolio = () => {
             <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
 
                 {/* ── Section Header ── */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-20 gap-8 md:gap-12">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-8 md:gap-12">
                     <div className="max-w-2xl">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -178,7 +178,7 @@ const Portfolio = () => {
                         {filteredItems.length > 0 ? (
                             <div
                                 ref={carouselRef}
-                                className="flex gap-6 md:gap-8 overflow-x-auto pb-10 md:pb-16 horizontal-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
+                                className="flex gap-6 md:gap-8 overflow-x-auto pb-6 md:pb-10 horizontal-scrollbar snap-x snap-mandatory scroll-smooth px-4 md:px-0"
                                 style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}
                             >
                                 {filteredItems.map((item, index) => (

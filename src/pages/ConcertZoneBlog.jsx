@@ -20,6 +20,7 @@ import Eye from 'lucide-react/dist/esm/icons/eye';
 import { useStore } from '../lib/store';
 import BlogNewsletter from '../components/blog/BlogNewsletter';
 import AdSenseSlot from '../components/blog/AdSenseSlot';
+import useDynamicMeta from '../hooks/useDynamicMeta';
 
 // Ad Slot wrapper
 const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
@@ -189,6 +190,12 @@ const StoryCard = ({ post }) => {
 };
 
 const ConcertZoneBlog = () => {
+    useDynamicMeta({
+        title: "Concert Zone",
+        description: "Latest music, live events, artists, guides, and concert news from Newbi.",
+        url: window.location.href
+    });
+
     const { category } = useParams();
     const navigate = useNavigate();
     const { posts, siteSettings } = useStore();

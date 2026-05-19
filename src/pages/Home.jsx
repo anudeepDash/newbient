@@ -10,6 +10,7 @@ import WhyChooseUs from '../components/home/WhyChooseUs';
 import CallToAction from '../components/home/CallToAction';
 
 import UpcomingEvents from '../components/home/UpcomingEvents';
+import FeaturedBlog from '../components/home/FeaturedBlog';
 
 import MaintenanceGuard from '../components/MaintenanceGuard';
 
@@ -32,6 +33,9 @@ const Home = () => {
             </MaintenanceGuard>
             <MaintenanceGuard isSection featureId="home_portfolio">
                 <Portfolio />
+            </MaintenanceGuard>
+            <MaintenanceGuard isSection featureId="blog_featured">
+                <FeaturedBlog />
             </MaintenanceGuard>
             {siteSettings?.showPastClients !== false && (
                 <MaintenanceGuard isSection featureId="home_clients">

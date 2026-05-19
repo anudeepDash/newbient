@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { sendMassEmail, generateWeeklyHTML } from '../../lib/email';
+import { generateNewsletterBriefing } from '../../lib/ai';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 
 const NewsletterStudio = () => {
@@ -19,6 +20,8 @@ const NewsletterStudio = () => {
     const [editorialText, setEditorialText] = useState('');
     const [commercialContent, setCommercialContent] = useState('');
     const [subStep, setSubStep] = useState('stories'); // 'stories' or 'content'
+    const [aiGuidance, setAiGuidance] = useState('');
+    const [generatingAI, setGeneratingAI] = useState(false);
 
     const availablePosts = useMemo(() => {
         return posts
@@ -49,55 +52,94 @@ const NewsletterStudio = () => {
         const otherPosts = selectedPosts.slice(1);
         const isDark = theme === 'dark';
         const accent = isDark ? '#00f2ff' : '#008899';
-        const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+        const borderColor = isDark ? '#1e293b' : '#e5e7eb';
+        const cardBg = isDark ? '#111111' : '#ffffff';
+        const textColor = isDark ? '#f8fafc' : '#111111';
+        const subTextColor = isDark ? '#94a3b8' : '#4b5563';
 
         const innerContent = `
-            <div class="responsive-px mobile-mx-10" style="margin-bottom: 40px; padding-top: 30px; padding-bottom: 30px; background: ${isDark ? '#080808' : '#f9f9f9'}; border-radius: 24px; border: 1px solid ${borderColor};">
-                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 35px;">
-                    <h3 style="font-size: 11px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 5px; margin: 0;">THE BRIEFING</h3>
-                    <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};"></div>
-                </div>
-
-                ${editorialText ? `
-                    <div style="margin-bottom: 40px; font-size: 16px; line-height: 1.8; color: ${isDark ? '#ffffff' : '#000000'} !important; font-weight: 400; font-family: Georgia, serif;">
+            <!-- Lead Editorial Briefing -->
+            ${editorialText ? `
+                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px; padding-top: 30px; padding-bottom: 30px; background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border-radius: 24px; border: 1px solid ${borderColor};">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">EDITORIAL BRIEFING</h3>
+                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
+                    </div>
+                    <div style="font-size: 15px; line-height: 1.8; color: ${textColor} !important; font-family: Georgia, serif;">
                         ${editorialText}
-                    </div>
-                ` : ''}
-                
-                ${otherPosts.map(post => `
-                    <div class="mobile-stack" style="display: flex; gap: 30px; margin-bottom: 40px; align-items: flex-start;">
-                        <div class="mobile-w-full" style="width: 100px; height: 100px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: #111;">
-                            <img src="${post.coverImage}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.8)' : 'none'};" />
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 8px; font-weight: 950; color: ${accent}; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;">${post.category || 'INTEL'}</div>
-                            <h4 style="font-size: 18px; font-weight: 900; margin: 0 0 10px 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; font-style: italic; color: ${isDark ? '#ffffff' : '#000000'};">${post.title}</h4>
-                            <a href="https://newbi.live/concertzone/${post.category?.toLowerCase().replace(' ', '-')}/${post.slug}" style="font-size: 9px; font-weight: 950; color: ${isDark ? '#ffffff' : '#000000'}; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}; padding-bottom: 4px;">EXPLORE</a>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-
-            ${mainPost ? `
-                <div class="mobile-mx-10" style="margin-bottom: 80px; background: ${isDark ? '#080808' : '#ffffff'}; border-radius: 24px; overflow: hidden; border: 1px solid ${borderColor};">
-                    <div style="position: relative;">
-                        <img src="${mainPost.coverImage}" style="width: 100%; display: block; filter: ${isDark ? 'brightness(0.9)' : 'none'};" />
-                        <div style="position: absolute; bottom: 0; left: 0;">
-                            <span style="background: ${accent}; padding: 8px 16px; font-size: 10px; font-weight: 950; color: #000; text-transform: uppercase; letter-spacing: 3px;">${mainPost.category || 'FEATURE'}</span>
-                        </div>
-                    </div>
-                    <div class="responsive-px" style="padding-top: 35px; padding-bottom: 40px;">
-                        <h2 style="font-size: 44px; font-weight: 900; margin: 0 0 25px 0; line-height: 0.95; text-transform: uppercase; font-style: italic; letter-spacing: -2px; color: ${isDark ? '#ffffff' : '#000000'} !important;">${mainPost.title}</h2>
-                        <p style="font-size: 16px; line-height: 1.8; color: ${isDark ? '#999' : '#000000'} !important; margin-bottom: 40px; font-weight: 400;">${trimDescription(mainPost.shortDescription || mainPost.content || "Experience the latest intelligence from the Concert Zone ecosystem.", 300)}</p>
-                        <a href="https://newbi.live/concertzone/${mainPost.category?.toLowerCase().replace(' ', '-')}/${mainPost.slug}" style="display: inline-block; padding: 18px 0; color: ${accent}; text-decoration: none; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: 4px; border-bottom: 3px solid ${accent};">READ FULL NARRATIVE →</a>
                     </div>
                 </div>
             ` : ''}
 
+            <!-- Primary Featured Story -->
+            ${mainPost ? `
+                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">FEATURED STORY</h3>
+                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
+                    </div>
+                    <div class="story-card" style="background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 24px; overflow: hidden; display: block; text-decoration: none;">
+                        <div style="position: relative; height: 200px; overflow: hidden; background: #000;">
+                            <img src="${mainPost.coverImage}" style="width: 100%; height: 100%; object-fit: cover; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
+                            <div style="position: absolute; top: 15px; left: 15px;">
+                                <span style="background: ${accent}; padding: 4px 10px; font-size: 9px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 2px; border-radius: 6px;">${mainPost.category || 'FEATURE'}</span>
+                            </div>
+                        </div>
+                        <div style="padding: 24px;">
+                            <h2 style="font-size: 24px; font-weight: 900; margin: 0 0 12px 0; line-height: 1.2; text-transform: uppercase; font-style: italic; letter-spacing: -0.5px; color: ${textColor} !important;">${mainPost.title}</h2>
+                            <p style="font-size: 14px; line-height: 1.6; color: ${subTextColor} !important; margin: 0 0 20px 0;">${trimDescription(mainPost.shortDescription || mainPost.content || "Experience the latest news from Concert Zone.", 160)}</p>
+                            <a href="https://newbi.live/concertzone/${mainPost.category?.toLowerCase().replace(' ', '-')}/${mainPost.slug}" style="display: inline-block; color: ${accent}; text-decoration: none; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid ${accent}; padding-bottom: 2px;">READ STORY →</a>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Other Stories Stack -->
+            ${otherPosts.length > 0 ? `
+                <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <h3 style="font-size: 10px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 4px; margin: 0;">WEEKLY HIGHLIGHTS</h3>
+                        <div style="flex: 1; height: 1px; background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};"></div>
+                    </div>
+                    
+                    ${otherPosts.map(post => `
+                        <div class="story-card" style="background: ${cardBg}; border: 1px solid ${borderColor}; border-radius: 16px; margin-bottom: 16px; overflow: hidden;">
+                            <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                                <tr>
+                                    <!-- Thumbnail Column -->
+                                    <td width="90" style="vertical-align: middle; padding: 12px; width: 90px; height: 90px;">
+                                        <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; background: #000;">
+                                            <img src="${post.coverImage}" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: ${isDark ? 'brightness(0.85)' : 'none'};" />
+                                        </div>
+                                    </td>
+                                    <!-- Details Column -->
+                                    <td style="vertical-align: middle; padding: 12px 16px 12px 4px;">
+                                        <div style="font-size: 8px; font-weight: 900; color: ${accent}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">${post.category || 'HIGHLIGHT'}</div>
+                                        <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 8px 0; line-height: 1.25; color: ${textColor} !important; text-transform: uppercase; font-style: italic;">${post.title}</h4>
+                                        <a href="https://newbi.live/concertzone/${post.category?.toLowerCase().replace(' ', '-')}/${post.slug}" style="font-size: 10px; font-weight: 800; color: ${accent}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px;">EXPLORE →</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <!-- Interactive details FAQ/Feedback block -->
+            <div class="responsive-px mobile-mx-10" style="margin-bottom: 30px;">
+                <details style="background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border: 1px solid ${borderColor}; border-radius: 16px; padding: 16px; margin: 0;">
+                    <summary style="font-weight: 800; font-size: 11px; letter-spacing: 2px; color: ${accent}; text-transform: uppercase; cursor: pointer;">COULD CONCERT ZONE IMPROVE?</summary>
+                    <p style="font-size: 13px; line-height: 1.6; color: ${subTextColor} !important; margin: 12px 0 0 0;">
+                        We want to hear from you. Reply directly to this briefing or email us at <a href="mailto:weekly@newbi.live" style="color: ${accent}; font-weight: 700; text-decoration: none;">weekly@newbi.live</a> with your feedback or stories you want us to cover.
+                    </p>
+                </details>
+            </div>
+
+            <!-- Commercial Ad -->
             ${commercialContent ? `
-                <div class="responsive-px mobile-mx-10" style="padding-top: 60px; padding-bottom: 60px; background: ${isDark ? '#080808' : '#ffffff'}; border-radius: 24px; border: 1px solid ${borderColor}; text-align: center;">
-                    <div style="font-size: 8px; font-weight: 950; color: ${isDark ? '#333' : '#ccc'}; text-transform: uppercase; letter-spacing: 5px; margin-bottom: 30px;">COMMERCIAL INTEGRATION</div>
-                    <div style="font-size: 14px; line-height: 1.8; color: ${isDark ? '#888' : '#666'}; font-style: italic; max-width: 500px; margin: 0 auto;">
+                <div class="responsive-px mobile-mx-10" style="padding: 30px 24px; background: ${isDark ? '#0a0a0a' : '#f9fafb'}; border-radius: 24px; border: 1px solid ${borderColor}; text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 8px; font-weight: 900; color: ${isDark ? '#444' : '#bbb'}; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 16px;">SPONSORED BRIEFING</div>
+                    <div style="font-size: 13px; line-height: 1.7; color: ${subTextColor}; font-style: italic; max-width: 480px; margin: 0 auto;">
                         ${commercialContent}
                     </div>
                 </div>
@@ -110,6 +152,26 @@ const NewsletterStudio = () => {
             theme: theme
         });
     }, [selectedPosts, theme, editorialText, commercialContent]);
+
+    const handleGenerateAIExtract = async () => {
+        if (selectedPosts.length === 0) {
+            addToast("Please select at least one story to generate a briefing.", "warning");
+            return;
+        }
+        setGeneratingAI(true);
+        try {
+            const briefingHtml = await generateNewsletterBriefing(selectedPosts, aiGuidance);
+            setEditorialText(briefingHtml);
+            addToast("Editorial briefing generated successfully by Concert Zone AI.", "success");
+        } catch (error) {
+            console.error("AI Briefing failed:", error);
+            addToast("AI briefing generation failed: " + error.message, "error");
+        } finally {
+            setGeneratingAI(false);
+        }
+    };
+
+    const [sendProgress, setSendProgress] = useState(null);
 
     const handleExecuteWeeklyBroadcast = async () => {
         let recipients = [];
@@ -129,6 +191,7 @@ const NewsletterStudio = () => {
         if (!window.confirm(`Broadcast Weekly Newsletter to ${uniqueRecipients.length} recipients?`)) return;
 
         setSending(true);
+        setSendProgress(null);
         try {
             const html = generateInternalHTML;
             const bccList = uniqueRecipients.map(r => r.email).filter(Boolean);
@@ -136,18 +199,20 @@ const NewsletterStudio = () => {
                 bccList, 
                 `WEEKLY NEWSLETTER: ${selectedPosts[0]?.title || 'NEWBI ENT'}`, 
                 html, 
-                'weekly'
+                'weekly',
+                (progress) => setSendProgress(progress)
             );
 
             if (result.success) {
-                addToast("Weekly newsletter sent successfully.", "success");
+                addToast(`Newsletter delivered to ${result.sent} recipients across ${result.batches} batch(es).`, "success");
             } else {
-                throw new Error(result.error);
+                addToast(`Sent ${result.sent}/${result.total} — some batches failed: ${result.error}`, result.sent > 0 ? "info" : "error");
             }
         } catch (error) {
             addToast("Failed to dispatch: " + error.message, "error");
         } finally {
             setSending(false);
+            setSendProgress(null);
         }
     };
 
@@ -242,7 +307,47 @@ const NewsletterStudio = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-10">
+                                    <div className="space-y-8">
+                                        {/* AI Briefing Assistant */}
+                                        <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <Sparkles className="text-neon-blue w-5 h-5 animate-pulse" />
+                                                <h4 className="text-xs font-black font-heading uppercase tracking-widest text-white">AI Briefing Assistant</h4>
+                                            </div>
+                                            <p className="text-[10px] uppercase font-semibold text-gray-500 tracking-wider leading-relaxed">
+                                                Generate a professional, cohesive editorial lead note wrapping up your selected stories.
+                                            </p>
+                                            <div className="space-y-3">
+                                                <textarea
+                                                    value={aiGuidance}
+                                                    onChange={(e) => setAiGuidance(e.target.value)}
+                                                    placeholder="Guidance e.g. 'Keep it energetic, focus on the electronic music scene resurgence and local artists'"
+                                                    className="w-full h-20 bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-neon-blue/40 resize-none transition-all"
+                                                />
+                                                <Button
+                                                    onClick={handleGenerateAIExtract}
+                                                    disabled={generatingAI || selectedPosts.length === 0}
+                                                    className="w-full py-3 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50 transition-all"
+                                                >
+                                                    {generatingAI ? (
+                                                        <>
+                                                            <div className="w-3.5 h-3.5 border border-black border-t-transparent rounded-full animate-spin" />
+                                                            GENERATING BRIEFING NARRATIVE...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles size={12} /> GENERATE BRIEFING WITH GEMINI AI
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                {selectedPosts.length === 0 && (
+                                                    <p className="text-[9px] text-amber-500 font-bold uppercase tracking-wider text-center mt-1">
+                                                        ⚠ Select at least one story in Step 1 to use the AI writer.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="px-4 py-1.5 bg-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-neon-blue/30">
@@ -330,7 +435,9 @@ const NewsletterStudio = () => {
                                     {sending ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                            SENDING...
+                                            {sendProgress 
+                                                ? `BATCH ${sendProgress.currentBatch}/${sendProgress.totalBatches} — ${sendProgress.sent} SENT`
+                                                : 'PREPARING...'}
                                         </>
                                     ) : (
                                         <>

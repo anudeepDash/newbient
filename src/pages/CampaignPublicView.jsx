@@ -284,10 +284,10 @@ const CampaignPublicView = () => {
                     <img 
                         src={campaign.thumbnail} 
                         alt={campaign.title} 
-                        className="w-full h-full object-cover opacity-70 scale-105 animate-pulse-slow"
+                        className="w-full h-full object-cover opacity-90 scale-105 animate-pulse-slow"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/60 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/10 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/30 via-transparent to-transparent" />
                     <div className="absolute bottom-8 left-4 md:left-8 flex items-center gap-3 z-10">
                         <div className="p-3.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-neon-blue shadow-2xl">
                             <Instagram size={24} />
@@ -321,10 +321,6 @@ const CampaignPublicView = () => {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-7 space-y-12">
                         {/* Title & Core Metadata */}
                         <div className="space-y-6">
-                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
-                                <Sparkles size={16} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/70">Verified Opportunity</span>
-                            </div>
                             <h1 className="text-3xl md:text-5xl font-black font-heading leading-tight uppercase tracking-tighter italic">{campaign.title}</h1>
                             
                             {/* Badges Grid */}

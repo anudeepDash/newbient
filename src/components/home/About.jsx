@@ -27,14 +27,14 @@ const About = () => {
     }, [isAutoScrolling]);
 
     return (
-        <section className="py-16 md:py-32 bg-[#020202] relative overflow-hidden">
+        <section className="py-10 md:py-16 bg-[#020202] relative overflow-hidden">
             {/* Ambient Background Glows */}
             <div className="absolute top-1/4 left-1/4 w-[40%] h-[40%] bg-neon-green/5 blur-[120px] rounded-full" />
             <div className="absolute bottom-1/4 right-1/4 w-[40%] h-[40%] bg-neon-blue/5 blur-[120px] rounded-full" />
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
                 {/* Section Header */}
-                <div className="text-center mb-24">
+                <div className="text-center mb-12 md:mb-16">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}

@@ -37,17 +37,6 @@ const ConcertZone = () => {
             <div className="relative z-10 max-w-7xl mx-auto">
                 {/* Header Container */}
                 <div className="flex flex-col items-center text-center mb-20">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md"
-                    >
-                        <Music size={16} className="text-neon-blue" />
-                        <span className="text-xs font-heading font-bold uppercase tracking-widest text-gray-300">
-                            Live Music & Events
-                        </span>
-                    </motion.div>
-
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

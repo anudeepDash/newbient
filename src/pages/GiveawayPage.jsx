@@ -268,16 +268,6 @@ const GiveawayPage = () => {
 
             {/* ─── MAIN CONTENT ─── */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 pb-40 space-y-32">
-                <div className="relative z-10 max-w-7xl mx-auto px-4 pt-32 flex flex-col items-center">
-                    <div className="flex justify-center mb-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
-                            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-400">
-                                {isEnded ? 'Giveaway Closed' : 'Live Opportunity'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
 
                 {/* ─── EVENT BRIEF ─── */}
                 <section>

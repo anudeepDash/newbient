@@ -233,17 +233,6 @@ const CommunityJoin = () => {
                 <div className="text-center relative overflow-hidden mb-12 md:mb-20">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 md:w-64 h-48 md:h-64 bg-neon-pink/8 blur-[80px] md:blur-[100px] pointer-events-none rounded-full" />
 
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 md:mb-8 backdrop-blur-md"
-                    >
-                        <Star size={14} className="text-neon-pink fill-neon-pink/20" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                            {user ? 'Access Unlocked' : 'The Tribe'}
-                        </span>
-                    </motion.div>
-
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}

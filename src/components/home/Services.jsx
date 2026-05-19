@@ -67,13 +67,13 @@ const Services = () => {
     }, [isAutoScrolling]);
 
     return (
-        <section id="capabilities" className="py-16 md:py-32 bg-[#020202] relative px-4 overflow-hidden">
+        <section id="capabilities" className="py-10 md:py-16 bg-[#020202] relative px-4 overflow-hidden">
              {/* Background Atmosphere */}
              <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-neon-green/5 blur-[120px] rounded-full pointer-events-none" />
              <div className="absolute bottom-0 right-0 w-96 h-96 bg-neon-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-12">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-16 gap-12">
                     <div className="max-w-2xl">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -122,7 +122,7 @@ const Services = () => {
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="flex flex-col items-center justify-center mt-20"
+                    className="flex flex-col items-center justify-center mt-10 md:mt-12"
                 >
                     <Link to="/contact">
                         <motion.div

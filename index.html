@@ -3,10 +3,101 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Newbi Entertainment &amp; Marketing</title>
   <meta name="description" content="Newbi Entertainment connects brands, colleges, and creators through talent management, live events, influencer marketing, and experiential campaigns." />
+  
+  <!-- Favicons and Touch Icons -->
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- JSON-LD Structured Data for Google Sitelinks & Brand SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.newbi.live/#organization",
+        "name": "Newbi Entertainment & Marketing",
+        "url": "https://www.newbi.live/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.newbi.live/favicon.png",
+          "width": 512,
+          "height": 512
+        },
+        "sameAs": [
+          "https://www.instagram.com/newbi.live"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.newbi.live/#website",
+        "url": "https://www.newbi.live/",
+        "name": "Newbi Entertainment & Marketing",
+        "description": "Newbi Entertainment connects brands, colleges, and creators through talent management, live events, influencer marketing, and experiential campaigns.",
+        "publisher": {
+          "@id": "https://www.newbi.live/#organization"
+        },
+        "potentialAction": [
+          {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.newbi.live/?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        ]
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://www.newbi.live/#sitelinks",
+        "name": "Sitelinks Navigation",
+        "itemListElement": [
+          {
+            "@type": "SiteNavigationElement",
+            "position": 1,
+            "name": "Creator Hub",
+            "description": "Explore campaign opportunities and collaborate with local brands.",
+            "url": "https://www.newbi.live/creator"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 2,
+            "name": "Concert Zone",
+            "description": "Latest music, live events, artists, guides, and concert news from Newbi.",
+            "url": "https://www.newbi.live/concertzone"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 3,
+            "name": "Community Tribe",
+            "description": "Join community guestlists, volunteer gigs, and exclusive tribes.",
+            "url": "https://www.newbi.live/community"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 4,
+            "name": "Artistant Agency",
+            "description": "Explore premier artist bookings and management.",
+            "url": "https://www.newbi.live/artistant"
+          },
+          {
+            "@type": "SiteNavigationElement",
+            "position": 5,
+            "name": "Contact Us",
+            "description": "Get in touch with Newbi Entertainment & Marketing.",
+            "url": "https://www.newbi.live/contact"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   
   <!-- Security Headers (Managed via vercel.json in production) -->
   

@@ -155,7 +155,7 @@ const UpcomingEvents = () => {
     return (
         <section
             id="upcoming-events"
-            className="relative py-16 md:py-32 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
+            className="relative py-10 md:py-16 scroll-mt-24 bg-[#020202] text-white overflow-hidden border-t border-white/5"
             onMouseEnter={() => setIsAutoScrolling(false)}
             onMouseLeave={() => setIsAutoScrolling(true)}
         >
@@ -163,7 +163,7 @@ const UpcomingEvents = () => {
             <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-neon-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-4 relative z-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 md:mb-24 gap-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-8">
                     <div className="max-w-xl">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}

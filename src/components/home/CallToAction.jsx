@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 
 const CallToAction = () => {
     return (
-        <section className="py-16 md:py-32 bg-[#020202] relative overflow-hidden flex flex-col items-center justify-center border-t border-white/5" id="contact">
+        <section className="py-10 md:py-16 bg-[#020202] relative overflow-hidden flex flex-col items-center justify-center border-t border-white/5" id="contact">
             {/* High-Impact Background */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-neon-green/10 via-transparent to-transparent opacity-50 animate-pulse" />
@@ -17,7 +17,7 @@ const CallToAction = () => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-8 md:mb-12"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl mb-4 md:mb-6"
                 >
                     <div className="w-2 h-2 rounded-full bg-neon-green animate-ping" />
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">Join the Movement</span>
@@ -27,7 +27,7 @@ const CallToAction = () => {
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-6xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-[0.8] mb-8 md:mb-12 text-white italic"
+                    className="text-6xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-[0.8] mb-6 md:mb-8 text-white italic"
                 >
                     LET'S CREATE <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-400 to-gray-800 uppercase not-italic">HISTORY.</span>
@@ -37,7 +37,7 @@ const CallToAction = () => {
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    className="text-gray-400 max-w-xl mx-auto mb-12 md:mb-16 text-base md:text-lg font-medium leading-relaxed"
+                    className="text-gray-400 max-w-xl mx-auto mb-8 md:mb-10 text-base md:text-lg font-medium leading-relaxed"
                 >
                     Ready to disrupt the college landscape or join India's most energetic community? Connect with us now.
                 </motion.p>
