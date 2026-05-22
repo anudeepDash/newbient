@@ -27,14 +27,17 @@ import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Receipt from 'lucide-react/dist/esm/icons/receipt';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import { useStore } from '../../lib/store';
-import { sendInvoiceEmail } from '../../lib/email';
+import { sendInvoiceEmail, generateInvoiceEmailHTML, sendPaymentApprovedEmail, sendPaymentDeclinedEmail } from '../../lib/email';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
+import InvoiceEmailModal from '../../components/admin/InvoiceEmailModal';
+import PaymentClaimReview from '../../components/admin/PaymentClaimReview';
 
 const InvoiceManagement = () => {
     const navigate = useNavigate();
@@ -43,6 +46,7 @@ const InvoiceManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+    const [emailModalInvoice, setEmailModalInvoice] = useState(null);
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -110,24 +114,67 @@ const InvoiceManagement = () => {
         }
     };
 
-    const handleSendEmail = async (invoice) => {
-        const email = prompt("Enter client's email address:", invoice.clientEmail || "");
-        if (!email) return;
-
-        const amount = `₹${(invoice.total || invoice.amount || 0).toLocaleString()}`;
-        const url = `${window.location.origin}/invoice/${invoice.id}`;
-        
+    const handleSendEmail = async ({ to, subject, html }) => {
         try {
-            const res = await sendInvoiceEmail(email, invoice.invoiceNumber, amount, url);
-            if (res.success) {
-                useStore.getState().addToast("Invoice link sent successfully!", 'success');
+            const { auth } = await import('../../lib/firebase');
+            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+            const response = await fetch('/api/mail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+                body: JSON.stringify({ to, subject, html }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                useStore.getState().addToast('Invoice email sent successfully!', 'success');
             } else {
-                useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
+                throw new Error(result.error);
             }
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Something went wrong. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
+            throw err;
         }
+    };
+
+    const handleApprovePaymentClaim = async (invoice) => {
+        const logs = invoice.paymentLogs || [];
+        const claim = invoice.paymentClaim || {};
+        await updateInvoice(invoice.id, {
+            status: 'Paid',
+            paymentClaim: { ...claim, status: 'approved' },
+            paymentLogs: [...logs, {
+                type: 'Client Claim — Verified',
+                transactionId: `CLAIM-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                amount: invoice.total || invoice.amount,
+                verifiedBy: user?.displayName || 'Admin'
+            }]
+        });
+        setSelectedAnalytics({ ...invoice, status: 'Paid', paymentClaim: { ...claim, status: 'approved' } });
+        // Send approval email
+        if (claim.email) {
+            const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
+            await sendPaymentApprovedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
+        }
+        useStore.getState().addToast('Payment claim approved & client notified.', 'success');
+    };
+
+    const handleDeclinePaymentClaim = async (invoice) => {
+        const claim = invoice.paymentClaim || {};
+        await updateInvoice(invoice.id, {
+            status: 'Pending',
+            paymentClaim: { ...claim, status: 'declined' }
+        });
+        setSelectedAnalytics({ ...invoice, status: 'Pending', paymentClaim: { ...claim, status: 'declined' } });
+        // Send decline email
+        if (claim.email) {
+            const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
+            await sendPaymentDeclinedEmail(claim.email, claim.name || invoice.clientName, invoice.invoiceNumber, invoiceUrl);
+        }
+        useStore.getState().addToast('Payment claim declined & client notified.', 'success');
     };
 
     const handleMarkAsPaid = async (invoice) => {
@@ -217,7 +264,7 @@ const InvoiceManagement = () => {
                         {/* Status Filter Toggles */}
                         <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex min-w-max md:min-w-0 flex-1">
-                                {['All', 'Pending', 'Paid'].map((s) => (
+                                {['All', 'Pending', 'Verification Pending', 'Paid'].map((s) => (
                                     <button
                                         key={s}
                                         onClick={() => setFilter(s)}
@@ -269,7 +316,12 @@ const InvoiceManagement = () => {
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[10px] font-black font-mono tracking-widest text-neon-blue bg-neon-blue/10 px-3 py-1 rounded-full border border-neon-blue/20">{inv.invoiceNumber || 'NEWBI-INV'}</span>
-                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]", inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : 'text-yellow-500 bg-yellow-500')} />
+                                                    <div className={cn("w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]", inv.status === 'Paid' ? 'text-neon-green bg-neon-green' : inv.status === 'Verification Pending' ? 'text-orange-500 bg-orange-500' : 'text-yellow-500 bg-yellow-500')} />
+                                                    {inv.paymentClaim && inv.status === 'Verification Pending' && (
+                                                        <span className="text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 border border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <AlertTriangle size={8} /> Claim
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleDuplicate(inv)} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"><CopyPlus size={14} /></button>
@@ -314,6 +366,13 @@ const InvoiceManagement = () => {
                                                         <Copy size={16} />
                                                     </button>
                                                 </div>
+                                                <button
+                                                    onClick={() => setEmailModalInvoice(inv)}
+                                                    className="h-12 w-12 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-400 rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                                    title="Email Invoice"
+                                                >
+                                                    <Mail size={16} />
+                                                </button>
                                                 <Link 
                                                     to={`/invoice/${inv.id}`}
                                                     className="h-12 w-12 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-all border border-white/5 flex items-center justify-center"
@@ -496,11 +555,22 @@ const InvoiceManagement = () => {
                                     )}
                                 </div>
 
+                                {/* Payment Claim Review */}
+                                {selectedAnalytics.paymentClaim && (
+                                    <div className="pt-8 border-t border-white/5">
+                                        <PaymentClaimReview
+                                            invoice={selectedAnalytics}
+                                            onApprove={() => handleApprovePaymentClaim(selectedAnalytics)}
+                                            onDecline={() => handleDeclinePaymentClaim(selectedAnalytics)}
+                                        />
+                                    </div>
+                                )}
+
                                 {/* Payment Ledger */}
                                 <div className="space-y-4 pt-8 border-t border-white/5">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment Ledger</p>
-                                        {selectedAnalytics.status === 'Pending' && (
+                                        {(selectedAnalytics.status === 'Pending' || selectedAnalytics.status === 'Verification Pending') && (
                                             <button 
                                                 onClick={async () => {
                                                     if(window.confirm('Manually verify and mark this invoice as PAID?')) {
@@ -560,6 +630,18 @@ const InvoiceManagement = () => {
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* Invoice Email Modal */}
+            <AnimatePresence>
+                {emailModalInvoice && (
+                    <InvoiceEmailModal
+                        isOpen={!!emailModalInvoice}
+                        onClose={() => setEmailModalInvoice(null)}
+                        invoice={emailModalInvoice}
+                        onSend={handleSendEmail}
+                    />
                 )}
             </AnimatePresence>
         </AdminCommunityHubLayout>

@@ -10,6 +10,7 @@ import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import Settings from 'lucide-react/dist/esm/icons/settings';
 import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
 import DocumentSeal from '../components/ui/DocumentSeal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -18,15 +19,51 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import NotificationBell from '../components/NotificationBell';
+import MarkAsPaidModal from '../components/invoice/MarkAsPaidModal';
+import { notifyAdmins } from '../lib/notificationTriggers';
 
 
 const Invoice = () => {
     const { id } = useParams();
     const { invoices, updateInvoiceStatus, loading, user } = useStore();
+    const invoice = invoices.find(inv => inv.id === id);
+    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
     const [isExporting, setIsExporting] = React.useState(false);
+    const [pdfBlobUrl, setPdfBlobUrl] = React.useState('');
+    const [showMarkAsPaid, setShowMarkAsPaid] = React.useState(false);
+
+    React.useEffect(() => {
+        if (invoice?.pdfUrl) {
+            if (invoice.pdfUrl.startsWith('data:application/pdf;base64,')) {
+                try {
+                    const base64Parts = invoice.pdfUrl.split(',');
+                    const base64Data = base64Parts[1];
+                    const binaryStr = atob(base64Data);
+                    const len = binaryStr.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    setPdfBlobUrl(blobUrl);
+                    return () => {
+                        URL.revokeObjectURL(blobUrl);
+                    };
+                } catch (err) {
+                    console.error("Error parsing base64 PDF URL:", err);
+                    setPdfBlobUrl(invoice.pdfUrl);
+                }
+            } else {
+                setPdfBlobUrl(invoice.pdfUrl);
+            }
+        } else {
+            setPdfBlobUrl('');
+        }
+    }, [invoice?.pdfUrl]);
 
 
 
@@ -46,8 +83,6 @@ const Invoice = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const invoice = invoices.find(inv => inv.id === id);
-    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
 
     React.useEffect(() => {
         if (invoice && !isAdmin) {
@@ -113,10 +148,24 @@ const Invoice = () => {
         customColumns: []
     };
 
+    React.useEffect(() => {
+        if (displayInvoice) {
+            const originalTitle = document.title;
+            const name = displayInvoice.clientName 
+                ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}`
+                : (displayInvoice.invoiceNumber || 'Invoice');
+            document.title = `${name} | Document Viewer`;
+            
+            return () => {
+                document.title = originalTitle;
+            };
+        }
+    }, [displayInvoice]);
+
     const handleDownloadPDF = async () => {
         if (isQuickUpload) {
             const link = document.createElement('a');
-            link.href = displayInvoice.fileUrl; // Fix the download link
+            link.href = pdfBlobUrl || displayInvoice.pdfUrl || displayInvoice.fileUrl;
             link.download = `Invoice-${displayInvoice.invoiceNumber || displayInvoice.id}.pdf`;
             document.body.appendChild(link);
             link.click();
@@ -187,8 +236,8 @@ const Invoice = () => {
 
         try {
             const displayInvoice = invoice || {};
-            const isQuickUpload = !!displayInvoice.fileUrl;
-            let printUrl = displayInvoice.pdfUrl || displayInvoice.fileUrl;
+            const isQuickUpload = !!displayInvoice.pdfUrl && (!displayInvoice.items || displayInvoice.items.length === 0);
+            let printUrl = pdfBlobUrl || displayInvoice.pdfUrl || displayInvoice.fileUrl;
 
             // For generated invoices, generate a PDF blob first
             if (!isQuickUpload) {
@@ -277,10 +326,26 @@ const Invoice = () => {
         }
     };
 
-    const handleRequestVerification = () => {
-        if (window.confirm('Notify the finance team that you have made the payment?')) {
-            updateInvoiceStatus(invoice.id, 'Verification Pending');
-            useStore.getState().addToast("Verification request sent. Our team will verify and update the status shortly.", 'success');
+    const handlePaymentClaim = async (claimData) => {
+        try {
+            // Update invoice with payment claim and set status
+            await useStore.getState().updateInvoice(id, {
+                status: 'Verification Pending',
+                paymentClaim: {
+                    ...claimData,
+                    status: 'pending'
+                }
+            });
+            // Notify admins
+            await notifyAdmins(
+                'Payment Verification Required',
+                `${claimData.name} (${claimData.email}) claims payment for Invoice #${displayInvoice.invoiceNumber || id}. Amount: ₹${(displayInvoice.total || displayInvoice.amount || 0).toLocaleString()}`,
+                `/admin/invoices`,
+                'message'
+            );
+        } catch (err) {
+            console.error('Payment claim failed:', err);
+            throw err;
         }
     };
 
@@ -425,12 +490,12 @@ const Invoice = () => {
                             </Link>
                             <div className="h-8 w-[1px] bg-white/10" />
                             <img src="/logo_document.png" alt="Logo" className="h-8 md:h-10 object-contain hidden xs:block" crossOrigin="anonymous" />
-                            <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
-                            <div className="hidden md:flex flex-col">
-                                <span className="text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1">
-                                    {displayInvoice.invoiceNumber || 'NEWBI-INV'}
+                            <div className="h-8 w-[1px] bg-white/10 hidden xs:block" />
+                            <div className="flex flex-col text-left max-w-[100px] xs:max-w-[180px] sm:max-w-none">
+                                <span className="text-[9px] sm:text-[10px] font-black text-neon-blue uppercase tracking-widest leading-none mb-1 truncate">
+                                    {displayInvoice.clientName ? `${displayInvoice.clientName} (${displayInvoice.invoiceNumber || displayInvoice.id})` : (displayInvoice.invoiceNumber || 'NEWBI-INV')}
                                 </span>
-                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none">
                                     OFFICIAL DOCUMENT
                                 </span>
                             </div>
@@ -512,11 +577,17 @@ const Invoice = () => {
                                     <>
                                         {displayInvoice.status !== 'Paid' && displayInvoice.status !== 'Verification Pending' && (
                                             <button 
-                                                onClick={handleRequestVerification} 
-                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-white/10 text-white hover:bg-white/20 rounded-xl transition-all border border-white/10"
+                                                onClick={() => setShowMarkAsPaid(true)} 
+                                                className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14]/20 rounded-xl transition-all border border-[#39FF14]/20 shadow-[0_5px_15px_rgba(57,255,20,0.1)]"
                                             >
-                                                Notify Payment Done
+                                                Mark as Paid
                                             </button>
+                                        )}
+                                        {displayInvoice.status === 'Verification Pending' && (
+                                            <div className="px-3 md:px-5 py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/10 text-yellow-500 rounded-xl border border-yellow-500/20 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                                                Verification Pending
+                                            </div>
                                         )}
                                     </>
                                 )}
@@ -543,12 +614,52 @@ const Invoice = () => {
                 )}
 
                 {isQuickUpload ? (
-                    <div className="w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
-                        <iframe
-                            src={invoice.pdfUrl}
-                            title="Invoice PDF"
-                            className="w-full h-full border-none"
-                        />
+                    <div className="w-full max-w-5xl flex flex-col gap-4">
+                        {/* Mobile Fallback UI / Mobile Preview */}
+                        <div className="md:hidden w-full p-8 rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl flex flex-col items-center justify-center text-center gap-6">
+                            <div className="w-16 h-16 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue animate-pulse">
+                                <FileText size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-2">
+                                    {displayInvoice.clientName ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}` : 'Invoice PDF Document'}
+                                </h3>
+                                <p className="text-sm text-gray-400 max-w-xs">
+                                    {isQuickUpload ? 'This invoice was quick-uploaded. You can view or download it directly.' : 'Official generated invoice document.'}
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                                <a
+                                    href={pdfBlobUrl || invoice.pdfUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="w-full px-6 py-3 bg-neon-blue text-black font-black uppercase text-xs tracking-widest rounded-2xl text-center shadow-[0_10px_20px_rgba(56,182,255,0.2)] hover:bg-neon-blue/90 transition-all"
+                                >
+                                    Open Document
+                                </a>
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    className="w-full px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest rounded-2xl text-center border border-white/10 transition-all"
+                                >
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Desktop IFrame */}
+                        <div className="hidden md:block w-full h-[85vh] rounded-3xl overflow-hidden border border-white/10 bg-zinc-900/40 backdrop-blur-3xl shadow-2xl">
+                            {pdfBlobUrl ? (
+                                <iframe
+                                    src={pdfBlobUrl}
+                                    title={displayInvoice.clientName ? `${displayInvoice.clientName} - ${displayInvoice.invoiceNumber || displayInvoice.id}` : 'Invoice PDF'}
+                                    className="w-full h-full border-none"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-white/50">
+                                    Loading PDF document...
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div className="w-full flex flex-col items-center overflow-x-auto custom-scrollbar pb-12">
@@ -776,6 +887,14 @@ const Invoice = () => {
                     </div>
                 )}
             </main>
+
+            {/* Mark as Paid Modal */}
+            <MarkAsPaidModal
+                isOpen={showMarkAsPaid}
+                onClose={() => setShowMarkAsPaid(false)}
+                invoice={displayInvoice}
+                onSubmit={handlePaymentClaim}
+            />
         </div>
     );
 };

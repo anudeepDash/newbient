@@ -192,6 +192,206 @@ export const sendProposalEmail = async (toEmail, proposalTitle, proposalUrl) => 
 };
 
 /**
+ * Generates the HTML for an invoice email with attachment-style invoice card.
+ * Professional template with editable content, invoice summary, and download link.
+ */
+export const generateInvoiceEmailHTML = (data) => {
+    const {
+        headerText = "Your Invoice is Ready",
+        messageBody = "",
+        invoiceNumber = "INV-0000",
+        clientName = "Client",
+        amount = "0",
+        dueDate = "",
+        invoiceUrl = "#",
+        theme = "light"
+    } = data;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#000000' : '#fcfcfc';
+    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : '#111111';
+    const subTextColor = isDark ? '#888888' : '#444444';
+    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+    const cardBg = isDark ? '#111111' : '#f8f9fa';
+    const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
+    const baseUrl = getBaseUrl();
+    const logoUrl = isDark
+        ? `${baseUrl}/logo_full.png`
+        : `${baseUrl}/logo_document.png`;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .content { padding: 50px; text-align: left; }
+                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #FF4444, #CC0000); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
+                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
+                .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
+                .attachment-body { padding: 20px; }
+                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
+                .attachment-row:last-child { border-bottom: none; }
+                .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
+                .attachment-total { background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+                .attachment-total-label { font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; }
+                .attachment-total-value { font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; }
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
+                .download-link { font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
+                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">Invoice ${invoiceNumber} for ${clientName} — ₹${amount}</span>
+            <div class="container">
+                <div class="header">
+                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                </div>
+                <div class="content">
+                    <div class="category-badge">INVOICE</div>
+                    <h1 class="title">${headerText}</h1>
+                    <div class="body-text">${messageBody}</div>
+
+                    <!-- Attachment-Style Invoice Card -->
+                    <div class="attachment-card">
+                        <div class="attachment-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="attachment-icon">PDF</div>
+                                <div class="attachment-file-info">
+                                    <p class="attachment-filename">Invoice-${invoiceNumber}.pdf</p>
+                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="attachment-body">
+                            <div class="attachment-row">
+                                <span class="attachment-label">Invoice Number</span>
+                                <span class="attachment-value">${invoiceNumber}</span>
+                            </div>
+                            <div class="attachment-row">
+                                <span class="attachment-label">Client</span>
+                                <span class="attachment-value">${clientName}</span>
+                            </div>
+                            ${dueDate ? `
+                            <div class="attachment-row">
+                                <span class="attachment-label">Due Date</span>
+                                <span class="attachment-value">${dueDate}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="attachment-total">
+                            <span class="attachment-total-label">Total Amount</span>
+                            <span class="attachment-total-value">₹${amount}</span>
+                        </div>
+                        <div class="download-row">
+                            <a href="${invoiceUrl}" class="download-link">↓ View & Download Invoice</a>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 35px;">
+                        <a href="${invoiceUrl}" class="cta-button">View Full Invoice</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+/**
+ * Sends a payment approval notification email to the client.
+ */
+export const sendPaymentApprovedEmail = async (toEmail, clientName, invoiceNumber, invoiceUrl) => {
+    try {
+        const html = generateOfficialHTML({
+            headerText: 'Payment Verified Successfully',
+            messageBody: `
+                <p>Hi <strong>${clientName}</strong>,</p>
+                <p>Great news! Your payment for Invoice <strong>#${invoiceNumber}</strong> has been verified and confirmed by our finance team.</p>
+                <p>Your invoice status has been updated to <strong style="color: ${NEWBI_GREEN};">PAID</strong>.</p>
+                <p>You can view your updated invoice at any time using the button below.</p>
+            `,
+            category: 'PAYMENT CONFIRMED',
+            ctaText: 'View Invoice',
+            ctaUrl: invoiceUrl,
+            theme: 'light'
+        });
+        const result = await apiFetch('/api/mail', {
+            to: toEmail,
+            subject: `Payment Confirmed: Invoice #${invoiceNumber}`,
+            html
+        });
+        return result.success ? { success: true } : { success: false, error: result.error };
+    } catch (error) {
+        console.error('Failed to send payment approval email:', error);
+        return { success: false, error };
+    }
+};
+
+/**
+ * Sends a payment declined notification email to the client.
+ */
+export const sendPaymentDeclinedEmail = async (toEmail, clientName, invoiceNumber, invoiceUrl) => {
+    try {
+        const html = generateOfficialHTML({
+            headerText: 'Payment Verification Update',
+            messageBody: `
+                <p>Hi <strong>${clientName}</strong>,</p>
+                <p>We were unable to verify the payment claim for Invoice <strong>#${invoiceNumber}</strong>.</p>
+                <p>Your invoice status has been updated to <strong>NOT PAID</strong>. This could be because we haven't received the payment in our records yet.</p>
+                <p>If you believe this is an error, please contact us at <a href="mailto:partnership@newbi.live" style="color: ${NEWBI_GREEN}; font-weight: bold;">partnership@newbi.live</a> with your transaction details, and we'll resolve this promptly.</p>
+                <p>You can also complete the payment directly via the invoice link below.</p>
+            `,
+            category: 'ACTION REQUIRED',
+            ctaText: 'View Invoice & Pay',
+            ctaUrl: invoiceUrl,
+            theme: 'light'
+        });
+        const result = await apiFetch('/api/mail', {
+            to: toEmail,
+            subject: `Payment Update: Invoice #${invoiceNumber}`,
+            html
+        });
+        return result.success ? { success: true } : { success: false, error: result.error };
+    } catch (error) {
+        console.error('Failed to send payment declined email:', error);
+        return { success: false, error };
+    }
+};
+
+/**
  * Generates the HTML for an official Newbi communication.
  * Cleaner, professional, and minimalist. Supports Dark/Light themes.
  */
