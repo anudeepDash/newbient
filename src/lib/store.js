@@ -1629,33 +1629,46 @@ export const useStore = create((set, get) => ({
             
             const text = await response.text();
             
-            // If the response is an HTML page (Vite fallback) or it failed, throw to trigger fallback
-            if (!response.ok || text.trim().startsWith('<')) {
-                throw new Error(text.trim().startsWith('<') ? 'API route not available (Vite dev fallback)' : `API Error: ${response.status}`);
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                if (text.trim().startsWith('<')) {
+                    // Vite local dev server fallback page or other HTML response
+                    throw { isFallbackable: true, message: 'Vite dev fallback' };
+                }
+                throw new Error(`Non-JSON API response (Status: ${response.status})`);
             }
 
-            const result = JSON.parse(text);
-            if (!result.success && !response.ok) {
-                throw new Error(result.details || result.error || 'Failed to send reset email');
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw { isFallbackable: true, message: 'Endpoint not found (404)' };
+                }
+                throw new Error(result.details || result.error || `Server Error: ${response.status}`);
             }
+
             return result;
         } catch (error) {
-            console.warn("[Auth] Custom reset failed, falling back to Firebase Auth:", error.message);
-            try {
-                const { sendPasswordResetEmail } = await import('firebase/auth');
-                const { auth } = await import('./firebase');
-                if (!auth) throw new Error("Firebase Auth is not initialized.");
-                await sendPasswordResetEmail(auth, email);
-                return { success: true, fallback: true };
-            } catch (fallbackError) {
-                console.error("[Auth] Firebase Auth fallback also failed:", fallbackError);
-                // Clean up Firebase error messages for the UI
-                let msg = fallbackError.message;
-                if (fallbackError.code === 'auth/user-not-found') msg = 'Email address is not registered.';
-                else if (fallbackError.code === 'auth/invalid-email') msg = 'Invalid email address format.';
-                else if (fallbackError.code === 'auth/too-many-requests') msg = 'Too many requests. Try again later.';
-                else if (fallbackError.code === 'auth/unauthorized-continue-uri') msg = 'Domain not authorized for password reset.';
-                throw new Error(msg);
+            if (error && error.isFallbackable) {
+                console.warn("[Auth] Custom reset failed, falling back to client-side Firebase Auth:", error.message);
+                try {
+                    const { sendPasswordResetEmail } = await import('firebase/auth');
+                    const { auth } = await import('./firebase');
+                    if (!auth) throw new Error("Firebase Auth is not initialized.");
+                    await sendPasswordResetEmail(auth, email);
+                    return { success: true, fallback: true };
+                } catch (fallbackError) {
+                    console.error("[Auth] Firebase Auth fallback also failed:", fallbackError);
+                    let msg = fallbackError.message;
+                    if (fallbackError.code === 'auth/user-not-found') msg = 'Email address is not registered.';
+                    else if (fallbackError.code === 'auth/invalid-email') msg = 'Invalid email address format.';
+                    else if (fallbackError.code === 'auth/too-many-requests') msg = 'Too many requests. Try again later.';
+                    else if (fallbackError.code === 'auth/unauthorized-continue-uri') msg = 'Domain not authorized for password reset.';
+                    throw new Error(msg);
+                }
+            } else {
+                console.error("[Auth] Custom reset failed with server error:", error.message);
+                throw error;
             }
         }
     },
