@@ -22,7 +22,9 @@ const MessageManager = lazy(() => import('./pages/Admin/MessageManager'));
 const ArtistManager = lazy(() => import('./pages/Admin/ArtistManager'));
 const ClientRequestManager = lazy(() => import('./pages/Admin/ClientRequestManager'));
 const ProposalManagement = lazy(() => import('./pages/Admin/ProposalManagement'));
+const AIStudio = lazy(() => import('./pages/Admin/AIStudio'));
 const ProposalGenerator = lazy(() => import('./pages/Admin/ProposalGenerator'));
+const AgreementGenerator = lazy(() => import('./pages/Admin/AgreementGenerator'));
 const Proposal = lazy(() => import('./pages/Proposal'));
 const Agreement = lazy(() => import('./pages/Agreement'));
 const FormManager = lazy(() => import('./pages/Admin/FormManager'));
@@ -52,7 +54,6 @@ const CampaignPublicView = lazy(() => import('./pages/CampaignPublicView'));
 const ArtistAnt = lazy(() => import('./pages/ArtistAnt'));
 const ArtistantHub = lazy(() => import('./pages/Admin/ArtistantHub'));
 const AgreementManagement = lazy(() => import('./pages/Admin/AgreementManagement'));
-const AgreementGenerator = lazy(() => import('./pages/Admin/AgreementGenerator'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const EventScanner = lazy(() => import('./pages/Admin/EventScanner'));
@@ -153,6 +154,7 @@ function AppContent() {
             <Route path="admin/agreements" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementManagement /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/agreements/new" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/agreements/edit/:id" element={<AdminGuard><MaintenanceGuard featureId="docs"><AgreementGenerator /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/ai-studio" element={<AdminGuard><MaintenanceGuard featureId="docs"><AIStudio /></MaintenanceGuard></AdminGuard>} />
 
             <Route path="admin/forms" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/forms/create" element={<AdminGuard><MaintenanceGuard featureId="forms_public"><FormBuilder /></MaintenanceGuard></AdminGuard>} />

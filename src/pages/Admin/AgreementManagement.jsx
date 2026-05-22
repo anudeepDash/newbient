@@ -174,7 +174,7 @@ const ContractManagement = () => {
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
                                             <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[30%]"><button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5">Edit</button></Link>
                                             <button onClick={() => handleNativeShare(a)} className="flex-1 min-w-[30%] py-3 bg-neon-purple/10 hover:bg-neon-purple/20 text-neon-purple text-[10px] font-black uppercase tracking-widest rounded-xl border border-neon-purple/10 flex items-center justify-center gap-2"><Share2 size={12} /> Share</button>
-                                            <a href={`/agreement/${a.id}`} target="_blank" rel="noreferrer" className="p-3 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-white/5"><Eye size={16} /></a>
+                                            <Link to={`/agreement/${a.id}`} className="p-3 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-white/5 flex items-center justify-center"><Eye size={16} /></Link>
                                         </div>
                                     </Card>
                                 </motion.div>
@@ -201,7 +201,7 @@ const ContractManagement = () => {
                                                 <td className="p-6 md:p-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : '—'}</td>
                                                 <td className="p-6 md:p-8"><div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>{a.status}</div></td>
                                                 <td className="p-6 md:p-8"><div className="flex justify-end gap-2">
-                                                    <a href={`/agreement/${a.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white"><Eye size={18} /></a>
+                                                    <Link to={`/agreement/${a.id}`} className="p-2 text-gray-500 hover:text-white"><Eye size={18} /></Link>
                                                     <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-white"><History size={18} /></button>
                                                     <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-white"><Edit size={18} /></Link>

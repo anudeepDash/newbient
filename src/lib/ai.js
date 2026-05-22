@@ -614,3 +614,23 @@ RULES:
         return `<p>Welcome to this week's briefing from the Concert Zone ecosystem. We've compiled the premier highlights, stories, and cultural pulse for your curation. Scroll down to read our full selection.</p>`;
     }
 };
+
+/**
+ * Refine a single specific field based on user instructions.
+ */
+export const refineFieldContent = async (type, fieldLabel, currentContent, userInstruction, tone = 'Premium') => {
+    const sys = `You are a professional ${type} writer. You are refining the field "${fieldLabel}" based on the user's specific instructions. Return ONLY the refined, complete value of the field, with no surrounding quotes, markdown block ticks, explanations or meta-commentary.`;
+    const user = `Field: "${fieldLabel}"\nCurrent Content:\n"""\n${currentContent}\n"""\n\nInstruction: "${userInstruction}"\nTone: ${tone}\n\nReturn ONLY the revised field content.`;
+    try {
+        const result = await executeAIPulse(sys, user);
+        return result
+            .replace(/^```[a-zA-Z]*\n/, '')
+            .replace(/\n```$/, '')
+            .replace(/^["']|["']$/g, '')
+            .trim();
+    } catch (e) {
+        console.error('[NEWBI AI] Field refinement failed:', e.message);
+        throw e;
+    }
+};
+

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -46,7 +46,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { generateFullDocument, reviseDocument } from '../../lib/ai';
-import AIPromptBox from '../../components/admin/AIPromptBox';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 
 // Markdown-like formatting toolbar for textareas â€” defined outside to prevent remount on parent re-render
@@ -58,7 +57,7 @@ const ProposalGenerator = () => {
     const [previewScale, setPreviewScale] = useState(0.65);
     const previewContainerRef = useRef(null);
 
-    const [activeTab, setActiveTab] = useState('1'); 
+    const [activeTab, setActiveTab] = useState('ai'); 
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -76,6 +75,42 @@ const ProposalGenerator = () => {
 
     const [refinementPrompt, setRefinementPrompt] = useState('');
     const [isRefining, setIsRefining] = useState(false);
+
+    // AI Studio State
+    const [promptText, setPromptText] = useState('');
+    const [aiMode, setAiMode] = useState('generate');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestionCategory, setSuggestionCategory] = useState(0);
+    const [messages, setMessages] = useState([
+        {
+            id: 'init-msg',
+            sender: 'ai',
+            text: "Welcome to Newbi AI Proposal Studio. Describe the event or campaign requirements in the prompt box below, choose 'Generate New' or 'Bulk Mode', and I will draft a comprehensive proposal. Use 'Chat & Refine' to iteratively customize any details!"
+        }
+    ]);
+    const chatEndRef = useRef(null);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    const suggestions = useMemo(() => {
+        const proposalSuggestions = [
+            [
+                "Event production proposal for a 2-day music festival, including stage, sound, and lighting setup",
+                "Artist logistics and hospitality proposal for a multi-city stand-up comedy tour",
+                "Proposal for 50 event volunteers and site management for a corporate marathon"
+            ],
+            [
+                "Strategic event consultation for a brand's 10th-anniversary gala dinner",
+                "Complete digital marketing and social media coverage for a product launch event",
+                "Technical production and stage management proposal for a TEDx event"
+            ]
+        ];
+        return proposalSuggestions[suggestionCategory] || proposalSuggestions[0];
+    }, [suggestionCategory]);
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -575,16 +610,164 @@ const ProposalGenerator = () => {
             } else {
                 setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
             }
-            addToast('Document successfully refined!', 'success');
-            setRefinementPrompt('');
-        } catch (err) {
             addToast(`Refinement failed: ${err.message}`, 'error');
         } finally {
             setIsRefining(false);
         }
     };
 
+    const handleStudioSubmit = async () => {
+        if (!promptText.trim() || isGenerating) return;
+        const currentPrompt = promptText.trim();
+        setPromptText('');
+
+        setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
+        setIsGenerating(true);
+
+        try {
+            if (aiMode === 'bulk') {
+                setIsBulkGenerating(true);
+                setBulkProgress({ current: 0, total: 1 });
+                setBulkProgress({ current: 1, total: 1 });
+                
+                const data = await generateFullDocument('bulk_proposal', currentPrompt, 'Premium', {});
+                
+                const finalProposal = {
+                    clientName: data.clientName || 'Master Client',
+                    clientAddress: data.clientAddress || 'Corporate Headquarters',
+                    campaignName: data.campaignName || 'Strategic Initiative',
+                    campaignDuration: data.campaignDuration || 'TBD',
+                    proposalNumber: `NBQ-BLK-${Math.floor(1000 + Math.random() * 9000)}`,
+                    coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
+                    overview: '',
+                    primaryGoal: '',
+                    numericTargets: '',
+                    audienceAge: '',
+                    audienceLocation: '',
+                    audienceInterests: '',
+                    selectedChannels: [],
+                    contentCount: { reels: 0, posts: 0, stories: 0 },
+                    deliverables: [],
+                    clientRequirements: [],
+                    scopeOfWork: data.scopeOfWork && data.scopeOfWork.length > 10 ? data.scopeOfWork : currentPrompt,
+                    terms: '',
+                    paymentDetails: '',
+                    gstRate: 18,
+                    advanceRequested: 0,
+                    showGst: false,
+                    showSeal: false,
+                    showSignatures: false,
+                    signatureType: 'handwritten',
+                    providerSignature: '',
+                    clientSignature: '',
+                    senderName: 'Authorized Signatory',
+                    senderDesignation: 'Director of Operations',
+                    status: 'Draft',
+                    hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
+                    selectedLogo: 'entertainment',
+                    items: [],
+                    subtotal: 0,
+                    gstAmount: 0,
+                    totalAmount: 0,
+                    isBulkGenerated: true
+                };
+                
+                setBulkProposals(prev => {
+                    const newVault = [...prev, finalProposal];
+                    setSelectedBulkIndex(newVault.length - 1);
+                    return newVault;
+                });
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Bulk requirements successfully structured! I have configured the engine for bulk mode. Preview the compiled A4 sheet on the right, or click save to persist.`
+                }]);
+                addToast(`Successfully arranged bulk data into a premium document!`, 'success');
+            } else if (aiMode === 'generate') {
+                const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
+                setSingleFormData(prev => ({
+                    ...prev,
+                    clientName: data.clientName || prev.clientName,
+                    clientAddress: data.clientAddress || prev.clientAddress,
+                    campaignName: data.campaignName || prev.campaignName,
+                    campaignDuration: data.campaignDuration || prev.campaignDuration,
+                    coverDescription: data.coverDescription || prev.coverDescription,
+                    overview: data.overview || prev.overview,
+                    primaryGoal: data.primaryGoal || prev.primaryGoal,
+                    scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
+                    terms: data.terms || prev.terms,
+                    deliverables: data.deliverables?.length 
+                        ? data.deliverables.map((d, i) => ({ 
+                            id: Date.now() + i, 
+                            item: d.item || d.name || '', 
+                            qty: d.qty || '1', 
+                            timeline: d.timeline || 'TBD' 
+                        })) 
+                        : prev.deliverables,
+                    clientRequirements: data.clientRequirements?.length 
+                        ? data.clientRequirements.map((r, i) => ({ 
+                            id: Date.now() + 100 + i, 
+                            description: r.description || r.requirement || '' 
+                        })) 
+                        : prev.clientRequirements,
+                }));
+                if (data.items && data.items.length > 0) {
+                    setSingleItems(data.items.map((item, idx) => ({
+                        id: Date.now() + 200 + idx,
+                        description: item.description || item.name || '',
+                        qty: Number(item.qty) || 1,
+                        unit: item.unit || 'Unit',
+                        price: Number(item.price) || 0
+                    })));
+                }
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nI have switched your mode to **Chat & Refine** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
+                }]);
+                setAiMode('refine');
+                addToast('Proposal successfully generated!', 'success');
+            } else {
+                const currentDoc = (isBulkMode && bulkProposals.length > 0) ? bulkProposals[selectedBulkIndex] : singleFormData;
+                const updatedDoc = await reviseDocument(currentDoc, currentPrompt, 'Premium');
+                
+                if (isBulkMode && bulkProposals.length > 0) {
+                    setBulkProposals(prev => {
+                        const newVault = [...prev];
+                        newVault[selectedBulkIndex] = { ...currentDoc, ...updatedDoc };
+                        return newVault;
+                    });
+                    if (singleFormData.id === currentDoc.id) {
+                        setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
+                    }
+                } else {
+                    setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
+                }
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
+                }]);
+                addToast('Document successfully refined!', 'success');
+            }
+        } catch (err) {
+            setMessages(prev => [...prev, {
+                id: String(Date.now()) + '-ai-err',
+                sender: 'ai',
+                text: `⚠ Failed to process request: ${err.message}`
+            }]);
+            addToast(`Error: ${err.message}`, 'error');
+        } finally {
+            setIsGenerating(false);
+            setIsBulkGenerating(false);
+        }
+    };
+
     const tabs = [
+        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
         { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: 'cover' },
         { id: '2', label: 'Architecture', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
         { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },

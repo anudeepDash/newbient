@@ -441,7 +441,7 @@ const InvoiceManagement = () => {
                                                 </td>
                                                 <td className="p-6 md:p-8">
                                                     <div className="flex justify-end gap-2">
-                                                        <a href={`/invoice/${invoice.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
+                                                        <Link to={`/invoice/${invoice.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
                                                         {user?.role !== 'editor' && (
                                                             <>
                                                                 <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
