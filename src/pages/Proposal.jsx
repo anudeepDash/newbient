@@ -628,9 +628,9 @@ const Proposal = () => {
                                                                 {displayProposal.status === 'Accepted' ? (
                                                                     <div className="h-24 sm:h-32 flex items-end justify-center">
                                                                         {displayProposal.approvalMetadata?.clientSignature ? (
-                                                                            <img src={displayProposal.approvalMetadata.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                            <img src={displayProposal.approvalMetadata?.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                         ) : (
-                                                                            <p className="text-4xl sm:text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata?.signedBy}</p>
+                                                                            <p className="text-4xl sm:text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                         )}
                                                                     </div>
                                                                 ) : (
@@ -807,16 +807,16 @@ const Proposal = () => {
                                                                         <div className="space-y-6">
                                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2">Client Authorization</p>
                                                                             <div className="h-24 flex items-end">
-                                                                                {displayProposal.approvalMetadata.clientSignature ? (
-                                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                                {displayProposal.approvalMetadata?.clientSignature ? (
+                                                                                    <img src={displayProposal.approvalMetadata?.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                                 ) : (
-                                                                                    <p className="text-4xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                                    <p className="text-4xl font-signature text-black leading-none">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                                 )}
                                                                             </div>
                                                                             <div className="space-y-1">
-                                                                                <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                                <p className="text-[11px] font-black uppercase text-black">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                                 <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">Authorized Signatory</p>
-                                                                                <p className="text-[7px] text-gray-400 mt-1 uppercase tracking-tighter font-black">IP: {displayProposal.approvalMetadata.ip} | Signed: {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString()}</p>
+                                                                                <p className="text-[7px] text-gray-400 mt-1 uppercase tracking-tighter font-black">IP: {displayProposal.approvalMetadata?.ip || 'N/A'} | Signed: {displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -824,11 +824,11 @@ const Proposal = () => {
                                                                     <div className="space-y-6">
                                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] border-b border-gray-100 pb-2 text-right">Digital Footprints</p>
                                                                         <div className="space-y-2 text-[8px] font-black uppercase tracking-widest text-gray-500 text-right">
-                                                                            <div className="flex justify-end gap-2"><span>IP Address:</span><span className="text-black">{displayProposal.approvalMetadata.ip}</span></div>
-                                                                            <div className="flex justify-end gap-2"><span>Verified Email:</span><span className="text-black">{displayProposal.approvalMetadata.email}</span></div>
-                                                                            <div className="flex justify-end gap-2"><span>User Agent:</span><span className="text-black max-w-[120px] truncate">{displayProposal.approvalMetadata.footprint?.browser || 'System'}</span></div>
-                                                                            <div className="flex justify-end gap-2"><span>Timestamp:</span><span className="text-black">{new Date(displayProposal.approvalMetadata.signedAt).toISOString()}</span></div>
-                                                                            <div className="flex justify-end gap-2"><span>Ref ID:</span><span className="text-black">{displayProposal.id.slice(-8).toUpperCase()}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>IP Address:</span><span className="text-black">{displayProposal.approvalMetadata?.ip || 'N/A'}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Verified Email:</span><span className="text-black">{displayProposal.approvalMetadata?.email || 'N/A'}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>User Agent:</span><span className="text-black max-w-[120px] truncate">{displayProposal.approvalMetadata?.footprint?.browser || 'System'}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Timestamp:</span><span className="text-black">{displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toISOString() : 'N/A'}</span></div>
+                                                                            <div className="flex justify-end gap-2"><span>Ref ID:</span><span className="text-black">{displayProposal.id ? displayProposal.id.slice(-8).toUpperCase() : 'N/A'}</span></div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -938,9 +938,9 @@ const Proposal = () => {
                                                     <div className="h-20 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
                                                         {displayProposal.status === 'Accepted' ? (
                                                             displayProposal.approvalMetadata?.clientSignature ? (
-                                                                <img src={displayProposal.approvalMetadata.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                <img src={displayProposal.approvalMetadata?.clientSignature} className="max-h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                             ) : (
-                                                                <span className="text-2xl font-signature text-black">{displayProposal.approvalMetadata?.signedBy}</span>
+                                                                <span className="text-2xl font-signature text-black">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</span>
                                                             )
                                                         ) : (
                                                             <span className="text-2xl font-signature text-gray-300">{signatureName || 'Signature Required'}</span>
@@ -1018,17 +1018,17 @@ const Proposal = () => {
                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] mb-8 flex items-center gap-2"><ShieldCheck size={14} /> Digitally Authorized</p>
                                                         <div className="space-y-4">
                                                             <div className="h-24 flex items-end">
-                                                                {displayProposal.approvalMetadata.clientSignature ? (
-                                                                    <img src={displayProposal.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
+                                                                {displayProposal.approvalMetadata?.clientSignature ? (
+                                                                    <img src={displayProposal.approvalMetadata?.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                 ) : (
-                                                                    <p className="text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
+                                                                    <p className="text-6xl font-signature text-black leading-none">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                 )}
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <p className="text-xl font-black font-mono uppercase tracking-tighter text-black leading-none">{displayProposal.approvalMetadata.signedBy}</p>
-                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB')}</p>
+                                                                <p className="text-xl font-black font-mono uppercase tracking-tighter text-black leading-none">{displayProposal.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Authenticated on {displayProposal.approvalMetadata?.signedAt ? new Date(displayProposal.approvalMetadata.signedAt).toLocaleString('en-GB') : 'N/A'}</p>
                                                             </div>
-                                                            <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Verification Ref: {displayProposal.id.slice(-12).toUpperCase()}</p>
+                                                            <p className="text-[8px] font-bold text-gray-300 uppercase mt-4">Verification Ref: {displayProposal.id ? displayProposal.id.slice(-12).toUpperCase() : 'N/A'}</p>
                                                         </div>
                                                     </div>
                                                 )}

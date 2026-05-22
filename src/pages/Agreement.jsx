@@ -239,7 +239,7 @@ const Agreement = () => {
                                     </div>
                                     <div className="space-y-0.5 border-l border-black/10 pl-6">
                                         <span className="text-[7px] font-bold text-gray-400 uppercase tracking-widest block">Effective Date</span>
-                                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(displayAgreement.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block">{new Date(displayAgreement.effectiveDate || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -254,7 +254,7 @@ const Agreement = () => {
                                         </div>
                                         <div className="space-y-6 text-[12px] leading-relaxed text-justify">
                                             <p className="font-bold italic">
-                                                THIS AGREEMENT is made on this {new Date(displayAgreement.effectiveDate).getDate()} day of {new Date(displayAgreement.effectiveDate).toLocaleString('default', { month: 'long' })}, {new Date(displayAgreement.effectiveDate).getFullYear()} ("Effective Date").
+                                                THIS AGREEMENT is made on this {new Date(displayAgreement.effectiveDate || Date.now()).getDate()} day of {new Date(displayAgreement.effectiveDate || Date.now()).toLocaleString('default', { month: 'long' })}, {new Date(displayAgreement.effectiveDate || Date.now()).getFullYear()} ("Effective Date").
                                             </p>
                                             <div className="grid grid-cols-1 gap-4">
                                                 <div className="space-y-1">
@@ -348,17 +348,17 @@ const Agreement = () => {
                                                                 displayAgreement.approvalMetadata?.clientSignature ? (
                                                                     <img src={displayAgreement.approvalMetadata.clientSignature} className="h-full object-contain grayscale mix-blend-multiply" alt="Client Signature" />
                                                                 ) : (
-                                                                    <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy}</p>
+                                                                    <p className="text-5xl font-signature text-black leading-none opacity-90">{displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory'}</p>
                                                                 )
                                                             ) : (
                                                                 <div className="w-full h-px bg-black opacity-20 border-dashed border-t" />
                                                             )}
                                                         </div>
                                                         <div className="pt-2 border-t border-black/5">
-                                                            <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? displayAgreement.approvalMetadata?.signedBy : '________________'}</p>
+                                                            <p className="text-[10px] font-bold uppercase">Name: {displayAgreement.status === 'Executed' ? (displayAgreement.approvalMetadata?.signedBy || 'Authorized Signatory') : '________________'}</p>
                                                             <p className="text-[9px] text-gray-500 uppercase">Title: Authorized Signatory</p>
                                                             {displayAgreement.status === 'Executed' && displayAgreement.approvalMetadata && (
-                                                                <p className="text-[7px] text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata.ip} | Signed: {new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString()}</p>
+                                                                <p className="text-[7px] text-gray-400 mt-1">IP: {displayAgreement.approvalMetadata?.ip || 'N/A'} | Signed: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
                                                             )}
                                                         </div>
                                                     </div>
@@ -371,9 +371,9 @@ const Agreement = () => {
                                                 )}
                                                 {displayAgreement.approvalMetadata && (
                                                     <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest space-y-1">
-                                                        <p>IP: {displayAgreement.approvalMetadata.ip}</p>
-                                                        <p>Time: {new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString()}</p>
-                                                        <p>Hash: {displayAgreement.id.slice(-12).toUpperCase()}</p>
+                                                        <p>IP: {displayAgreement.approvalMetadata?.ip || 'N/A'}</p>
+                                                        <p>Time: {displayAgreement.approvalMetadata?.signedAt ? new Date(displayAgreement.approvalMetadata.signedAt).toLocaleString() : 'N/A'}</p>
+                                                        <p>Hash: {displayAgreement.id ? displayAgreement.id.slice(-12).toUpperCase() : 'N/A'}</p>
                                                     </div>
                                                 )}
                                             </div>
