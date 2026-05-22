@@ -2,6 +2,23 @@ import nodemailer from 'nodemailer';
 import { auth } from './lib/auth.js';
 
 export default async function handler(req, res) {
+    // Enable CORS
+    const allowedOrigins = ['https://www.newbi.live', 'https://newbi.live', 'https://newbi-ent.vercel.app', 'http://localhost:5173'];
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -20,13 +37,23 @@ export default async function handler(req, res) {
         }
 
         // 1. Generate the Firebase Password Reset Link
+        const requestOrigin = req.headers.origin || `https://${req.headers.host}` || 'https://newbi.live';
         const actionCodeSettings = {
-            url: process.env.NEXT_PUBLIC_APP_URL || 'https://newbi.live/login',
+            url: `${requestOrigin}/login`,
         };
         
         console.log(`[RESET] 🔗 Generating link via Firebase...`);
-        const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
-        console.log(`[RESET] ✅ Link generated successfully`);
+        const firebaseLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        
+        // Convert the Firebase link into a custom link pointing to our custom ActionHandler page
+        const urlObj = new URL(firebaseLink);
+        const originUrlObj = new URL(requestOrigin);
+        urlObj.protocol = originUrlObj.protocol;
+        urlObj.host = originUrlObj.host;
+        urlObj.pathname = '/auth/action';
+        
+        const resetLink = urlObj.toString();
+        console.log(`[RESET] ✅ Custom link generated successfully: ${resetLink}`);
 
         // 2. Setup Transporter
         const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
