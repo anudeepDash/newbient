@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { downloadCSV } from '../../components/admin/CSVHandler';
 import { cn } from '../../lib/utils';
 import { notifySpecificUser } from '../../lib/notificationTriggers';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GiveawayParticipants = () => {
     const { giveawayId } = useParams();
@@ -105,51 +105,44 @@ const GiveawayParticipants = () => {
     if (!giveaway) return <div className="p-20 text-center uppercase font-black text-gray-500">Giveaway not found</div>;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[20%] left-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-8">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl md:text-5xl font-black font-heading tracking-tighter uppercase italic pr-4">
-                            {giveaway.name} <span className="text-purple-500">PORTAL.</span>
-                        </h1>
-                        <AdminDashboardLink className="mt-4" />
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest pl-1">
-                            {campaignEntries.length} Active Participants • {campaignEntries.filter(e => e.isWinner).length} Winners Selected
-                        </p>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                        <Button 
-                            onClick={() => {
-                                const params = new URLSearchParams({
-                                    subject: `UPDATE: ${giveaway.name} Giveaway`,
-                                    header: giveaway.name,
-                                    body: `Hello Tribe! We have exciting updates regarding the ${giveaway.name} giveaway.`,
-                                    heroImage: giveaway.image || '',
-                                    ctaText: 'CHECK WINNERS',
-                                    ctaUrl: `${window.location.origin}/giveaway/${giveaway.slug}`
-                                });
-                                window.location.href = `/admin/mailing?${params.toString()}`;
-                            }}
-                            className="h-14 px-8 bg-neon-green text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all shadow-lg"
-                        >
-                            <Mail className="mr-2" size={18} /> Broadcast to All
-                        </Button>
-                        <Button onClick={handleRandomDraw} className="h-14 px-8 border border-purple-500/30 bg-purple-500/10 text-purple-500 font-black uppercase tracking-widest rounded-2xl hover:bg-purple-500 hover:text-white transition-all">
-                            <Shuffle className="mr-2" size={18} /> Weighted Draw
-                        </Button>
-                        <Button onClick={handleExport} className="h-14 px-8 bg-zinc-900 border border-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all">
-                            <Download className="mr-2" size={18} /> Export List
-                        </Button>
-                    </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: giveaway.name,
+                subtitle: 'Portal',
+                icon: Gift,
+                accentClass: 'text-purple-500'
+            }}
+            accentColor="purple-500"
+            hideTabs={true}
+            description={`${campaignEntries.length} Active Participants • ${campaignEntries.filter(e => e.isWinner).length} Winners Selected`}
+            action={
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <Button 
+                        onClick={() => {
+                            const params = new URLSearchParams({
+                                subject: `UPDATE: ${giveaway.name} Giveaway`,
+                                header: giveaway.name,
+                                body: `Hello Tribe! We have exciting updates regarding the ${giveaway.name} giveaway.`,
+                                heroImage: giveaway.image || '',
+                                ctaText: 'CHECK WINNERS',
+                                ctaUrl: `${window.location.origin}/giveaway/${giveaway.slug}`
+                            });
+                            window.location.href = `/admin/mailing?${params.toString()}`;
+                        }}
+                        className="h-14 px-8 bg-neon-green text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all shadow-lg"
+                    >
+                        <Mail className="mr-2" size={18} /> Broadcast to All
+                    </Button>
+                    <Button onClick={handleRandomDraw} className="h-14 px-8 border border-purple-500/30 bg-purple-500/10 text-purple-500 font-black uppercase tracking-widest rounded-2xl hover:bg-purple-500 hover:text-white transition-all">
+                        <Shuffle className="mr-2" size={18} /> Weighted Draw
+                    </Button>
+                    <Button onClick={handleExport} className="h-14 px-8 bg-zinc-900 border border-white/5 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all">
+                        <Download className="mr-2" size={18} /> Export List
+                    </Button>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            }
+        >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                     {/* Sidebar: Stats & Leaderboard */}
                     <div className="space-y-10">
                         <Card className="p-8 bg-zinc-900/40 border-white/5 rounded-[2rem] backdrop-blur-3xl">
@@ -342,8 +335,7 @@ const GiveawayParticipants = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

@@ -44,87 +44,84 @@ const EventScanner = () => {
 
     useEffect(() => {
         let mounted = true;
+        let localScanner = null;
 
-        if (!isScanning || !selectedEventId) {
-            if (scannerRef.current && !isTransitioning.current) {
-                isTransitioning.current = true;
-                scannerRef.current.stop().then(() => {
-                    if (scannerRef.current) scannerRef.current.clear();
-                    isTransitioning.current = false;
-                }).catch(() => {
-                    isTransitioning.current = false;
-                });
+        const cleanupScanner = async () => {
+            if (scannerRef.current) {
+                const scanner = scannerRef.current;
+                scannerRef.current = null;
+                try {
+                    if (scanner.isScanning) {
+                        await scanner.stop();
+                    }
+                    try {
+                        scanner.clear();
+                    } catch (clearErr) {
+                        // ignore if element already unmounted
+                    }
+                } catch (e) {
+                    console.error("Error during scanner cleanup:", e);
+                }
             }
-            return;
-        }
+        };
 
-        const startScanner = async () => {
-            if (isTransitioning.current) return;
-            
-            if (!scannerRef.current) {
-                scannerRef.current = new Html5Qrcode("reader");
+        const initScanner = async () => {
+            await cleanupScanner();
+
+            if (!mounted || !isScanning || !selectedEventId) return;
+
+            // Wait for DOM to register the #reader element
+            await new Promise(resolve => setTimeout(resolve, 80));
+            if (!mounted) return;
+
+            const readerEl = document.getElementById("reader");
+            if (!readerEl) {
+                console.error("Reader element not found in DOM");
+                return;
             }
 
             try {
-                isTransitioning.current = true;
-                if (scannerRef.current.isScanning) {
-                    await scannerRef.current.stop();
+                localScanner = new Html5Qrcode("reader");
+                scannerRef.current = localScanner;
+
+                await localScanner.start(
+                    { facingMode: facingMode },
+                    { fps: 10 },
+                    handleScanSuccess,
+                    handleScanFailure
+                );
+            } catch (err) {
+                console.warn("Failed to start scanner with facingMode:", facingMode, err);
+                if (mounted && localScanner) {
+                    try {
+                        const fallbackMode = facingMode === "environment" ? "user" : "environment";
+                        console.log("Attempting fallback facingMode:", fallbackMode);
+                        await localScanner.start(
+                            { facingMode: fallbackMode },
+                            { fps: 10 },
+                            handleScanSuccess,
+                            handleScanFailure
+                        );
+                        setFacingMode(fallbackMode);
+                    } catch (fallbackErr) {
+                        console.error("Fallback scanner start failed:", fallbackErr);
+                    }
                 }
-                
-                if (mounted) {
-                    await scannerRef.current.start(
-                        { facingMode: facingMode },
-                        { fps: 10 },
-                        handleScanSuccess,
-                        handleScanFailure
-                    );
-                }
-            } catch (error) {
-                console.error("Scanner init error:", error);
-            } finally {
-                isTransitioning.current = false;
             }
         };
 
-        startScanner();
+        initScanner();
 
         return () => {
             mounted = false;
-            if (scannerRef.current && scannerRef.current.isScanning && !isTransitioning.current) {
-                isTransitioning.current = true;
-                scannerRef.current.stop().then(() => {
-                    if (scannerRef.current) scannerRef.current.clear();
-                    isTransitioning.current = false;
-                }).catch(() => {
-                    isTransitioning.current = false;
-                });
-            }
+            cleanupScanner();
         };
-    }, [isScanning, selectedEventId]);
+    }, [isScanning, selectedEventId, facingMode]);
 
-    const toggleCamera = async () => {
-        if (isTransitioning.current || !scannerRef.current) return;
-
+    const toggleCamera = () => {
+        if (!scannerRef.current) return;
         const newMode = facingMode === "environment" ? "user" : "environment";
         setFacingMode(newMode);
-
-        try {
-            isTransitioning.current = true;
-            if (scannerRef.current.isScanning) {
-                await scannerRef.current.stop();
-            }
-            
-            await scannerRef.current.start(
-                { facingMode: newMode },
-                { fps: 10 },
-                handleScanSuccess,
-                handleScanFailure
-            );
-        } catch (error) {
-            console.error("Swap error:", error);
-        } finally {
-            isTransitioning.current = false;
-        }
     };
 
     const handleScanSuccess = async (decodedText, decodedResult) => {

@@ -219,6 +219,7 @@ const NewsletterStudio = () => {
     return (
         <AdminCommunityHubLayout 
             hideTabs={true}
+            accentColor="neon-blue"
             studioHeader={{
                 title: "NEWSLETTER",
                 subtitle: "STUDIO",

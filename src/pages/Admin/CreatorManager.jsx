@@ -39,6 +39,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import StudioSelect from '../../components/ui/StudioSelect';
@@ -180,50 +181,7 @@ const CreatorManager = () => {
 
     const renderContent = () => (
         <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
-            {/* Header Section */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 md:gap-10 mb-8 md:mb-12 pt-32 md:pt-48 px-4 md:px-12">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-neon-pink font-black tracking-[0.5em] text-[10px] uppercase">
-                        <Layers size={14} />
-                        Creator Management Center
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
-                        TALENT <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-purple-500 to-neon-blue">NETWORK.</span>
-                    </h1>
-                    <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                        Monitor and moderate your global network of content creators. Filter by followers, location, and specialization to deploy the right talent.
-                    </p>
-                    <div className="pt-4 flex flex-wrap items-center gap-4">
-                        <AdminDashboardLink />
-                        <div className="flex items-center gap-1 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 backdrop-blur-3xl shadow-2xl">
-                            {personnelTabs.map(tab => {
-                                const Icon = tab.icon;
-                                const isActive = tab.name === 'Creators';
-                                return (
-                                    <button
-                                        key={tab.name}
-                                        onClick={() => navigate(tab.path)}
-                                        className={cn(
-                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all",
-                                            isActive ? "bg-neon-pink text-black shadow-lg" : "text-gray-500 hover:text-white hover:bg-white/5"
-                                        )}
-                                    >
-                                        <Icon size={14} />
-                                        {tab.name}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full xl:w-auto">
-                    <StatCard icon={<Users size={24} />} label="ACTIVE NETWORK" value={stats.total} color="purple" description={`${stats.approved} Verified Creators`} />
-                    <StatCard icon={<TrendingUp size={24} />} label="GROSS FOLLOWERS" value={`${(stats.followers / 1000000).toFixed(1)}M`} color="pink" description="Aggregated Social Capital" />
-                </div>
-            </div>
-
-            <div className="px-4 md:px-12 pt-0">
+            <div>
                 {/* Control Panel */}
                 <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
                     
@@ -455,13 +413,28 @@ const CreatorManager = () => {
     );
 
     return (
-        <>
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,0.08),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
-                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-pink/5 rounded-full blur-[180px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-            </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Personnel',
+                subtitle: 'Hub',
+                icon: Users,
+                accentClass: 'text-neon-pink'
+            }}
+            accentColor="neon-pink"
+            tabs={personnelTabs}
+            action={
+                <div className="w-full md:w-80 shrink-0">
+                    <StatCard 
+                        compact={true} 
+                        icon={<Users size={20} />} 
+                        label="CREATOR ROSTER" 
+                        value={stats.total} 
+                        color="pink" 
+                        description={`TOTAL CREATORS | ${stats.approved} VERIFIED • ${stats.pending} PENDING`} 
+                    />
+                </div>
+            }
+        >
             {renderContent()}
             <AnimatePresence>
                 {selectedCreator && (
@@ -475,7 +448,7 @@ const CreatorManager = () => {
                     />
                 )}
             </AnimatePresence>
-        </>
+        </AdminCommunityHubLayout>
     );
 };
 

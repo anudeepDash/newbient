@@ -23,7 +23,7 @@ import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EntryTerminal from '../../components/admin/EntryTerminal';
@@ -92,61 +92,53 @@ const TicketingManagement = () => {
     // If no event selected, show event cards
     if (!selectedEventId) {
         return (
-            <div className="min-h-screen bg-[#020202] text-white pb-20">
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px]" />
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
-                </div>
-                <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 md:mb-12 gap-8">
-                        <div className="space-y-4 max-w-full">
-                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1] pr-12">
-                                TICKET <span className="text-neon-green">OPERATIONS.</span>
-                            </h1>
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Select an event to manage ticketing operations.</p>
-                            <div className="pt-4">
-                                <AdminDashboardLink />
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {operationalEvents.map(event => {
-                            const eventOrders = ticketOrders.filter(o => o.eventId === event.id);
-                            const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
-                            const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
-                            return (
-                                <Card key={event.id} onClick={() => setSelectedEventId(event.id)} className="cursor-pointer group p-0 bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-neon-green/30 transition-all duration-700 shadow-2xl">
-                                    <div className="h-48 relative overflow-hidden bg-black/50">
-                                        {event.image ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" /> : <div className="absolute inset-0 flex items-center justify-center"><Ticket size={48} className="opacity-20"/></div>}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                                        <div className="absolute bottom-8 left-8 right-8">
-                                            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{event.title}</h3>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
-                                        </div>
-                                        {event.date && new Date(event.date) < new Date() && (
-                                            <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Completed</span>
-                                            </div>
-                                        )}
+            <AdminCommunityHubLayout
+                studioHeader={{
+                    title: 'Ticket',
+                    subtitle: 'Operations',
+                    icon: Ticket,
+                    accentClass: 'text-neon-green'
+                }}
+                accentColor="neon-green"
+                hideTabs={true}
+                description="Select an event to manage ticketing operations."
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {operationalEvents.map(event => {
+                        const eventOrders = ticketOrders.filter(o => o.eventId === event.id);
+                        const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
+                        const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
+                        return (
+                            <Card key={event.id} onClick={() => setSelectedEventId(event.id)} className="cursor-pointer group p-0 bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-neon-green/30 transition-all duration-700 shadow-2xl">
+                                <div className="h-48 relative overflow-hidden bg-black/50">
+                                    {event.image ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" /> : <div className="absolute inset-0 flex items-center justify-center"><Ticket size={48} className="opacity-20"/></div>}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                                    <div className="absolute bottom-8 left-8 right-8">
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{event.title}</h3>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
                                     </div>
-                                    <div className="p-8 grid grid-cols-2 gap-4 bg-black/40">
-                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-neon-green/5 transition-colors">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Tickets Sold</p>
-                                            <p className="text-2xl font-black text-neon-green">{approvedCount}</p>
+                                    {event.date && new Date(event.date) < new Date() && (
+                                        <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Completed</span>
                                         </div>
-                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-yellow-500/5 transition-colors">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Pending UPI</p>
-                                            <p className="text-2xl font-black text-yellow-500">{pendingCount}</p>
-                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-8 grid grid-cols-2 gap-4 bg-black/40">
+                                    <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-neon-green/5 transition-colors">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Tickets Sold</p>
+                                        <p className="text-2xl font-black text-neon-green">{approvedCount}</p>
                                     </div>
-                                </Card>
-                            )
-                        })}
-                    </div>
+                                    <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-yellow-500/5 transition-colors">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Pending UPI</p>
+                                        <p className="text-2xl font-black text-yellow-500">{pendingCount}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        )
+                    })}
                 </div>
-            </div>
+            </AdminCommunityHubLayout>
         );
     }
 
@@ -305,27 +297,27 @@ const TicketingManagement = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-40">
-                <button onClick={() => setSelectedEventId(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white mb-8 transition-colors">
-                    <ArrowLeft size={16} /> Back to Events
-                </button>
-
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-8">
-                    <div className="space-y-2 max-w-full">
-                        <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1]">
-                            {event?.title}
-                        </h1>
-                        <p className="text-neon-green font-bold uppercase tracking-widest text-xs">Event Operations Dashboard</p>
-                    </div>
-                </div>
-
-                <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: event?.title || 'Event',
+                subtitle: 'Operations',
+                icon: Ticket,
+                accentClass: 'text-neon-green'
+            }}
+            accentColor="neon-green"
+            hideTabs={true}
+            description="Event Operations Dashboard"
+            action={
+                <Button 
+                    onClick={() => setSelectedEventId(null)} 
+                    variant="outline" 
+                    className="gap-2 border-white/10 text-gray-400 hover:text-white rounded-2xl uppercase tracking-widest text-[9px] font-black px-6 py-3"
+                >
+                    <ArrowLeft size={14} /> Back to Events
+                </Button>
+            }
+        >
+            <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/5 rounded-[3rem] p-6 mb-8 flex flex-col md:flex-row gap-6 justify-between items-center shadow-2xl">
                     <div className="flex flex-wrap gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
                         {['buyers', 'guestlist', 'dispatch', 'attendance', 'coupons', 'sheets', 'settings'].map((tab) => {
                             if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
@@ -864,8 +856,7 @@ const TicketingManagement = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

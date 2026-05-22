@@ -144,6 +144,20 @@ const Proposal = () => {
         if (displayProposal) fetchIp();
     }, [id, displayProposal]);
 
+    useEffect(() => {
+        if (displayProposal) {
+            const originalTitle = document.title;
+            const name = displayProposal.clientName 
+                ? `${displayProposal.clientName} - ${displayProposal.proposalNumber || displayProposal.id}`
+                : (displayProposal.proposalNumber || 'Proposal');
+            document.title = `${name} | Proposal Viewer`;
+            
+            return () => {
+                document.title = originalTitle;
+            };
+        }
+    }, [displayProposal]);
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#020202] text-white">
@@ -520,11 +534,13 @@ const Proposal = () => {
                     <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                         <div className="flex items-center gap-3 sm:gap-6">
                             <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><ArrowLeft size={16} sm={18} /></Link>
-                            <div className="min-w-0">
-                                <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1 truncate">Strategic Quote</p>
+                            <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
+                                <p className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest leading-none mb-1 truncate">
+                                    {displayProposal.clientName ? `${displayProposal.clientName} (${displayProposal.proposalNumber || displayProposal.id})` : 'Strategic Quote'}
+                                </p>
                                 <div className="flex items-center gap-2">
                                     <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayProposal.status === 'Accepted' ? "bg-neon-green" : "bg-blue-500 animate-pulse")} />
-                                    <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest truncate">{displayProposal.status || 'DRAFT'}</span>
+                                    <span className="text-[8px] sm:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayProposal.status || 'DRAFT'}</span>
                                 </div>
                             </div>
                         </div>

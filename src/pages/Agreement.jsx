@@ -104,6 +104,19 @@ const Agreement = () => {
         fetchIp();
     }, [id]);
 
+    useEffect(() => {
+        if (displayAgreement) {
+            const originalTitle = document.title;
+            const clientName = displayAgreement.parties?.secondParty?.name || 'Client';
+            const name = `${clientName} - ${displayAgreement.agreementNumber || displayAgreement.id}`;
+            document.title = `${name} | Agreement Viewer`;
+            
+            return () => {
+                document.title = originalTitle;
+            };
+        }
+    }, [displayAgreement]);
+
     if (!displayAgreement) return (
         <div className="min-h-screen bg-black flex items-center justify-center">
             <RefreshCw className="animate-spin text-[#A855F7]" size={40} />
@@ -191,11 +204,13 @@ const Agreement = () => {
                 <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 md:gap-6">
                         <Link to="/" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={16} md={18} /></Link>
-                        <div>
-                            <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Legal Instrument</p>
+                        <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
+                            <p className="text-[9px] md:text-[10px] font-black text-[#A855F7] uppercase tracking-widest leading-none mb-1 truncate">
+                                {displayAgreement.parties?.secondParty?.name ? `${displayAgreement.parties.secondParty.name} (${displayAgreement.agreementNumber || displayAgreement.id})` : 'Legal Instrument'}
+                            </p>
                             <div className="flex items-center gap-2">
-                                <div className={cn("w-1.5 h-1.5 rounded-full", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
-                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{displayAgreement.status}</span>
+                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", displayAgreement.status === 'Executed' ? "bg-emerald-500" : "bg-[#A855F7] animate-pulse")} />
+                                <span className="text-[8px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">{displayAgreement.status}</span>
                             </div>
                         </div>
                     </div>

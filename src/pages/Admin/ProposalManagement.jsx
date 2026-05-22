@@ -160,14 +160,14 @@ const ProposalManagement = () => {
             studioHeader={{
                 title: 'PROPOSAL',
                 subtitle: 'VAULT',
-                accentClass: 'text-[#39FF14]',
+                accentClass: 'text-neon-green',
                 icon: FileSpreadsheet
             }}
             tabs={vaultTabs}
             accentColor="neon-green"
             action={
                 <Link to="/admin/create-proposal" className="w-full md:w-auto">
-                    <button className="w-full md:w-auto bg-[#39FF14] text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
+                    <button className="w-full md:w-auto bg-neon-green text-black font-black font-heading uppercase tracking-widest text-[9px] sm:text-xs h-12 md:h-14 px-6 md:px-10 rounded-xl md:rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-[0_4px_12px_rgba(57,255,20,0.4)] hover:shadow-[0_8px_24px_rgba(57,255,20,0.6)] flex items-center justify-center">
                         <Plus className="mr-2 h-4 w-4" /> New Quote
                     </button>
                 </Link>
@@ -195,7 +195,7 @@ const ProposalManagement = () => {
                                         className={cn(
                                             "flex-1 px-3 sm:px-6 md:px-10 py-2.5 sm:py-3 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 min-w-[70px] sm:min-w-[100px] md:min-w-[120px]",
                                             statusFilter === s 
-                                                ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
+                                                ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.5)] scale-[1.02]" 
                                                 : "text-gray-500 hover:text-white hover:bg-white/5"
                                         )}
                                     >
@@ -211,7 +211,7 @@ const ProposalManagement = () => {
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'grid' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 <LayoutGrid size={16} md={18} />
@@ -220,7 +220,7 @@ const ProposalManagement = () => {
                                 onClick={() => setViewMode('table')}
                                 className={cn(
                                     "flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all duration-300 flex justify-center",
-                                    viewMode === 'table' ? "bg-[#39FF14] text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
+                                    viewMode === 'table' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
                                 <FileText size={16} md={18} />

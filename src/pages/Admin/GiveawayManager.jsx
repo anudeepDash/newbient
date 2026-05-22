@@ -35,7 +35,7 @@ import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { downloadCSV } from '../../components/admin/CSVHandler';
 
 const GiveawayManager = () => {
@@ -252,42 +252,34 @@ const GiveawayManager = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-purple-600/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                            <Sparkles size={16} className="text-purple-500" />
-                            <span className="text-purple-500 text-[10px] font-black uppercase tracking-[0.4em]">Operations Hub</span>
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex items-center gap-4">
-                            GIVEAWAY <span className="text-purple-500">MANAGEMENT.</span>
-                        </h1>
-                        <AdminDashboardLink className="mt-4" />
-                    </div>
-                    
-                    <Button 
-                        onClick={() => {
-                            setEditingId(null);
-                            setFormData({
-                                name: '', slug: '', description: '', ticketsAvailable: 0, endDate: '', endTime: '',
-                                winnerAnnouncementDate: '', posterUrl: '', giveawayType: 'Standard', tasks: [], status: 'Open',
-                                alsoPostToUpcomingEvents: false, alsoPostToAnnouncements: false, isTicketed: false,
-                                ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW',
-                                eventCardImage: null, showSpinWheel: true
-                            });
-                            setIsCreating(true);
-                        }} 
-                        className="h-14 px-10 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
-                    >
-                        <Plus className="mr-2 h-4 w-4" /> New Giveaway
-                    </Button>
-                </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Giveaway',
+                subtitle: 'Management',
+                icon: Gift,
+                accentClass: 'text-purple-500'
+            }}
+            accentColor="purple-500"
+            hideTabs={true}
+            action={
+                <Button 
+                    onClick={() => {
+                        setEditingId(null);
+                        setFormData({
+                            name: '', slug: '', description: '', ticketsAvailable: 0, endDate: '', endTime: '',
+                            winnerAnnouncementDate: '', posterUrl: '', giveawayType: 'Standard', tasks: [], status: 'Open',
+                            alsoPostToUpcomingEvents: false, alsoPostToAnnouncements: false, isTicketed: false,
+                            ticketCategories: [], venueLayout: '', location: '', buttonText: 'PARTICIPATE NOW',
+                            eventCardImage: null, showSpinWheel: true
+                        });
+                        setIsCreating(true);
+                    }} 
+                    className="h-14 px-10 rounded-2xl bg-purple-500 text-white text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.2)] border-none"
+                >
+                    <Plus className="mr-2 h-4 w-4" /> New Giveaway
+                </Button>
+            }
+        >
 
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
                 <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-2 mb-12 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-4">
@@ -455,7 +447,6 @@ const GiveawayManager = () => {
                         </Button>
                     </div>
                 )}
-            </div>
 
             <AnimatePresence>
                 {isCreating && (
@@ -730,7 +721,7 @@ const GiveawayManager = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

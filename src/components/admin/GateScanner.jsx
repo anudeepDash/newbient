@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { QrCode, CheckCircle, XCircle, Loader, ShieldAlert, Sparkles, User, Ticket as TicketIcon, Search } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { QrCode, CheckCircle, XCircle, Loader, ShieldAlert, Sparkles, User, Ticket as TicketIcon, Search, RefreshCw } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -13,33 +13,101 @@ const GateScanner = ({ eventId }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [manualCode, setManualCode] = useState('NB-');
+
+    const [facingMode, setFacingMode] = useState("environment");
+    const [isScanning, setIsScanning] = useState(true);
     const scannerRef = useRef(null);
 
     useEffect(() => {
-        const scanner = new Html5QrcodeScanner("reader", { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-        });
+        let mounted = true;
+        let localScanner = null;
 
-        scanner.render(onScanSuccess, onScanError);
+        const cleanupScanner = async () => {
+            if (scannerRef.current) {
+                const scanner = scannerRef.current;
+                scannerRef.current = null;
+                try {
+                    if (scanner.isScanning) {
+                        await scanner.stop();
+                    }
+                    try {
+                        scanner.clear();
+                    } catch (clearErr) {
+                        // ignore
+                    }
+                } catch (e) {
+                    console.error("Error during scanner cleanup:", e);
+                }
+            }
+        };
 
-        function onScanSuccess(decodedText) {
-            handleScan(decodedText);
-        }
+        const initScanner = async () => {
+            await cleanupScanner();
 
-        function onScanError(err) {
-            // Silence common errors
-        }
+            if (!mounted || !isScanning || !eventId) return;
+
+            // Wait for DOM to register the #reader element
+            await new Promise(resolve => setTimeout(resolve, 80));
+            if (!mounted) return;
+
+            const readerEl = document.getElementById("reader");
+            if (!readerEl) {
+                console.error("Reader element not found in DOM");
+                return;
+            }
+
+            try {
+                localScanner = new Html5Qrcode("reader");
+                scannerRef.current = localScanner;
+
+                await localScanner.start(
+                    { facingMode: facingMode },
+                    { fps: 10 },
+                    (decodedText) => {
+                        handleScan(decodedText);
+                    },
+                    () => {}
+                );
+            } catch (err) {
+                console.warn("Failed to start scanner with facingMode:", facingMode, err);
+                if (mounted && localScanner) {
+                    try {
+                        const fallbackMode = facingMode === "environment" ? "user" : "environment";
+                        console.log("Attempting fallback facingMode:", fallbackMode);
+                        await localScanner.start(
+                            { facingMode: fallbackMode },
+                            { fps: 10 },
+                            (decodedText) => {
+                                handleScan(decodedText);
+                            },
+                            () => {}
+                        );
+                        setFacingMode(fallbackMode);
+                    } catch (fallbackErr) {
+                        console.error("Fallback scanner start failed:", fallbackErr);
+                    }
+                }
+            }
+        };
+
+        initScanner();
 
         return () => {
-            scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+            mounted = false;
+            cleanupScanner();
         };
-    }, [eventId]);
+    }, [isScanning, eventId, facingMode]);
+
+    const toggleCamera = () => {
+        if (!scannerRef.current) return;
+        const newMode = facingMode === "environment" ? "user" : "environment";
+        setFacingMode(newMode);
+    };
 
     const handleScan = async (code) => {
         if (loading || !code) return;
         setLoading(true);
+        setIsScanning(false);
         setError(null);
         setScanResult(null);
 
@@ -150,7 +218,13 @@ const GateScanner = ({ eventId }) => {
 
                 {/* Primary Scan Zone (Payment-App Style) */}
                 <div className="relative mx-auto w-full max-w-sm aspect-square bg-zinc-900/40 rounded-[4rem] border border-white/5 shadow-2xl overflow-hidden backdrop-blur-3xl group">
-                    <div id="reader" className="w-full h-full object-cover grayscale contrast-125 opacity-40 group-hover:opacity-60 transition-opacity" />
+                    {isScanning ? (
+                        <div id="reader" className="w-full h-full object-cover grayscale contrast-125 opacity-40 group-hover:opacity-60 transition-opacity" />
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/10">
+                            <QrCode size={48} className="text-gray-600 animate-pulse" />
+                        </div>
+                    )}
                     
                     {/* Scanning UI Elements */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -158,11 +232,13 @@ const GateScanner = ({ eventId }) => {
                         <div className="absolute inset-12 border-2 border-white/10 rounded-[3rem] border-dashed" />
                         
                         {/* Laser Line */}
-                        <motion.div 
-                            animate={{ top: ['20%', '80%', '20%'] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                            className="absolute left-12 right-12 h-0.5 bg-gradient-to-r from-transparent via-neon-blue to-transparent shadow-[0_0_15px_rgba(46,191,255,0.8)] z-20"
-                        />
+                        {isScanning && (
+                            <motion.div 
+                                animate={{ top: ['20%', '80%', '20%'] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                className="absolute left-12 right-12 h-0.5 bg-gradient-to-r from-transparent via-neon-blue to-transparent shadow-[0_0_15px_rgba(46,191,255,0.8)] z-20"
+                            />
+                        )}
 
                         {/* Scanner Corners */}
                         <div className="absolute top-12 left-12 w-8 h-8 border-t-4 border-l-4 border-neon-blue rounded-tl-2xl shadow-[-5px_-5px_15px_rgba(46,191,255,0.3)]" />
@@ -170,6 +246,19 @@ const GateScanner = ({ eventId }) => {
                         <div className="absolute bottom-12 left-12 w-8 h-8 border-b-4 border-l-4 border-neon-blue rounded-bl-2xl shadow-[-5px_5px_15px_rgba(46,191,255,0.3)]" />
                         <div className="absolute bottom-12 right-12 w-8 h-8 border-b-4 border-r-4 border-neon-blue rounded-br-2xl shadow-[5px_5px_15px_rgba(46,191,255,0.3)]" />
                     </div>
+
+                    {/* Swap Camera Button */}
+                    {isScanning && (
+                        <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2 z-30">
+                            <button 
+                                onClick={toggleCamera} 
+                                className="flex items-center gap-2 bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full text-white text-[9px] font-black uppercase tracking-widest transition-all shadow-xl pointer-events-auto hover:scale-105 active:scale-95"
+                            >
+                                <RefreshCw size={12} className={facingMode === "user" ? "rotate-180 transition-transform" : "transition-transform"} /> 
+                                Swap Camera
+                            </button>
+                        </div>
+                    )}
 
                     {/* Result Overlays */}
                     <AnimatePresence mode="wait">
@@ -194,7 +283,7 @@ const GateScanner = ({ eventId }) => {
                                 </div>
                                 
                                 <Button 
-                                    onClick={() => setScanResult(null)}
+                                    onClick={() => { setScanResult(null); setIsScanning(true); }}
                                     className="mt-8 bg-black text-neon-green h-14 rounded-2xl px-12 border-none font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all w-full"
                                 >
                                     Proceed to Next
@@ -213,7 +302,7 @@ const GateScanner = ({ eventId }) => {
                                 </div>
                                 
                                 <Button 
-                                    onClick={() => setError(null)}
+                                    onClick={() => { setError(null); setIsScanning(true); }}
                                     className="mt-8 bg-white text-red-600 h-14 rounded-2xl px-12 border-none font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all w-full"
                                 >
                                     Try Again
@@ -260,6 +349,25 @@ const GateScanner = ({ eventId }) => {
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                #reader { border: none !important; width: 100% !important; height: 100% !important; background: #000; position: relative; }
+                #reader > div { display: none !important; } /* Hide all library-injected wrappers */
+                #reader__dashboard_section_csr { display: none !important; }
+                #reader__dashboard_section_swaplink { display: none !important; }
+                
+                #reader video { 
+                    object-fit: cover !important; 
+                    width: 100% !important; 
+                    height: 100% !important; 
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    margin: 0 !important; 
+                    padding: 0 !important;
+                    display: block !important;
+                }
+            `}</style>
         </div>
     );
 };

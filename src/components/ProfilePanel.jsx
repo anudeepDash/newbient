@@ -103,7 +103,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
         } catch (err) {
             addNotification({
                 title: "Dispatch Failed",
-                content: "Unable to send reset email.",
+                content: err.message || "Unable to send reset email.",
                 type: 'default'
             });
         } finally {

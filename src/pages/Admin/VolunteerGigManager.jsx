@@ -377,6 +377,7 @@ const VolunteerGigManager = () => {
         return (
             <AdminCommunityHubLayout 
                 hideTabs 
+                accentColor="neon-green"
                 studioHeader={{
                     title: "GIG",
                     subtitle: editingId ? "EDITOR" : "CREATOR",
@@ -685,6 +686,7 @@ const VolunteerGigManager = () => {
         <AdminCommunityHubLayout 
             title="Volunteer Management" 
             description="Manage community contributions and operational support roles."
+            accentColor="neon-green"
             studioHeader={{
                 title: "GIG",
                 subtitle: "MANAGER",
