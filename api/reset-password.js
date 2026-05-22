@@ -63,13 +63,24 @@ export default async function handler(req, res) {
             console.error('[RESET] ❌ Missing SMTP_USER or SMTP_PASS environment variables!');
         }
 
+        let smtpUser = process.env.SMTP_USER?.trim() || '';
+        let smtpPass = process.env.SMTP_PASS?.trim() || '';
+
+        // Strip surrounding quotes if present (e.g. from copy-pasting raw dotenv values)
+        if ((smtpUser.startsWith('"') && smtpUser.endsWith('"')) || (smtpUser.startsWith("'") && smtpUser.endsWith("'"))) {
+            smtpUser = smtpUser.slice(1, -1).trim();
+        }
+        if ((smtpPass.startsWith('"') && smtpPass.endsWith('"')) || (smtpPass.startsWith("'") && smtpPass.endsWith("'"))) {
+            smtpPass = smtpPass.slice(1, -1).trim();
+        }
+
         const transporter = nodemailer.createTransport({
             host: smtpHost,
             port: smtpPort,
             secure: process.env.SMTP_SECURE === 'true',
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user: smtpUser,
+                pass: smtpPass,
             },
             connectionTimeout: 10000, // 10 seconds timeout
             greetingTimeout: 5000,

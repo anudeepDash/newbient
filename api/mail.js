@@ -42,13 +42,24 @@ export default async function handler(req, res) {
         console.error(`[MAIL] ❌ Missing credentials for account: ${accountType}`);
     }
 
+    let cleanUser = smtpUser?.trim() || '';
+    let cleanPass = smtpPass?.trim() || '';
+
+    // Strip surrounding quotes if present (e.g. from copy-pasting raw dotenv values)
+    if ((cleanUser.startsWith('"') && cleanUser.endsWith('"')) || (cleanUser.startsWith("'") && cleanUser.endsWith("'"))) {
+        cleanUser = cleanUser.slice(1, -1).trim();
+    }
+    if ((cleanPass.startsWith('"') && cleanPass.endsWith('"')) || (cleanPass.startsWith("'") && cleanPass.endsWith("'"))) {
+        cleanPass = cleanPass.slice(1, -1).trim();
+    }
+
     const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
         secure: process.env.SMTP_SECURE === 'true',
         auth: {
-            user: smtpUser,
-            pass: smtpPass,
+            user: cleanUser,
+            pass: cleanPass,
         },
     });
 
