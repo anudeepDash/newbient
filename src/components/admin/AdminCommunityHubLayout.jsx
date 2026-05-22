@@ -16,11 +16,28 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
 
     const tabs = customTabs || defaultTabs;
 
+    const bgGlowMap = {
+        'neon-green': 'bg-neon-green/5',
+        'neon-blue': 'bg-neon-blue/5',
+        'neon-pink': 'bg-neon-pink/5',
+        'neon-purple': 'bg-neon-purple/5',
+    };
+
+    const textColorMap = {
+        'neon-green': 'text-neon-green',
+        'neon-blue': 'text-neon-blue',
+        'neon-pink': 'text-neon-pink',
+        'neon-purple': 'text-neon-purple',
+    };
+
+    const bgGlowClass = bgGlowMap[accentColor] || 'bg-neon-green/5';
+    const activeTextClass = textColorMap[accentColor] || 'text-neon-green';
+
     return (
         <div className="min-h-screen bg-[#020202] text-white pt-32 md:pt-48 pb-20 relative overflow-x-clip">
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className={cn("absolute top-0 right-0 w-[50%] h-[50%] rounded-full blur-[120px] animate-pulse", `bg-${accentColor}/5`)} />
+                <div className={cn("absolute top-0 right-0 w-[50%] h-[50%] rounded-full blur-[120px] animate-pulse", bgGlowClass)} />
                 <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
@@ -73,7 +90,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                                 tab.comingSoon && "opacity-40 cursor-not-allowed pointer-events-none"
                                             )}
                                         >
-                                            <Icon size={14} className={cn(isActive ? "text-black" : tab.color || `text-${accentColor}`, "md:size-[16px]")} />
+                                            <Icon size={14} className={cn(isActive ? "text-black" : tab.color || activeTextClass, "md:size-[16px]")} />
                                             <div className="flex flex-col text-left">
                                                 <span className="text-[8px] md:text-[10px] uppercase tracking-widest leading-none">{tab.name}</span>
                                                 {tab.comingSoon && <span className="text-[7px] font-black text-gray-500 uppercase tracking-tighter mt-0.5">Soon</span>}

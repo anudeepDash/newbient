@@ -47,7 +47,7 @@ const ContractManagement = () => {
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
-        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-[#A855F7]' },
+        { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
     ];
 
 
@@ -106,14 +106,14 @@ const ContractManagement = () => {
             studioHeader={{
                 title: 'CONTRACT',
                 subtitle: 'VAULT',
-                accentClass: 'text-[#A855F7]',
+                accentClass: 'text-neon-purple',
                 icon: Scale
             }}
             tabs={vaultTabs}
             accentColor="neon-purple"
             action={
                 <Link to="/admin/agreements/new" className="w-full md:w-auto">
-                    <Button className="w-full md:w-auto bg-[#A855F7] text-black font-black uppercase tracking-widest text-[10px] sm:text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-none"><Plus className="mr-2 h-4 w-4" /> New Contract</Button>
+                    <Button className="w-full md:w-auto bg-neon-purple text-black font-black uppercase tracking-widest text-[10px] sm:text-xs h-12 px-8 rounded-xl hover:scale-105 transition-all shadow-[0_4px_12px_rgba(168,85,247,0.4)]"><Plus className="mr-2 h-4 w-4" /> New Contract</Button>
                 </Link>
             }
         >
@@ -132,13 +132,13 @@ const ContractManagement = () => {
                         <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
                             <div className="flex flex-1">
                                 {['All', 'Draft', 'Final', 'Executed'].map(s => (
-                                    <button key={s} onClick={() => setStatusFilter(s)} className={cn("flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all min-w-[70px] sm:min-w-[100px] md:min-w-[120px]", statusFilter === s ? "bg-[#A855F7] text-black shadow-[0_10px_25px_rgba(168,85,247,0.5)]" : "text-gray-500 hover:text-white hover:bg-white/5")}>{s}</button>
+                                    <button key={s} onClick={() => setStatusFilter(s)} className={cn("flex-1 px-3 sm:px-6 md:px-10 py-2.5 rounded-lg md:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all min-w-[70px] sm:min-w-[100px] md:min-w-[120px]", statusFilter === s ? "bg-neon-purple text-black shadow-[0_10px_25px_rgba(168,85,247,0.5)]" : "text-gray-500 hover:text-white hover:bg-white/5")}>{s}</button>
                                 ))}
                             </div>
                         </div>
                         <div className="flex bg-black/40 p-1 rounded-xl md:rounded-[1.5rem] border border-white/5 w-full sm:w-auto justify-center">
-                            <button onClick={() => setViewMode('grid')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'grid' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><LayoutGrid size={16} /></button>
-                            <button onClick={() => setViewMode('list')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'list' ? "bg-[#A855F7] text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><FileText size={16} /></button>
+                            <button onClick={() => setViewMode('grid')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'grid' ? "bg-neon-purple text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><LayoutGrid size={16} /></button>
+                            <button onClick={() => setViewMode('list')} className={cn("flex-1 sm:flex-none p-3 rounded-lg md:rounded-xl transition-all", viewMode === 'list' ? "bg-neon-purple text-black shadow-[0_5px_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white")}><FileText size={16} /></button>
                         </div>
                     </div>
                 </div>

@@ -175,6 +175,7 @@ const GuestlistManager = () => {
         return (
             <AdminCommunityHubLayout 
                 hideTabs 
+                accentColor="neon-blue"
                 studioHeader={{
                     title: "GUESTLIST",
                     subtitle: editingId ? "EDITOR" : "CREATOR",
@@ -447,6 +448,7 @@ const GuestlistManager = () => {
         <AdminCommunityHubLayout 
             title="Guestlist Management" 
             description="Manage verified entry lists for exclusive events and community gatherings."
+            accentColor="neon-blue"
             studioHeader={{
                 title: "GUESTLIST",
                 subtitle: "MANAGER",

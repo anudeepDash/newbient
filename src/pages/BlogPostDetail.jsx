@@ -47,6 +47,39 @@ const AdSlot = ({ className = '', format = 'horizontal', slot = '' }) => (
     />
 );
 
+const isRawVideo = (url) => {
+    if (!url) return false;
+    return !!(url.match(/\.(mp4|webm|ogg|mov)$/i) || url.includes('cloudinary.com') || url.includes('firebasestorage.googleapis.com'));
+};
+
+const getVideoEmbedUrl = (url) => {
+    if (!url) return null;
+    let id = '';
+    if (url.includes('youtube.com/watch?v=')) {
+        id = url.split('v=')[1]?.split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+        id = url.split('/').pop();
+    } else if (url.includes('youtube.com/shorts/')) {
+        id = url.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
+    } else if (url.includes('youtube.com/embed/')) {
+        id = url.split('embed/')[1]?.split('?')[0]?.split('&')[0];
+    }
+
+    if (id) {
+        return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
+    }
+
+    if (url.includes('vimeo.com/')) {
+        const id = url.split('/').pop()?.split('?')[0];
+        return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0`;
+    }
+    if (url.includes('instagram.com/')) {
+        const base = url.split('?')[0];
+        return `${base}${base.endsWith('/') ? '' : '/'}embed/`;
+    }
+    return url;
+};
+
 const BlogPostDetail = () => {
     const { category, slug } = useParams();
     const { posts } = useStore();
@@ -210,14 +243,25 @@ const BlogPostDetail = () => {
                     className="absolute inset-0"
                 >
                     {post.videoUrl ? (
-                        <video 
-                            src={post.videoUrl} 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline
-                            className="w-full h-full object-cover"
-                        />
+                        isRawVideo(post.videoUrl) ? (
+                            <video 
+                                src={post.videoUrl} 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full pointer-events-none relative overflow-hidden">
+                                <iframe 
+                                    src={getVideoEmbedUrl(post.videoUrl)} 
+                                    className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
+                                    allow="autoplay; encrypted-media" 
+                                    title={post.title}
+                                />
+                            </div>
+                        )
                     ) : (
                         <img 
                             src={post.coverImage} 

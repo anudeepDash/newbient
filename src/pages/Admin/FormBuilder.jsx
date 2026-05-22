@@ -148,6 +148,7 @@ const FormBuilder = () => {
     return (
         <AdminCommunityHubLayout 
             hideTabs 
+            accentColor="neon-pink"
             studioHeader={{
                 title: "FORM",
                 subtitle: id ? "EDITOR" : "CREATOR",

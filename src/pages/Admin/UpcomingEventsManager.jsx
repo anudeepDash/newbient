@@ -238,11 +238,11 @@ const UpcomingEventsManager = () => {
             studioHeader={{
                 title: 'EVENT',
                 subtitle: 'MANAGEMENT',
-                accentClass: 'text-neon-pink',
+                accentClass: 'text-neon-green',
                 icon: Calendar
             }}
             tabs={coreContentTabs}
-            accentColor="neon-pink"
+            accentColor="neon-green"
             action={!isAdding && (
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-4 w-full md:w-auto">
                     <button
@@ -255,7 +255,7 @@ const UpcomingEventsManager = () => {
                         {siteSettings?.showUpcomingEvents ? <Eye size={16} /> : <EyeOff size={16} />}
                         Public: {siteSettings?.showUpcomingEvents ? 'Visible' : 'Hidden'}
                     </button>
-                    <Button onClick={() => { setIsAdding(true); setEditingId(null); setActiveEditorTab('basics'); }} className="h-12 md:h-14 px-6 md:px-10 bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-[0_10px_30px_rgba(0,255,255,0.2)] w-full sm:w-auto">
+                    <Button onClick={() => { setIsAdding(true); setEditingId(null); setActiveEditorTab('basics'); }} className="h-12 md:h-14 px-6 md:px-10 bg-neon-green text-black font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.2)] w-full sm:w-auto">
                         <Plus className="mr-2" size={18} /> New Entry
                     </Button>
                 </div>

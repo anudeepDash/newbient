@@ -36,7 +36,7 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Target from 'lucide-react/dist/esm/icons/target';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -147,36 +147,24 @@ const SystemControlCenter = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-32">
-            {/* Minimal Background Atmosphere */}
-            <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-                <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-neon-pink/5 rounded-full blur-[120px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                {/* Slim Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-                    <div className="space-y-6">
-                        <div className="flex flex-col">
-                             <h1 className="text-3xl md:text-5xl font-black font-heading tracking-tighter uppercase italic leading-none">
-                                SYSTEM <span className="text-neon-blue">COMMAND.</span>
-                            </h1>
-                            <div className="flex items-center gap-2 mt-2">
-                                <Terminal size={12} className="text-neon-blue" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">v2.5.0_Root</span>
-                            </div>
-                        </div>
-                        <AdminDashboardLink />
-                    </div>
-
-                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                        <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                            <div className={`w-1.5 h-1.5 rounded-full ${isLocal ? 'bg-yellow-500' : 'bg-neon-green'}`} />
-                            {isLocal ? 'Development' : 'Production'}
-                        </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'System',
+                subtitle: 'Command',
+                icon: Terminal,
+                accentClass: 'text-neon-blue'
+            }}
+            accentColor="neon-blue"
+            hideTabs={true}
+            action={
+                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                    <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                        <div className={`w-1.5 h-1.5 rounded-full ${isLocal ? 'bg-yellow-500' : 'bg-neon-green'}`} />
+                        {isLocal ? 'Development' : 'Production'}
                     </div>
                 </div>
+            }
+        >
 
                 {/* Compact Kill Switch */}
                 <Card className={`mb-12 overflow-hidden border-2 transition-all duration-500 ${maintenanceState.global ? 'border-red-500 bg-red-500/5' : 'border-white/10 bg-white/5'}`}>
@@ -406,8 +394,7 @@ const SystemControlCenter = () => {
                         <span className="text-[10px] font-mono text-gray-800 text-right mt-8">NB_SYS_772_NODE</span>
                     </div>
                 </div>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

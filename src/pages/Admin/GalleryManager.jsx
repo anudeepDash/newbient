@@ -15,7 +15,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const GalleryManager = () => {
     const { galleryImages, addGalleryImage, deleteGalleryImage } = useStore();
@@ -70,27 +70,17 @@ const GalleryManager = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Atmos */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[10%] left-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            VISUAL <span className="text-neon-blue">ARCHIVE.</span>
-                        </h1>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Visual',
+                subtitle: 'Archive',
+                icon: ImageIcon,
+                accentClass: 'text-neon-blue'
+            }}
+            accentColor="neon-blue"
+            hideTabs={true}
+        >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* Control Panel */}
                     <div className="lg:col-span-4">
                         <Card className="p-10 bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2.5rem] lg:sticky lg:top-32">
@@ -210,7 +200,7 @@ const GalleryManager = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

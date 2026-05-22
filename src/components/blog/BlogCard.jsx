@@ -12,6 +12,39 @@ const CATEGORY_COLORS = {
     'default': '#00ffff'
 };
 
+const isRawVideo = (url) => {
+    if (!url) return false;
+    return !!(url.match(/\.(mp4|webm|ogg|mov)$/i) || url.includes('cloudinary.com') || url.includes('firebasestorage.googleapis.com'));
+};
+
+const getVideoEmbedUrl = (url) => {
+    if (!url) return null;
+    let id = '';
+    if (url.includes('youtube.com/watch?v=')) {
+        id = url.split('v=')[1]?.split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+        id = url.split('/').pop();
+    } else if (url.includes('youtube.com/shorts/')) {
+        id = url.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
+    } else if (url.includes('youtube.com/embed/')) {
+        id = url.split('embed/')[1]?.split('?')[0]?.split('&')[0];
+    }
+
+    if (id) {
+        return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&playsinline=1&showinfo=0&rel=0&modestbranding=1`;
+    }
+
+    if (url.includes('vimeo.com/')) {
+        const id = url.split('/').pop()?.split('?')[0];
+        return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0`;
+    }
+    if (url.includes('instagram.com/')) {
+        const base = url.split('?')[0];
+        return `${base}${base.endsWith('/') ? '' : '/'}embed/`;
+    }
+    return url;
+};
+
 const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
     const categorySlug = post.category?.toLowerCase().replace(' ', '-') || 'news';
     const detailPath = `/concertzone/${categorySlug}/${post.slug}`;
@@ -27,14 +60,25 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
             >
                 <Link to={detailPath} className="block w-full h-full">
                     {post.videoUrl ? (
-                        <video 
-                            src={post.videoUrl} 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline
-                            className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110" 
-                        />
+                        isRawVideo(post.videoUrl) ? (
+                            <video 
+                                src={post.videoUrl} 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline
+                                className="w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110" 
+                            />
+                        ) : (
+                            <div className="w-full h-full pointer-events-none transition-transform duration-[2000ms] ease-out group-hover:scale-110 relative overflow-hidden">
+                                <iframe 
+                                    src={getVideoEmbedUrl(post.videoUrl)} 
+                                    className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
+                                    allow="autoplay; encrypted-media" 
+                                    title={post.title}
+                                />
+                            </div>
+                        )
                     ) : (
                         <img 
                             src={post.coverImage} 
@@ -109,14 +153,25 @@ const BlogCard = ({ post, variant = 'standard', index = 0 }) => {
                 <Link to={detailPath} className="flex flex-col h-full">
                     <div className="relative h-[60%] overflow-hidden">
                         {post.videoUrl ? (
-                            <video 
-                                src={post.videoUrl} 
-                                autoPlay 
-                                muted 
-                                loop 
-                                playsInline
-                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-                            />
+                            isRawVideo(post.videoUrl) ? (
+                                <video 
+                                    src={post.videoUrl} 
+                                    autoPlay 
+                                    muted 
+                                    loop 
+                                    playsInline
+                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                                />
+                            ) : (
+                                <div className="w-full h-full pointer-events-none transition-transform duration-1000 group-hover:scale-110 relative overflow-hidden">
+                                    <iframe 
+                                        src={getVideoEmbedUrl(post.videoUrl)} 
+                                        className="absolute top-1/2 left-1/2 w-[130%] h-[130%] -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover border-none" 
+                                        allow="autoplay; encrypted-media" 
+                                        title={post.title}
+                                    />
+                                </div>
+                            )
                         ) : (
                             <img 
                                 src={post.coverImage} 

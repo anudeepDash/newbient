@@ -22,7 +22,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const SiteContentManager = () => {
     const { siteDetails, updateSiteDetails, siteSettings, updateGeneralSettings } = useStore();
@@ -47,27 +47,17 @@ const SiteContentManager = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Immersive Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] right-[-5%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-                    <div className="space-y-2">
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            SITE <span className="text-neon-green">CONFIG.</span>
-                        </h1>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
-                        </div>
-                    </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-16">
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Site',
+                subtitle: 'Config',
+                icon: Settings,
+                accentClass: 'text-neon-green'
+            }}
+            accentColor="neon-green"
+            hideTabs={true}
+        >
+            <form onSubmit={handleSubmit} className="space-y-16">
                     {/* Critical Control */}
                     <section>
                         <div className="flex items-center gap-4 mb-8">
@@ -207,8 +197,7 @@ const SiteContentManager = () => {
                         </Button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

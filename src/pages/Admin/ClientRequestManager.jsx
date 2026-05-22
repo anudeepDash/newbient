@@ -37,6 +37,7 @@ import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 
 
 import { motion, AnimatePresence } from 'framer-motion';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
 import { db } from '../../lib/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -109,44 +110,22 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
     const renderContent = () => (
         <div className="relative z-10 max-w-[1700px] mx-auto pb-20">
             {/* Header Section */}
-            <div className={cn(
-                "flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10 mb-12",
-                isEmbedded ? "pt-8 px-0" : "pt-32 px-6 md:px-12"
-            )}>
-                {!isEmbedded ? (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-neon-green font-black tracking-[0.5em] text-[10px] uppercase">
-                            <Layers size={14} />
-                            Client Engagement Hub
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.8]">
-                            REQUEST <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green via-neon-blue to-purple-500">PIPELINE</span>
-                        </h1>
-                        <p className="text-gray-500 text-sm font-medium tracking-wide max-w-xl leading-relaxed">
-                            MISSION INQUIRIES & BOOKING OPERATIONAL HUB
-                        </p>
+            {isEmbedded && (
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10 mb-12 pt-8 px-0">
+                    <div className="w-full">
+                        <StatCard 
+                            compact={true} 
+                            icon={<Layers size={24} />} 
+                            label="PIPELINE OVERVIEW" 
+                            value={stats.total} 
+                            color="green" 
+                            description={`TOTAL INQUIRIES | ${stats.fulfilled} FULFILLED • ${stats.total ? Math.round((stats.fulfilled / stats.total) * 100) : 0}% CONVERSION`} 
+                        />
                     </div>
-                ) : null}
-
-                <div className="w-full">
-                    <StatCard 
-                        compact={isEmbedded} 
-                        icon={<Layers size={24} />} 
-                        label={isEmbedded ? "PIPELINE OVERVIEW" : "ENGAGEMENT OVERVIEW"} 
-                        value={stats.total} 
-                        color="green" 
-                        description={isEmbedded 
-                            ? `TOTAL INQUIRIES | ${stats.fulfilled} FULFILLED • ${stats.total ? Math.round((stats.fulfilled / stats.total) * 100) : 0}% CONVERSION`
-                            : `${stats.pending} Pending Analysis • ${stats.fulfilled} Successful Deployments`
-                        } 
-                    />
                 </div>
+            )}
 
-
-            </div>
-
-
-            <div className={cn("px-6 md:px-12", isEmbedded ? "pt-12" : "pt-0")}>
+            <div className={isEmbedded ? "px-6 md:px-12 pt-12" : ""}>
                 {/* Command Bar */}
                 <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-2 md:p-2.5 mb-12 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col md:flex-row md:items-center gap-3">
 
@@ -329,17 +308,30 @@ const ClientRequestManager = ({ isEmbedded = false }) => {
 
 
     const content = isEmbedded ? renderContent() : (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black">
-            {/* Background Canvas */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(57,255,20,0.08),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,#000_30%,transparent_100%)]" />
-                <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-neon-green/5 rounded-full blur-[180px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/5 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-            </div>
-
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Client',
+                subtitle: 'Requests',
+                icon: Inbox,
+                accentClass: 'text-neon-blue'
+            }}
+            accentColor="neon-blue"
+            hideTabs={true}
+            action={
+                <div className="w-full md:w-80 shrink-0">
+                    <StatCard 
+                        compact={true} 
+                        icon={<Layers size={20} />} 
+                        label="PIPELINE OVERVIEW" 
+                        value={stats.total} 
+                        color="green" 
+                        description={`TOTAL INQUIRIES | ${stats.fulfilled} FULFILLED • ${stats.total ? Math.round((stats.fulfilled / stats.total) * 100) : 0}% CONVERSION`} 
+                    />
+                </div>
+            }
+        >
             {renderContent()}
-        </div>
+        </AdminCommunityHubLayout>
     );
 
     return (

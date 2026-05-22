@@ -83,10 +83,11 @@ const MailingManager = () => {
     return (
         <AdminCommunityHubLayout 
             hideTabs={true}
+            accentColor="neon-pink"
             studioHeader={{
                 title: "OFFICIAL",
                 subtitle: "COMMUNICATIONS",
-                accentClass: "text-white"
+                accentClass: "text-neon-pink"
             }}
             action={(
                 <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] w-full md:w-auto overflow-hidden">
@@ -256,7 +257,7 @@ const MailingManager = () => {
                                     <Button 
                                         type="submit" 
                                         disabled={sending || recipients.length === 0}
-                                        className="w-full h-20 bg-neon-green text-black font-black font-heading uppercase tracking-[0.2em] rounded-[2rem] shadow-[0_20px_60px_rgba(57,255,20,0.1)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-4"
+                                        className="w-full h-20 bg-neon-pink text-black font-black font-heading uppercase tracking-[0.2em] rounded-[2rem] shadow-[0_20px_60px_rgba(255,79,139,0.2)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-4"
                                     >
                                         {sending ? (
                                             <>

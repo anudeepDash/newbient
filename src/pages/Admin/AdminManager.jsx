@@ -21,7 +21,7 @@ import { Input } from '../../components/ui/Input';
 import { useStore } from '../../lib/store';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 
 const AdminManager = () => {
     const { user, blockUser, unblockUser, creators, artists } = useStore();
@@ -190,58 +190,52 @@ const AdminManager = () => {
     }
 
     const filteredAdmins = displayAdmins.filter(a =>
-        a.email.toLowerCase().includes((memberSearch || '').toLowerCase())
+        (a.email || '').toLowerCase().includes((memberSearch || '').toLowerCase())
     );
 
     const filteredMembers = members.filter(m =>
-    (m.email?.toLowerCase().includes(memberSearch.toLowerCase()) ||
-        m.displayName?.toLowerCase().includes(memberSearch.toLowerCase()))
+        ((m.email || '').toLowerCase().includes((memberSearch || '').toLowerCase()) ||
+         (m.displayName || '').toLowerCase().includes((memberSearch || '').toLowerCase()))
     );
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white relative overflow-hidden pb-20">
-            {/* Immersive Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] bg-neon-green/5 rounded-full blur-[150px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-blue/5 rounded-full blur-[150px] animate-pulse delay-1000" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-24 md:pt-32">
-                {/* Modern Header */}
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-10 gap-8">
-                    <div className="space-y-4 max-w-full">
-                        <AdminDashboardLink className="mb-4" />
-                        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black font-heading tracking-tighter uppercase italic leading-[1.6] py-10 pr-12 pl-1 overflow-visible whitespace-nowrap">
-                            ACCESS <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white px-4">REGISTRY.</span>
-                        </h1>
-                    </div>
-
-                    <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2 w-full md:w-auto">
-                        {[
-                            { id: 'members', label: 'Newbi Personnel', count: members.length, icon: Users },
-                            { id: 'admins', label: 'Newbi Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
-                            { id: 'requests', label: 'Access Requests', count: pendingRequests.length, icon: Clock }
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    activeTab === tab.id 
-                                        ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
-                                        : "text-gray-500 hover:text-white"
-                                )}
-                            >
-                                <tab.icon size={14} />
-                                {tab.label}
-                                <span className={cn(
-                                    "px-1.5 py-0.5 rounded-md text-[8px]",
-                                    activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
-                                )}>{tab.count}</span>
-                            </button>
-                        ))}
-                    </div>
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Access',
+                subtitle: 'Registry',
+                icon: Shield,
+                accentClass: 'text-neon-green'
+            }}
+            accentColor="neon-green"
+            hideTabs={true}
+        >
+            <div className="flex flex-col xl:flex-row justify-start md:justify-end items-start xl:items-center mb-10 gap-8">
+                <div className="flex flex-wrap md:flex-nowrap bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl gap-2 w-full md:w-auto">
+                    {[
+                        { id: 'members', label: 'Newbi Personnel', count: members.length, icon: Users },
+                        { id: 'admins', label: 'Newbi Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
+                        { id: 'requests', label: 'Access Requests', count: pendingRequests.length, icon: Clock }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === tab.id 
+                                    ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)]" 
+                                    : "text-gray-500 hover:text-white"
+                            )}
+                        >
+                            <tab.icon size={14} />
+                            {tab.label}
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded-md text-[8px]",
+                                activeTab === tab.id ? "bg-black/10 text-black" : "bg-white/5 text-gray-500"
+                            )}>{tab.count}</span>
+                        </button>
+                    ))}
                 </div>
+            </div>
 
                 <AnimatePresence mode="wait">
                     {activeTab === 'members' ? (
@@ -550,8 +544,7 @@ const AdminManager = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

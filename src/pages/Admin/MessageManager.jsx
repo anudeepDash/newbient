@@ -16,7 +16,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
+import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import { cn } from '../../lib/utils';
 
 const MessageManager = () => {
@@ -54,35 +54,24 @@ const MessageManager = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pb-20">
-            {/* Immersive Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[15%] left-[-5%] w-[40%] h-[40%] bg-neon-pink/5 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[5%] right-[-5%] w-[30%] h-[30%] bg-neon-blue/5 rounded-full blur-[150px]" />
-            </div>
-
-            <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-32 md:pt-48">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-8">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl md:text-6xl font-black font-heading tracking-tighter uppercase italic leading-[1.1] pb-2 pr-4">
-                            MESSAGE <span className="text-neon-pink">STREAM.</span>
-                        </h1>
-                        <div className="pt-4">
-                            <AdminDashboardLink />
-                        </div>
-                    </div>
-                    
-                    {unreadCount > 0 && (
-                        <div className="px-4 py-2 bg-neon-pink/10 border border-neon-pink/20 rounded-xl flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-neon-pink">{unreadCount} UNREAD DEBRIEFS</span>
-                        </div>
-                    )}
+        <AdminCommunityHubLayout
+            studioHeader={{
+                title: 'Message',
+                subtitle: 'Stream',
+                icon: Mail,
+                accentClass: 'text-neon-pink'
+            }}
+            accentColor="neon-pink"
+            hideTabs={true}
+            action={unreadCount > 0 ? (
+                <div className="px-4 py-2 bg-neon-pink/10 border border-neon-pink/20 rounded-xl flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neon-pink">{unreadCount} UNREAD DEBRIEFS</span>
                 </div>
-
-                {/* Filters & Search */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+            ) : null}
+        >
+            {/* Filters & Search */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
                     <div className="md:col-span-4 flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 h-14">
                         {['all', 'unread', 'read'].map((f) => (
                             <button
@@ -203,8 +192,7 @@ const MessageManager = () => {
                         )}
                     </AnimatePresence>
                 </div>
-            </div>
-        </div>
+        </AdminCommunityHubLayout>
     );
 };
 

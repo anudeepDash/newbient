@@ -1617,17 +1617,47 @@ export const useStore = create((set, get) => ({
     },
 
     resetPassword: async (email) => {
-        const response = await fetch('/api/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-        });
-        const result = await response.json();
-        if (!response.ok) {
-            const errorMsg = result.details || result.error || 'Failed to send reset email';
-            throw new Error(errorMsg);
+        if (!email) {
+            throw new Error("No email address associated with this account.");
         }
-        return result;
+        try {
+            const response = await fetch('/api/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            
+            const text = await response.text();
+            
+            // If the response is an HTML page (Vite fallback) or it failed, throw to trigger fallback
+            if (!response.ok || text.trim().startsWith('<')) {
+                throw new Error(text.trim().startsWith('<') ? 'API route not available (Vite dev fallback)' : `API Error: ${response.status}`);
+            }
+
+            const result = JSON.parse(text);
+            if (!result.success && !response.ok) {
+                throw new Error(result.details || result.error || 'Failed to send reset email');
+            }
+            return result;
+        } catch (error) {
+            console.warn("[Auth] Custom reset failed, falling back to Firebase Auth:", error.message);
+            try {
+                const { sendPasswordResetEmail } = await import('firebase/auth');
+                const { auth } = await import('./firebase');
+                if (!auth) throw new Error("Firebase Auth is not initialized.");
+                await sendPasswordResetEmail(auth, email);
+                return { success: true, fallback: true };
+            } catch (fallbackError) {
+                console.error("[Auth] Firebase Auth fallback also failed:", fallbackError);
+                // Clean up Firebase error messages for the UI
+                let msg = fallbackError.message;
+                if (fallbackError.code === 'auth/user-not-found') msg = 'Email address is not registered.';
+                else if (fallbackError.code === 'auth/invalid-email') msg = 'Invalid email address format.';
+                else if (fallbackError.code === 'auth/too-many-requests') msg = 'Too many requests. Try again later.';
+                else if (fallbackError.code === 'auth/unauthorized-continue-uri') msg = 'Domain not authorized for password reset.';
+                throw new Error(msg);
+            }
+        }
     },
 
     updateDisplayName: async (displayName) => {

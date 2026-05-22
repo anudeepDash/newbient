@@ -67,6 +67,7 @@ const FormManager = () => {
         <AdminCommunityHubLayout 
             title="Form Systems" 
             description="Create and manage forms for community feedback and registrations."
+            accentColor="neon-pink"
             studioHeader={{
                 title: "FORM",
                 subtitle: "MANAGER",
