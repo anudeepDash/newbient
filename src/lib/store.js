@@ -2080,12 +2080,7 @@ export const useStore = create((set, get) => ({
     deleteNotification: async (id) => {
         await deleteDoc(doc(db, 'notifications', id));
     },
-    clearAllNotifications: async () => {
-        const { notifications } = get();
-        const unread = notifications.filter(n => !n.isRead);
-        const updates = unread.map(n => updateDoc(doc(db, 'notifications', n.id), { isRead: true }));
-        await Promise.all(updates);
-    },
+
     saveFcmToken: async (token) => {
         const { user } = get();
         if (user) {

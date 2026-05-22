@@ -315,14 +315,12 @@ const ProposalManagement = () => {
                                             >
                                                 <Share2 size={12} /> Share
                                             </button>
-                                            <a 
-                                                href={`/proposal/${proposal.id}`} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5"
+                                            <Link 
+                                                to={`/proposal/${proposal.id}`} 
+                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
                                             >
                                                 <Eye size={16} />
-                                            </a>
+                                            </Link>
                                         </div>
                                     </Card>
                                 </motion.div>
@@ -388,7 +386,7 @@ const ProposalManagement = () => {
                                                 </td>
                                                 <td className="p-6 md:p-8">
                                                     <div className="flex justify-end gap-2">
-                                                        <a href={`/proposal/${proposal.id}`} target="_blank" rel="noreferrer" className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></a>
+                                                        <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
                                                         {user?.role !== 'editor' && (
                                                             <>
                                                                 <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>

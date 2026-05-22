@@ -13,21 +13,37 @@ try {
         if (!projectId || !clientEmail || !privateKey) {
             console.error('[AUTH INIT] ❌ Missing Firebase Admin environment variables!');
         } else {
-            // Support both literal newlines and escaped \n
-            if (privateKey.includes('\\n')) {
-                privateKey = privateKey.replace(/\\n/g, '\n');
+            // Bulletproof format helper to fix any copy-paste/Vercel formatting issues
+            let formattedKey = privateKey.trim();
+            
+            // Remove outer quotes if they exist
+            if ((formattedKey.startsWith('"') && formattedKey.endsWith('"')) || 
+                (formattedKey.startsWith("'") && formattedKey.endsWith("'"))) {
+                formattedKey = formattedKey.slice(1, -1).trim();
             }
             
-            // Ensure private key starts and ends correctly
-            if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-                console.error('[AUTH INIT] ❌ Private Key format appears invalid (missing headers)');
+            const header = '-----BEGIN PRIVATE KEY-----';
+            const footer = '-----END PRIVATE KEY-----';
+            
+            let rawBase64 = formattedKey;
+            if (rawBase64.includes(header)) rawBase64 = rawBase64.replace(header, '');
+            if (rawBase64.includes(footer)) rawBase64 = rawBase64.replace(footer, '');
+            
+            // Remove all whitespace, literal newlines, escaped newlines, and carriage returns
+            rawBase64 = rawBase64.replace(/\\n/g, '').replace(/\s+/g, '');
+            
+            // Re-wrap the base64 key into standard 64-character PEM lines
+            const pemLines = [];
+            for (let i = 0; i < rawBase64.length; i += 64) {
+                pemLines.push(rawBase64.substring(i, i + 64));
             }
+            formattedKey = `${header}\n${pemLines.join('\n')}\n${footer}`;
 
             app = initializeApp({
                 credential: cert({
                     projectId,
                     clientEmail,
-                    privateKey,
+                    privateKey: formattedKey,
                 }),
             });
             console.log('[AUTH INIT] ✅ Firebase Admin initialized successfully');

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../lib/store';
-import { X, Bell, Megaphone, Ticket, MessageSquare, Gift, FileText, Calendar, Users, Zap, Heart } from 'lucide-react';
+import { X, Bell, Megaphone, Ticket, MessageSquare, Gift, FileText, Zap, Users, Heart } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 const icons = {
     announcement: <Megaphone className="text-neon-blue" size={20} />,
@@ -16,27 +17,46 @@ const icons = {
 };
 
 const NotificationToast = () => {
-    const { notifications } = useStore();
+    const { notifications, markNotificationRead } = useStore();
     const [activeToast, setActiveToast] = useState(null);
     const [imgError, setImgError] = useState(false);
+    
+    // Use ref to track the previous list to reliably detect NEW notifications
+    const prevNotificationsRef = useRef([]);
 
     useEffect(() => {
-        setImgError(false); // Reset error state for new toast
-        // Find the latest unread notification created recently
-        const now = new Date();
-        const latest = notifications.find(n => !n.isRead && (now - new Date(n.createdAt)) < 10000);
+        const currentNotifications = notifications;
+        const prevNotifications = prevNotificationsRef.current;
         
-        if (latest && (!activeToast || activeToast.id !== latest.id)) {
-            setActiveToast(latest);
-            const timer = setTimeout(() => setActiveToast(null), 8000);
-            return () => clearTimeout(timer);
+        // Find if there is a new unread notification that wasn't in the previous state
+        const newUnread = currentNotifications.find(curr => 
+            !curr.isRead && 
+            !prevNotifications.some(prev => prev.id === curr.id)
+        );
+
+        if (newUnread) {
+            setImgError(false);
+            setActiveToast(newUnread);
         }
-    }, [notifications, activeToast, setActiveToast]);
+
+        prevNotificationsRef.current = currentNotifications;
+    }, [notifications]);
+
+    // Handle auto-dismiss timer
+    useEffect(() => {
+        if (!activeToast) return;
+        
+        const timer = setTimeout(() => {
+            setActiveToast(null);
+        }, 6000); // 6 seconds duration
+        
+        return () => clearTimeout(timer);
+    }, [activeToast]); // Now safely depends on activeToast
 
     if (!activeToast) return null;
 
     const getSmartIcon = () => {
-        const text = (activeToast.title + " " + (activeToast.content || "")).toLowerCase();
+        const text = ((activeToast.title || "") + " " + (activeToast.content || "")).toLowerCase();
         if (text.includes('volunteer')) return icons.volunteer;
         if (text.includes('gig') || text.includes('hiring')) return icons.gig;
         if (text.includes('giveaway')) return icons.giveaway;
@@ -47,25 +67,40 @@ const NotificationToast = () => {
     };
 
     return (
-        <div className="fixed bottom-8 right-4 z-[200] pointer-events-none md:right-8 lg:bottom-12">
+        <div className="fixed top-4 right-4 z-[300] md:top-6 md:right-6 pointer-events-none w-[calc(100vw-2rem)] md:w-auto">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeToast.id}
-                    initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                    initial={{ opacity: 0, y: -20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                    className="pointer-events-auto bg-[#0d0d0d] border border-white/10 rounded-[2.2rem] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex gap-4 min-w-[320px] max-w-[420px] backdrop-blur-xl relative overflow-hidden group"
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    className={cn(
+                        "pointer-events-auto bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/[0.08]",
+                        "rounded-2xl p-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)]",
+                        "flex gap-4 md:min-w-[340px] md:max-w-[420px] relative overflow-hidden group cursor-pointer"
+                    )}
+                    onClick={() => {
+                        markNotificationRead(activeToast.id);
+                        if (activeToast.link && activeToast.link.trim() !== '') {
+                            if (activeToast.link.startsWith('http')) {
+                                window.open(activeToast.link, '_blank');
+                            } else {
+                                window.location.href = activeToast.link;
+                            }
+                        }
+                        setActiveToast(null);
+                    }}
                 >
                     {/* Subtle pulse background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent" />
-                    <div className="absolute top-0 left-0 w-1 h-full bg-neon-blue" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent pointer-events-none" />
                     
-                    <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-500">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5 flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 duration-500">
                         {activeToast.image && !imgError ? (
                             <img 
                                 src={activeToast.image} 
                                 alt="" 
-                                className="w-full h-full rounded-2xl object-cover" 
+                                className="w-full h-full rounded-full object-cover" 
                                 onError={() => setImgError(true)}
                             />
                         ) : (
@@ -73,21 +108,23 @@ const NotificationToast = () => {
                         )}
                     </div>
                     
-                    <div className="flex-1 relative z-10 pr-2">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                            <h4 className="text-[11px] font-black uppercase text-white tracking-wider line-clamp-1">
+                    <div className="flex-1 relative z-10 pr-6">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <h4 className="text-[13px] font-bold text-white line-clamp-1">
                                 {activeToast.title}
                             </h4>
-                            <span className="text-[8px] text-gray-500 uppercase font-bold shrink-0">Now</span>
                         </div>
-                        <p className="text-[10px] text-gray-400 leading-relaxed line-clamp-2">
+                        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">
                             {activeToast.content}
                         </p>
                     </div>
                     
                     <button 
-                        onClick={() => setActiveToast(null)} 
-                        className="relative z-10 text-gray-600 hover:text-white transition-colors p-1 self-start"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveToast(null);
+                        }} 
+                        className="absolute top-3 right-3 z-10 text-gray-500 hover:text-white hover:bg-white/10 rounded-full p-1 transition-all"
                     >
                         <X size={14} />
                     </button>

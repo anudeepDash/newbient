@@ -246,4 +246,87 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-spin-slow { animation: spin 3s linear infinite; }
+
+/* AI Studio Dynamic Animations */
+@keyframes ai-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(280%); opacity: 0; }
+}
+
+@keyframes orbit-1 {
+  0% { transform: rotateX(65deg) rotateY(25deg) rotateZ(0deg); }
+  100% { transform: rotateX(65deg) rotateY(25deg) rotateZ(360deg); }
+}
+
+@keyframes orbit-2 {
+  0% { transform: rotateX(45deg) rotateY(-45deg) rotateZ(0deg); }
+  100% { transform: rotateX(45deg) rotateY(-45deg) rotateZ(360deg); }
+}
+
+@keyframes orbit-3 {
+  0% { transform: rotateX(75deg) rotateY(0deg) rotateZ(360deg); }
+  100% { transform: rotateX(75deg) rotateY(0deg) rotateZ(0deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); }
+  50% { transform: scale(1.05); opacity: 0.9; box-shadow: 0 0 35px rgba(57, 255, 20, 0.6); }
+}
+
+@keyframes pulse-glow-purple {
+  0%, 100% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
+  50% { transform: scale(1.05); opacity: 0.9; box-shadow: 0 0 35px rgba(168, 85, 247, 0.6); }
+}
+
+.animate-ai-scan {
+  animation: ai-scan 4s linear infinite;
+}
+
+.animate-orbit-1 {
+  animation: orbit-1 6s linear infinite;
+}
+
+.animate-orbit-2 {
+  animation: orbit-2 8s linear infinite;
+}
+
+.animate-orbit-3 {
+  animation: orbit-3 10s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow-purple {
+  animation: pulse-glow-purple 3s ease-in-out infinite;
+}
+
+@keyframes gemini-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gemini-border-wrap {
+  position: relative;
+  border-radius: 1.5rem;
+  padding: 1.5px;
+  background: linear-gradient(90deg, #39FF14, #00F0FF, #A855F7, #39FF14);
+  background-size: 300% 300%;
+  animation: gemini-gradient 6s ease infinite;
+}
+
+.gemini-border-wrap-purple {
+  position: relative;
+  border-radius: 1.5rem;
+  padding: 1.5px;
+  background: linear-gradient(90deg, #A855F7, #00F0FF, #FF4F8B, #A855F7);
+  background-size: 300% 300%;
+  animation: gemini-gradient 6s ease infinite;
+}
+
+
 
