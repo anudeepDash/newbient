@@ -76,36 +76,48 @@ export default async function handler(req, res) {
             socketTimeout: 15000
         });
 
-        // 3. Define the Template (High Fidelity)
+        // 3. Define the Template (Official Mailing Style)
+        const primaryGreen = '#39FF14';
+        const logoUrl = 'https://newbi.live/logo_full.png';
+
         const html = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
-                    .container { max-width: 600px; margin: 20px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 40px; overflow: hidden; }
-                    .header { padding: 40px; text-align: center; border-bottom: 1px solid #111; }
-                    .hero { width: 100%; height: auto; display: block; object-fit: cover; }
-                    .content { padding: 40px 60px; text-align: left; }
-                    .title { font-size: 32px; font-weight: 900; text-transform: uppercase; font-style: italic; margin-bottom: 20px; line-height: 1.1; letter-spacing: -1px; color: #fff; }
-                    .accent-line { width: 40px; height: 4px; background-color: #39FF14; border-radius: 2px; margin-bottom: 30px; }
-                    .body-text { color: #888; font-size: 14px; line-height: 1.6; font-weight: 500; margin-bottom: 40px; }
-                    .cta-button { display: inline-block; padding: 16px 32px; background-color: #39FF14; color: #000 !important; text-decoration: none; font-weight: 900; text-transform: uppercase; font-size: 12px; border-radius: 12px; }
-                    .footer { padding: 40px; background-color: #000; border-top: 1px solid #111; text-align: center; }
-                    .footer-text { font-size: 10px; font-weight: 900; color: #333; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-                    .sub-footer-text { font-size: 8px; font-weight: 700; color: #222; text-transform: uppercase; letter-spacing: 1px; max-width: 300px; margin: 0 auto; line-height: 1.4; }
+                    .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 40px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+                    .header { padding: 40px; border-bottom: 1px solid #1a1a1a; text-align: left; }
+                    .content { padding: 50px; text-align: left; }
+                    .category-badge { display: inline-block; padding: 6px 12px; background: ${primaryGreen}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                    .title { font-size: 28px; font-weight: 800; color: #ffffff; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                    .body-text { color: #888888; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
+                    .cta-button { display: inline-block; padding: 16px 30px; background-color: ${primaryGreen}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; text-transform: uppercase; letter-spacing: 1px; }
+                    .footer { padding: 40px 50px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center; }
+                    .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                    .social-links { margin-bottom: 20px; }
+                    .social-icon { display: inline-block; margin: 0 12px; }
+                    .social-img { width: 18px; height: 18px; opacity: 0.6; filter: invert(1); }
+                    @media screen and (max-width: 600px) {
+                        .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                        .content { padding: 30px 20px !important; }
+                        .header { padding: 30px 20px !important; }
+                        .footer { padding: 30px 20px !important; }
+                    }
                 </style>
             </head>
             <body>
+                <span class="preheader">Reset your Newbi Entertainment account password</span>
                 <div class="container">
                     <div class="header">
-                        <img src="https://newbi.live/logo_full.png" alt="Newbi Ent" height="32">
+                        <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                     </div>
-                    <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop" class="hero" alt="Hero">
                     <div class="content">
-                        <div class="title">RESET YOUR<br/><span style="color: #39FF14">IDENTITY.</span></div>
-                        <div class="accent-line"></div>
+                        <div class="category-badge">SECURITY</div>
+                        <h1 class="title">RESET YOUR IDENTITY</h1>
                         <p class="body-text">
                             We received a request to reset your password for your Newbi Entertainment account. 
                             Security is paramount in the tribe infrastructure. Click below to establish a new protocol.
@@ -113,8 +125,12 @@ export default async function handler(req, res) {
                         <a href="${resetLink}" class="cta-button">RESET PASSWORD</a>
                     </div>
                     <div class="footer">
-                        <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENT. ALL RIGHTS RESERVED.</p>
-                        <p class="sub-footer-text">IF YOU DID NOT REQUEST THIS RESET, PLEASE IGNORE THIS EMAIL OR CONTACT SECURITY@NEWBI.LIVE.</p>
+                        <div class="social-links">
+                            <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                            <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                            <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        </div>
+                        <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                     </div>
                 </div>
             </body>
@@ -122,7 +138,8 @@ export default async function handler(req, res) {
         `;
 
         // 4. Send the Email
-        const fromAddress = process.env.SMTP_FROM || `"Newbi Security" <${process.env.SMTP_USER}>`;
+        // Always use SMTP_USER as sender address to prevent SMTP sender rejection errors
+        const fromAddress = `"Newbi Security" <${process.env.SMTP_USER}>`;
         
         console.log(`[RESET] ✉️ Sending email via SMTP...`);
         const info = await transporter.sendMail({
