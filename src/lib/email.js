@@ -855,3 +855,274 @@ export const sendMassEmail = async (bccArray, subject, htmlContent, accountType 
         error: errors.length > 0 ? errors.join('; ') : undefined
     };
 };
+
+export const NEON_PURPLE = '#A855F7';
+
+/**
+ * Generates the HTML for a proposal email with attachment-style proposal card.
+ * Professional template with editable content, proposal details, and download link.
+ */
+export const generateProposalEmailHTML = (data) => {
+    const {
+        headerText = "Strategic Proposal Ready",
+        messageBody = "",
+        proposalNumber = "PROP-0000",
+        clientName = "Client",
+        projectName = "",
+        proposalUrl = "#",
+        theme = "light"
+    } = data;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#000000' : '#fcfcfc';
+    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : '#111111';
+    const subTextColor = isDark ? '#888888' : '#444444';
+    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+    const cardBg = isDark ? '#111111' : '#f8f9fa';
+    const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
+    const baseUrl = getBaseUrl();
+    const logoUrl = isDark
+        ? `${baseUrl}/logo_full.png`
+        : `${baseUrl}/logo_document.png`;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .content { padding: 50px; text-align: left; }
+                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #39FF14, #1b7a0a); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: black; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
+                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
+                .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
+                .attachment-body { padding: 20px; }
+                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
+                .attachment-row:last-child { border-bottom: none; }
+                .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
+                .download-link { font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
+                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">Proposal ${proposalNumber} for ${clientName}</span>
+            <div class="container">
+                <div class="header">
+                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                </div>
+                <div class="content">
+                    <div class="category-badge">PROPOSAL</div>
+                    <h1 class="title">${headerText}</h1>
+                    <div class="body-text">${messageBody}</div>
+
+                    <!-- Attachment-Style Proposal Card -->
+                    <div class="attachment-card">
+                        <div class="attachment-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="attachment-icon">PDF</div>
+                                <div class="attachment-file-info">
+                                    <p class="attachment-filename">Proposal-${proposalNumber}.pdf</p>
+                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="attachment-body">
+                            <div class="attachment-row">
+                                <span class="attachment-label">Proposal Number</span>
+                                <span class="attachment-value">${proposalNumber}</span>
+                            </div>
+                            <div class="attachment-row">
+                                <span class="attachment-label">Client</span>
+                                <span class="attachment-value">${clientName}</span>
+                            </div>
+                            ${projectName ? `
+                            <div class="attachment-row">
+                                <span class="attachment-label">Project</span>
+                                <span class="attachment-value">${projectName}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="download-row">
+                            <a href="${proposalUrl}" class="download-link">↓ View & Review Proposal</a>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 35px;">
+                        <a href="${proposalUrl}" class="cta-button">View Full Proposal</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+/**
+ * Generates the HTML for an agreement email with attachment-style contract card.
+ * Professional template with editable content, agreement details, and signing link.
+ */
+export const generateAgreementEmailHTML = (data) => {
+    const {
+        headerText = "Agreement Ready for Review",
+        messageBody = "",
+        agreementNumber = "AGR-0000",
+        secondPartyName = "Client",
+        projectName = "",
+        effectiveDate = "",
+        agreementUrl = "#",
+        theme = "light"
+    } = data;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#000000' : '#fcfcfc';
+    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : '#111111';
+    const subTextColor = isDark ? '#888888' : '#444444';
+    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+    const cardBg = isDark ? '#111111' : '#f8f9fa';
+    const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
+    const baseUrl = getBaseUrl();
+    const logoUrl = isDark
+        ? `${baseUrl}/logo_full.png`
+        : `${baseUrl}/logo_document.png`;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .content { padding: 50px; text-align: left; }
+                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEON_PURPLE}; color: #ffffff; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #A855F7, #6B21A8); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
+                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
+                .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
+                .attachment-body { padding: 20px; }
+                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
+                .attachment-row:last-child { border-bottom: none; }
+                .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEON_PURPLE}; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
+                .download-link { font-size: 11px; font-weight: 800; color: ${NEON_PURPLE}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
+                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">Contract ${agreementNumber} — ${secondPartyName}</span>
+            <div class="container">
+                <div class="header">
+                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                </div>
+                <div class="content">
+                    <div class="category-badge">CONTRACT</div>
+                    <h1 class="title">${headerText}</h1>
+                    <div class="body-text">${messageBody}</div>
+
+                    <!-- Attachment-Style Agreement Card -->
+                    <div class="attachment-card">
+                        <div class="attachment-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="attachment-icon">PDF</div>
+                                <div class="attachment-file-info">
+                                    <p class="attachment-filename">Agreement-${agreementNumber}.pdf</p>
+                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="attachment-body">
+                            <div class="attachment-row">
+                                <span class="attachment-label">Agreement Number</span>
+                                <span class="attachment-value">${agreementNumber}</span>
+                            </div>
+                            <div class="attachment-row">
+                                <span class="attachment-label">Second Party</span>
+                                <span class="attachment-value">${secondPartyName}</span>
+                            </div>
+                            ${projectName ? `
+                            <div class="attachment-row">
+                                <span class="attachment-label">Project</span>
+                                <span class="attachment-value">${projectName}</span>
+                            </div>
+                            ` : ''}
+                            ${effectiveDate ? `
+                            <div class="attachment-row">
+                                <span class="attachment-label">Effective Date</span>
+                                <span class="attachment-value">${effectiveDate}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="download-row">
+                            <a href="${agreementUrl}" class="download-link">↓ View & Sign Agreement</a>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 35px;">
+                        <a href="${agreementUrl}" class="cta-button">View & Sign Agreement</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};

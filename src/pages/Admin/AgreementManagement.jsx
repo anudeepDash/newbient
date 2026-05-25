@@ -22,10 +22,12 @@ import Share2 from 'lucide-react/dist/esm/icons/share-2';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import Edit from 'lucide-react/dist/esm/icons/edit';
+import Mail from 'lucide-react/dist/esm/icons/mail';
 import FileSpreadsheet from 'lucide-react/dist/esm/icons/file-spreadsheet';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import AgreementEmailModal from '../../components/admin/AgreementEmailModal';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -43,6 +45,7 @@ const ContractManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(null);
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
     const [sharingAgreement, setSharingAgreement] = useState(null);
+    const [emailModalAgreement, setEmailModalAgreement] = useState(null);
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -81,6 +84,35 @@ const ContractManagement = () => {
             try { await navigator.share({ title: `Contract - ${a.parties?.secondParty?.name}`, text: 'View your contract from Newbi Entertainment.', url }); return; } catch {}
         }
         setSharingAgreement(a);
+    };
+
+    const handleSendEmail = (agreement) => {
+        setEmailModalAgreement(agreement);
+    };
+
+    const handleDispatchEmail = async ({ to, subject, html }) => {
+        try {
+            const { auth } = await import('../../lib/firebase');
+            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+            const response = await fetch('/api/mail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+                body: JSON.stringify({ to, subject, html }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                useStore.getState().addToast('Contract email sent successfully!', 'success');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (err) {
+            console.error(err);
+            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
+            throw err;
+        }
     };
 
     const handleRevokeSignature = async (agreementId) => {
@@ -172,8 +204,15 @@ const ContractManagement = () => {
                                             <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 mb-8"><Calendar size={12} /> {a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : 'No date'}</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
-                                            <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[30%]"><button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5">Edit</button></Link>
-                                            <button onClick={() => handleNativeShare(a)} className="flex-1 min-w-[30%] py-3 bg-neon-purple/10 hover:bg-neon-purple/20 text-neon-purple text-[10px] font-black uppercase tracking-widest rounded-xl border border-neon-purple/10 flex items-center justify-center gap-2"><Share2 size={12} /> Share</button>
+                                            <Link to={`/admin/agreements/edit/${a.id}`} className="flex-1 min-w-[25%]"><button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/5">Edit</button></Link>
+                                            <button onClick={() => handleNativeShare(a)} className="flex-1 min-w-[25%] py-3 bg-neon-purple/10 hover:bg-neon-purple/20 text-neon-purple text-[10px] font-black uppercase tracking-widest rounded-xl border border-neon-purple/10 flex items-center justify-center gap-2"><Share2 size={12} /> Share</button>
+                                            <button
+                                                onClick={() => setEmailModalAgreement(a)}
+                                                className="h-12 w-12 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-white/5 flex items-center justify-center"
+                                                title="Email Contract"
+                                            >
+                                                <Mail size={16} />
+                                            </button>
                                             <Link to={`/agreement/${a.id}`} className="p-3 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-white/5 flex items-center justify-center"><Eye size={16} /></Link>
                                         </div>
                                     </Card>
@@ -202,6 +241,7 @@ const ContractManagement = () => {
                                                 <td className="p-6 md:p-8"><div className={cn("inline-flex px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-[0.2em]", statusColor(a.status))}>{a.status}</div></td>
                                                 <td className="p-6 md:p-8"><div className="flex justify-end gap-2">
                                                     <Link to={`/agreement/${a.id}`} className="p-2 text-gray-500 hover:text-white"><Eye size={18} /></Link>
+                                                    <button onClick={() => setEmailModalAgreement(a)} className="p-2 text-gray-500 hover:text-neon-purple" title="Email Contract"><Mail size={18} /></button>
                                                     <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-white"><History size={18} /></button>
                                                     <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-white"><Edit size={18} /></Link>
@@ -312,6 +352,10 @@ const ContractManagement = () => {
                                         <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:scale-110 transition-transform"><MessageCircle size={16} /></div>
                                         <p className="text-[11px] font-black uppercase tracking-widest">WhatsApp</p>
                                     </button>
+                                    <button onClick={() => { handleSendEmail(sharingAgreement); setSharingAgreement(null); }} className="p-4 bg-white/5 hover:bg-neon-purple/10 border border-white/5 rounded-2xl flex items-center gap-4 group">
+                                        <div className="w-10 h-10 rounded-xl bg-neon-purple/10 flex items-center justify-center text-neon-purple group-hover:scale-110 transition-transform"><Send size={16} /></div>
+                                        <p className="text-[11px] font-black uppercase tracking-widest">Email</p>
+                                    </button>
                                 </div>
                                 <button onClick={() => setSharingAgreement(null)} className="w-full py-5 text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-white bg-white/[0.02]">Cancel</button>
                             </motion.div>
@@ -319,6 +363,18 @@ const ContractManagement = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Agreement Email Modal */}
+            <AnimatePresence>
+                {emailModalAgreement && (
+                    <AgreementEmailModal
+                        isOpen={!!emailModalAgreement}
+                        onClose={() => setEmailModalAgreement(null)}
+                        agreement={emailModalAgreement}
+                        onSend={handleDispatchEmail}
+                    />
+                )}
+            </AnimatePresence>
         </AdminCommunityHubLayout>
     );
 };

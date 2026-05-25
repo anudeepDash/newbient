@@ -1893,9 +1893,8 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
                                             <div className="space-y-12 py-10 px-4">
-                                                <div className="space-y-2 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Strategic Context</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Architecture.</h3>
+                                                <div className="border-l-4 border-black pl-8">
+                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3>
                                                 </div>
                                                 {!isHidden('overview') && (
                                                     <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">
@@ -1915,9 +1914,8 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
-                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">{formData.isBulkGenerated ? "Engagement Charter" : "Project Definition"}</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">{formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
+                                                <div className="mb-16 border-l-4 border-black pl-8">
+                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">{formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="pl-0">
@@ -1928,9 +1926,8 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
                                             <div className="space-y-12 py-10 px-4">
-                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Service Matrix</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Deliverables.</h3>
+                                                <div className="mb-16 border-l-4 border-black pl-8">
+                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Deliverables.</h3>
                                                 </div>
                                                 
                                                 {!isHidden('deliverables') && (
@@ -1976,9 +1973,8 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'table' && (
                                             <div className="space-y-12 py-6">
-                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Financial Framework</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Commercials.</h3>
+                                                <div className="mb-16 border-l-4 border-black pl-8">
+                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
                                                 </div>
                                                 <table className="w-full text-left">
                                                     <thead>
@@ -2002,9 +1998,8 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
                                             <div className="space-y-12 py-6">
-                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Finalization & Terms</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Summary & Terms.</h3>
+                                                <div className="mb-16 border-l-4 border-black pl-8">
+                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-16 items-stretch">
                                                     <div className="space-y-8">
@@ -2129,7 +2124,9 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'strategy' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Project Timeline.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    <div className="border-l-4 border-black pl-8">
+                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3>
+                                    </div>
                                     {!isHidden('overview') && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(formData.overview || 'Strategic framework pending...')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
@@ -2143,28 +2140,26 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
-                                    {!formData.isBulkGenerated && (
-                                        <div className="space-y-4 mb-12">
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                            <div className="w-16 h-1 bg-black" />
-                                        </div>
-                                    )}
+                                    <div className="mb-16 border-l-4 border-black pl-8">
+                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">
+                                            {formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}
+                                        </h3>
+                                    </div>
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
-                                            {!formData.isBulkGenerated && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />}
-                                            <div className={formData.isBulkGenerated ? "pl-0" : "pl-10"}>
-                                                {!formData.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {!formData.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
+                                            <div className="pl-10">
                                                 {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Removed bottom black box from ProposalGenerator PDF export container */}
                                 </div>
                             )}
                             {page.type === 'proposal' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Deliverables & Specs.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    <div className="mb-16 border-l-4 border-black pl-8">
+                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Deliverables.</h3>
+                                    </div>
                                     {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && !isHidden('deliverables') && (
                                         <div className="space-y-6">
                                             <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
@@ -2207,12 +2202,17 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'table' && (
                                 <div className="space-y-12 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
+                                    <div className="mb-16 border-l-4 border-black pl-8">
+                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
+                                    </div>
                                     <table className="w-full text-left border-collapse border-2 border-black"><thead><tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black"><th className="p-6">Resource Inventory</th><th className="p-6 text-center w-24 border-x border-white/20">Qty</th><th className="p-6 text-right w-48">Amount (INR)</th></tr></thead><tbody className="divide-y divide-gray-200">{page.items.map((item, i) => (<tr key={i} className="hover:bg-gray-50"><td className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td><td className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td><td className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td></tr>))}</tbody></table>
                                 </div>
                             )}
                             {page.type === 'commercials' && (
                                 <div className="space-y-16 py-8">
+                                    <div className="mb-16 border-l-4 border-black pl-8">
+                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-16 items-stretch">
                                         <div className="space-y-12">
                                             {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(formData.terms)}</div></div>}

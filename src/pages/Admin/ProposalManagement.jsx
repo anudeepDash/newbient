@@ -21,8 +21,10 @@ import X from 'lucide-react/dist/esm/icons/x';
 import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
+import Mail from 'lucide-react/dist/esm/icons/mail';
 import { useStore } from '../../lib/store';
 import { sendProposalEmail } from '../../lib/email';
+import ProposalEmailModal from '../../components/admin/ProposalEmailModal';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -39,6 +41,7 @@ const ProposalManagement = () => {
     const [viewMode, setViewMode] = useState('grid');
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
     const [sharingProposal, setSharingProposal] = useState(null);
+    const [emailModalProposal, setEmailModalProposal] = useState(null);
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -76,23 +79,35 @@ const ProposalManagement = () => {
         }
     };
 
-    const handleSendEmail = async (proposal) => {
-        const email = prompt("Enter client's email address:", proposal.clientEmail || "");
-        if (!email) return;
+    const handleSendEmail = (proposal) => {
+        setEmailModalProposal(proposal);
+    };
 
-        const url = `${window.location.origin}/proposal/${proposal.id}`;
-        
+    const handleDispatchEmail = async ({ to, subject, html }) => {
         try {
-            const res = await sendProposalEmail(email, proposal.title || "Strategic Proposal", url);
-            if (res.success) {
-                useStore.getState().addToast("Proposal link sent successfully!", 'success');
-                updateProposalStatus(proposal.id, 'Sent');
+            const { auth } = await import('../../lib/firebase');
+            const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+            const response = await fetch('/api/mail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+                body: JSON.stringify({ to, subject, html }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                useStore.getState().addToast('Proposal email sent successfully!', 'success');
+                if (emailModalProposal) {
+                    updateProposalStatus(emailModalProposal.id, 'Sent');
+                }
             } else {
-                useStore.getState().addToast("Couldn't send the email. Please check the details and try again.", 'error');
+                throw new Error(result.error);
             }
         } catch (err) {
             console.error(err);
-            useStore.getState().addToast("Something went wrong while sending. Please try again.", 'error');
+            useStore.getState().addToast("Couldn't send the email. Please try again.", 'error');
+            throw err;
         }
     };
 
@@ -304,24 +319,31 @@ const ProposalManagement = () => {
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-white/5">
-                                            <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[30%]">
-                                                <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5">
-                                                    Edit
-                                                </button>
-                                            </Link>
-                                            <button 
-                                                onClick={() => handleNativeShare(proposal)}
-                                                className="flex-1 min-w-[30%] py-3 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neon-green/10 flex items-center justify-center gap-2"
-                                            >
-                                                <Share2 size={12} /> Share
-                                            </button>
-                                            <Link 
-                                                to={`/proposal/${proposal.id}`} 
-                                                className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
-                                            >
-                                                <Eye size={16} />
-                                            </Link>
-                                        </div>
+                                             <Link to={`/admin/edit-proposal/${proposal.id}`} className="flex-1 min-w-[25%]">
+                                                 <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5">
+                                                     Edit
+                                                 </button>
+                                             </Link>
+                                             <button 
+                                                 onClick={() => handleNativeShare(proposal)}
+                                                 className="flex-1 min-w-[25%] py-3 bg-neon-green/10 hover:bg-neon-green/20 text-neon-green text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-neon-green/10 flex items-center justify-center gap-2"
+                                             >
+                                                 <Share2 size={12} /> Share
+                                             </button>
+                                             <button
+                                                 onClick={() => setEmailModalProposal(proposal)}
+                                                 className="h-12 w-12 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                                 title="Email Proposal"
+                                             >
+                                                 <Mail size={16} />
+                                             </button>
+                                             <Link 
+                                                 to={`/proposal/${proposal.id}`} 
+                                                 className="p-3 bg-white/5 hover:bg-neon-green/20 hover:text-neon-green text-gray-500 rounded-xl transition-all border border-white/5 flex items-center justify-center"
+                                             >
+                                                 <Eye size={16} />
+                                             </Link>
+                                         </div>
                                     </Card>
                                 </motion.div>
                             ))}
@@ -385,18 +407,19 @@ const ProposalManagement = () => {
                                                     </div>
                                                 </td>
                                                 <td className="p-6 md:p-8">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
-                                                        {user?.role !== 'editor' && (
-                                                            <>
-                                                                <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>
-                                                                <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                                                            </>
-                                                        )}
-                                                        <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
-                                                        <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
-                                                        <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
-                                                    </div>
+                                                     <div className="flex justify-end gap-2">
+                                                         <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
+                                                         <button onClick={() => setEmailModalProposal(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={18} /></button>
+                                                         {user?.role !== 'editor' && (
+                                                             <>
+                                                                 <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>
+                                                                 <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                                             </>
+                                                         )}
+                                                         <button onClick={() => handleDuplicate(proposal.id)} className="p-2 text-gray-500 hover:text-white transition-colors"><History size={18} /></button>
+                                                         <button onClick={() => handleNativeShare(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Share2 size={18} /></button>
+                                                         <Link to={`/admin/edit-proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Edit size={18} /></Link>
+                                                     </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -552,6 +575,18 @@ const ProposalManagement = () => {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Proposal Email Modal */}
+            <AnimatePresence>
+                {emailModalProposal && (
+                    <ProposalEmailModal
+                        isOpen={!!emailModalProposal}
+                        onClose={() => setEmailModalProposal(null)}
+                        proposal={emailModalProposal}
+                        onSend={handleDispatchEmail}
+                    />
+                )}
+            </AnimatePresence>
         </AdminCommunityHubLayout>
     );
 };
