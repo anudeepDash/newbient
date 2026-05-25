@@ -126,14 +126,6 @@ const Invoice = () => {
         }
     }, [id, isAdmin, invoice, updateInvoiceStatus]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
-            </div>
-        );
-    }
-
     const isQuickUpload = invoice?.pdfUrl && (!invoice.items || invoice.items.length === 0);
 
     // Derived display data
@@ -161,6 +153,14 @@ const Invoice = () => {
             };
         }
     }, [displayInvoice]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-blue"></div>
+            </div>
+        );
+    }
 
     const handleDownloadPDF = async () => {
         if (isQuickUpload) {
