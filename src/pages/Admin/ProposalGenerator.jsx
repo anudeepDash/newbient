@@ -938,11 +938,74 @@ const ProposalGenerator = () => {
         return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
             const level = hashes.length;
             const headingClass = level <= 2 
-                ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5 block"
-                : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2 block";
+                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
             const headingTag = `h${Math.min(level + 1, 6)}`;
             return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
         });
+    };
+
+    const renderChatMessage = (text) => {
+        if (!text) return null;
+        const lines = text.split('\n');
+        const elements = [];
+        let i = 0;
+        
+        const formatInline = (t) => {
+            if (!t) return '';
+            return t
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        };
+
+        while (i < lines.length) {
+            const line = lines[i];
+            if (line.trim() === '') {
+                elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
+                i++;
+                continue;
+            }
+
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
+                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
+                        {items.map((item, j) => (
+                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        ))}
+                    </ul>
+                );
+                continue;
+            } else if (line.match(/^\d+\.\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+                    items.push(lines[i].replace(/^\d+\.\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
+                        {items.map((item, j) => (
+                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        ))}
+                    </ol>
+                );
+                continue;
+            } else {
+                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
+            }
+            i++;
+        }
+        return <div className="space-y-0.5">{elements}</div>;
     };
 
     const renderFormatted = (text, baseClass = '') => {
@@ -980,8 +1043,8 @@ const ProposalGenerator = () => {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const headingClass = level <= 2 
-                    ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5"
-                    : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2";
+                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
+                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
                 elements.push(<p key={i} className={headingClass}>{headingText}</p>);
             } else if (line.match(/^[•\-\*]\s/)) {
                 const items = [];
@@ -1446,7 +1509,7 @@ const ProposalGenerator = () => {
                                                                     {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
                                                                 </span>
                                                             </div>
-                                                            <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                            <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
                                                         </div>
                                                     ))}
 
@@ -2027,9 +2090,11 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
-                                                <div className="mb-16 border-l-4 border-black pl-8">
-                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">{formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
-                                                </div>
+                                                {!formData.isBulkGenerated && (
+                                                    <div className="mb-16 border-l-4 border-black pl-8">
+                                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Scope of Work.</h3>
+                                                    </div>
+                                                )}
                                                 <div className="flex-1">
                                                     <div className="pl-0">
                                                         {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
@@ -2253,11 +2318,11 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
-                                    <div className="mb-16 border-l-4 border-black pl-8">
-                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">
-                                            {formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}
-                                        </h3>
-                                    </div>
+                                    {!formData.isBulkGenerated && (
+                                         <div className="mb-16 border-l-4 border-black pl-8">
+                                             <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Scope of Work.</h3>
+                                         </div>
+                                     )}
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />

@@ -60,6 +60,70 @@ import ContractPreview from '../../components/admin/ContractPreview';
 import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 
 
+const renderChatMessage = (text) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    const elements = [];
+    let i = 0;
+    
+    const formatInline = (t) => {
+        if (!t) return '';
+        return t
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    };
+
+    while (i < lines.length) {
+        const line = lines[i];
+        if (line.trim() === '') {
+            elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
+            i++;
+            continue;
+        }
+
+        const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+        if (headingMatch) {
+            const level = headingMatch[1].length;
+            const headingText = headingMatch[2];
+            const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
+            elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+        } else if (line.match(/^[•\-\*]\s/)) {
+            const items = [];
+            while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
+                items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                i++;
+            }
+            elements.push(
+                <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
+                    {items.map((item, j) => (
+                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                    ))}
+                </ul>
+            );
+            continue;
+        } else if (line.match(/^\d+\.\s/)) {
+            const items = [];
+            while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+                items.push(lines[i].replace(/^\d+\.\s/, ''));
+                i++;
+            }
+            elements.push(
+                <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
+                    {items.map((item, j) => (
+                        <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                    ))}
+                </ol>
+            );
+            continue;
+        } else {
+            elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
+        }
+        i++;
+    }
+    return <div className="space-y-0.5">{elements}</div>;
+};
+
+
 const ContractGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -647,7 +711,7 @@ const ContractGenerator = () => {
                                                              {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
                                                          </span>
                                                      </div>
-                                                     <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                     <div className="font-medium leading-relaxed">{renderChatMessage(m.text)}</div>
                                                  </div>
                                              ))}
 
