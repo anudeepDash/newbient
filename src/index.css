@@ -328,5 +328,73 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   animation: gemini-gradient 6s ease infinite;
 }
 
+/* A4 Document Rendering Overrides (Proposals and Agreements) */
+.proposal-page-render .article-content p,
+.proposal-page-render .article-content li,
+.proposal-page-render .article-content div,
+.agreement-page-render .article-content p,
+.agreement-page-render .article-content li,
+.agreement-page-render .article-content div {
+  color: #374151 !important; /* Force readable text-gray-700 color */
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.proposal-page-render .article-content h1,
+.proposal-page-render .article-content h2,
+.proposal-page-render .article-content h3,
+.proposal-page-render .article-content h4,
+.proposal-page-render .article-content strong,
+.proposal-page-render .article-content b,
+.agreement-page-render .article-content h1,
+.agreement-page-render .article-content h2,
+.agreement-page-render .article-content h3,
+.agreement-page-render .article-content h4,
+.agreement-page-render .article-content strong,
+.agreement-page-render .article-content b {
+  color: #000000 !important; /* Force bold headers to remain black */
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.proposal-page-render .article-content p,
+.agreement-page-render .article-content p {
+  margin-bottom: 0.5rem !important; /* Much more compact spacing for A4 layout */
+  line-height: 1.6 !important;
+  font-size: 13px !important;
+}
+
+.proposal-page-render .article-content p:empty,
+.proposal-page-render .article-content p:has(br:only-child),
+.proposal-page-render .article-content p:has(> br:only-child),
+.agreement-page-render .article-content p:empty,
+.agreement-page-render .article-content p:has(br:only-child),
+.agreement-page-render .article-content p:has(> br:only-child) {
+  margin-bottom: 0.125rem !important;
+  height: 0.25rem !important;
+  line-height: 0 !important;
+}
+
+.proposal-page-render .article-content ul,
+.proposal-page-render .article-content ol,
+.agreement-page-render .article-content ul,
+.agreement-page-render .article-content ol {
+  margin-left: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+  margin-top: 0.25rem !important;
+}
+
+.proposal-page-render .article-content li,
+.agreement-page-render .article-content li {
+  margin-bottom: 0.25rem !important;
+  line-height: 1.5 !important;
+  font-size: 13px !important;
+}
+
+/* Override utility margin-top when space-y-8 is dynamically reduced to space-y-3 */
+.proposal-page-render .space-y-8 > :not([hidden]) ~ :not([hidden]),
+.proposal-page-render .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem !important;
+}
+
+
 
 

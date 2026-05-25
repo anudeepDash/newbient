@@ -204,8 +204,9 @@ const AIStudio = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && activeProposalData.scopeOfWork) {
-            const estimateBlockHeight = (text) => {
+            const estimateBlockHeight = (rawText) => {
                 let h = 0;
+                const text = htmlToPlainText(rawText);
                 const rawLines = text.split('\n');
                 const lines = [];
                 rawLines.forEach(rl => {
@@ -220,7 +221,7 @@ const AIStudio = () => {
                     if (!line) { h += 12; inList = false; continue; }
                     
                     if (line.match(/^[-*_]{3,}$/)) { h += 66; inList = false; continue; }
-                    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+                    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
                     if (headingMatch) {
                         inList = false;
                         h += headingMatch[1].length <= 2 ? 72 : 48;
@@ -245,20 +246,39 @@ const AIStudio = () => {
             } else {
                 let currentPageText = '';
                 let pageIndex = 1;
-                const words = activeProposalData.scopeOfWork.split(' ');
-                
-                for (let i = 0; i < words.length; i++) {
-                    const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
-                    if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
-                        if (currentPageText) {
-                            pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                            currentPageText = words[i];
+                const isHtml = activeProposalData.scopeOfWork.includes('<') && activeProposalData.scopeOfWork.includes('>');
+
+                if (isHtml) {
+                    const blocks = getHtmlBlocks(activeProposalData.scopeOfWork);
+                    for (let i = 0; i < blocks.length; i++) {
+                        const testText = currentPageText ? currentPageText + '\n' + blocks[i] : blocks[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = blocks[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
                         } else {
-                            pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
-                            currentPageText = '';
+                            currentPageText = testText;
                         }
-                    } else {
-                        currentPageText = testText;
+                    }
+                } else {
+                    const words = activeProposalData.scopeOfWork.split(' ');
+                    for (let i = 0; i < words.length; i++) {
+                        const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = words[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
+                        } else {
+                            currentPageText = testText;
+                        }
                     }
                 }
                 
@@ -771,6 +791,41 @@ const AIStudio = () => {
             .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
     };
 
+    const htmlToPlainText = (html) => {
+        if (!html) return '';
+        if (!html.includes('<') || !html.includes('>')) return html;
+        let text = html;
+        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;|\u00a0/g, ' ');
+        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        return text;
+    };
+
+    const getHtmlBlocks = (html) => {
+        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
+        const blocks = [];
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            blocks.push(match[0]);
+        }
+        if (blocks.length === 0) return [html];
+        return blocks;
+    };
+
+    const processHtmlHeadings = (html) => {
+        if (!html) return html;
+        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+            const level = hashes.length;
+            const headingClass = level <= 2 
+                ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5 block"
+                : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2 block";
+            const headingTag = `h${Math.min(level + 1, 6)}`;
+            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+        });
+    };
+
     const renderFormatted = (text, baseClass = '') => {
         if (!text) return null;
         const rawLines = text.split('\n');
@@ -786,7 +841,11 @@ const AIStudio = () => {
         while (i < lines.length) {
             const line = lines[i].trim();
             if (!line && i < lines.length - 1) {
-                elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                const lastElement = elements[elements.length - 1];
+                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+                if (!isLastSpacer) {
+                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                }
                 i++;
                 continue;
             }
@@ -797,7 +856,7 @@ const AIStudio = () => {
                 continue;
             }
 
-            const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
             if (headingMatch) {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
@@ -852,7 +911,7 @@ const AIStudio = () => {
         if (!content) return null;
         const isHtml = content.includes('<') && content.includes('>');
         if (isHtml) {
-            return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: content }} />;
+            return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} />;
         }
         return renderFormatted(content, baseClass);
     };
@@ -1563,7 +1622,7 @@ const AIStudio = () => {
                                                 {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
                                                     <div className="space-y-12 py-10 px-4">
                                                         <div className="border-l-4 border-black pl-8"><h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3></div>
-                                                        <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">{renderContent(activeProposalData.overview || 'Strategic framework pending...')}</div>
+                                                        <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">{renderContent(activeProposalData.overview || 'Strategic framework pending...', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div>
                                                         {activeProposalData.primaryGoal && (
                                                             <div className="pt-16 p-12 bg-zinc-50 border border-gray-100 rounded-3xl space-y-6">
                                                                 <div className="flex items-center gap-4"><div className="w-12 h-[2px] bg-black" /><p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Project Details</p></div>
@@ -1577,7 +1636,7 @@ const AIStudio = () => {
                                                         <div className="mb-16 border-l-4 border-black pl-8">
                                                             <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">{activeProposalData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
                                                         </div>
-                                                        <div className="flex-1"><div className="pl-0">{renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}</div></div>
+                                                        <div className="flex-1"><div className="pl-0">{renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div></div>
                                                     </div>
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
@@ -1727,7 +1786,7 @@ const AIStudio = () => {
                                     )}
                                     {page.type === 'scope' && (
                                         <div className="h-full flex flex-col py-10 px-4">
-                                            <div className="flex-1"><div className="pl-0">{renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}</div></div>
+                                            <div className="flex-1"><div className="pl-0">{renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div></div>
                                         </div>
                                     )}
                                     {page.type === 'proposal' && (
