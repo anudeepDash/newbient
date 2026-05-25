@@ -395,8 +395,8 @@ const Invoice = () => {
         return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
             const level = hashes.length;
             const headingClass = level <= 2 
-                ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1 block"
-                : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1 block";
+                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
             const headingTag = `h${Math.min(level + 1, 6)}`;
             return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
         });
@@ -425,8 +425,8 @@ const Invoice = () => {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
                 const headingClass = level <= 2 
-                    ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1 block"
-                    : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1 block";
+                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
                 elements.push(<p key={i} className={headingClass}>{headingText}</p>);
             } else if (line.match(/^[•\-\*]\s/)) {
                 const items = [];
