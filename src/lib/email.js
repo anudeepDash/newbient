@@ -2,11 +2,7 @@ import { auth } from './firebase';
 export const NEWBI_GREEN = '#39FF14';
 export const CONCERT_ZONE_CYAN = '#00f2ff';
 const getBaseUrl = () => {
-    try {
-        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            return window.location.origin;
-        }
-    } catch (e) {}
+    // For emails, static logo and assets should always resolve to the public production website
     return 'https://newbi.live';
 };
 
@@ -46,6 +42,8 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Your Tickets for ${eventName}`,
+            fromName: 'Newbi Tickets',
+            fromEmail: 'noreply@newbi.live',
             html: `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h2>Hi ${toName},</h2>
@@ -81,6 +79,8 @@ export const sendBookingConfirmation = async (bookingData) => {
         const result = await apiFetch('/api/mail', {
             to: to_email,
             subject: `Booking Confirmed: ${event_name}`,
+            fromName: 'Newbi Tickets',
+            fromEmail: 'noreply@newbi.live',
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
                     <h2 style="color: #000;">Booking Confirmed!</h2>
@@ -121,6 +121,8 @@ export const sendContactAutoReply = async (name, email, message) => {
         const result = await apiFetch('/api/mail', {
             to: email,
             subject: `Thanks for reaching out, ${name}`,
+            fromName: 'Newbi Support',
+            fromEmail: 'noreply@newbi.live',
             html: `
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Hello ${name},</h2>
@@ -147,6 +149,8 @@ export const sendInvoiceEmail = async (toEmail, invoiceNumber, amount, invoiceUr
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Invoice Ready: ${invoiceNumber}`,
+            fromName: 'Newbi Finance',
+            fromEmail: 'partnership@newbi.live',
             html: `
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Invoice Ready</h2>
@@ -173,6 +177,8 @@ export const sendProposalEmail = async (toEmail, proposalTitle, proposalUrl) => 
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `New Proposal: ${proposalTitle}`,
+            fromName: 'Newbi Partnerships',
+            fromEmail: 'partnership@newbi.live',
             html: `
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Strategic Proposal</h2>
@@ -217,10 +223,10 @@ export const generateInvoiceEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Always use dark header with white logo for premium branding and dark-mode safety
-    const headerBg = '#0a0a0a';
-    const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
 
     return `
         <!DOCTYPE html>
@@ -392,6 +398,8 @@ export const sendPaymentApprovedEmail = async (toEmail, clientName, invoiceNumbe
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Payment Confirmed: Invoice #${invoiceNumber}`,
+            fromName: 'Newbi Finance',
+            fromEmail: 'partnership@newbi.live',
             html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
@@ -423,6 +431,8 @@ export const sendPaymentDeclinedEmail = async (toEmail, clientName, invoiceNumbe
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Payment Update: Invoice #${invoiceNumber}`,
+            fromName: 'Newbi Finance',
+            fromEmail: 'partnership@newbi.live',
             html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
@@ -456,10 +466,10 @@ export const generateOfficialHTML = (data) => {
     // Brand Logos: Home (Dark) vs Document (Light)
     const baseUrl = getBaseUrl();
     
-    // Always use dark header with white logo for premium branding and dark-mode safety
-    const headerBg = '#0a0a0a';
-    const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
 
     return `
         <!DOCTYPE html>
@@ -828,7 +838,7 @@ export const generateWeeklyHTML = (data) => {
  * (Gmail/Workspace caps at ~100 recipients per message).
  * Supports account switching via accountType parameter.
  */
-export const sendMassEmail = async (bccArray, subject, htmlContent, accountType = 'official', onProgress = null) => {
+export const sendMassEmail = async (bccArray, subject, htmlContent, accountType = 'official', onProgress = null, fromName = null, fromEmail = null) => {
     const BATCH_SIZE = 45;
     const DELAY_BETWEEN_BATCHES_MS = 1500;
     const toAddress = accountType === 'weekly' ? 'weekly@newbi.live' : 'partnership@newbi.live';
@@ -861,6 +871,8 @@ export const sendMassEmail = async (bccArray, subject, htmlContent, accountType 
                 subject: subject,
                 html: htmlContent,
                 accountType: accountType,
+                fromName: fromName,
+                fromEmail: fromEmail,
                 headers: {
                     'List-Unsubscribe': '<https://newbi.live/unsubscribe>'
                 }
@@ -935,10 +947,10 @@ export const generateProposalEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Always use dark header with white logo for premium branding and dark-mode safety
-    const headerBg = '#0a0a0a';
-    const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
 
     return `
         <!DOCTYPE html>
@@ -1102,10 +1114,10 @@ export const generateAgreementEmailHTML = (data) => {
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
     
-    // Always use dark header with white logo for premium branding and dark-mode safety
-    const headerBg = '#0a0a0a';
-    const headerBorder = '#1a1a1a';
-    const logoUrl = `${baseUrl}/logo_full.png`;
+    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
 
     return `
         <!DOCTYPE html>
