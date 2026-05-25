@@ -1472,7 +1472,7 @@ const AIStudio = () => {
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
                                                     <div className="space-y-12 py-10 px-4">
-                                                        <div className="space-y-2 border-l-4 border-black pl-8"><p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Strategic Context</p><h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Architecture.</h3></div>
+                                                        <div className="border-l-4 border-black pl-8"><h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3></div>
                                                         <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">{renderContent(activeProposalData.overview || 'Strategic framework pending...')}</div>
                                                         {activeProposalData.primaryGoal && (
                                                             <div className="pt-16 p-12 bg-zinc-50 border border-gray-100 rounded-3xl space-y-6">
@@ -1484,15 +1484,15 @@ const AIStudio = () => {
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                                     <div className="h-full flex flex-col py-10 px-4">
-                                                        {!activeProposalData.isBulkGenerated && (
-                                                            <div className="space-y-2 mb-16 border-l-4 border-black pl-8"><p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p><h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3></div>
-                                                        )}
+                                                        <div className="mb-16 border-l-4 border-black pl-8">
+                                                            <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">{activeProposalData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
+                                                        </div>
                                                         <div className="flex-1"><div className="pl-0">{renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}</div></div>
                                                     </div>
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
                                                     <div className="space-y-12 py-10 px-4">
-                                                        <div className="space-y-2 mb-16 border-l-4 border-black pl-8"><p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Service Matrix</p><h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Deliverables.</h3></div>
+                                                        <div className="mb-16 border-l-4 border-black pl-8"><h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Deliverables.</h3></div>
                                                         <table className="w-full text-left">
                                                             <thead>
                                                                 <tr className="border-b-4 border-black text-[10px] font-black uppercase text-black tracking-[0.3em]"><th className="py-6 pr-4">Specification</th><th className="py-6 px-4 text-center w-32">Volume</th><th className="py-6 pl-4 text-right w-40">Timeline</th></tr>
@@ -1521,7 +1521,9 @@ const AIStudio = () => {
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'table' && (
                                                     <div className="space-y-12 py-6">
-                                                        <div className="space-y-4"><div className="flex items-center gap-4"><span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Section 04</span><div className="h-[1px] flex-1 bg-gray-100" /></div><h3 className="text-4xl font-black text-black tracking-tight leading-none">Commercials.</h3></div>
+                                                        <div className="mb-16 border-l-4 border-black pl-8">
+                                                            <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
+                                                        </div>
                                                         <table className="w-full text-left">
                                                             <thead><tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest"><th className="py-4 pr-4">Description</th><th className="py-4 px-4 text-center w-24">Qty</th><th className="py-4 pl-4 text-right w-48">Value (INR)</th></tr></thead>
                                                             <tbody className="divide-y divide-gray-100">
@@ -1534,7 +1536,9 @@ const AIStudio = () => {
                                                 )}
                                                 {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
                                                     <div className="space-y-12 py-6">
-                                                        <div className="space-y-6"><div className="flex items-center gap-4"><span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Finalization</span><div className="h-[1px] flex-1 bg-gray-100" /></div><h3 className="text-4xl font-black text-black tracking-tight leading-none">Summary & Terms.</h3></div>
+                                                        <div className="mb-16 border-l-4 border-black pl-8">
+                                                            <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
+                                                        </div>
                                                         <div className="grid grid-cols-2 gap-16 items-stretch">
                                                             <div className="space-y-8">
                                                                 {activeProposalData.terms && (<div className="space-y-4"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b border-gray-100 pb-2">Conditions</h4><div className="text-[11px] font-medium text-gray-500 leading-relaxed space-y-2">{renderContent(activeProposalData.terms)}</div></div>)}
