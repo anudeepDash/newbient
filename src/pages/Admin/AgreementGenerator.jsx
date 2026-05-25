@@ -104,6 +104,48 @@ const ContractGenerator = () => {
 
     const chatEndRef = useRef(null);
 
+    const [generationStage, setGenerationStage] = useState(0);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [generationTime, setGenerationTime] = useState(0);
+
+    const STAGE_MESSAGES = useMemo(() => [
+        { text: "Establishing connection to neural node...", progress: 15 },
+        { text: "Analyzing prompt & structural constraints...", progress: 40 },
+        { text: "Synthesizing document data fields...", progress: 65 },
+        { text: "Formulating line items & pricing dynamics...", progress: 85 },
+        { text: "Polishing final layout parameters...", progress: 95 }
+    ], []);
+
+    useEffect(() => {
+        let timer;
+        let stageTimer;
+        if (isGenerating) {
+            setGenerationStage(0);
+            setGenerationProgress(15);
+            setGenerationTime(0);
+            
+            timer = setInterval(() => {
+                setGenerationTime(prev => prev + 1);
+            }, 1000);
+
+            stageTimer = setInterval(() => {
+                setGenerationStage(prev => {
+                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
+                    setGenerationProgress(STAGE_MESSAGES[next].progress);
+                    return next;
+                });
+            }, 2500);
+        } else {
+            setGenerationStage(0);
+            setGenerationProgress(0);
+            setGenerationTime(0);
+        }
+        return () => {
+            clearInterval(timer);
+            clearInterval(stageTimer);
+        };
+    }, [isGenerating, STAGE_MESSAGES]);
+
     useEffect(() => {
         if (chatEndRef.current) {
             chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -548,76 +590,89 @@ const ContractGenerator = () => {
                                         </div>
 
                                         {/* Message Stream */}
-                                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
-                                            {/* Welcome card if only initial message */}
-                                            {messages.length === 1 && (
-                                                <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
-                                                    <div className="relative">
-                                                        <div className="absolute -inset-1 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur opacity-30 animate-pulse" />
-                                                        <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                            <Sparkles size={24} className="text-[#A855F7]" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
-                                                        <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                                            Describe your requirements below to draft a complete legally-binding agreement in seconds. Use follow-up prompts to customize the terms.
-                                                        </p>
-                                                    </div>
+                                         <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
+                                             {/* Welcome card if only initial message */}
+                                             {messages.length === 1 && (
+                                                 <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                     <div className="relative">
+                                                         <div className="absolute -inset-1 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur opacity-30 animate-pulse" />
+                                                         <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                             <Sparkles size={24} className="text-[#A855F7]" />
+                                                         </div>
+                                                     </div>
+                                                     <div className="space-y-2">
+                                                         <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
+                                                         <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                                             Describe your requirements below to draft a complete legally-binding agreement in seconds. Use follow-up prompts to customize the terms.
+                                                         </p>
+                                                     </div>
 
-                                                    {/* Suggestions Grid */}
-                                                    <div className="w-full space-y-2.5 pt-4">
-                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Templates</span>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {suggestions.map((s, idx) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={idx}
-                                                                    onClick={() => setPromptText(s)}
-                                                                    className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
-                                                                >
-                                                                    <div className="flex items-start gap-3">
-                                                                        <span className="text-[#A855F7] mt-0.5 text-[10px]">✦</span>
-                                                                        <span className="flex-1">{s}</span>
-                                                                    </div>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                     {/* Suggestions Grid */}
+                                                     <div className="w-full space-y-2.5 pt-4">
+                                                         <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Templates</span>
+                                                         <div className="grid grid-cols-1 gap-2">
+                                                             {suggestions.map((s, idx) => (
+                                                                 <button
+                                                                     type="button"
+                                                                     key={idx}
+                                                                     onClick={() => setPromptText(s)}
+                                                                     className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                 >
+                                                                     <div className="flex items-start gap-3">
+                                                                         <span className="text-[#A855F7] mt-0.5 text-[10px]">✦</span>
+                                                                         <span className="flex-1">{s}</span>
+                                                                     </div>
+                                                                 </button>
+                                                             ))}
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                             )}
 
-                                            {messages.length > 1 && messages.map(m => (
-                                                <div
-                                                    key={m.id}
-                                                    className={cn(
-                                                        "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
-                                                        m.sender === 'user'
-                                                            ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
-                                                            : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className={cn(
-                                                            "text-[8px] font-black uppercase tracking-wider",
-                                                            m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
-                                                        )}>
-                                                            {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
-                                                </div>
-                                            ))}
+                                             {messages.length > 1 && messages.map(m => (
+                                                 <div
+                                                     key={m.id}
+                                                     className={cn(
+                                                         "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                                         m.sender === 'user'
+                                                             ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                                             : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                                     )}
+                                                 >
+                                                     <div className="flex items-center gap-2 mb-2">
+                                                         <span className={cn(
+                                                             "text-[8px] font-black uppercase tracking-wider",
+                                                             m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
+                                                         )}>
+                                                             {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
+                                                         </span>
+                                                     </div>
+                                                     <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                 </div>
+                                             ))}
 
-                                            {/* Generating Bubble */}
-                                            {isGenerating && (
-                                                <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
-                                                    <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
-                                                    <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Negotiating contract parameters...</span>
-                                                </div>
-                                            )}
-                                            <div ref={chatEndRef} />
-                                        </div>
+                                             {/* Generating Bubble */}
+                                             {isGenerating && (
+                                                 <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs w-[280px] sm:w-[320px] flex flex-col gap-3 shadow-md">
+                                                     <div className="flex items-center gap-2">
+                                                         <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
+                                                         <span className="font-bold uppercase tracking-wider text-[10px] text-[#A855F7] flex-1 truncate">
+                                                             {STAGE_MESSAGES[generationStage]?.text || "Negotiating contract..."}
+                                                         </span>
+                                                         <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
+                                                             {generationTime}s
+                                                         </span>
+                                                     </div>
+                                                     <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                                         <div 
+                                                             className="h-full bg-[#A855F7] transition-all duration-500" 
+                                                             style={{ width: `${generationProgress}%` }}
+                                                         />
+                                                     </div>
+                                                 </div>
+                                             )}
+                                             <div ref={chatEndRef} />
+                                         </div>
 
                                         {/* Prompt container wrapped in .gemini-border-wrap-purple */}
                                         <div className="mt-auto pt-4 bg-transparent shrink-0">

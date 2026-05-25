@@ -396,6 +396,56 @@ const AIStudio = () => {
         }
     ]);
 
+    const chatEndRef = useRef(null);
+
+    const [generationStage, setGenerationStage] = useState(0);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [generationTime, setGenerationTime] = useState(0);
+
+    const STAGE_MESSAGES = useMemo(() => [
+        { text: "Establishing connection to neural node...", progress: 15 },
+        { text: "Analyzing prompt & structural constraints...", progress: 40 },
+        { text: "Synthesizing document data fields...", progress: 65 },
+        { text: "Formulating line items & pricing dynamics...", progress: 85 },
+        { text: "Polishing final layout parameters...", progress: 95 }
+    ], []);
+
+    useEffect(() => {
+        let timer;
+        let stageTimer;
+        if (isGenerating) {
+            setGenerationStage(0);
+            setGenerationProgress(15);
+            setGenerationTime(0);
+            
+            timer = setInterval(() => {
+                setGenerationTime(prev => prev + 1);
+            }, 1000);
+
+            stageTimer = setInterval(() => {
+                setGenerationStage(prev => {
+                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
+                    setGenerationProgress(STAGE_MESSAGES[next].progress);
+                    return next;
+                });
+            }, 2500);
+        } else {
+            setGenerationStage(0);
+            setGenerationProgress(0);
+            setGenerationTime(0);
+        }
+        return () => {
+            clearInterval(timer);
+            clearInterval(stageTimer);
+        };
+    }, [isGenerating, STAGE_MESSAGES]);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+
     // Update greeting message when switching engine
     useEffect(() => {
         setMessages([
@@ -914,10 +964,10 @@ const AIStudio = () => {
             <div className="flex-1 flex min-h-0 relative overflow-hidden">
                 
                 {/* LEFT CONTROL PANEL (AI, CHAT, FORMS) */}
-                <div className="w-full lg:w-[48%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-y-auto scrollbar-hide">
+                <div className="w-full lg:w-[48%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden">
                     
                     {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
-                    <div className="p-6 border-b border-white/5 relative overflow-hidden">
+                    <div className="p-6 border-b border-white/5 relative overflow-hidden shrink-0">
                         
                         {/* Scanning horizontal laser bar */}
                         {isGenerating && (
@@ -960,6 +1010,24 @@ const AIStudio = () => {
                                 )} />
                             </div>
                         </div>
+
+                        {/* Dynamic Step Status Bar */}
+                        {isGenerating && (
+                            <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2 relative z-10 animate-pulse">
+                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider">
+                                    <span className={activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]"}>
+                                        {STAGE_MESSAGES[generationStage]?.text || "Synthesizing parameters..."}
+                                    </span>
+                                    <span className="text-zinc-500 font-mono font-bold">{generationTime}s elapsed</span>
+                                </div>
+                                <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                    <div 
+                                        className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
+                                        style={{ width: `${generationProgress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* CORE SINGLE PROMPT BOX */}
@@ -1066,10 +1134,10 @@ const AIStudio = () => {
                     </div>
 
                     {/* INTERACTIVE CHAT STREAM */}
-                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4">
+                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 shrink-0">
                         <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
                         
-                        <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                        <div className="flex flex-col gap-3 h-[220px] overflow-y-auto pr-2">
                             {messages.map((m) => (
                                 <div
                                     key={m.id}
@@ -1088,6 +1156,28 @@ const AIStudio = () => {
                                     <p className="whitespace-pre-line">{m.text}</p>
                                 </div>
                             ))}
+
+                            {/* Generating Bubble */}
+                            {isGenerating && (
+                                <div className="max-w-[85%] rounded-3xl p-4 text-[12px] leading-relaxed self-start rounded-tl-none bg-white/[0.02] border border-white/[0.04] text-zinc-300 flex flex-col gap-2.5 w-[260px] sm:w-[280px]">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles size={12} className={cn("animate-spin shrink-0", activeEngine === 'proposal' ? "text-[#39FF14]" : "text-[#A855F7]")} />
+                                        <span className="font-bold uppercase tracking-wider text-[10px] text-zinc-400 flex-1 truncate">
+                                            {STAGE_MESSAGES[generationStage]?.text || "Processing..."}
+                                        </span>
+                                        <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
+                                            {generationTime}s
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                        <div 
+                                            className={cn("h-full transition-all duration-500", activeEngine === 'proposal' ? "bg-[#39FF14]" : "bg-[#A855F7]")} 
+                                            style={{ width: `${generationProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={chatEndRef} />
                         </div>
 
                         {/* Interactive Chat Input */}
@@ -1113,7 +1203,7 @@ const AIStudio = () => {
                     </div>
 
                     {/* Collapsible Forms Section */}
-                    <div className="p-6 flex-1 flex flex-col min-h-0 bg-black/20">
+                    <div className="p-6 flex-1 flex flex-col min-h-0 bg-black/20 overflow-y-auto pb-24">
                         <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] flex items-center gap-2">
                                 <Settings size={12} />

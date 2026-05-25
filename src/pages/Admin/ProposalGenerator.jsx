@@ -100,6 +100,48 @@ const ProposalGenerator = () => {
     ]);
     const chatEndRef = useRef(null);
 
+    const [generationStage, setGenerationStage] = useState(0);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [generationTime, setGenerationTime] = useState(0);
+
+    const STAGE_MESSAGES = useMemo(() => [
+        { text: "Establishing connection to neural node...", progress: 15 },
+        { text: "Analyzing prompt & structural constraints...", progress: 40 },
+        { text: "Synthesizing document data fields...", progress: 65 },
+        { text: "Formulating line items & pricing dynamics...", progress: 85 },
+        { text: "Polishing final layout parameters...", progress: 95 }
+    ], []);
+
+    useEffect(() => {
+        let timer;
+        let stageTimer;
+        if (isGenerating || isBulkGenerating) {
+            setGenerationStage(0);
+            setGenerationProgress(15);
+            setGenerationTime(0);
+            
+            timer = setInterval(() => {
+                setGenerationTime(prev => prev + 1);
+            }, 1000);
+
+            stageTimer = setInterval(() => {
+                setGenerationStage(prev => {
+                    const next = Math.min(prev + 1, STAGE_MESSAGES.length - 1);
+                    setGenerationProgress(STAGE_MESSAGES[next].progress);
+                    return next;
+                });
+            }, 2500);
+        } else {
+            setGenerationStage(0);
+            setGenerationProgress(0);
+            setGenerationTime(0);
+        }
+        return () => {
+            clearInterval(timer);
+            clearInterval(stageTimer);
+        };
+    }, [isGenerating, isBulkGenerating, STAGE_MESSAGES]);
+
     useEffect(() => {
         if (chatEndRef.current) {
             chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -791,19 +833,18 @@ const ProposalGenerator = () => {
                 addToast('Proposal successfully generated!', 'success');
             } else {
                 const currentDoc = (isBulkMode && bulkProposals.length > 0) ? bulkProposals[selectedBulkIndex] : singleFormData;
-                const updatedDoc = await reviseDocument(currentDoc, currentPrompt, 'Premium');
+                const currentDocWithItems = { ...currentDoc, items };
+                const updatedDoc = await reviseDocument(currentDocWithItems, currentPrompt, 'Premium');
                 
-                if (isBulkMode && bulkProposals.length > 0) {
-                    setBulkProposals(prev => {
-                        const newVault = [...prev];
-                        newVault[selectedBulkIndex] = { ...currentDoc, ...updatedDoc };
-                        return newVault;
-                    });
-                    if (singleFormData.id === currentDoc.id) {
-                        setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
-                    }
-                } else {
-                    setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
+                setFormData(updatedDoc);
+                if (updatedDoc.items && updatedDoc.items.length > 0) {
+                    setItems(updatedDoc.items.map((item, idx) => ({
+                        id: Date.now() + 200 + idx,
+                        description: item.description || item.name || item.item || '',
+                        qty: Number(item.qty) || 1,
+                        unit: item.unit || 'Unit',
+                        price: Number(item.price) || 0
+                    })));
                 }
 
                 setMessages(prev => [...prev, {
@@ -1287,7 +1328,7 @@ const ProposalGenerator = () => {
                                         ) : (
                                             <>
                                                 {/* Message Stream */}
-                                                <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
+                                                <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
                                                     {/* Welcome card if only initial message */}
                                                     {messages.length === 1 && (
                                                         <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
@@ -1349,9 +1390,22 @@ const ProposalGenerator = () => {
 
                                                     {/* Generating Bubble */}
                                                     {isGenerating && (
-                                                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
-                                                            <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
-                                                            <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Synthesizing document variables...</span>
+                                                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs w-[280px] sm:w-[320px] flex flex-col gap-3 shadow-md">
+                                                            <div className="flex items-center gap-2">
+                                                                <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
+                                                                <span className="font-bold uppercase tracking-wider text-[10px] text-neon-green flex-1 truncate">
+                                                                    {STAGE_MESSAGES[generationStage]?.text || "Synthesizing document..."}
+                                                                </span>
+                                                                <span className="text-[9px] font-mono text-zinc-500 font-bold shrink-0">
+                                                                    {generationTime}s
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-neon-green transition-all duration-500" 
+                                                                    style={{ width: `${generationProgress}%` }}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     )}
                                                     <div ref={chatEndRef} />
