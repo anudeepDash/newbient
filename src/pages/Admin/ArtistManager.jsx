@@ -790,127 +790,154 @@ const safeOpen = (url) => {
 };
 
 const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport, isUpdating }) => {
-
-
     const youtubeId = getYoutubeId(artist?.youtube);
     
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md">
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-                className="absolute inset-0 bg-black/95 backdrop-blur-xl" 
+                className="absolute inset-0 bg-black/80" 
                 onClick={onClose} 
             />
             <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 100 }} 
+                initial={{ scale: 0.95, opacity: 0, y: 30 }} 
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
-                exit={{ scale: 0.9, opacity: 0, y: 100 }}
-                transition={{ type: "spring", damping: 30, stiffness: 200 }}
-                className="relative bg-[#050505] border border-white/10 rounded-none sm:rounded-[4rem] w-full max-w-6xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_150px_rgba(0,0,0,1)] z-10"
-
+                exit={{ scale: 0.95, opacity: 0, y: 30 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="relative bg-[#050505] border border-white/10 rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
             >
+                {/* Modal Glow Decor */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-neon-blue to-transparent opacity-50" />
+                
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
+                >
+                    <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+                </button>
 
-
-
-            {/* Modal Glow Decor */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-neon-blue to-transparent opacity-50" />
-            
-            <button 
-                onClick={onClose} 
-                className="absolute top-6 right-6 sm:top-10 sm:right-10 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all group z-50 hover:scale-110 active:scale-95"
-            >
-                <X size={20} className="sm:size-[28px] group-hover:rotate-90 transition-transform duration-500" />
-            </button>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 md:p-16">
-
-                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 sm:gap-12 mb-12 sm:mb-20">
-                    <div className="relative shrink-0">
-                        <div className="w-32 h-32 sm:w-48 sm:h-48 bg-black border-2 border-white/10 rounded-[2.5rem] sm:rounded-[4rem] flex items-center justify-center text-5xl sm:text-7xl font-black text-white shadow-[0_30px_60px_rgba(0,0,0,0.8)] relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            {artist.image ? (
-                                <img src={artist.image} alt={artist.name} className="w-full h-full object-cover relative z-10" />
-                            ) : (
-                                <span className="relative z-10">{artist.name.charAt(0)}</span>
-                            )}
-                        </div>
-                        {artist.profileStatus === 'approved' && (
-                            <div className="absolute -bottom-3 -right-3 sm:-bottom-6 sm:-right-6 bg-neon-green text-black w-10 h-10 sm:w-16 sm:h-16 rounded-[1rem] sm:rounded-[2rem] flex items-center justify-center border-4 sm:border-8 border-[#050505] shadow-[0_0_40px_rgba(57,255,20,0.3)] animate-float">
-                                <ShieldCheck size={20} className="sm:size-[32px]" />
+                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-6 sm:p-10 gap-8 h-full">
+                    {/* Left Side: Profile, Meta, Contact, Actions */}
+                    <div className="w-full lg:w-[350px] flex flex-col justify-between gap-6 shrink-0 border-b lg:border-b-0 lg:border-r border-white/10 pb-6 lg:pb-0 lg:pr-8 overflow-y-auto custom-scrollbar">
+                        <div className="space-y-6">
+                            <div className="relative w-36 h-36 bg-black border-2 border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-white shadow-[0_20px_45px_rgba(0,0,0,0.8)] overflow-hidden group mx-auto lg:mx-0">
+                                <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                {artist.image ? (
+                                    <img src={artist.image} alt={artist.name} className="w-full h-full object-cover relative z-10" />
+                                ) : (
+                                    <span className="relative z-10">{artist.name.charAt(0)}</span>
+                                )}
                             </div>
-                        )}
+
+                            <div className="space-y-3 text-center lg:text-left">
+                                <div className="flex flex-wrap justify-center lg:justify-start gap-2 items-center">
+                                    <StatusPill status={artist.profileStatus} />
+                                    <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-gray-500 tracking-[0.2em] uppercase">
+                                        since {new Date(artist.createdAt || Date.now()).getFullYear()}
+                                    </span>
+                                </div>
+                                <h2 className="text-3xl font-black font-heading tracking-tighter uppercase italic leading-[0.9] text-white break-words">
+                                    {artist.name}
+                                </h2>
+                            </div>
+
+                            {/* Meta Grid */}
+                            <div className="grid grid-cols-2 gap-2.5 text-[9px] font-black uppercase tracking-[0.1em]">
+                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                    <MapPin size={12} className="text-neon-pink shrink-0" />
+                                    <span className="truncate">{artist.city || 'GLOBAL'}</span>
+                                </div>
+                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                    <Award size={12} className="text-yellow-500 shrink-0" />
+                                    <span className="truncate">{artist.experienceYears || 0} Years</span>
+                                </div>
+                                <div className="px-3.5 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-gray-300 flex items-center gap-2">
+                                    <Music size={12} className="text-neon-blue shrink-0" />
+                                    <span className="truncate">{artist.category}</span>
+                                </div>
+                                <div className="px-3.5 py-2.5 bg-neon-blue/10 border border-neon-blue/20 rounded-2xl text-neon-blue flex items-center gap-2">
+                                    <Zap size={12} className="shrink-0" />
+                                    <span className="truncate">₹{Number(artist.basePrice).toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Contact channels */}
+                            <div className="space-y-2">
+                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
+                                    <Mail size={14} className="text-gray-500 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Email</p>
+                                        <p className="text-xs font-black text-white truncate">{artist.email || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-[#0A0A0A] border border-white/5 rounded-2xl flex items-center gap-3">
+                                    <Phone size={14} className="text-gray-500 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Phone</p>
+                                        <p className="text-xs font-black text-white truncate">{artist.phone || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions block */}
+                        <div className="space-y-3 pt-4 border-t border-white/5 shrink-0">
+                            <div className="flex gap-2">
+                                {artist.profileStatus !== 'approved' && (
+                                    <button 
+                                        onClick={() => onUpdateStatus(artist.id, 'approved')} 
+                                        disabled={isUpdating}
+                                        className="flex-1 h-12 bg-neon-green text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'VERIFY'}
+                                    </button>
+                                )}
+                                {artist.profileStatus !== 'rejected' && (
+                                    <button 
+                                        onClick={() => onUpdateStatus(artist.id, 'rejected')} 
+                                        disabled={isUpdating}
+                                        className="flex-1 h-12 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-white hover:text-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT'}
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={onExport}
+                                    className="flex-1 h-12 bg-white text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:bg-neon-blue hover:text-white hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Download size={12} /> EXPORT CSV
+                                </button>
+                                <button 
+                                    onClick={() => onDelete(artist.id)} 
+                                    className="w-12 h-12 bg-red-600/10 border border-red-600/20 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all active:scale-90"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    
-                    <div className="text-center lg:text-left space-y-6 pt-4">
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap justify-center lg:justify-start gap-3 items-center mb-2">
-                                <StatusPill status={artist.profileStatus} />
-                                <span className="px-5 py-2 bg-white/5 border border-white/5 rounded-full text-[9px] font-black text-gray-500 tracking-[0.3em] uppercase">
-                                    Member since {new Date(artist.createdAt || Date.now()).getFullYear()}
-                                </span>
-                            </div>
-                            <h2 className="text-5xl md:text-7xl font-black font-heading tracking-tighter uppercase italic leading-[0.85] text-white">
-                                {artist.name}
-                            </h2>
-                        </div>
-                        
-                        <div className="flex flex-wrap justify-center lg:justify-start gap-8 items-center">
-                            <div className="flex items-center gap-3 text-neon-blue font-black text-sm tracking-[0.3em] uppercase">
-                                <MapPin size={18} /> {artist.city}
-                            </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                            <div className="flex items-center gap-3 text-neon-pink font-black text-sm tracking-[0.3em] uppercase">
-                                <Award size={18} /> {artist.experienceYears} Years Exp
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                            <div className="px-6 py-3 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center gap-3">
-                                <Music size={14} className="text-neon-blue" /> {artist.category}
-                            </div>
-                            <div className="px-6 py-3 bg-neon-blue/10 border border-neon-blue/20 rounded-2xl text-[10px] font-black text-neon-blue uppercase tracking-widest flex items-center gap-3 shadow-[0_10px_20px_rgba(46,191,255,0.1)]">
-                                <Zap size={14} /> ₹{Number(artist.basePrice).toLocaleString()} / PERF
-                            </div>
-                        </div>
-                        
-                        <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
-
-                        <button 
-                            onClick={onExport}
-                            className="group relative h-12 md:h-14 px-4 md:px-8 bg-white text-black rounded-xl md:rounded-full font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] overflow-hidden hover:scale-[1.02] active:scale-95 transition-all shadow-[0_15px_40px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 w-full xl:w-auto shrink-0 col-span-2"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
-                                <Download size={16} />
-                                EXPORT CSV
-                            </div>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-16">
-                    <div className="lg:col-span-3 space-y-16">
-                        <section className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <h3 className="text-[11px] font-black text-neon-blue uppercase tracking-[0.6em] whitespace-nowrap">ARTIST MANIFESTO</h3>
+                    {/* Right Side: Manifesto, Portfolio, YouTube */}
+                    <div className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+                        <section className="space-y-3">
+                            <div className="flex items-center gap-4">
+                                <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] whitespace-nowrap">ARTIST MANIFESTO</h3>
                                 <div className="w-full h-px bg-gradient-to-r from-neon-blue/30 to-transparent" />
                             </div>
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-br from-neon-blue/20 to-neon-pink/20 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition-opacity" />
-                                <div className="relative bg-[#0A0A0A] p-10 rounded-[2.5rem] border border-white/5 shadow-inner">
-                                    <p className="text-gray-300 leading-relaxed italic text-xl font-medium">"{artist.bio}"</p>
-                                </div>
+                            <div className="bg-[#0A0A0A] p-5 rounded-2xl border border-white/5 max-h-[160px] overflow-y-auto custom-scrollbar">
+                                <p className="text-gray-300 leading-relaxed italic text-sm font-medium">"{artist.bio || 'No manifesto provided.'}"</p>
                             </div>
                         </section>
-                        
+
                         {youtubeId && (
-                            <section className="space-y-8">
-                                <div className="flex items-center gap-6">
-                                    <h3 className="text-[11px] font-black text-red-500 uppercase tracking-[0.6em] whitespace-nowrap">DIGITAL PORTFOLIO</h3>
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-4">
+                                    <h3 className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] whitespace-nowrap">DIGITAL PORTFOLIO</h3>
                                     <div className="w-full h-px bg-gradient-to-r from-red-500/30 to-transparent" />
                                 </div>
-                                <div className="aspect-video bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.8)] group relative">
+                                <div className="aspect-video max-h-[220px] bg-black rounded-2xl overflow-hidden border border-white/10 shadow-lg relative w-full">
                                     <iframe 
                                         width="100%" height="100%" 
                                         src={`https://www.youtube.com/embed/${youtubeId}`}
@@ -919,104 +946,69 @@ const ArtistDetailModal = ({ artist, onClose, onUpdateStatus, onDelete, onExport
                                         allowFullScreen
                                         className="relative z-10"
                                     />
-                                    <div className="absolute inset-0 bg-red-600/5 group-hover:bg-transparent transition-colors duration-700" />
                                 </div>
                             </section>
                         )}
 
-                    </div>
-
-                    <div className="lg:col-span-2 space-y-16">
-                        <section className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.6em] whitespace-nowrap">SECURE CHANNELS</h3>
+                        <section className="space-y-3">
+                            <div className="flex items-center gap-4">
+                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] whitespace-nowrap">SOCIAL FOOTPRINT</h3>
                                 <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
                             </div>
-                            <div className="space-y-3">
-                                <ContactItem icon={<Mail size={16} />} label="Professional Email" value={artist.email || 'ENCRYPTED@ARTISTANT.IO'} />
-                                <ContactItem icon={<Phone size={16} />} label="Emergency Contact" value={artist.phone || 'SECURE LINE N/A'} />
-                            </div>
-                        </section>
-
-                        <section className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.6em] whitespace-nowrap">SOCIAL FOOTPRINT</h3>
-                                <div className="w-full h-px bg-gradient-to-r from-white/10 to-transparent" />
-                            </div>
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 {artist.instagram && (
-                                    <SocialLink 
+                                    <a 
                                         href={`https://instagram.com/${artist.instagram.replace('@','')}`}
-                                        icon={<Instagram size={20} />}
-                                        label="Instagram"
-                                        value={artist.instagram}
-                                        color="pink"
-                                    />
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-neon-pink/40 rounded-2xl flex items-center justify-between transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink"><Instagram size={16} /></div>
+                                            <div>
+                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
+                                                <p className="text-xs font-black text-white truncate">@{artist.instagram.replace('@', '')}</p>
+                                            </div>
+                                        </div>
+                                        <ExternalLink size={12} className="text-gray-700" />
+                                    </a>
                                 )}
                                 {artist.youtube && (
-                                    <SocialLink 
+                                    <a 
                                         href={artist.youtube}
-                                        icon={<Youtube size={20} />}
-                                        label="YouTube"
-                                        value="Official Channel"
-                                        color="red"
-                                    />
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-red-600/40 rounded-2xl flex items-center justify-between transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-red-600/10 flex items-center justify-center text-red-500"><Youtube size={16} /></div>
+                                            <div>
+                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">YouTube</p>
+                                                <p className="text-xs font-black text-white truncate">Channel</p>
+                                            </div>
+                                        </div>
+                                        <ExternalLink size={12} className="text-gray-700" />
+                                    </a>
                                 )}
                                 {artist.portfolioLink && (
                                     <button 
                                         onClick={() => safeOpen(artist.portfolioLink)}
-
-                                        className="group relative w-full h-20 bg-white text-black rounded-[2rem] font-black uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-98 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] overflow-hidden"
+                                        className="col-span-2 h-14 bg-white text-black rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-98 transition-all shadow-md overflow-hidden relative group"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-neon-blue to-neon-pink opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <span className="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-500">
-                                            <Globe size={18} /> FULL CASE STUDY
+                                        <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-500">
+                                            <Globe size={14} /> FULL CASE STUDY
                                         </span>
                                     </button>
                                 )}
                             </div>
                         </section>
-
                     </div>
                 </div>
-            </div>
-
-            {/* Modal Command Bar */}
-            <div className="shrink-0 p-10 bg-[#080808]/80 backdrop-blur-3xl border-t border-white/10 mt-auto relative z-20">
-                <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-                        {artist.profileStatus !== 'approved' && (
-                            <button 
-                                onClick={() => onUpdateStatus(artist.id, 'approved')} 
-                                disabled={isUpdating}
-                                className="flex-1 sm:flex-none h-20 px-16 bg-neon-green text-black font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] shadow-[0_20px_50px_rgba(57,255,20,0.3)] hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-3"
-                            >
-                                {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'AUTHORIZE TALENT'}
-                            </button>
-                        )}
-                        {artist.profileStatus !== 'rejected' && (
-                            <button 
-                                onClick={() => onUpdateStatus(artist.id, 'rejected')} 
-                                disabled={isUpdating}
-                                className="flex-1 sm:flex-none h-20 px-16 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] hover:bg-white hover:text-black hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-3"
-                            >
-                                {isUpdating ? <LoadingSpinner size="xs" color="black" /> : 'REJECT PROFILE'}
-                            </button>
-                        )}
-                    </div>
-                    
-                    <button 
-                        onClick={() => onDelete(artist.id)} 
-                        className="h-16 w-16 bg-red-600/10 border border-red-600/20 rounded-2xl flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all hover:scale-110 active:scale-90 shadow-lg shadow-red-600/5"
-                    >
-                        <Trash2 size={22} />
-                    </button>
-                </div>
-            </div>
-        </motion.div>
-    </div>,
-    document.body
-);
+            </motion.div>
+        </div>,
+        document.body
+    );
 };
 
 

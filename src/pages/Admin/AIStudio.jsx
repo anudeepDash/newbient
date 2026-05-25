@@ -59,6 +59,204 @@ const logoOptions = [
     { id: 'marketing', label: 'Newbi Marketing', path: '/logo_marketing.png', color: '#FF0055' }
 ];
 
+    const inlineFmt = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
+            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
+    };
+
+    const htmlToPlainText = (html) => {
+        if (!html) return '';
+        if (!html.includes('<') || !html.includes('>')) return html;
+        let text = html;
+        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;|\u00a0/g, ' ');
+        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        return text;
+    };
+
+    const getHtmlBlocks = (html) => {
+        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
+        const blocks = [];
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            blocks.push(match[0]);
+        }
+        if (blocks.length === 0) return [html];
+        return blocks;
+    };
+
+    const processHtmlHeadings = (html) => {
+        if (!html) return html;
+        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+            const level = hashes.length;
+            const headingClass = level <= 2 
+                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
+                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
+            const headingTag = `h${Math.min(level + 1, 6)}`;
+            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+        });
+    };
+
+    const renderChatMessage = (text) => {
+        if (!text) return null;
+        const lines = text.split('\n');
+        const elements = [];
+        let i = 0;
+        
+        const formatInline = (t) => {
+            if (!t) return '';
+            return t
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        };
+
+        while (i < lines.length) {
+            const line = lines[i];
+            if (line.trim() === '') {
+                elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
+                i++;
+                continue;
+            }
+
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
+                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
+                        {items.map((item, j) => (
+                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        ))}
+                    </ul>
+                );
+                continue;
+            } else if (line.match(/^\d+\.\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+                    items.push(lines[i].replace(/^\d+\.\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
+                        {items.map((item, j) => (
+                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+                        ))}
+                    </ol>
+                );
+                continue;
+            } else {
+                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
+            }
+            i++;
+        }
+        return <div className="space-y-0.5">{elements}</div>;
+    };
+
+    const renderFormatted = (text, baseClass = '') => {
+        if (!text) return null;
+        const rawLines = text.split('\n');
+        const lines = [];
+        rawLines.forEach(rl => {
+            const parts = rl.split(/\s(?=\d+\.\s)/);
+            if (parts.length > 1) lines.push(...parts);
+            else lines.push(rl);
+        });
+
+        const elements = [];
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (!line && i < lines.length - 1) {
+                const lastElement = elements[elements.length - 1];
+                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+                if (!isLastSpacer) {
+                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                }
+                i++;
+                continue;
+            }
+
+            if (line.match(/^[-*_]{3,}$/)) {
+                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
+                i++;
+                continue;
+            }
+
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const headingClass = level <= 2 
+                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
+                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
+                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
+                    items.push(lines[i].trim().replace(/^[•\-\*]\s/, ''));
+                    i++;
+                }
+                elements.push(
+                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
+                        {items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
+                    </div>
+                );
+                continue;
+            } else if (line.match(/^\d+\.\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                    const l = lines[i].trim();
+                    const match = l.match(/^(\d+)\.\s(.*)/);
+                    if (match) {
+                        items.push({ num: match[1], text: match[2] });
+                    } else {
+                        items.push({ num: '•', text: l.replace(/^\d+\.\s/, '') });
+                    }
+                    i++;
+                }
+                elements.push(
+                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
+                        {items.map((item, j) => (
+                            <div key={j} className="flex items-start gap-3">
+                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
+                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
+                            </div>
+                        ))}
+                    </div>
+                );
+                continue;
+            } else if (line) {
+                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+            }
+            i++;
+        }
+        return <div>{elements}</div>;
+    };
+
+    const renderContent = (content, baseClass = '') => {
+        if (!content) return null;
+        const isHtml = content.includes('<') && content.includes('>');
+        if (isHtml) {
+            return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} />;
+        }
+        return renderFormatted(content, baseClass);
+    };
+
+
 const AIStudio = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -782,202 +980,6 @@ const AIStudio = () => {
     // ────────────────────────────────────────────────────────────────────────
     // PREVIEW RENDERING UTILITIES
     // ────────────────────────────────────────────────────────────────────────
-    const inlineFmt = (text) => {
-        if (!text) return '';
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-black">$1</strong>')
-            .replace(/__(.*?)__/g, '<strong class="font-black">$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-            .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
-    };
-
-    const htmlToPlainText = (html) => {
-        if (!html) return '';
-        if (!html.includes('<') || !html.includes('>')) return html;
-        let text = html;
-        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
-        text = text.replace(/<br\s*\/?>/gi, '\n');
-        text = text.replace(/<[^>]+>/g, '');
-        text = text.replace(/&nbsp;|\u00a0/g, ' ');
-        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        return text;
-    };
-
-    const getHtmlBlocks = (html) => {
-        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
-        const blocks = [];
-        let match;
-        while ((match = regex.exec(html)) !== null) {
-            blocks.push(match[0]);
-        }
-        if (blocks.length === 0) return [html];
-        return blocks;
-    };
-
-    const processHtmlHeadings = (html) => {
-        if (!html) return html;
-        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
-            const level = hashes.length;
-            const headingClass = level <= 2 
-                ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
-                : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
-            const headingTag = `h${Math.min(level + 1, 6)}`;
-            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
-        });
-    };
-
-    const renderChatMessage = (text) => {
-        if (!text) return null;
-        const lines = text.split('\n');
-        const elements = [];
-        let i = 0;
-        
-        const formatInline = (t) => {
-            if (!t) return '';
-            return t
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>');
-        };
-
-        while (i < lines.length) {
-            const line = lines[i];
-            if (line.trim() === '') {
-                elements.push(<div key={`spacer-${i}`} className="h-1.5" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
-                elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-            } else if (line.match(/^[•\-\*]\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
-                    i++;
-                }
-                elements.push(
-                    <ul key={`ul-${i}`} className="list-disc ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ul>
-                );
-                continue;
-            } else if (line.match(/^\d+\.\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-                    items.push(lines[i].replace(/^\d+\.\s/, ''));
-                    i++;
-                }
-                elements.push(
-                    <ol key={`ol-${i}`} className="list-decimal ml-4 my-1.5 space-y-1 text-zinc-300">
-                        {items.map((item, j) => (
-                            <li key={j} dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
-                        ))}
-                    </ol>
-                );
-                continue;
-            } else {
-                elements.push(<p key={i} className="mb-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatInline(line) }} />);
-            }
-            i++;
-        }
-        return <div className="space-y-0.5">{elements}</div>;
-    };
-
-    const renderFormatted = (text, baseClass = '') => {
-        if (!text) return null;
-        const rawLines = text.split('\n');
-        const lines = [];
-        rawLines.forEach(rl => {
-            const parts = rl.split(/\s(?=\d+\.\s)/);
-            if (parts.length > 1) lines.push(...parts);
-            else lines.push(rl);
-        });
-
-        const elements = [];
-        let i = 0;
-        while (i < lines.length) {
-            const line = lines[i].trim();
-            if (!line && i < lines.length - 1) {
-                const lastElement = elements[elements.length - 1];
-                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
-                if (!isLastSpacer) {
-                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
-                }
-                i++;
-                continue;
-            }
-
-            if (line.match(/^[-*_]{3,}$/)) {
-                elements.push(<div key={`hr-${i}`} className="h-[1.5px] bg-black/10 my-8 w-full" />);
-                i++;
-                continue;
-            }
-
-            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-            if (headingMatch) {
-                const level = headingMatch[1].length;
-                const headingText = headingMatch[2];
-                const headingClass = level <= 2 
-                    ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
-                    : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
-                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
-            } else if (line.match(/^[•\-\*]\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].trim().replace(/^[•\-\*]\s/, ''));
-                    i++;
-                }
-                elements.push(
-                    <div key={`ul-${i}`} className="pl-4 space-y-1.5 my-3">
-                        {items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-neon-green mt-1.5 text-[8px]">●</span><span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}
-                    </div>
-                );
-                continue;
-            } else if (line.match(/^\d+\.\s/)) {
-                const items = [];
-                while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
-                    const l = lines[i].trim();
-                    const match = l.match(/^(\d+)\.\s(.*)/);
-                    if (match) {
-                        items.push({ num: match[1], text: match[2] });
-                    } else {
-                        items.push({ num: '•', text: l.replace(/^\d+\.\s/, '') });
-                    }
-                    i++;
-                }
-                elements.push(
-                    <div key={`ol-${i}`} className="pl-4 space-y-2 my-4">
-                        {items.map((item, j) => (
-                            <div key={j} className="flex items-start gap-3">
-                                <span className="text-[11px] font-black text-gray-400 mt-0.5 w-6 shrink-0">{item.num}.</span>
-                                <span className={cn("text-[13px] font-medium text-black leading-[1.9]", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(item.text) }} />
-                            </div>
-                        ))}
-                    </div>
-                );
-                continue;
-            } else if (line) {
-                elements.push(<p key={i} className={cn("text-[13px] font-medium text-black leading-[1.9] text-justify", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
-            }
-            i++;
-        }
-        return <div>{elements}</div>;
-    };
-
-    const renderContent = (content, baseClass = '') => {
-        if (!content) return null;
-        const isHtml = content.includes('<') && content.includes('>');
-        if (isHtml) {
-            return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} />;
-        }
-        return renderFormatted(content, baseClass);
-    };
 
     // Signature Modal hooks
     const [isSigModalOpen, setIsSigModalOpen] = useState(false);
