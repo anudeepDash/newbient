@@ -45,7 +45,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
-import { generateFullDocument, reviseDocument } from '../../lib/ai';
+import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 import DocumentSeal from '../../components/ui/DocumentSeal';
 
 // Markdown-like formatting toolbar for textareas â€” defined outside to prevent remount on parent re-render
@@ -81,6 +81,16 @@ const ProposalGenerator = () => {
     const [aiMode, setAiMode] = useState('generate');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionCategory, setSuggestionCategory] = useState(0);
+    const [refinementContext, setRefinementContext] = useState(null);
+
+    const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
+        setRefinementContext({
+            fieldKey,
+            fieldLabel,
+            currentValue
+        });
+        setActiveTab('ai');
+    };
     const [messages, setMessages] = useState([
         {
             id: 'init-msg',
@@ -625,7 +635,57 @@ const ProposalGenerator = () => {
         setIsGenerating(true);
 
         try {
-            if (aiMode === 'bulk') {
+            if (refinementContext) {
+                // Field refinement
+                const refined = await refineFieldContent(
+                    'proposal',
+                    refinementContext.fieldLabel,
+                    refinementContext.currentValue,
+                    currentPrompt,
+                    'Premium'
+                );
+
+                const fieldKey = refinementContext.fieldKey;
+                if (fieldKey.startsWith('deliverables[')) {
+                    const match = fieldKey.match(/deliverables\[(\d+)\]\.(item|qty|timeline)/);
+                    if (match) {
+                        const idx = parseInt(match[1]);
+                        const field = match[2];
+                        const updated = [...formData.deliverables];
+                        updated[idx] = { ...updated[idx], [field]: refined };
+                        setFormData({ ...formData, deliverables: updated });
+                    }
+                } else if (fieldKey.startsWith('clientRequirements[')) {
+                    const match = fieldKey.match(/clientRequirements\[(\d+)\]\.description/);
+                    if (match) {
+                        const idx = parseInt(match[1]);
+                        const updated = [...formData.clientRequirements];
+                        updated[idx] = { ...updated[idx], description: refined };
+                        setFormData({ ...formData, clientRequirements: updated });
+                    }
+                } else if (fieldKey.startsWith('items[')) {
+                    const match = fieldKey.match(/items\[(\d+)\]\.(description|qty|price)/);
+                    if (match) {
+                        const idx = parseInt(match[1]);
+                        const field = match[2];
+                        const newItems = [...items];
+                        let val = refined;
+                        if (field === 'qty' || field === 'price') val = Number(refined) || 0;
+                        newItems[idx] = { ...newItems[idx], [field]: val };
+                        setItems(newItems);
+                    }
+                } else {
+                    setFormData(prev => ({ ...prev, [fieldKey]: refined }));
+                }
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
+                }]);
+                setRefinementContext(null);
+                addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
+            } else if (aiMode === 'bulk') {
                 setIsBulkGenerating(true);
                 setBulkProgress({ current: 0, total: 1 });
                 setBulkProgress({ current: 1, total: 1 });
@@ -725,7 +785,7 @@ const ProposalGenerator = () => {
                 setMessages(prev => [...prev, {
                     id: String(Date.now()) + '-ai',
                     sender: 'ai',
-                    text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nI have switched your mode to **Chat & Refine** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
+                    text: `✓ Proposal for "${data.clientName || 'Partner'}" generated successfully! I added ${data.items?.length || 0} financial line items. \n\nI have switched your mode to **Chat & Revise** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
                 }]);
                 setAiMode('refine');
                 addToast('Proposal successfully generated!', 'success');
@@ -1236,6 +1296,191 @@ const ProposalGenerator = () => {
 
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
+                                {activeTab === 'ai' && (
+                                    <div className="flex flex-col h-[65vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                        {/* Orbital Glow in Background */}
+                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
+
+                                        {/* Brand Header */}
+                                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0 relative z-10">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20">
+                                                    <Cpu size={14} className="text-neon-green animate-pulse" />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-black text-neon-green uppercase tracking-[0.3em] block leading-none mb-0.5">Primary Model</span>
+                                                    <h3 className="text-xs font-black uppercase text-white tracking-wide leading-none">Gemini 3.5 Flash<span className="text-neon-green">.</span></h3>
+                                                </div>
+                                            </div>
+                                            {/* Mode status indicator */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Mode:</span>
+                                                <span className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-neon-green shadow-sm">
+                                                    {refinementContext ? 'Field Refinement' : (aiMode === 'bulk' ? 'Bulk Generator' : (aiMode === 'generate' ? 'First Draft' : 'Refinement & Chat'))}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Mode Switcher inside AI Studio */}
+                                        <div className="flex items-center bg-zinc-950 border border-white/5 rounded-2xl p-1 gap-1 mb-4 z-10 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsBulkMode(false); setAiMode('generate'); }}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
+                                                    (!isBulkMode && aiMode !== 'refine') ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <Sparkles size={12} />
+                                                <span>Generate New</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsBulkMode(true); setAiMode('bulk'); }}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
+                                                    isBulkMode ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <FileSpreadsheet size={12} />
+                                                <span>AI Bulk Mode</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsBulkMode(false); setAiMode('refine'); }}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
+                                                    (!isBulkMode && aiMode === 'refine') ? "bg-neon-green text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]" : "text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <Send size={12} />
+                                                <span>Chat & Revise</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Message Stream */}
+                                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
+                                            {/* Welcome card if only initial message */}
+                                            {messages.length === 1 && (
+                                                <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                    <div className="relative">
+                                                        <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur opacity-30 animate-pulse" />
+                                                        <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                            <Sparkles size={24} className="text-neon-green" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
+                                                        <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                                            Describe your requirements below to draft a complete proposal in seconds. You can toggle between standard single draft generation and AI batch automation.
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Suggestions Grid */}
+                                                    <div className="w-full space-y-2.5 pt-4">
+                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Blueprints</span>
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            {suggestions.map((s, idx) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={idx}
+                                                                    onClick={() => setPromptText(s)}
+                                                                    className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                >
+                                                                    <span className="text-neon-green group-hover:translate-x-1 inline-block transition-transform mr-1.5">→</span>
+                                                                    {s}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Chat Messages */}
+                                            {messages.length > 1 && messages.map(m => (
+                                                <div
+                                                    key={m.id}
+                                                    className={cn(
+                                                        "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                                        m.sender === 'user'
+                                                            ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                                            : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={cn(
+                                                            "text-[8px] font-black uppercase tracking-wider",
+                                                            m.sender === 'user' ? "text-gray-400" : "text-neon-green"
+                                                        )}>
+                                                            {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                </div>
+                                            ))}
+
+                                            {/* Generating Bubble */}
+                                            {isGenerating && (
+                                                <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
+                                                    <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
+                                                    <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Synthesizing document variables...</span>
+                                                </div>
+                                            )}
+                                            <div ref={chatEndRef} />
+                                        </div>
+
+                                        {/* Prompt container wrapped in .gemini-border-wrap */}
+                                        <div className="mt-auto pt-4 bg-transparent shrink-0">
+                                            {/* WhatsApp quoted context container */}
+                                            {refinementContext && (
+                                                <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-neon-green rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
+                                                    <div className="absolute inset-0 bg-neon-green/5 opacity-40" />
+                                                    <div className="min-w-0 relative z-10">
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
+                                                        <p className="text-xs text-gray-400 line-clamp-1 italic">
+                                                            "{refinementContext.currentValue || 'No current content...'}"
+                                                        </p>
+                                                    </div>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setRefinementContext(null)}
+                                                        className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* The Input box container */}
+                                            <div className="gemini-border-wrap shadow-[0_15px_40px_rgba(57,255,20,0.15)] relative">
+                                                <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
+                                                    <textarea
+                                                        value={promptText}
+                                                        onChange={e => setPromptText(e.target.value)}
+                                                        placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
+                                                        className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
+                                                        rows={1}
+                                                        disabled={isGenerating}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault();
+                                                                handleStudioSubmit();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleStudioSubmit}
+                                                        disabled={!promptText.trim() || isGenerating}
+                                                        className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
+                                                    >
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 {activeTab === '1' && (
                                     <div className="space-y-12">
                                         <div className="space-y-4">
@@ -1260,16 +1505,20 @@ const ProposalGenerator = () => {
                                             <div className="space-y-4">
                                                 <div className="flex justify-between items-center px-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Entity</label>
-                                                    
                                                 </div>
-                                                <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
+                                                <div className="relative group/refine w-full">
+                                                    <input value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Organization Name" />
+                                                    <button type="button" onClick={() => handleRefineClick('clientName', 'Client Entity', formData.clientName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <div className="flex justify-between items-center px-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Project Name</label>
-                                                    
                                                 </div>
-                                                <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
+                                                <div className="relative group/refine w-full">
+                                                    <input value={formData.campaignName} onChange={e => setFormData({...formData, campaignName: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="Project or Event Title" />
+                                                    <button type="button" onClick={() => handleRefineClick('campaignName', 'Project Name', formData.campaignName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-10">
@@ -1278,68 +1527,86 @@ const ProposalGenerator = () => {
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Client Address</label>
                                                     <VisibilityToggle field="clientAddress" />
                                                 </div>
-                                                <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
+                                                <div className="relative group/refine w-full">
+                                                    <input value={formData.clientAddress} onChange={e => setFormData({...formData, clientAddress: e.target.value})} className={cn("w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all", isHidden('clientAddress') && "opacity-30")} placeholder="Business Location" />
+                                                    <button type="button" onClick={() => handleRefineClick('clientAddress', 'Client Address', formData.clientAddress)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Timeline / Duration</label>
-                                                <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 px-6 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
+                                                <div className="relative group/refine w-full">
+                                                    <input value={formData.campaignDuration} onChange={e => setFormData({...formData, campaignDuration: e.target.value})} className="w-full bg-zinc-900 border border-white/10 h-16 pl-6 pr-12 rounded-2xl font-bold text-sm outline-none focus:border-neon-green/40 transition-all" placeholder="e.g. 15th - 20th Oct or 3 Months" />
+                                                    <button type="button" onClick={() => handleRefineClick('campaignDuration', 'Timeline / Duration', formData.campaignDuration)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                </div>
                                             </div>
                                         </div>
-                                            <div className="space-y-4 relative group/editor">
+                                            <div className="space-y-4 relative group/editor group/refine">
                                                 <div className="flex justify-between items-center px-2">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
                                                 </div>
-                                                <textarea 
-                                                    value={formData.coverDescription} 
-                                                    onChange={e => setFormData({...formData, coverDescription: e.target.value})} 
-                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('coverDescription') && 'opacity-30')} 
-                                                    placeholder="Cover page description for this proposal..." 
-                                                    style={{ minHeight: "180px" }}
-                                                />
+                                                <div className="relative w-full">
+                                                    <textarea 
+                                                        value={formData.coverDescription} 
+                                                        onChange={e => setFormData({...formData, coverDescription: e.target.value})} 
+                                                        className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('coverDescription') && 'opacity-30')} 
+                                                        placeholder="Cover page description for this proposal..." 
+                                                        style={{ minHeight: "180px" }}
+                                                    />
+                                                    <button type="button" onClick={() => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                </div>
                                             </div>
                                     </div>
                                 )}
                                 {activeTab === '2' && (
                                     <div className="space-y-12">
-                                        <div className="space-y-4 relative group/editor">
+                                        <div className="space-y-4 relative group/editor group/refine">
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
                                             </div>
-                                            <textarea 
-                                                value={formData.overview} 
-                                                onChange={e => setFormData({...formData, overview: e.target.value})} 
-                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('overview') && 'opacity-30')} 
-                                                placeholder="Strategic vision..." 
-                                                style={{ minHeight: "200px" }}
-                                            />
+                                            <div className="relative w-full">
+                                                <textarea 
+                                                    value={formData.overview} 
+                                                    onChange={e => setFormData({...formData, overview: e.target.value})} 
+                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('overview') && 'opacity-30')} 
+                                                    placeholder="Strategic vision..." 
+                                                    style={{ minHeight: "200px" }}
+                                                />
+                                                <button type="button" onClick={() => handleRefineClick('overview', 'Executive Summary', formData.overview)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            </div>
                                         </div>
-                                        <div className="space-y-4 relative group/editor">
+                                        <div className="space-y-4 relative group/editor group/refine">
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective</label>
                                             </div>
-                                            <textarea 
-                                                value={formData.primaryGoal} 
-                                                onChange={e => setFormData({...formData, primaryGoal: e.target.value})} 
-                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('primaryGoal') && 'opacity-30')} 
-                                                placeholder="Project Goal" 
-                                                style={{ minHeight: "120px" }}
-                                            />
+                                            <div className="relative w-full">
+                                                <textarea 
+                                                    value={formData.primaryGoal} 
+                                                    onChange={e => setFormData({...formData, primaryGoal: e.target.value})} 
+                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('primaryGoal') && 'opacity-30')} 
+                                                    placeholder="Project Goal" 
+                                                    style={{ minHeight: "120px" }}
+                                                />
+                                                <button type="button" onClick={() => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === '3' && (
                                     <div className="space-y-12">
-                                        <div className="space-y-4 relative group/editor">
+                                        <div className="space-y-4 relative group/editor group/refine">
                                             <div className="flex justify-between items-center px-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scope of Work</label>
                                             </div>
-                                            <textarea 
-                                                value={formData.scopeOfWork} 
-                                                onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} 
-                                                className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('scopeOfWork') && 'opacity-30')} 
-                                                placeholder="Use bullet points for each scope item. Group under headings." 
-                                                style={{ minHeight: "400px" }}
-                                            />
+                                            <div className="relative w-full">
+                                                <textarea 
+                                                    value={formData.scopeOfWork} 
+                                                    onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} 
+                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('scopeOfWork') && 'opacity-30')} 
+                                                    placeholder="Use bullet points for each scope item. Group under headings." 
+                                                    style={{ minHeight: "400px" }}
+                                                />
+                                                <button type="button" onClick={() => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

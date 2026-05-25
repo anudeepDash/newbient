@@ -157,8 +157,12 @@ export default async function handler(req, res) {
     }
 
     // Load the index.html from the filesystem
-    // Note: In Vercel, this is usually at the root or relative to the function
-    const indexPath = path.join(process.cwd(), 'index.html');
+    // In Vercel production, we read the compiled dist/index.html which contains correct production asset links.
+    // In local development, we fallback to the root index.html.
+    let indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    if (!fs.existsSync(indexPath)) {
+        indexPath = path.join(process.cwd(), 'index.html');
+    }
     let html = '';
     
     try {

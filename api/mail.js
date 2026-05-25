@@ -53,6 +53,12 @@ export default async function handler(req, res) {
         cleanPass = cleanPass.slice(1, -1).trim();
     }
 
+    // Always use the authenticated SMTP username as the sender address
+    // to prevent SMTP authentication/sender identity mismatch rejection errors.
+    if (cleanUser) {
+        fromEmail = cleanUser;
+    }
+
     const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,

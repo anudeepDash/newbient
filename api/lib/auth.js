@@ -6,13 +6,11 @@ let app;
 
 try {
     if (!getApps().length) {
-        const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+        const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "newbi-ent-v2")?.trim();
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
         let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
 
-        if (!projectId || !clientEmail || !privateKey) {
-            console.error('[AUTH INIT] ❌ Missing Firebase Admin environment variables!');
-        } else {
+        if (projectId && clientEmail && privateKey) {
             // Bulletproof format helper to fix any copy-paste/Vercel formatting issues
             let formattedKey = privateKey.trim();
             
@@ -47,6 +45,14 @@ try {
                 }),
             });
             console.log('[AUTH INIT] ✅ Firebase Admin initialized successfully');
+        } else if (projectId) {
+            // Initialize with just projectId (sufficient for token verification)
+            app = initializeApp({
+                projectId
+            });
+            console.log('[AUTH INIT] ✅ Firebase Admin initialized with projectId only (token verification active)');
+        } else {
+            console.error('[AUTH INIT] ❌ Missing Firebase Admin environment variables!');
         }
     } else {
         app = getApps()[0];
@@ -62,6 +68,11 @@ export { auth };
 export const verifyToken = async (req) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+
+    if (!auth) {
+        console.error('verifyToken failed: Firebase Admin Auth not initialized');
         return null;
     }
 
