@@ -350,9 +350,57 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .agreement-page-render .article-content h3,
 .agreement-page-render .article-content h4,
 .agreement-page-render .article-content strong,
-.agreement-page-render .article-content b {
+.agreement-page-render .article-content b,
+.invoice-page-render .article-content h1,
+.invoice-page-render .article-content h2,
+.invoice-page-render .article-content h3,
+.invoice-page-render .article-content h4,
+.invoice-page-render .article-content strong,
+.invoice-page-render .article-content b {
   color: #000000 !important; /* Force bold headers to remain black */
   font-family: 'Outfit', sans-serif !important;
+}
+
+/* Specific heading overrides to make them smaller, normal case, and non-italic for A4 */
+.proposal-page-render .article-content h1,
+.proposal-page-render .article-content h2,
+.agreement-page-render .article-content h1,
+.agreement-page-render .article-content h2,
+.invoice-page-render .article-content h1,
+.invoice-page-render .article-content h2 {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  padding-bottom: 0.25rem !important;
+  display: block !important;
+  font-style: normal !important;
+}
+
+.proposal-page-render .article-content h3,
+.proposal-page-render .article-content h4,
+.proposal-page-render .article-content h5,
+.proposal-page-render .article-content h6,
+.agreement-page-render .article-content h3,
+.agreement-page-render .article-content h4,
+.agreement-page-render .article-content h5,
+.agreement-page-render .article-content h6,
+.invoice-page-render .article-content h3,
+.invoice-page-render .article-content h4,
+.invoice-page-render .article-content h5,
+.invoice-page-render .article-content h6 {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.25rem !important;
+  display: block !important;
+  font-style: normal !important;
+  color: #374151 !important;
 }
 
 .proposal-page-render .article-content p,
