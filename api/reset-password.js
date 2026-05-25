@@ -159,7 +159,7 @@ export default async function handler(req, res) {
         const info = await transporter.sendMail({
             from: fromAddress,
             to: email,
-            subject: 'RESET YOUR IDENTITY // NEWBI ENT.',
+            subject: 'Reset your Password',
             html: html,
         });
 
