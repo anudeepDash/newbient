@@ -93,7 +93,13 @@ const ProposalManagement = () => {
                     'Content-Type': 'application/json',
                     'Authorization': token ? `Bearer ${token}` : '',
                 },
-                body: JSON.stringify({ to, subject, html }),
+                body: JSON.stringify({ 
+                    to, 
+                    subject, 
+                    html,
+                    fromName: 'Newbi Partnerships',
+                    fromEmail: 'partnership@newbi.live'
+                }),
             });
             const result = await response.json();
             if (result.success) {

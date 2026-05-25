@@ -59,13 +59,17 @@ export default async function handler(req, res) {
         const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
         const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        // Check for service-specific credentials
+        let smtpUser = process.env.SMTP_USER_SECURITY || process.env.SMTP_USER;
+        let smtpPass = process.env.SMTP_PASS_SECURITY || process.env.SMTP_PASS;
+
+        if (!smtpUser || !smtpPass) {
             console.error('[RESET] ❌ Missing SMTP_USER or SMTP_PASS environment variables!');
             throw new Error('SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASS in your environment.');
         }
 
-        let smtpUser = process.env.SMTP_USER?.trim() || '';
-        let smtpPass = process.env.SMTP_PASS?.trim() || '';
+        smtpUser = smtpUser.trim();
+        smtpPass = smtpPass.trim();
 
         // Strip surrounding quotes if present (e.g. from copy-pasting raw dotenv values)
         if ((smtpUser.startsWith('"') && smtpUser.endsWith('"')) || (smtpUser.startsWith("'") && smtpUser.endsWith("'"))) {
@@ -152,12 +156,26 @@ export default async function handler(req, res) {
         `;
 
         // 4. Send the Email
-        // Always use cleaned SMTP_USER as sender address to prevent SMTP sender rejection errors
-        const fromAddress = `"Newbi Security" <${smtpUser}>`;
+        // Default to "Newbi Security" <noreply@newbi.live>
+        let fromDisplayName = "Newbi Security";
+        let fromEmailAddress = "noreply@newbi.live";
+
+        // Check for override
+        const envFrom = process.env.SMTP_FROM_SECURITY;
+        if (envFrom) {
+            const match = envFrom.match(/^(?:"?([^"]*)"?\s)?<?([^>]+)>?$/);
+            if (match) {
+                fromDisplayName = match[1]?.trim() || fromDisplayName;
+                fromEmailAddress = match[2]?.trim() || fromEmailAddress;
+            }
+        }
+
+        const fromAddress = `"${fromDisplayName}" <${fromEmailAddress}>`;
         
         console.log(`[RESET] ✉️ Sending email via SMTP...`);
         const info = await transporter.sendMail({
             from: fromAddress,
+            sender: smtpUser, // Envelope sender to prevent SMTP auth sender mismatch errors
             to: email,
             subject: 'Reset your Password',
             html: html,

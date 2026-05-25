@@ -15,6 +15,14 @@ import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import { notifyAllUsers } from '../../lib/notificationTriggers';
 import { sendMassEmail, generateOfficialHTML } from '../../lib/email';
 
+const ALIASES = [
+    { name: 'Newbi Partnerships', email: 'partnership@newbi.live', key: 'partnership' },
+    { name: 'Newbi Notifications', email: 'noreply@newbi.live', key: 'noreply' },
+    { name: 'Newbi Legal', email: 'legal@newbi.live', key: 'legal' },
+    { name: 'Newbi Collaborations', email: 'collaborations@newbi.live', key: 'collaborations' },
+    { name: 'Custom Alias', email: '', key: 'custom' }
+];
+
 const MailingManager = () => {
     const { subscribers, allUsers, admins, addToast } = useStore();
     const [searchParams] = useSearchParams();
@@ -35,6 +43,11 @@ const MailingManager = () => {
     const [status, setStatus] = useState(null); 
     const [viewMode, setViewMode] = useState('desktop');
 
+    // Sender Alias State
+    const [selectedAlias, setSelectedAlias] = useState(ALIASES[0]);
+    const [customName, setCustomName] = useState('');
+    const [customEmail, setCustomEmail] = useState('');
+
     const recipients = useMemo(() => {
         if (recipientType === 'subscribers') return subscribers;
         if (recipientType === 'registered') return allUsers;
@@ -46,7 +59,7 @@ const MailingManager = () => {
         return unique;
     }, [recipientType, subscribers, allUsers, admins]);
 
-    const handleSendEmails = async (e) => {
+     const handleSendEmails = async (e) => {
         if (e) e.preventDefault();
         if (recipients.length === 0) {
             addToast("No recipients found.", 'error');
@@ -64,7 +77,11 @@ const MailingManager = () => {
 
             // Send via our API using the official account
             const bccList = recipients.map(r => r.email).filter(Boolean);
-            const mailResult = await sendMassEmail(bccList, mailData.subject, htmlContent, 'official');
+            
+            const fromName = selectedAlias.key === 'custom' ? customName : selectedAlias.name;
+            const fromEmail = selectedAlias.key === 'custom' ? customEmail : selectedAlias.email;
+
+            const mailResult = await sendMassEmail(bccList, mailData.subject, htmlContent, 'official', null, fromName, fromEmail);
 
             if (!mailResult.success) {
                 throw new Error(mailResult.error || "Failed to broadcast");
@@ -180,7 +197,64 @@ const MailingManager = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
+                                 <div className="space-y-6">
+                                    {/* Sender Alias Selection */}
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Sender Alias</label>
+                                        <select
+                                            value={selectedAlias.key}
+                                            onChange={(e) => {
+                                                const alias = ALIASES.find(a => a.key === e.target.value);
+                                                setSelectedAlias(alias);
+                                            }}
+                                            className="w-full h-14 px-4 bg-black/50 border border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/20 focus:outline-none text-white appearance-none"
+                                            style={{
+                                                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 16px center',
+                                                backgroundSize: '16px'
+                                            }}
+                                        >
+                                            {ALIASES.map(a => (
+                                                <option key={a.key} value={a.key} className="bg-zinc-950 text-white">
+                                                    {a.key === 'custom' ? 'Custom Alias...' : `${a.name} <${a.email}>`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {selectedAlias.key === 'custom' && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="grid grid-cols-1 sm:grid-cols-2 gap-6 overflow-hidden"
+                                            >
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Custom Name</label>
+                                                    <Input 
+                                                        value={customName}
+                                                        onChange={(e) => setCustomName(e.target.value)}
+                                                        placeholder="e.g. Newbi Events"
+                                                        className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/20"
+                                                        required={selectedAlias.key === 'custom'}
+                                                    />
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Custom Email</label>
+                                                    <Input 
+                                                        value={customEmail}
+                                                        onChange={(e) => setCustomEmail(e.target.value)}
+                                                        placeholder="e.g. events@newbi.live"
+                                                        className="h-14 bg-black/50 border-white/5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-white/20"
+                                                        required={selectedAlias.key === 'custom'}
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
                                             <Shield size={12} className="text-white" /> Subject Line
@@ -271,7 +345,7 @@ const MailingManager = () => {
                                         )}
                                     </Button>
                                     <p className="text-center text-[8px] font-black text-gray-700 uppercase tracking-[0.3em] mt-6">
-                                        Secure Transmission via partnership@newbi.live
+                                        Secure Transmission via {selectedAlias.key === 'custom' ? customEmail : selectedAlias.email}
                                     </p>
                                 </div>
                             </form>
