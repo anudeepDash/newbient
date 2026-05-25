@@ -468,7 +468,7 @@ const ContractGenerator = () => {
                                     </p>
                                 </div>
                                 <div className="space-y-2">
-                                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none">
                                         {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
                                     </h2>
                                     <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
@@ -497,7 +497,7 @@ const ContractGenerator = () => {
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col h-[65vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                    <div className="flex flex-col h-[78vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
                                         {/* Orbital Glow in Background */}
                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#A855F7]/5 rounded-full blur-3xl pointer-events-none" />
 

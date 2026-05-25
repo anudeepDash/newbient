@@ -340,7 +340,6 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                                     emailData.theme === 'dark' ? "bg-black" : "bg-white"
                                 )}>
                                     <div className={cn(
-                                        "overflow-y-auto max-h-[600px] custom-scrollbar",
                                         emailData.theme === 'dark' ? "bg-black" : "bg-[#fcfcfc]"
                                     )}>
                                         <div dangerouslySetInnerHTML={{ __html: previewHtml }} />

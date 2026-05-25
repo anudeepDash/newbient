@@ -61,6 +61,7 @@ export default async function handler(req, res) {
 
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
             console.error('[RESET] ❌ Missing SMTP_USER or SMTP_PASS environment variables!');
+            throw new Error('SMTP credentials are not configured. Please set SMTP_USER and SMTP_PASS in your environment.');
         }
 
         let smtpUser = process.env.SMTP_USER?.trim() || '';
@@ -74,6 +75,8 @@ export default async function handler(req, res) {
             smtpPass = smtpPass.slice(1, -1).trim();
         }
 
+        console.log(`[RESET] 🔧 SMTP Config: host=${smtpHost}, port=${smtpPort}, user=${smtpUser}, passLength=${smtpPass.length}`);
+
         const transporter = nodemailer.createTransport({
             host: smtpHost,
             port: smtpPort,
@@ -82,7 +85,7 @@ export default async function handler(req, res) {
                 user: smtpUser,
                 pass: smtpPass,
             },
-            connectionTimeout: 10000, // 10 seconds timeout
+            connectionTimeout: 10000,
             greetingTimeout: 5000,
             socketTimeout: 15000
         });
@@ -149,8 +152,8 @@ export default async function handler(req, res) {
         `;
 
         // 4. Send the Email
-        // Always use SMTP_USER as sender address to prevent SMTP sender rejection errors
-        const fromAddress = `"Newbi Security" <${process.env.SMTP_USER}>`;
+        // Always use cleaned SMTP_USER as sender address to prevent SMTP sender rejection errors
+        const fromAddress = `"Newbi Security" <${smtpUser}>`;
         
         console.log(`[RESET] ✉️ Sending email via SMTP...`);
         const info = await transporter.sendMail({
@@ -164,12 +167,19 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, messageId: info.messageId });
     } catch (error) {
         console.error('[RESET] ❌ FATAL ERROR:', error.message);
+        console.error('[RESET] ❌ Error code:', error.code);
+        console.error('[RESET] ❌ Error response:', error.response);
+        console.error('[RESET] ❌ Error responseCode:', error.responseCode);
+        console.error('[RESET] ❌ Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        
         // Categorize common errors for better UI feedback
         let userMessage = error.message;
-        if (error.code === 'auth/user-not-found' || error.message.includes('no user')) {
+        if (error.code === 'auth/user-not-found' || error.message?.includes('no user')) {
             userMessage = 'This email address is not registered in our system.';
-        } else if (error.code === 'EAUTH' || error.message.includes('Invalid login')) {
-            userMessage = 'Security infrastructure error (SMTP Authentication failed).';
+        } else if (error.code === 'EAUTH' || error.message?.includes('Invalid login')) {
+            userMessage = 'SMTP Authentication failed. The App Password may be expired or revoked. Please generate a new one in Google Account settings.';
+        } else if (error.message?.includes('DECODER') || error.message?.includes('OAuth2')) {
+            userMessage = 'Firebase Admin credential error. Private key may be malformed.';
         }
         
         return res.status(500).json({ error: 'Failed to process request', details: userMessage });

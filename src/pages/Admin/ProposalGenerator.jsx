@@ -964,30 +964,6 @@ const ProposalGenerator = () => {
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
                         <p className="text-[7px] md:text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 truncate">Business Summary</p>
                     </div>
-
-                    {/* Mode Switcher */}
-                    <div className="flex items-center bg-zinc-900/80 border border-white/10 rounded-2xl p-1 gap-1 shadow-inner ml-2 md:ml-6 shrink-0">
-                        <button 
-                            onClick={() => setIsBulkMode(false)}
-                            className={cn(
-                                "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5",
-                                !isBulkMode ? "bg-neon-green text-black shadow-[0_0_20px_rgba(57,255,20,0.3)]" : "text-gray-400 hover:text-white"
-                            )}
-                        >
-                            <FileText size={14} />
-                            <span className="hidden sm:inline">Single Mode</span>
-                        </button>
-                        <button 
-                            onClick={() => setIsBulkMode(true)}
-                            className={cn(
-                                "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5",
-                                isBulkMode ? "bg-neon-green text-black shadow-[0_0_20px_rgba(57,255,20,0.3)]" : "text-gray-400 hover:text-white"
-                            )}
-                        >
-                            <FileSpreadsheet size={14} />
-                            <span className="hidden sm:inline">AI Bulk Mode</span>
-                        </button>
-                    </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
@@ -1011,224 +987,37 @@ const ProposalGenerator = () => {
 
             <main className="flex-1 flex overflow-x-clip">
                 {/* Sidebar - Desktop */}
-                {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
-                    <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
-                        <div className="space-y-2">
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
-                            {tabs.map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
-                                    <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
-                                        <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </aside>
-                )}
-
-                {/* Mobile Bottom Navigation */}
-                {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
-                    <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
+                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                    <div className="space-y-2">
+                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
-                                <tab.icon size={20} />
-                                <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
-                                {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                                <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
+                                    <p className={cn("text-[9px] font-bold opacity-60 uppercase tracking-tighter", activeTab === tab.id ? "text-black" : "text-gray-600")}>{tab.desc}</p>
+                                </div>
                             </button>
                         ))}
                     </div>
-                )}
+                </aside>
+
+                {/* Mobile Bottom Navigation */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
+                    {tabs.map(tab => (
+                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-green" : "text-gray-500")}>
+                            <tab.icon size={20} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
+                            {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-[#39FF14] mt-1 shadow-[0_0_8px_#39FF14]" />}
+                        </button>
+                    ))}
+                </div>
 
 
                 {/* Editor Area */}
                 <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
-                        {isBulkMode && (
-                            <div className="space-y-12">
-                                {/* Top Intro Card */}
-                                <div className="p-8 md:p-12 bg-zinc-900/40 border border-white/10 rounded-[3rem] relative overflow-hidden shadow-2xl space-y-8 group">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 rounded-full blur-3xl group-hover:bg-neon-green/10 transition-all" />
-                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <Sparkles size={16} className="text-neon-green" />
-                                                <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Batch Automation</p>
-                                            </div>
-                                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic text-white">AI Bulk Orchestrator<span className="text-neon-green">.</span></h2>
-                                            <p className="text-xs md:text-sm font-medium text-gray-400 max-w-3xl leading-relaxed">
-                                                Paste raw unstructured requirements, meeting notes, CSV data, or a list of client requests. Our AI will automatically parse, structure, and generate distinct, client-ready professional proposals in batch.
-                                            </p>
-                                        </div>
-                                    </div>
 
-                                    <div className="space-y-4 relative z-10">
-                                        <div className="flex justify-between items-center px-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
-                                            <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-3 py-1 rounded-full border border-neon-green/20">
-                                                {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
-                                            </span>
-                                        </div>
-                                        <textarea 
-                                            value={bulkRawText}
-                                            onChange={e => setBulkRawText(e.target.value)}
-                                            rows={8}
-                                            placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
-                                            className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-3xl p-6 text-sm font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
-                                        />
-                                    </div>
-
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4 relative z-10">
-                                        <div className="flex items-center gap-3 text-xs font-bold text-gray-500">
-                                            <Cpu size={16} className="text-neon-green" />
-                                            <span>Multi-Threaded AI Pulse Engine</span>
-                                        </div>
-
-                                        <button 
-                                            onClick={handleBulkGenerate}
-                                            disabled={isBulkGenerating || !bulkRawText.trim()}
-                                            className="w-full sm:w-auto px-8 py-4 bg-neon-green text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 flex items-center justify-center gap-3"
-                                        >
-                                            {isBulkGenerating ? (
-                                                <>
-                                                    <RefreshCw className="animate-spin" size={16} />
-                                                    <span>Generating {bulkProgress.current} of {bulkProgress.total}...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Sparkles size={16} />
-                                                    <span>Execute Batch Generation</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {isBulkGenerating && (
-                                        <div className="space-y-2 relative z-10 pt-4">
-                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                <span>AI Pulse Generation Progress</span>
-                                                <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
-                                            </div>
-                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
-                                                <div 
-                                                    className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_12px_#39FF14]"
-                                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Generated Bulk Proposals Grid */}
-                                {bulkProposals.length > 0 && (
-                                    <div className="space-y-8 pt-8 border-t border-white/5">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Generated Batch Vault.</h3>
-                                                </div>
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{bulkProposals.length} Proposals Ready for Review & Persistence</p>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 w-full sm:w-auto">
-                                                <button 
-                                                    onClick={generateAllBulkPDFs}
-                                                    disabled={isSaving}
-                                                    className="flex-1 sm:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                                >
-                                                    {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
-                                                    <span>Export All PDFs</span>
-                                                </button>
-                                                <button 
-                                                    onClick={handleSaveAllBulk}
-                                                    disabled={isSaving}
-                                                    className="flex-1 sm:flex-none px-6 py-3 bg-neon-green text-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(57,255,20,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                                >
-                                                    {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
-                                                    <span>Save All to Vault</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {bulkProposals.map((prop, idx) => (
-                                                <div 
-                                                    key={idx}
-                                                    onClick={() => setSelectedBulkIndex(idx)}
-                                                    className={cn(
-                                                        "p-6 rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between gap-6 relative group overflow-hidden",
-                                                        selectedBulkIndex === idx 
-                                                            ? "bg-zinc-900/80 border-neon-green shadow-[0_10px_30px_rgba(57,255,20,0.15)] scale-[1.02]" 
-                                                            : "bg-zinc-900/30 border-white/5 hover:border-white/20 hover:bg-zinc-900/50"
-                                                    )}
-                                                >
-                                                    {selectedBulkIndex === idx && (
-                                                        <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-green shadow-[0_0_10px_#39FF14]" />
-                                                    )}
-
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-[10px] font-black font-mono px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-neon-green">
-                                                                {prop.proposalNumber}
-                                                            </span>
-                                                            <button 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setBulkProposals(bulkProposals.filter((_, i) => i !== idx));
-                                                                    if (selectedBulkIndex >= bulkProposals.length - 1) {
-                                                                        setSelectedBulkIndex(Math.max(0, bulkProposals.length - 2));
-                                                                    }
-                                                                }}
-                                                                className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                                                            >
-                                                                <X size={14} />
-                                                            </button>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <h4 className="text-base font-black text-white uppercase tracking-tight truncate leading-snug">
-                                                                {prop.clientName || `Client 0${idx+1}`}
-                                                            </h4>
-                                                            <p className="text-xs font-bold text-gray-400 italic truncate">
-                                                                {prop.campaignName || `Project 0${idx+1}`}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-4 text-[10px] font-bold text-gray-500 pt-2 border-t border-white/5">
-                                                            <span>Duration: {prop.campaignDuration || '3 Months'}</span>
-                                                            <span>•</span>
-                                                            <span>{prop.items?.length || 1} Items</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-end justify-between pt-4 border-t border-white/5">
-                                                        <div className="space-y-0.5">
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Est. Value</p>
-                                                            <p className="text-lg font-black font-mono text-white leading-none">
-                                                                ₹{(prop.totalAmount || 0).toLocaleString()}
-                                                            </p>
-                                                        </div>
-
-                                                        <span className={cn(
-                                                            "text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                                            selectedBulkIndex === idx ? "text-neon-green" : "text-gray-500 group-hover:text-white"
-                                                        )}>
-                                                            <span>{selectedBulkIndex === idx ? 'Active Preview' : 'Select'}</span>
-                                                            <ArrowRight size={12} />
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
-                            <>
                                 <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
                             <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
                                 <div className="flex items-center gap-2">
@@ -1238,7 +1027,7 @@ const ProposalGenerator = () => {
                                     </p>
                                 </div>
                                 <div className="space-y-2 min-w-0">
-                                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
+                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
                                         {currentTab?.label}<span className="text-neon-green">.</span>
                                     </h2>
                                     <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
@@ -1267,7 +1056,7 @@ const ProposalGenerator = () => {
                         <AnimatePresence mode="wait">
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col h-[65vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                    <div className="flex flex-col h-[78vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
                                         {/* Orbital Glow in Background */}
                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1328,127 +1117,298 @@ const ProposalGenerator = () => {
                                             </button>
                                         </div>
 
-                                        {/* Message Stream */}
-                                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
-                                            {/* Welcome card if only initial message */}
-                                            {messages.length === 1 && (
-                                                <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
-                                                    <div className="relative">
-                                                        <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur opacity-30 animate-pulse" />
-                                                        <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                            <Sparkles size={24} className="text-neon-green" />
+                                        {aiMode === 'bulk' ? (
+                                            <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-hide relative z-10 pb-4">
+                                                {/* Top Intro Card */}
+                                                <div className="p-8 bg-zinc-900/40 border border-white/10 rounded-[2.5rem] relative overflow-hidden shadow-2xl space-y-6 group">
+                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 rounded-full blur-2xl group-hover:bg-neon-green/10 transition-all" />
+                                                    <div className="flex flex-col items-start gap-2 relative z-10">
+                                                        <div className="flex items-center gap-2">
+                                                            <Sparkles size={14} className="text-neon-green" />
+                                                            <p className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em]">Batch Automation</p>
                                                         </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
-                                                        <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                                            Describe your requirements below to draft a complete proposal in seconds. You can toggle between standard single draft generation and AI batch automation.
+                                                        <h2 className="text-xl font-black uppercase tracking-tighter italic text-white leading-tight">AI Bulk Orchestrator<span className="text-neon-green">.</span></h2>
+                                                        <p className="text-[11px] font-medium text-gray-400 leading-relaxed">
+                                                            Paste raw unstructured requirements or a list of client requests. Our AI will automatically parse, structure, and generate distinct professional proposals.
                                                         </p>
                                                     </div>
 
-                                                    {/* Suggestions Grid */}
-                                                    <div className="w-full space-y-2.5 pt-4">
-                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Blueprints</span>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {suggestions.map((s, idx) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={idx}
-                                                                    onClick={() => setPromptText(s)}
-                                                                    className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                    <div className="space-y-3 relative z-10">
+                                                        <div className="flex justify-between items-center px-1">
+                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
+                                                            <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">
+                                                                {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
+                                                            </span>
+                                                        </div>
+                                                        <textarea 
+                                                            value={bulkRawText}
+                                                            onChange={e => setBulkRawText(e.target.value)}
+                                                            rows={5}
+                                                            placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
+                                                            className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 relative z-10">
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
+                                                            <Cpu size={14} className="text-neon-green" />
+                                                            <span>Multi-Threaded AI Pulse</span>
+                                                        </div>
+
+                                                        <button 
+                                                            onClick={handleBulkGenerate}
+                                                            disabled={isBulkGenerating || !bulkRawText.trim()}
+                                                            className="w-full sm:w-auto px-6 py-3 bg-neon-green text-black font-black uppercase tracking-widest text-[10px] rounded-xl shadow-[0_5px_15px_rgba(57,255,20,0.2)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none disabled:hover:scale-100 flex items-center justify-center gap-2"
+                                                        >
+                                                            {isBulkGenerating ? (
+                                                                <>
+                                                                    <RefreshCw className="animate-spin" size={12} />
+                                                                    <span>Generating {bulkProgress.current}/{bulkProgress.total}...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles size={12} />
+                                                                    <span>Execute Batch</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    {isBulkGenerating && (
+                                                        <div className="space-y-1 relative z-10 pt-2">
+                                                            <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
+                                                                <span>AI Pulse Progress</span>
+                                                                <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
+                                                            </div>
+                                                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
+                                                                <div 
+                                                                    className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
+                                                                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Generated Bulk Proposals Grid */}
+                                                {bulkProposals.length > 0 && (
+                                                    <div className="space-y-6 pt-4 border-t border-white/5">
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+                                                                    <h3 className="text-lg font-black uppercase tracking-tight italic text-white">Generated Vault</h3>
+                                                                </div>
+                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{bulkProposals.length} Proposals Ready</p>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2">
+                                                                <button 
+                                                                    onClick={generateAllBulkPDFs}
+                                                                    disabled={isSaving}
+                                                                    className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                                                 >
-                                                                    <span className="text-neon-green group-hover:translate-x-1 inline-block transition-transform mr-1.5">→</span>
-                                                                    {s}
+                                                                    {isSaving ? <RefreshCw className="animate-spin" size={12} /> : <Download size={12} />}
+                                                                    <span>Export All</span>
                                                                 </button>
+                                                                <button 
+                                                                    onClick={handleSaveAllBulk}
+                                                                    disabled={isSaving}
+                                                                    className="px-4 py-2.5 bg-neon-green text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(57,255,20,0.2)] hover:scale-105 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                                >
+                                                                    {isSaving ? <RefreshCw className="animate-spin" size={12} /> : <Save size={12} />}
+                                                                    <span>Save All</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 gap-4">
+                                                            {bulkProposals.map((prop, idx) => (
+                                                                <div 
+                                                                    key={idx}
+                                                                    onClick={() => setSelectedBulkIndex(idx)}
+                                                                    className={cn(
+                                                                        "p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col gap-4 relative group overflow-hidden",
+                                                                        selectedBulkIndex === idx 
+                                                                            ? "bg-zinc-900 border-neon-green shadow-lg scale-[1.01]" 
+                                                                            : "bg-zinc-900/30 border-white/5 hover:border-white/10 hover:bg-zinc-900/50"
+                                                                    )}
+                                                                >
+                                                                    {selectedBulkIndex === idx && (
+                                                                        <div className="absolute top-0 left-0 w-1 h-full bg-neon-green shadow-[0_0_8px_#39FF14]" />
+                                                                    )}
+
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="space-y-1 min-w-0">
+                                                                            <h4 className="text-sm font-black text-white uppercase tracking-tight truncate leading-tight">
+                                                                                {prop.clientName || `Client 0${idx+1}`}
+                                                                            </h4>
+                                                                            <p className="text-[10px] font-bold text-gray-400 italic truncate">
+                                                                                {prop.campaignName || `Project 0${idx+1}`}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                                            <span className="text-[9px] font-black font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neon-green">
+                                                                                {prop.proposalNumber}
+                                                                            </span>
+                                                                            <button 
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setBulkProposals(bulkProposals.filter((_, i) => i !== idx));
+                                                                                    if (selectedBulkIndex >= bulkProposals.length - 1) {
+                                                                                        setSelectedBulkIndex(Math.max(0, bulkProposals.length - 2));
+                                                                                    }
+                                                                                }}
+                                                                                className="p-1 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                                                                            >
+                                                                                <X size={12} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center justify-between pt-3 border-t border-white/5 text-[10px] font-bold text-gray-500">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span>Duration: {prop.campaignDuration || '3 Months'}</span>
+                                                                        </div>
+                                                                        <span className={cn(
+                                                                            "text-[9px] font-black uppercase tracking-widest flex items-center gap-1",
+                                                                            selectedBulkIndex === idx ? "text-neon-green" : "text-gray-500 group-hover:text-white"
+                                                                        )}>
+                                                                            <span>{selectedBulkIndex === idx ? 'Editing' : 'Select'}</span>
+                                                                            <ArrowRight size={10} />
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
                                                             ))}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {/* Chat Messages */}
-                                            {messages.length > 1 && messages.map(m => (
-                                                <div
-                                                    key={m.id}
-                                                    className={cn(
-                                                        "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
-                                                        m.sender === 'user'
-                                                            ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
-                                                            : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className={cn(
-                                                            "text-[8px] font-black uppercase tracking-wider",
-                                                            m.sender === 'user' ? "text-gray-400" : "text-neon-green"
-                                                        )}>
-                                                            {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
-                                                </div>
-                                            ))}
-
-                                            {/* Generating Bubble */}
-                                            {isGenerating && (
-                                                <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
-                                                    <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
-                                                    <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Synthesizing document variables...</span>
-                                                </div>
-                                            )}
-                                            <div ref={chatEndRef} />
-                                        </div>
-
-                                        {/* Prompt container wrapped in .gemini-border-wrap */}
-                                        <div className="mt-auto pt-4 bg-transparent shrink-0">
-                                            {/* WhatsApp quoted context container */}
-                                            {refinementContext && (
-                                                <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-neon-green rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
-                                                    <div className="absolute inset-0 bg-neon-green/5 opacity-40" />
-                                                    <div className="min-w-0 relative z-10">
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
-                                                        <p className="text-xs text-gray-400 line-clamp-1 italic">
-                                                            "{refinementContext.currentValue || 'No current content...'}"
-                                                        </p>
-                                                    </div>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setRefinementContext(null)}
-                                                        className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* The Input box container */}
-                                            <div className="gemini-border-wrap shadow-[0_15px_40px_rgba(57,255,20,0.15)] relative">
-                                                <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
-                                                    <textarea
-                                                        value={promptText}
-                                                        onChange={e => setPromptText(e.target.value)}
-                                                        placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
-                                                        className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
-                                                        rows={1}
-                                                        disabled={isGenerating}
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                e.preventDefault();
-                                                                handleStudioSubmit();
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleStudioSubmit}
-                                                        disabled={!promptText.trim() || isGenerating}
-                                                        className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
-                                                    >
-                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
-                                                    </button>
-                                                </div>
+                                                )}
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <>
+                                                {/* Message Stream */}
+                                                <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
+                                                    {/* Welcome card if only initial message */}
+                                                    {messages.length === 1 && (
+                                                        <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                            <div className="relative">
+                                                                <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur opacity-30 animate-pulse" />
+                                                                <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                                    <Sparkles size={24} className="text-neon-green" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
+                                                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                                                    Describe your requirements below to draft a complete proposal in seconds. You can toggle between standard single draft generation and AI batch automation.
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Suggestions Grid */}
+                                                            <div className="w-full space-y-2.5 pt-4">
+                                                                <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Blueprints</span>
+                                                                <div className="grid grid-cols-1 gap-2">
+                                                                    {suggestions.map((s, idx) => (
+                                                                        <button
+                                                                            type="button"
+                                                                            key={idx}
+                                                                            onClick={() => setPromptText(s)}
+                                                                            className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                        >
+                                                                            <span className="text-neon-green group-hover:translate-x-1 inline-block transition-transform mr-1.5">→</span>
+                                                                            {s}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Chat Messages */}
+                                                    {messages.length > 1 && messages.map(m => (
+                                                        <div
+                                                            key={m.id}
+                                                            className={cn(
+                                                                "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                                                m.sender === 'user'
+                                                                    ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                                                    : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className={cn(
+                                                                    "text-[8px] font-black uppercase tracking-wider",
+                                                                    m.sender === 'user' ? "text-gray-400" : "text-neon-green"
+                                                                )}>
+                                                                    {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                        </div>
+                                                    ))}
+
+                                                    {/* Generating Bubble */}
+                                                    {isGenerating && (
+                                                        <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
+                                                            <Sparkles size={14} className="text-neon-green animate-spin shrink-0" />
+                                                            <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Synthesizing document variables...</span>
+                                                        </div>
+                                                    )}
+                                                    <div ref={chatEndRef} />
+                                                </div>
+
+                                                {/* Prompt container wrapped in .gemini-border-wrap */}
+                                                <div className="mt-auto pt-4 bg-transparent shrink-0">
+                                                    {/* WhatsApp quoted context container */}
+                                                    {refinementContext && (
+                                                        <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-neon-green rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
+                                                            <div className="absolute inset-0 bg-neon-green/5 opacity-40" />
+                                                            <div className="min-w-0 relative z-10">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-neon-green block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
+                                                                <p className="text-xs text-gray-400 line-clamp-1 italic">
+                                                                    "{refinementContext.currentValue || 'No current content...'}"
+                                                                </p>
+                                                            </div>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => setRefinementContext(null)}
+                                                                className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    {/* The Input box container */}
+                                                    <div className="gemini-border-wrap shadow-[0_15px_40px_rgba(57,255,20,0.15)] relative">
+                                                        <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
+                                                            <textarea
+                                                                value={promptText}
+                                                                onChange={e => setPromptText(e.target.value)}
+                                                                placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the proposal you want to generate or modify..."}
+                                                                className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
+                                                                rows={1}
+                                                                disabled={isGenerating}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                                        e.preventDefault();
+                                                                        handleStudioSubmit();
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleStudioSubmit}
+                                                                disabled={!promptText.trim() || isGenerating}
+                                                                className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
+                                                            >
+                                                                {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                                 {activeTab === '1' && (
@@ -1857,8 +1817,7 @@ const ProposalGenerator = () => {
                             </button>
                         </div>
 
-                        </>
-                        )}
+
                     </div>
                 </main>
 
@@ -1936,7 +1895,7 @@ const ProposalGenerator = () => {
                                             <div className="space-y-12 py-10 px-4">
                                                 <div className="space-y-2 border-l-4 border-black pl-8">
                                                     <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Strategic Context</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Architecture.</h3>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Architecture.</h3>
                                                 </div>
                                                 {!isHidden('overview') && (
                                                     <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">
@@ -1956,12 +1915,10 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
-                                                {!formData.isBulkGenerated && (
-                                                    <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
-                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Project Definition</p>
-                                                        <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Scope of Work.</h3>
-                                                    </div>
-                                                )}
+                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">{formData.isBulkGenerated ? "Engagement Charter" : "Project Definition"}</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">{formData.isBulkGenerated ? "Execution Framework." : "Scope of Work."}</h3>
+                                                </div>
                                                 <div className="flex-1">
                                                     <div className="pl-0">
                                                         {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
@@ -1973,7 +1930,7 @@ const ProposalGenerator = () => {
                                             <div className="space-y-12 py-10 px-4">
                                                 <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
                                                     <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Service Matrix</p>
-                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Deliverables.</h3>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Deliverables.</h3>
                                                 </div>
                                                 
                                                 {!isHidden('deliverables') && (
@@ -2019,12 +1976,9 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'table' && (
                                             <div className="space-y-12 py-6">
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-4">
-                                                        <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Section 04</span>
-                                                        <div className="h-[1px] flex-1 bg-gray-100" />
-                                                    </div>
-                                                    <h3 className="text-4xl font-black text-black tracking-tight leading-none">Commercials.</h3>
+                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Financial Framework</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Commercials.</h3>
                                                 </div>
                                                 <table className="w-full text-left">
                                                     <thead>
@@ -2048,12 +2002,9 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
                                             <div className="space-y-12 py-6">
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center gap-4">
-                                                        <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Finalization</span>
-                                                        <div className="h-[1px] flex-1 bg-gray-100" />
-                                                    </div>
-                                                    <h3 className="text-4xl font-black text-black tracking-tight leading-none">Summary & Terms.</h3>
+                                                <div className="space-y-2 mb-16 border-l-4 border-black pl-8">
+                                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Finalization & Terms</p>
+                                                    <h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none italic">Summary & Terms.</h3>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-16 items-stretch">
                                                     <div className="space-y-8">
