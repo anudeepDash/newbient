@@ -1256,10 +1256,10 @@ const AIStudio = () => {
                     </div>
 
                     {/* INTERACTIVE CHAT STREAM */}
-                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 shrink-0">
+                    <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
                         <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
                         
-                        <div className="flex flex-col gap-3 h-[220px] overflow-y-auto pr-2">
+                        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
                             {messages.map((m) => (
                                 <div
                                     key={m.id}
@@ -1325,7 +1325,7 @@ const AIStudio = () => {
                     </div>
 
                     {/* Collapsible Forms Section */}
-                    <div className="p-6 flex-1 flex flex-col min-h-0 bg-black/20 overflow-y-auto pb-24">
+                    <div className="p-6 shrink-0 max-h-[40vh] flex flex-col min-h-0 bg-black/20 overflow-y-auto pb-24">
                         <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] flex items-center gap-2">
                                 <Settings size={12} />
