@@ -682,6 +682,9 @@ const ProposalGenerator = () => {
             } else {
                 setSingleFormData(prev => ({ ...prev, ...updatedDoc }));
             }
+            addToast('Refinement applied successfully!', 'success');
+        } catch (err) {
+            console.error(err);
             addToast(`Refinement failed: ${err.message}`, 'error');
         } finally {
             setIsRefining(false);
