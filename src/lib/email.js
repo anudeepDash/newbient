@@ -216,9 +216,11 @@ export const generateInvoiceEmailHTML = (data) => {
     const cardBg = isDark ? '#111111' : '#f8f9fa';
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
-    const logoUrl = isDark
-        ? `${baseUrl}/logo_full.png`
-        : `${baseUrl}/logo_document.png`;
+    
+    // Always use dark header with white logo for premium branding and dark-mode safety
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -229,27 +231,28 @@ export const generateInvoiceEmailHTML = (data) => {
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
                 .content { padding: 50px; text-align: left; }
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
-                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
-                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
-                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #FF4444, #CC0000); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
-                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                
+                /* Attachment Card - Table layout compatible */
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #FF4444, #CC0000); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
                 .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
                 .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
-                .attachment-body { padding: 20px; }
-                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
-                .attachment-row:last-child { border-bottom: none; }
+                .attachment-body { padding: 20px 20px 10px 20px; }
+                .attachment-row { padding: 10px 0; }
                 .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
-                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
-                .attachment-total { background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; }
+                .attachment-total { background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px; }
                 .attachment-total-label { font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; }
                 .attachment-total-value { font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; }
-                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
                 .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
                 .download-link { font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
                 .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
@@ -258,10 +261,12 @@ export const generateInvoiceEmailHTML = (data) => {
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 @media screen and (max-width: 600px) {
-                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
                     .header { padding: 30px 20px !important; }
                     .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
             </style>
         </head>
@@ -276,41 +281,77 @@ export const generateInvoiceEmailHTML = (data) => {
                     <h1 class="title">${headerText}</h1>
                     <div class="body-text">${messageBody}</div>
 
-                    <!-- Attachment-Style Invoice Card -->
-                    <div class="attachment-card">
-                        <div class="attachment-header">
-                            <div style="display: flex; align-items: center;">
-                                <div class="attachment-icon">PDF</div>
-                                <div class="attachment-file-info">
-                                    <p class="attachment-filename">Invoice-${invoiceNumber}.pdf</p>
-                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="attachment-body">
-                            <div class="attachment-row">
-                                <span class="attachment-label">Invoice Number</span>
-                                <span class="attachment-value">${invoiceNumber}</span>
-                            </div>
-                            <div class="attachment-row">
-                                <span class="attachment-label">Client</span>
-                                <span class="attachment-value">${clientName}</span>
-                            </div>
-                            ${dueDate ? `
-                            <div class="attachment-row">
-                                <span class="attachment-label">Due Date</span>
-                                <span class="attachment-value">${dueDate}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        <div class="attachment-total">
-                            <span class="attachment-total-label">Total Amount</span>
-                            <span class="attachment-total-value">₹${amount}</span>
-                        </div>
-                        <div class="download-row">
-                            <a href="${invoiceUrl}" class="download-link">↓ View & Download Invoice</a>
-                        </div>
-                    </div>
+                    <!-- Attachment-Style Invoice Card (Table-based for maximum email client compatibility) -->
+                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
+                        <tr>
+                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder};">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td width="44" valign="middle" style="width: 44px; padding-right: 14px;">
+                                            <div class="attachment-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #FF4444, #CC0000); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px;">PDF</div>
+                                        </td>
+                                        <td valign="middle">
+                                            <p class="attachment-filename" style="font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0;">Invoice-${invoiceNumber}.pdf</p>
+                                            <p class="attachment-filetype" style="font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0;">PDF Document • Newbi Entertainment</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-body" style="padding: 20px 20px 10px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Invoice Number</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${invoiceNumber}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Client</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${clientName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ${dueDate ? `
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: none;">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Due Date</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${dueDate}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ` : ''}
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-total" style="background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td align="left" class="attachment-total-label" style="font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; valign: middle;">Total Amount</td>
+                                        <td align="right" class="attachment-total-value" style="font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; valign: middle;">₹${amount}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="download-row" style="padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center;">
+                                <a href="${invoiceUrl}" class="download-link" style="font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; display: block;">↓ View & Download Invoice</a>
+                            </td>
+                        </tr>
+                    </table>
 
                     <div style="text-align: center; margin-top: 35px;">
                         <a href="${invoiceUrl}" class="cta-button">View Full Invoice</a>
@@ -414,30 +455,41 @@ export const generateOfficialHTML = (data) => {
     
     // Brand Logos: Home (Dark) vs Document (Light)
     const baseUrl = getBaseUrl();
-    const logoUrl = isDark 
-        ? `${baseUrl}/logo_full.png` 
-        : `${baseUrl}/logo_document.png`;
+    
+    // Always use dark header with white logo for premium branding and dark-mode safety
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
                 .content { padding: 50px; text-align: left; }
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
-                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; transition: all 0.2s; }
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; transition: all 0.2s; }
                 .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
                 .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
             </style>
         </head>
         <body>
@@ -882,9 +934,11 @@ export const generateProposalEmailHTML = (data) => {
     const cardBg = isDark ? '#111111' : '#f8f9fa';
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
-    const logoUrl = isDark
-        ? `${baseUrl}/logo_full.png`
-        : `${baseUrl}/logo_document.png`;
+    
+    // Always use dark header with white logo for premium branding and dark-mode safety
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -895,24 +949,25 @@ export const generateProposalEmailHTML = (data) => {
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
                 .content { padding: 50px; text-align: left; }
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
-                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
-                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
-                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #39FF14, #1b7a0a); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: black; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
-                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                
+                /* Attachment Card - Table layout compatible */
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #39FF14, #1b7a0a); border-radius: 10px; text-align: center; line-height: 44px; color: black; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
                 .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
                 .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
-                .attachment-body { padding: 20px; }
-                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
-                .attachment-row:last-child { border-bottom: none; }
+                .attachment-body { padding: 20px 20px 10px 20px; }
+                .attachment-row { padding: 10px 0; }
                 .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
-                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
-                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; }
+                
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
                 .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
                 .download-link { font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
                 .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
@@ -921,10 +976,12 @@ export const generateProposalEmailHTML = (data) => {
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 @media screen and (max-width: 600px) {
-                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
                     .header { padding: 30px 20px !important; }
                     .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
             </style>
         </head>
@@ -939,37 +996,67 @@ export const generateProposalEmailHTML = (data) => {
                     <h1 class="title">${headerText}</h1>
                     <div class="body-text">${messageBody}</div>
 
-                    <!-- Attachment-Style Proposal Card -->
-                    <div class="attachment-card">
-                        <div class="attachment-header">
-                            <div style="display: flex; align-items: center;">
-                                <div class="attachment-icon">PDF</div>
-                                <div class="attachment-file-info">
-                                    <p class="attachment-filename">Proposal-${proposalNumber}.pdf</p>
-                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="attachment-body">
-                            <div class="attachment-row">
-                                <span class="attachment-label">Proposal Number</span>
-                                <span class="attachment-value">${proposalNumber}</span>
-                            </div>
-                            <div class="attachment-row">
-                                <span class="attachment-label">Client</span>
-                                <span class="attachment-value">${clientName}</span>
-                            </div>
-                            ${projectName ? `
-                            <div class="attachment-row">
-                                <span class="attachment-label">Project</span>
-                                <span class="attachment-value">${projectName}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        <div class="download-row">
-                            <a href="${proposalUrl}" class="download-link">↓ View & Review Proposal</a>
-                        </div>
-                    </div>
+                    <!-- Attachment-Style Proposal Card (Table-based) -->
+                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
+                        <tr>
+                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder};">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td width="44" valign="middle" style="width: 44px; padding-right: 14px;">
+                                            <div class="attachment-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #39FF14, #1b7a0a); border-radius: 10px; text-align: center; line-height: 44px; color: black; font-weight: 900; font-size: 11px; letter-spacing: 1px;">PDF</div>
+                                        </td>
+                                        <td valign="middle">
+                                            <p class="attachment-filename" style="font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0;">Proposal-${proposalNumber}.pdf</p>
+                                            <p class="attachment-filetype" style="font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0;">PDF Document • Newbi Entertainment</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-body" style="padding: 20px 20px 10px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Proposal Number</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${proposalNumber}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: ${projectName ? `1px dashed ${cardBorder}` : 'none'};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Client</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${clientName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ${projectName ? `
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: none;">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Project</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${projectName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ` : ''}
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="download-row" style="padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center;">
+                                <a href="${proposalUrl}" class="download-link" style="font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; display: block;">↓ View & Review Proposal</a>
+                            </td>
+                        </tr>
+                    </table>
 
                     <div style="text-align: center; margin-top: 35px;">
                         <a href="${proposalUrl}" class="cta-button">View Full Proposal</a>
@@ -1014,9 +1101,11 @@ export const generateAgreementEmailHTML = (data) => {
     const cardBg = isDark ? '#111111' : '#f8f9fa';
     const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
     const baseUrl = getBaseUrl();
-    const logoUrl = isDark
-        ? `${baseUrl}/logo_full.png`
-        : `${baseUrl}/logo_document.png`;
+    
+    // Always use dark header with white logo for premium branding and dark-mode safety
+    const headerBg = '#0a0a0a';
+    const headerBorder = '#1a1a1a';
+    const logoUrl = `${baseUrl}/logo_full.png`;
 
     return `
         <!DOCTYPE html>
@@ -1027,24 +1116,25 @@ export const generateAgreementEmailHTML = (data) => {
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-                .header { padding: 40px; border-bottom: 1px solid ${borderColor}; text-align: left; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
                 .content { padding: 50px; text-align: left; }
                 .category-badge { display: inline-block; padding: 6px 12px; background: ${NEON_PURPLE}; color: #ffffff; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
                 .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
                 .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
-                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; padding: 0; overflow: hidden; margin: 30px 0; }
-                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; display: flex; align-items: center; }
-                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #A855F7, #6B21A8); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; margin-right: 14px; }
-                .attachment-file-info { display: inline-block; vertical-align: middle; }
+                
+                /* Attachment Card - Table layout compatible */
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; overflow: hidden; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #A855F7, #6B21A8); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
                 .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
                 .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
-                .attachment-body { padding: 20px; }
-                .attachment-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed ${cardBorder}; }
-                .attachment-row:last-child { border-bottom: none; }
+                .attachment-body { padding: 20px 20px 10px 20px; }
+                .attachment-row { padding: 10px 0; }
                 .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
-                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; text-align: right; }
-                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEON_PURPLE}; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; }
+                
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEON_PURPLE}; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
                 .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
                 .download-link { font-size: 11px; font-weight: 800; color: ${NEON_PURPLE}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
                 .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
@@ -1053,10 +1143,12 @@ export const generateAgreementEmailHTML = (data) => {
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 @media screen and (max-width: 600px) {
-                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; }
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
                     .header { padding: 30px 20px !important; }
                     .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
                 }
             </style>
         </head>
@@ -1071,43 +1163,79 @@ export const generateAgreementEmailHTML = (data) => {
                     <h1 class="title">${headerText}</h1>
                     <div class="body-text">${messageBody}</div>
 
-                    <!-- Attachment-Style Agreement Card -->
-                    <div class="attachment-card">
-                        <div class="attachment-header">
-                            <div style="display: flex; align-items: center;">
-                                <div class="attachment-icon">PDF</div>
-                                <div class="attachment-file-info">
-                                    <p class="attachment-filename">Agreement-${agreementNumber}.pdf</p>
-                                    <p class="attachment-filetype">PDF Document • Newbi Entertainment</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="attachment-body">
-                            <div class="attachment-row">
-                                <span class="attachment-label">Agreement Number</span>
-                                <span class="attachment-value">${agreementNumber}</span>
-                            </div>
-                            <div class="attachment-row">
-                                <span class="attachment-label">Second Party</span>
-                                <span class="attachment-value">${secondPartyName}</span>
-                            </div>
-                            ${projectName ? `
-                            <div class="attachment-row">
-                                <span class="attachment-label">Project</span>
-                                <span class="attachment-value">${projectName}</span>
-                            </div>
-                            ` : ''}
-                            ${effectiveDate ? `
-                            <div class="attachment-row">
-                                <span class="attachment-label">Effective Date</span>
-                                <span class="attachment-value">${effectiveDate}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        <div class="download-row">
-                            <a href="${agreementUrl}" class="download-link">↓ View & Sign Agreement</a>
-                        </div>
-                    </div>
+                    <!-- Attachment-Style Agreement Card (Table-based) -->
+                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 16px; margin: 30px 0; overflow: hidden;">
+                        <tr>
+                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder};">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td width="44" valign="middle" style="width: 44px; padding-right: 14px;">
+                                            <div class="attachment-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #A855F7, #6B21A8); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px;">PDF</div>
+                                        </td>
+                                        <td valign="middle">
+                                            <p class="attachment-filename" style="font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0;">Agreement-${agreementNumber}.pdf</p>
+                                            <p class="attachment-filetype" style="font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0;">PDF Document • Newbi Entertainment</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-body" style="padding: 20px 20px 10px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Agreement Number</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${agreementNumber}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: ${projectName || effectiveDate ? `1px dashed ${cardBorder}` : 'none'};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Second Party</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${secondPartyName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ${projectName ? `
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: ${effectiveDate ? `1px dashed ${cardBorder}` : 'none'};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Project</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${projectName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ` : ''}
+                                    ${effectiveDate ? `
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: none;">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Effective Date</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${effectiveDate}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    ` : ''}
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="download-row" style="padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center;">
+                                <a href="${agreementUrl}" class="download-link" style="font-size: 11px; font-weight: 800; color: ${NEON_PURPLE}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; display: block;">↓ View & Sign Agreement</a>
+                            </td>
+                        </tr>
+                    </table>
 
                     <div style="text-align: center; margin-top: 35px;">
                         <a href="${agreementUrl}" class="cta-button">View & Sign Agreement</a>
