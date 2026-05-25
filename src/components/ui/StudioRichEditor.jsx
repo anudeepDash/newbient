@@ -113,6 +113,30 @@ const StudioRichEditor = ({
         }
     };
 
+    const activeBtnClass = {
+        'neon-blue': 'bg-neon-blue/20 text-neon-blue shadow-[0_0_10px_rgba(0,240,255,0.2)]',
+        'neon-green': 'bg-neon-green/20 text-neon-green shadow-[0_0_10px_rgba(57,255,20,0.2)]',
+        'neon-purple': 'bg-neon-purple/20 text-neon-purple shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+    }[accentColor] || 'bg-neon-blue/20 text-neon-blue shadow-[0_0_10px_rgba(0,240,255,0.2)]';
+
+    const focusBorderClass = {
+        'neon-blue': 'border-neon-blue/50 shadow-[0_0_30px_rgba(0,240,255,0.1)]',
+        'neon-green': 'border-neon-green/50 shadow-[0_0_30px_rgba(57,255,20,0.1)]',
+        'neon-purple': 'border-neon-purple/50 shadow-[0_0_30px_rgba(168,85,247,0.1)]'
+    }[accentColor] || 'border-neon-blue/50 shadow-[0_0_30px_rgba(0,240,255,0.1)]';
+
+    const uploadBgClass = {
+        'neon-blue': 'bg-neon-blue',
+        'neon-green': 'bg-neon-green',
+        'neon-purple': 'bg-neon-purple'
+    }[accentColor] || 'bg-neon-blue';
+
+    const loaderTextClass = {
+        'neon-blue': 'text-neon-blue',
+        'neon-green': 'text-neon-green',
+        'neon-purple': 'text-neon-purple'
+    }[accentColor] || 'text-neon-blue';
+
     const ToolbarButton = ({ icon: Icon, onClick, active, disabled, title }) => (
         <button
             type="button"
@@ -121,7 +145,7 @@ const StudioRichEditor = ({
             className={cn(
                 "p-2 rounded-lg transition-all duration-200 flex items-center justify-center",
                 active 
-                    ? `bg-${accentColor}/20 text-${accentColor} shadow-[0_0_10px_rgba(46,191,255,0.2)]` 
+                    ? activeBtnClass
                     : "text-gray-500 hover:text-white hover:bg-white/5",
                 disabled && "opacity-20 cursor-not-allowed"
             )}
@@ -141,7 +165,7 @@ const StudioRichEditor = ({
             
             <div className={cn(
                 "relative bg-black/40 border transition-all duration-500 rounded-[2rem] overflow-hidden",
-                isFocused ? `border-${accentColor}/50 shadow-[0_0_30px_rgba(46,191,255,0.1)]` : "border-white/5"
+                isFocused ? focusBorderClass : "border-white/5"
             )}>
                 {/* Toolbar */}
                 <div className="flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl">
@@ -312,8 +336,8 @@ const StudioRichEditor = ({
                 {isUploading && (
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3">
                         <div className="relative">
-                            <div className={cn("absolute inset-0 blur-xl opacity-50 rounded-full", `bg-${accentColor}`)} />
-                            <Loader2 className={cn("animate-spin relative z-10", `text-${accentColor}`)} size={32} />
+                            <div className={cn("absolute inset-0 blur-xl opacity-50 rounded-full", uploadBgClass)} />
+                            <Loader2 className={cn("animate-spin relative z-10", loaderTextClass)} size={32} />
                         </div>
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">Processing Media...</span>
                     </div>

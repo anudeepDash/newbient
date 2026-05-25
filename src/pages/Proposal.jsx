@@ -311,6 +311,41 @@ const Proposal = () => {
 
     const isHidden = (f) => (displayProposal.hiddenFields || []).includes(f);
 
+    const htmlToPlainText = (html) => {
+        if (!html) return '';
+        if (!html.includes('<') || !html.includes('>')) return html;
+        let text = html;
+        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;|\u00a0/g, ' ');
+        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        return text;
+    };
+
+    const getHtmlBlocks = (html) => {
+        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
+        const blocks = [];
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            blocks.push(match[0]);
+        }
+        if (blocks.length === 0) return [html];
+        return blocks;
+    };
+
+    const processHtmlHeadings = (html) => {
+        if (!html) return html;
+        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+            const level = hashes.length;
+            const headingClass = level <= 2 
+                ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5 block"
+                : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2 block";
+            const headingTag = `h${Math.min(level + 1, 6)}`;
+            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+        });
+    };
+
     // Markdown-like formatting logic
     const renderFormatted = (text, baseClass = 'text-[13px] font-medium text-black leading-[1.9]') => {
         if (!text) return null;
@@ -329,7 +364,11 @@ const Proposal = () => {
         while (i < lines.length) {
             const line = lines[i].trim();
             if (!line && i < lines.length - 1) {
-                elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                const lastElement = elements[elements.length - 1];
+                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+                if (!isLastSpacer) {
+                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                }
                 i++;
                 continue;
             }
@@ -342,8 +381,14 @@ const Proposal = () => {
             }
 
             // Heading
-            if (line.startsWith('## ')) {
-                elements.push(<p key={i} className="text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5">{line.slice(3)}</p>);
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const headingClass = level <= 2 
+                    ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5"
+                    : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2";
+                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
             // Bullet
             } else if (line.match(/^[•\-\*]\s/)) {
                 const items = [];
@@ -399,7 +444,7 @@ const Proposal = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: content }} 
+                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
                 />
             );
         }
@@ -427,8 +472,9 @@ const Proposal = () => {
         }
         
         if (!isHidden('scopeOfWork') && displayProposal.scopeOfWork) {
-            const estimateBlockHeight = (text) => {
+            const estimateBlockHeight = (rawText) => {
                 let h = 0;
+                const text = htmlToPlainText(rawText);
                 const rawLines = text.split('\n');
                 const lines = [];
                 rawLines.forEach(rl => {
@@ -448,7 +494,7 @@ const Proposal = () => {
                         continue;
                     }
 
-                    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+                    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
                     if (headingMatch) {
                         inList = false;
                         h += headingMatch[1].length <= 2 ? 72 : 48;
@@ -473,20 +519,39 @@ const Proposal = () => {
             } else {
                 let currentPageText = '';
                 let pageIndex = 1;
-                const words = displayProposal.scopeOfWork.split(' ');
-                
-                for (let i = 0; i < words.length; i++) {
-                    const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
-                    if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
-                        if (currentPageText) {
-                            pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                            currentPageText = words[i];
+                const isHtml = displayProposal.scopeOfWork.includes('<') && displayProposal.scopeOfWork.includes('>');
+
+                if (isHtml) {
+                    const blocks = getHtmlBlocks(displayProposal.scopeOfWork);
+                    for (let i = 0; i < blocks.length; i++) {
+                        const testText = currentPageText ? currentPageText + '\n' + blocks[i] : blocks[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = blocks[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
                         } else {
-                            pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
-                            currentPageText = '';
+                            currentPageText = testText;
                         }
-                    } else {
-                        currentPageText = testText;
+                    }
+                } else {
+                    const words = displayProposal.scopeOfWork.split(' ');
+                    for (let i = 0; i < words.length; i++) {
+                        const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = words[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
+                        } else {
+                            currentPageText = testText;
+                        }
                     }
                 }
                 
@@ -613,7 +678,7 @@ const Proposal = () => {
                                                 <div className={displayProposal.isBulkGenerated ? "pl-0" : "pl-10"}>
                                                     {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                     {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                    {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
+                                                    {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                                 </div>
                                             </div>
                                         </div>
@@ -925,7 +990,7 @@ const Proposal = () => {
                                             <div className={displayProposal.isBulkGenerated ? "pl-0" : "pl-10"}>
                                                 {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
                                                 {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
-                                                {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
+                                                {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                             </div>
                                         </div>
                                     </div>

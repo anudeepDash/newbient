@@ -309,8 +309,9 @@ const ProposalGenerator = () => {
             pages.push({ type: 'strategy', items: [] });
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
-            const estimateBlockHeight = (text) => {
+            const estimateBlockHeight = (rawText) => {
                 let h = 0;
+                const text = htmlToPlainText(rawText);
                 const rawLines = text.split('\n');
                 const lines = [];
                 rawLines.forEach(rl => {
@@ -330,7 +331,7 @@ const ProposalGenerator = () => {
                         continue;
                     }
 
-                    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+                    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
                     if (headingMatch) {
                         inList = false;
                         h += headingMatch[1].length <= 2 ? 72 : 48;
@@ -355,20 +356,39 @@ const ProposalGenerator = () => {
             } else {
                 let currentPageText = '';
                 let pageIndex = 1;
-                const words = formData.scopeOfWork.split(' ');
-                
-                for (let i = 0; i < words.length; i++) {
-                    const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
-                    if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
-                        if (currentPageText) {
-                            pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                            currentPageText = words[i];
+                const isHtml = formData.scopeOfWork.includes('<') && formData.scopeOfWork.includes('>');
+
+                if (isHtml) {
+                    const blocks = getHtmlBlocks(formData.scopeOfWork);
+                    for (let i = 0; i < blocks.length; i++) {
+                        const testText = currentPageText ? currentPageText + '\n' + blocks[i] : blocks[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = blocks[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
                         } else {
-                            pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
-                            currentPageText = '';
+                            currentPageText = testText;
                         }
-                    } else {
-                        currentPageText = testText;
+                    }
+                } else {
+                    const words = formData.scopeOfWork.split(' ');
+                    for (let i = 0; i < words.length; i++) {
+                        const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
+                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
+                            if (currentPageText) {
+                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+                                currentPageText = words[i];
+                            } else {
+                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
+                                currentPageText = '';
+                            }
+                        } else {
+                            currentPageText = testText;
+                        }
                     }
                 }
                 
@@ -887,6 +907,41 @@ const ProposalGenerator = () => {
             .replace(/_(.*?)_/g, '<em class="italic">$1</em>');
     };
 
+    const htmlToPlainText = (html) => {
+        if (!html) return '';
+        if (!html.includes('<') || !html.includes('>')) return html;
+        let text = html;
+        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;|\u00a0/g, ' ');
+        text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        return text;
+    };
+
+    const getHtmlBlocks = (html) => {
+        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
+        const blocks = [];
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            blocks.push(match[0]);
+        }
+        if (blocks.length === 0) return [html];
+        return blocks;
+    };
+
+    const processHtmlHeadings = (html) => {
+        if (!html) return html;
+        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+            const level = hashes.length;
+            const headingClass = level <= 2 
+                ? "text-[14px] font-black text-black uppercase tracking-[0.2em] mt-8 mb-3 border-b border-black pb-1.5 block"
+                : "text-[12px] font-black text-gray-800 uppercase tracking-[0.15em] mt-6 mb-2 block";
+            const headingTag = `h${Math.min(level + 1, 6)}`;
+            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+        });
+    };
+
     const renderFormatted = (text, baseClass = '') => {
         if (!text) return null;
         const rawLines = text.split('\n');
@@ -902,7 +957,11 @@ const ProposalGenerator = () => {
         while (i < lines.length) {
             const line = lines[i].trim();
             if (!line && i < lines.length - 1) {
-                elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                const lastElement = elements[elements.length - 1];
+                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+                if (!isLastSpacer) {
+                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                }
                 i++;
                 continue;
             }
@@ -913,7 +972,7 @@ const ProposalGenerator = () => {
                 continue;
             }
 
-            const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
             if (headingMatch) {
                 const level = headingMatch[1].length;
                 const headingText = headingMatch[2];
@@ -972,7 +1031,7 @@ const ProposalGenerator = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: content }} 
+                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
                 />
             );
         }
@@ -1525,18 +1584,17 @@ const ProposalGenerator = () => {
                                             </div>
                                         </div>
                                             <div className="space-y-4 relative group/editor group/refine">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cover Memorandum</label>
-                                                </div>
                                                 <div className="relative w-full">
-                                                    <textarea 
+                                                    <StudioRichEditor 
+                                                        label="Cover Memorandum"
                                                         value={formData.coverDescription} 
-                                                        onChange={e => setFormData({...formData, coverDescription: e.target.value})} 
-                                                        className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('coverDescription') && 'opacity-30')} 
+                                                        onChange={val => setFormData({...formData, coverDescription: val})} 
                                                         placeholder="Cover page description for this proposal..." 
-                                                        style={{ minHeight: "180px" }}
+                                                        minHeight="180px"
+                                                        accentColor="neon-green"
+                                                        className={cn(isHidden('coverDescription') && 'opacity-30')}
                                                     />
-                                                    <button type="button" onClick={() => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    <button type="button" onClick={() => handleRefineClick('coverDescription', 'Cover Memorandum', formData.coverDescription)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                 </div>
                                             </div>
                                     </div>
@@ -1544,33 +1602,31 @@ const ProposalGenerator = () => {
                                 {activeTab === '2' && (
                                     <div className="space-y-12">
                                         <div className="space-y-4 relative group/editor group/refine">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Executive Summary</label>
-                                            </div>
                                             <div className="relative w-full">
-                                                <textarea 
+                                                <StudioRichEditor 
+                                                    label="Executive Summary"
                                                     value={formData.overview} 
-                                                    onChange={e => setFormData({...formData, overview: e.target.value})} 
-                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('overview') && 'opacity-30')} 
+                                                    onChange={val => setFormData({...formData, overview: val})} 
                                                     placeholder="Strategic vision..." 
-                                                    style={{ minHeight: "200px" }}
+                                                    minHeight="200px"
+                                                    accentColor="neon-green"
+                                                    className={cn(isHidden('overview') && 'opacity-30')}
                                                 />
-                                                <button type="button" onClick={() => handleRefineClick('overview', 'Executive Summary', formData.overview)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <button type="button" onClick={() => handleRefineClick('overview', 'Executive Summary', formData.overview)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                         </div>
                                         <div className="space-y-4 relative group/editor group/refine">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Primary Objective</label>
-                                            </div>
                                             <div className="relative w-full">
-                                                <textarea 
+                                                <StudioRichEditor 
+                                                    label="Primary Objective"
                                                     value={formData.primaryGoal} 
-                                                    onChange={e => setFormData({...formData, primaryGoal: e.target.value})} 
-                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('primaryGoal') && 'opacity-30')} 
-                                                    placeholder="Project Goal" 
-                                                    style={{ minHeight: "120px" }}
+                                                    onChange={val => setFormData({...formData, primaryGoal: val})} 
+                                                    placeholder="Project Goal..." 
+                                                    minHeight="120px"
+                                                    accentColor="neon-green"
+                                                    className={cn(isHidden('primaryGoal') && 'opacity-30')}
                                                 />
-                                                <button type="button" onClick={() => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <button type="button" onClick={() => handleRefineClick('primaryGoal', 'Primary Objective', formData.primaryGoal)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -1578,18 +1634,17 @@ const ProposalGenerator = () => {
                                 {activeTab === '3' && (
                                     <div className="space-y-12">
                                         <div className="space-y-4 relative group/editor group/refine">
-                                            <div className="flex justify-between items-center px-2">
-                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scope of Work</label>
-                                            </div>
                                             <div className="relative w-full">
-                                                <textarea 
+                                                <StudioRichEditor 
+                                                    label="Scope of Work"
                                                     value={formData.scopeOfWork} 
-                                                    onChange={e => setFormData({...formData, scopeOfWork: e.target.value})} 
-                                                    className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('scopeOfWork') && 'opacity-30')} 
+                                                    onChange={val => setFormData({...formData, scopeOfWork: val})} 
                                                     placeholder="Use bullet points for each scope item. Group under headings." 
-                                                    style={{ minHeight: "400px" }}
+                                                    minHeight="400px"
+                                                    accentColor="neon-green"
+                                                    className={cn(isHidden('scopeOfWork') && 'opacity-30')}
                                                 />
-                                                <button type="button" onClick={() => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                <button type="button" onClick={() => handleRefineClick('scopeOfWork', 'Scope of Work', formData.scopeOfWork)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -1780,17 +1835,18 @@ const ProposalGenerator = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="lg:col-span-2 space-y-4">
-                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Settlement Terms</label>
-                                                    <div className="relative group/refine w-full">
-                                                        <textarea 
-                                                            disabled={isHidden('terms')}
+                                                <div className="lg:col-span-2 space-y-4 relative group/editor group/refine">
+                                                    <div className="relative w-full">
+                                                        <StudioRichEditor 
+                                                            label="Settlement Terms"
                                                             value={formData.terms} 
-                                                            onChange={e => setFormData({...formData, terms: e.target.value})} 
-                                                            className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('terms') && 'opacity-30')} 
-                                                            style={{ minHeight: "200px" }}
+                                                            onChange={val => setFormData({...formData, terms: val})} 
+                                                            placeholder="Payment milestones, terms of settlement..." 
+                                                            minHeight="200px"
+                                                            accentColor="neon-green"
+                                                            className={cn(isHidden('terms') && 'opacity-30')}
                                                         />
-                                                        <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1973,7 +2029,7 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="pl-0">
-                                                        {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
+                                                        {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2203,7 +2259,7 @@ const ProposalGenerator = () => {
                                         <div className="relative">
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />
                                             <div className="pl-10">
-                                                {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-8")}
+                                                {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                             </div>
                                         </div>
                                     </div>

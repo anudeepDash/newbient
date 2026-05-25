@@ -383,18 +383,74 @@ const Invoice = () => {
     const currentBrand = logoOptions.find(l => l.id === displayInvoice.selectedLogo) || logoOptions[0];
     const brandColor = currentBrand.color;
     
+    const inlineFmt = (t) => {
+        if (!t) return '';
+        return t
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    };
+
+    const processHtmlHeadings = (html) => {
+        if (!html) return html;
+        return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+            const level = hashes.length;
+            const headingClass = level <= 2 
+                ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1 block"
+                : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1 block";
+            const headingTag = `h${Math.min(level + 1, 6)}`;
+            return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+        });
+    };
+
     const renderFormatted = (text, baseClass = '') => {
         if (!text) return null;
-        const paragraphs = text.split(/\n\n+/);
-        return (
-            <div className={cn("space-y-4", baseClass)}>
-                {paragraphs.map((p, i) => (
-                    <p key={i} className="whitespace-pre-line leading-relaxed">
-                        {p}
-                    </p>
-                ))}
-            </div>
-        );
+        const lines = text.split('\n');
+        const elements = [];
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i];
+            
+            if (line.trim() === '') {
+                const lastElement = elements[elements.length - 1];
+                const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+                if (!isLastSpacer) {
+                    elements.push(<div key={`spacer-${i}`} className="h-3" />);
+                }
+                i++;
+                continue;
+            }
+
+            const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+            if (headingMatch) {
+                const level = headingMatch[1].length;
+                const headingText = headingMatch[2];
+                const headingClass = level <= 2 
+                    ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1 block"
+                    : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1 block";
+                elements.push(<p key={i} className={headingClass}>{headingText}</p>);
+            } else if (line.match(/^[•\-\*]\s/)) {
+                const items = [];
+                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) { 
+                    items.push(lines[i].replace(/^[•\-\*]\s/, '')); 
+                    i++; 
+                }
+                elements.push(
+                    <div key={`ul-${i}`} className="pl-6 space-y-2 my-3">
+                        {items.map((item, j) => (
+                            <div key={j} className="flex items-start gap-3">
+                                <span className="text-black mt-1.5 text-[6px]">■</span>
+                                <span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+                            </div>
+                        ))}
+                    </div>
+                );
+                continue;
+            } else {
+                elements.push(<p key={i} className={cn("whitespace-pre-line leading-relaxed", baseClass)} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
+            }
+            i++;
+        }
+        return <div>{elements}</div>;
     };
 
     const renderContent = (content, baseClass = '') => {
@@ -405,7 +461,7 @@ const Invoice = () => {
             return (
                 <div 
                     className={cn("article-content", baseClass)} 
-                    dangerouslySetInnerHTML={{ __html: content }} 
+                    dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
                 />
             );
         }

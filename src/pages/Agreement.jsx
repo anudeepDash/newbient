@@ -25,6 +25,18 @@ import SignatureModal from '../components/ui/SignatureModal';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
+const processHtmlHeadings = (html) => {
+  if (!html) return html;
+  return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+      const level = hashes.length;
+      const headingClass = level <= 2 
+          ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1 block"
+          : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1 block";
+      const headingTag = `h${Math.min(level + 1, 6)}`;
+      return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+  });
+};
+
 const renderFormatted = (text, baseClass = 'text-[12px] font-medium text-black leading-relaxed text-justify') => {
   if (!text) return null;
   const lines = text.split('\n');
@@ -32,21 +44,50 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-medium text-black l
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith('## ')) {
-      elements.push(<p key={i} className="text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1">{line.slice(3)}</p>);
+    
+    if (line.trim() === '') {
+      const lastElement = elements[elements.length - 1];
+      const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+      if (!isLastSpacer) {
+        elements.push(<div key={`spacer-${i}`} className="h-3" />);
+      }
+      i++;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2];
+      const headingClass = level <= 2 
+        ? "text-[13px] font-black text-black uppercase tracking-widest mt-6 mb-2 border-b border-black/10 pb-1"
+        : "text-[11px] font-bold text-gray-800 uppercase tracking-wider mt-4 mb-1";
+      elements.push(<p key={i} className={headingClass}>{headingText}</p>);
     } else if (line.match(/^[•\-\*]\s/)) {
       const items = [];
       while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) { items.push(lines[i].replace(/^[•\-\*]\s/, '')); i++; }
       elements.push(<div key={`ul-${i}`} className="pl-6 space-y-2 my-3">{items.map((item, j) => <div key={j} className="flex items-start gap-3"><span className="text-black mt-1.5 text-[6px]">■</span><span className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} /></div>)}</div>);
       continue;
-    } else if (line.trim() === '') {
-      elements.push(<div key={i} className="h-3" />);
     } else {
       elements.push(<p key={i} className={cn(baseClass, "indent-8")} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
     }
     i++;
   }
   return <div>{elements}</div>;
+};
+
+const renderContent = (content, baseClass = 'text-[12px] font-medium text-black leading-relaxed text-justify') => {
+  if (!content) return null;
+  const isHtml = content.includes('<') && content.includes('>');
+  if (isHtml) {
+    return (
+      <div 
+        className={cn("article-content", baseClass)} 
+        dangerouslySetInnerHTML={{ __html: processHtmlHeadings(content) }} 
+      />
+    );
+  }
+  return renderFormatted(content, baseClass);
 };
 
 const Agreement = () => {
@@ -284,7 +325,7 @@ const Agreement = () => {
                                     <div className="space-y-8 py-4">
                                         <h3 className="text-lg font-black uppercase tracking-widest text-black border-b border-black pb-1 inline-block">Section 01. Purpose of Engagement.</h3>
                                         <div className="text-[12px] font-medium leading-relaxed text-black text-justify mt-4">
-                                            {renderFormatted(displayAgreement.details.purpose)}
+                                            {renderContent(displayAgreement.details.purpose)}
                                         </div>
                                     </div>
                                 )}
@@ -299,7 +340,7 @@ const Agreement = () => {
                                             </div>
                                             <div className="space-y-4">
                                                 <p className="text-[9px] font-black text-black uppercase tracking-widest border-b border-black pb-1 inline-block">Payment Schedule</p>
-                                                {renderFormatted(displayAgreement.commercials.paymentSchedule)}
+                                                {renderContent(displayAgreement.commercials.paymentSchedule)}
                                             </div>
                                         </div>
                                     </div>
@@ -312,7 +353,7 @@ const Agreement = () => {
                                             {page.items.map((clause, i) => (
                                                 <div key={i} className="space-y-2">
                                                     <p className="text-[11px] font-black text-black uppercase tracking-widest">Article {idx + 1 + (page.pageIndex - 1) * 3}. {clause.title}</p>
-                                                    <div className="text-[12px] font-medium text-black leading-relaxed text-justify">{renderFormatted(clause.content)}</div>
+                                                    <div className="text-[12px] font-medium text-black leading-relaxed text-justify">{renderContent(clause.content)}</div>
                                                 </div>
                                             ))}
                                         </div>

@@ -4,10 +4,22 @@ import DocumentSeal from '../ui/DocumentSeal';
 
 const inlineFmt = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 
+const processHtmlHeadings = (html) => {
+  if (!html) return html;
+  return html.replace(/<(p|div)\b([^>]*?)>(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*?)<\/\1>/gi, (match, tag, attrs, hashes, content) => {
+      const level = hashes.length;
+      const headingClass = level <= 2 
+          ? "text-[13px] font-bold text-black uppercase tracking-widest mt-6 mb-3 border-b border-black pb-1 block"
+          : "text-[11px] font-semibold text-gray-800 uppercase tracking-wider mt-4 mb-2 block";
+      const headingTag = `h${Math.min(level + 1, 6)}`;
+      return `<${headingTag} class="${headingClass}" ${attrs}>${content}</${headingTag}>`;
+  });
+};
+
 const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black leading-relaxed text-justify') => {
   if (!text) return null;
   if (text.includes('<') && (text.includes('>') || text.includes('</'))) {
-    return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: text }} />;
+    return <div className={cn("article-content", baseClass)} dangerouslySetInnerHTML={{ __html: processHtmlHeadings(text) }} />;
   }
   
   const lines = text.split('\n');
@@ -15,15 +27,30 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black le
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith('## ')) {
-      elements.push(<p key={i} className="text-[13px] font-bold text-black uppercase tracking-widest mt-6 mb-3 border-b border-black pb-1">{line.slice(3)}</p>);
+    
+    if (line.trim() === '') {
+      const lastElement = elements[elements.length - 1];
+      const isLastSpacer = lastElement && lastElement.key && String(lastElement.key).startsWith('spacer-');
+      if (!isLastSpacer) {
+        elements.push(<div key={`spacer-${i}`} className="h-3" />);
+      }
+      i++;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2];
+      const headingClass = level <= 2 
+        ? "text-[13px] font-bold text-black uppercase tracking-widest mt-6 mb-3 border-b border-black pb-1"
+        : "text-[11px] font-semibold text-gray-800 uppercase tracking-wider mt-4 mb-2";
+      elements.push(<p key={i} className={headingClass}>{headingText}</p>);
     } else if (line.match(/^[•\-\*]\s/)) {
       const items = [];
       while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) { items.push(lines[i].replace(/^[•\-\*]\s/, '')); i++; }
       elements.push(<ul key={`ul-${i}`} className="article-content pl-8 space-y-2 my-3">{items.map((item, j) => <li key={j} className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />)}</ul>);
       continue;
-    } else if (line.trim() === '') {
-      elements.push(<div key={i} className="h-3" />);
     } else {
       elements.push(<p key={i} className={cn(baseClass, "mb-2")} dangerouslySetInnerHTML={{ __html: inlineFmt(line) }} />);
     }
