@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Shield, ChevronDown, ChevronUp, Trash2, GripVertical, Plus, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
-import AISectionButtons from './AISectionButtons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CLAUSE_LIBRARY } from '../../services/clauseLibrary';
 import { cn } from '../../lib/utils';
@@ -12,7 +11,7 @@ const STRICTNESS_COLORS = {
   high: 'bg-red-500/10 text-red-500 border-red-500/20'
 };
 
-const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRemoveClause, onAddCustom, onImproveClause, onRegenerateClause, isAILoading }) => {
+const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRemoveClause, onAddCustom, onRefineClick }) => {
   const [expanded, setExpanded] = useState(null);
   const [customTitle, setCustomTitle] = useState('');
   const [customContent, setCustomContent] = useState('');
@@ -59,12 +58,7 @@ const ClauseMarketplace = ({ activeClauses, onToggleClause, onUpdateClause, onRe
                 </div>
               )}
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                <AISectionButtons 
-                  onImprove={() => onImproveClause?.(clause.id)}
-                  onRegenerate={() => onRegenerateClause?.(clause.id)}
-                  isProcessing={isAILoading}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                />
+                <button type="button" onClick={() => onRefineClick?.(`clauses[${clause.id}]`, clause.title, clause.content)} className="p-1.5 text-[#A855F7] hover:text-white rounded-lg hover:scale-105 opacity-0 group-hover:opacity-100 transition-all" title="Refine with AI"><Sparkles size={12} className="animate-pulse" /></button>
                 <button onClick={e => { e.stopPropagation(); onRemoveClause(clause.id); }} className="p-1.5 text-gray-700 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
               </div>
               {expanded === clause.id ? <ChevronUp size={14} className="text-gray-600" /> : <ChevronDown size={14} className="text-gray-600" />}

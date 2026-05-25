@@ -57,8 +57,7 @@ import StudioRichEditor from '../../components/ui/StudioRichEditor';
 import useContractGenerator from '../../components/admin/useContractGenerator';
 import ClauseMarketplace from '../../components/admin/ClauseMarketplace';
 import ContractPreview from '../../components/admin/ContractPreview';
-import { generateFullDocument } from '../../lib/ai';
-import AIPromptBox from '../../components/admin/AIPromptBox';
+import { generateFullDocument, reviseDocument, refineFieldContent } from '../../lib/ai';
 
 
 const ContractGenerator = () => {
@@ -67,7 +66,7 @@ const ContractGenerator = () => {
     const { addAgreement, updateAgreement, agreements, user, addToast } = useStore();
     
     // UI State
-    const [activeTab, setActiveTab] = useState('1');
+    const [activeTab, setActiveTab] = useState('ai');
     const [previewScale, setPreviewScale] = useState(0.5);
     const [userZoom, setUserZoom] = useState(1);
     const [currentPage, setCurrentPage] = useState(0);
@@ -79,6 +78,53 @@ const ContractGenerator = () => {
     const [generatingSection, setGeneratingSection] = useState(null);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const previewContainerRef = useRef(null);
+
+    // AI Studio State
+    const [messages, setMessages] = useState([
+        {
+            id: 'init-msg',
+            sender: 'ai',
+            text: "Welcome to Newbi AI Agreement Studio. Describe the contract requirements or clauses you want in the prompt box below, choose 'Generate New' or 'Chat & Revise', and I will draft a comprehensive agreement. Click the sparkles icon next to any field to refine it directly!"
+        }
+    ]);
+    const [promptText, setPromptText] = useState('');
+    const [aiMode, setAiMode] = useState('generate');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestionCategory, setSuggestionCategory] = useState(0);
+    const [refinementContext, setRefinementContext] = useState(null);
+
+    const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
+        setRefinementContext({
+            fieldKey,
+            fieldLabel,
+            currentValue
+        });
+        setActiveTab('ai');
+    };
+
+    const chatEndRef = useRef(null);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    const suggestions = React.useMemo(() => {
+        const agreementSuggestions = [
+            [
+                "Master Service Agreement for ongoing digital marketing and talent management services",
+                "Non-Disclosure Agreement for sharing event logistics data with vendor",
+                "Memorandum of Understanding for co-producing a campus tech fest"
+            ],
+            [
+                "Service agreement for event security services with liability protection",
+                "Talent booking agreement for stand-up comedy performance at corporate event",
+                "Venue partnership agreement with commission structure and slot allocations"
+            ]
+        ];
+        return agreementSuggestions[suggestionCategory] || agreementSuggestions[0];
+    }, [suggestionCategory]);
 
     const toggleFieldVisibility = (field) => {
         setFormData(prev => {
@@ -158,83 +204,125 @@ const ContractGenerator = () => {
         }
     };
 
-    const handleImproveClause = async (clauseId) => {
-        const clause = formData.clauses.find(c => c.id === clauseId);
-        if (!clause) return;
-        setIsGenerating(true);
-        try {
-            const improved = await improveContent('contract', clause.title, clause.content);
-            updateClause(clauseId, { content: improved });
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+    const handleStudioSubmit = async () => {
+        if (!promptText.trim() || isGenerating) return;
+        const currentPrompt = promptText.trim();
+        setPromptText('');
 
-    const handleRegenerateClause = async (clauseId) => {
-        const clause = formData.clauses.find(c => c.id === clauseId);
-        if (!clause) return;
+        setMessages(prev => [...prev, { id: String(Date.now()) + '-user', sender: 'user', text: currentPrompt }]);
         setIsGenerating(true);
-        try {
-            const regenerated = await regenerateField('contract', clause.title, formData.details.purpose, clause.content);
-            updateClause(clauseId, { content: regenerated });
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
-    const handleGenerateContract = async (prompt) => {
-        setIsGenerating(true);
         try {
-            const data = await generateFullDocument('contract', prompt, 'Premium', {});
-            
-            setFormData(prev => ({
-                ...prev,
-                // Deep-merge parties: preserve firstParty defaults, merge secondParty from AI
-                parties: {
-                    firstParty: {
-                        ...prev.parties.firstParty,
-                        ...(data.parties?.firstParty || {}),
-                        // Always keep Newbi Entertainment as provider
-                        name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
-                        role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
-                    },
-                    secondParty: {
-                        ...prev.parties.secondParty,
-                        ...(data.parties?.secondParty || {}),
+            if (refinementContext) {
+                const refined = await refineFieldContent(
+                    'contract',
+                    refinementContext.fieldLabel,
+                    refinementContext.currentValue,
+                    currentPrompt,
+                    'Premium'
+                );
+
+                const fieldKey = refinementContext.fieldKey;
+                if (fieldKey.startsWith('clauses[')) {
+                    const match = fieldKey.match(/clauses\[([^\]]+)\]/);
+                    if (match) {
+                        const clauseId = match[1];
+                        updateClause(clauseId, { content: refined });
                     }
-                },
-                // Merge details
-                details: {
-                    ...prev.details,
-                    ...(data.details || {}),
-                },
-                // Merge commercials
-                commercials: {
-                    ...prev.commercials,
-                    ...(data.commercials || {}),
-                },
-                // Replace clauses only if AI generated valid ones
-                clauses: (data.clauses?.length > 0) 
-                    ? data.clauses.map((c, i) => ({
-                        id: c.id || `ai-clause-${Date.now()}-${i}`,
-                        title: c.title || `Clause ${i + 1}`,
-                        content: c.content || '',
-                        isActive: c.isActive !== false,
-                        isCustom: true,
-                        strictness: 'medium',
-                        category: 'custom'
-                    }))
-                    : prev.clauses,
-                // Update template if AI suggests contract type
-                template: data.template || prev.template,
-            }));
-            addToast("Contract updated successfully", "success");
-        } catch (error) {
-            addToast("AI Generation failed: " + error.message, 'error', error.code);
+                } else {
+                    updateField(fieldKey, refined);
+                }
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Refinement applied to "${refinementContext.fieldLabel}"! Output updated in the preview.`
+                }]);
+                setRefinementContext(null);
+                addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
+            } else if (aiMode === 'generate') {
+                const data = await generateFullDocument('contract', currentPrompt, 'Premium', {});
+                setFormData(prev => ({
+                    ...prev,
+                    parties: {
+                        firstParty: {
+                            ...prev.parties.firstParty,
+                            ...(data.parties?.firstParty || {}),
+                            name: data.parties?.firstParty?.name || prev.parties.firstParty.name || 'Newbi Entertainment',
+                            role: data.parties?.firstParty?.role || prev.parties.firstParty.role || 'Service Provider',
+                        },
+                        secondParty: {
+                            ...prev.parties.secondParty,
+                            ...(data.parties?.secondParty || {}),
+                        }
+                    },
+                    details: {
+                        ...prev.details,
+                        ...(data.details || {}),
+                    },
+                    commercials: {
+                        ...prev.commercials,
+                        ...(data.commercials || {}),
+                    },
+                    clauses: (data.clauses?.length > 0) 
+                        ? data.clauses.map((c, i) => ({
+                            id: c.id || `ai-clause-${Date.now()}-${i}`,
+                            title: c.title || `Clause ${i + 1}`,
+                            content: c.content || '',
+                            isActive: c.isActive !== false,
+                            isCustom: true,
+                            strictness: 'medium',
+                            category: 'custom'
+                        }))
+                        : prev.clauses,
+                    template: data.template || prev.template,
+                }));
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Agreement for "${data.parties?.secondParty?.name || 'Partner'}" generated successfully! I added ${data.clauses?.length || 0} legal clauses. \n\nI have switched your mode to **Chat & Revise** so you can make modifications directly. Or feel free to adjust using the manual tabs.`
+                }]);
+                setAiMode('refine');
+                addToast('Agreement successfully generated!', 'success');
+            } else {
+                const updatedDoc = await reviseDocument(formData, currentPrompt, 'Premium');
+                setFormData(prev => ({
+                    ...prev,
+                    ...updatedDoc,
+                    parties: {
+                        firstParty: { ...prev.parties.firstParty, ...(updatedDoc.parties?.firstParty || {}) },
+                        secondParty: { ...prev.parties.secondParty, ...(updatedDoc.parties?.secondParty || {}) }
+                    },
+                    details: { ...prev.details, ...(updatedDoc.details || {}) },
+                    commercials: { ...prev.commercials, ...(updatedDoc.commercials || {}) },
+                    clauses: updatedDoc.clauses?.length > 0 
+                        ? updatedDoc.clauses.map((c, i) => ({
+                            id: c.id || `ai-clause-${Date.now()}-${i}`,
+                            title: c.title || `Clause ${i + 1}`,
+                            content: c.content || '',
+                            isActive: c.isActive !== false,
+                            isCustom: true,
+                            strictness: 'medium',
+                            category: 'custom'
+                        }))
+                        : prev.clauses
+                }));
+
+                setMessages(prev => [...prev, {
+                    id: String(Date.now()) + '-ai',
+                    sender: 'ai',
+                    text: `✓ Document refined according to request: "${currentPrompt}". You can inspect the updated preview on the right.`
+                }]);
+                addToast('Document successfully refined!', 'success');
+            }
+        } catch (err) {
+            setMessages(prev => [...prev, {
+                id: String(Date.now()) + '-ai-err',
+                sender: 'ai',
+                text: `⚠ Failed to process request: ${err.message}`
+            }]);
+            addToast(`Error: ${err.message}`, 'error');
         } finally {
             setIsGenerating(false);
         }
@@ -271,6 +359,7 @@ const ContractGenerator = () => {
     };
 
     const tabs = [
+        { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Document Orchestrator' },
         { id: '1', label: 'Entities', icon: Users, desc: 'Legal Parties' },
         { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework', visibilityKey: 'mission' },
         { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms', visibilityKey: 'commercials' },
@@ -284,7 +373,7 @@ const ContractGenerator = () => {
         setActiveTab(tabId);
         // Map tab IDs to paginated page types for preview sync
         const mapping = { 
-            '0': 'intro',
+            'ai': 'intro',
             '1': 'intro', 
             '2': 'mission', 
             '3': 'commercials', 
@@ -369,8 +458,6 @@ const ContractGenerator = () => {
                 <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
                     <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
                         
-                        <AIPromptBox onGenerate={handleGenerateContract} isGenerating={isGenerating} type="contract" forceClear={promptBoxClear} />
-
                         {/* Minimalist Section Header */}
                         <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
                             <div className="space-y-4">
@@ -401,37 +488,189 @@ const ContractGenerator = () => {
 
                                 {currentTab?.visibilityKey && (
                                     <div className="flex items-center gap-2 translate-y-1">
-                                        <button 
-                                            onClick={async () => {
-                                                setGeneratingSection(currentTab.id);
-                                                setIsGenerating(true);
-                                                try {
-                                                    const refined = await generateFullDocument('contract', `Refine the ${currentTab.label} section for: ${formData.parties.secondParty.name}. Current state: ${JSON.stringify(formData)}`, 'Premium');
-                                                    setFormData(prev => ({...prev, ...refined}));
-                                                    addToast(`Refined ${currentTab.label} successfully`, "success");
-                                                } catch (e) {
-                                                    addToast(e.message, 'error', e.code);
-                                                } finally {
-                                                    setIsGenerating(false);
-                                                    setGeneratingSection(null);
-                                                }
-                                            }}
-                                            disabled={isGenerating}
-                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 text-gray-400 rounded-full hover:bg-[#A855F7]/10 hover:text-[#A855F7] transition-all text-[8px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-[#A855F7]/20"
-                                        >
-                                            {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={10} /> : <Sparkles size={10} />}
-                                            Refine
-                                        </button>
                                         <VisibilityToggle field={currentTab.visibilityKey} />
                                     </div>
                                 )}
                             </div>
                         </div>
 
-
-
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
+                                {activeTab === 'ai' && (
+                                    <div className="flex flex-col h-[65vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                        {/* Orbital Glow in Background */}
+                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#A855F7]/5 rounded-full blur-3xl pointer-events-none" />
+
+                                        {/* Brand Header */}
+                                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4 shrink-0 relative z-10">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-xl bg-[#A855F7]/10 flex items-center justify-center border border-[#A855F7]/20">
+                                                    <Zap size={14} className="text-[#A855F7] animate-pulse" />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-black text-[#A855F7] uppercase tracking-[0.3em] block leading-none mb-0.5">Primary Model</span>
+                                                    <h3 className="text-xs font-black uppercase text-white tracking-wide leading-none">Gemini 3.5 Flash<span className="text-[#A855F7]">.</span></h3>
+                                                </div>
+                                            </div>
+                                            {/* Mode status indicator */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Active Mode:</span>
+                                                <span className="text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-[#A855F7] shadow-sm">
+                                                    {refinementContext ? 'Field Refinement' : (aiMode === 'generate' ? 'First Draft' : 'Refinement & Chat')}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Mode Switcher inside AI Studio */}
+                                        <div className="flex items-center bg-zinc-950 border border-white/5 rounded-2xl p-1 gap-1 mb-4 z-10 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setAiMode('generate')}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
+                                                    aiMode === 'generate' ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <Sparkles size={12} />
+                                                <span>Generate New</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAiMode('refine')}
+                                                className={cn(
+                                                    "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
+                                                    aiMode === 'refine' ? "bg-[#A855F7] text-black shadow-[0_0_15px_rgba(168,85,247,0.3)]" : "text-gray-500 hover:text-white"
+                                                )}
+                                            >
+                                                <Send size={12} />
+                                                <span>Chat & Revise</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Message Stream */}
+                                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 scrollbar-hide relative z-10 flex flex-col min-h-0">
+                                            {/* Welcome card if only initial message */}
+                                            {messages.length === 1 && (
+                                                <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                    <div className="relative">
+                                                        <div className="absolute -inset-1 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur opacity-30 animate-pulse" />
+                                                        <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                            <Sparkles size={24} className="text-[#A855F7]" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
+                                                        <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                                            Describe your requirements below to draft a complete legally-binding agreement in seconds. Use follow-up prompts to customize the terms.
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Suggestions Grid */}
+                                                    <div className="w-full space-y-2.5 pt-4">
+                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Templates</span>
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            {suggestions.map((s, idx) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={idx}
+                                                                    onClick={() => setPromptText(s)}
+                                                                    className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                >
+                                                                    <div className="flex items-start gap-3">
+                                                                        <span className="text-[#A855F7] mt-0.5 text-[10px]">✦</span>
+                                                                        <span className="flex-1">{s}</span>
+                                                                    </div>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {messages.length > 1 && messages.map(m => (
+                                                <div
+                                                    key={m.id}
+                                                    className={cn(
+                                                        "max-w-[80%] rounded-[2rem] p-5 text-xs leading-relaxed transition-all shadow-md relative overflow-hidden group",
+                                                        m.sender === 'user'
+                                                            ? "bg-zinc-900 text-zinc-100 self-end rounded-tr-none border border-white/5"
+                                                            : "bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-tl-none"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={cn(
+                                                            "text-[8px] font-black uppercase tracking-wider",
+                                                            m.sender === 'user' ? "text-gray-400" : "text-[#A855F7]"
+                                                        )}>
+                                                            {m.sender === 'user' ? 'You' : 'Gemini 3.5 Flash'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="whitespace-pre-line font-medium leading-relaxed">{m.text}</p>
+                                                </div>
+                                            ))}
+
+                                            {/* Generating Bubble */}
+                                            {isGenerating && (
+                                                <div className="bg-white/[0.02] border border-white/[0.04] text-zinc-300 self-start rounded-[2rem] rounded-tl-none p-5 text-xs max-w-[80%] flex items-center gap-3 animate-pulse shadow-md">
+                                                    <Sparkles size={14} className="text-[#A855F7] animate-spin shrink-0" />
+                                                    <span className="font-bold uppercase tracking-wider text-[10px] text-gray-400">Negotiating contract parameters...</span>
+                                                </div>
+                                            )}
+                                            <div ref={chatEndRef} />
+                                        </div>
+
+                                        {/* Prompt container wrapped in .gemini-border-wrap-purple */}
+                                        <div className="mt-auto pt-4 bg-transparent shrink-0">
+                                            {/* WhatsApp quoted context container */}
+                                            {refinementContext && (
+                                                <div className="px-4 py-3 bg-zinc-900/80 border-l-4 border-[#A855F7] rounded-r-2xl flex items-center justify-between gap-4 mb-3 border border-white/5 border-l-0 shadow-lg relative overflow-hidden group">
+                                                    <div className="absolute inset-0 bg-[#A855F7]/5 opacity-40" />
+                                                    <div className="min-w-0 relative z-10">
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#A855F7] block mb-0.5">Refining: {refinementContext.fieldLabel}</span>
+                                                        <p className="text-xs text-gray-400 line-clamp-1 italic">
+                                                            "{refinementContext.currentValue || 'No current content...'}"
+                                                        </p>
+                                                    </div>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setRefinementContext(null)}
+                                                        className="p-1.5 hover:bg-white/10 rounded-xl text-gray-500 hover:text-white transition-all shrink-0 relative z-10"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* The Input box container */}
+                                            <div className="gemini-border-wrap-purple shadow-[0_15px_40px_rgba(168,85,247,0.15)] relative">
+                                                <div className="bg-[#050505] rounded-[1.4rem] p-3 flex items-end gap-3">
+                                                    <textarea
+                                                        value={promptText}
+                                                        onChange={e => setPromptText(e.target.value)}
+                                                        placeholder={refinementContext ? `Ask AI to refine "${refinementContext.fieldLabel}"...` : "Describe the contract you want to generate or modify..."}
+                                                        className="flex-1 bg-transparent border-none text-[13px] font-medium text-white placeholder:text-zinc-600 outline-none min-h-[44px] max-h-[160px] py-2 px-3 resize-none leading-relaxed"
+                                                        rows={1}
+                                                        disabled={isGenerating}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault();
+                                                                handleStudioSubmit();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleStudioSubmit}
+                                                        disabled={!promptText.trim() || isGenerating}
+                                                        className="p-3 bg-[#A855F7] text-black rounded-xl hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-20 disabled:scale-100 flex items-center justify-center shadow-lg"
+                                                    >
+                                                        {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {activeTab === '1' && (
                                     <div className="space-y-10">
@@ -483,23 +722,47 @@ const ContractGenerator = () => {
                                             <div className="space-y-6">
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Building2 size={16} /> First Party</h3>
                                                 <div className="space-y-4">
-                                                    <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-black/40 border-white/10" />
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-black/40 border-white/10" />
-                                                        <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="relative group/refine w-full">
+                                                        <Input value={formData.parties.firstParty.name} onChange={e => updateField('parties.firstParty.name', e.target.value)} placeholder="Provider Name" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.name', 'Provider Name', formData.parties.firstParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
-                                                    <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="relative group/refine w-full">
+                                                            <Input value={formData.parties.firstParty.role} onChange={e => updateField('parties.firstParty.role', e.target.value)} placeholder="Role (e.g. Provider)" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.role', 'Provider Role', formData.parties.firstParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        </div>
+                                                        <div className="relative group/refine w-full">
+                                                            <Input value={formData.parties.firstParty.acronym} onChange={e => updateField('parties.firstParty.acronym', e.target.value)} placeholder="Acronym (e.g. NB)" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.firstParty.acronym', 'Provider Acronym', formData.parties.firstParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative group/refine w-full">
+                                                        <Input value={formData.parties.firstParty.address} onChange={e => updateField('parties.firstParty.address', e.target.value)} placeholder="Provider Address" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.firstParty.address', 'Provider Address', formData.parties.firstParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="space-y-6">
                                                 <h3 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-3"><Users size={16} /> Second Party</h3>
                                                 <div className="space-y-4">
-                                                    <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-black/40 border-white/10" />
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-black/40 border-white/10" />
-                                                        <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="relative group/refine w-full">
+                                                        <Input value={formData.parties.secondParty.name} onChange={e => updateField('parties.secondParty.name', e.target.value)} placeholder="Client Name" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.name', 'Client Name', formData.parties.secondParty.name)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                                     </div>
-                                                    <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-black/40 border-white/10" />
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="relative group/refine w-full">
+                                                            <Input value={formData.parties.secondParty.role} onChange={e => updateField('parties.secondParty.role', e.target.value)} placeholder="Role (e.g. Client)" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.role', 'Client Role', formData.parties.secondParty.role)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        </div>
+                                                        <div className="relative group/refine w-full">
+                                                            <Input value={formData.parties.secondParty.acronym} onChange={e => updateField('parties.secondParty.acronym', e.target.value)} placeholder="Acronym (e.g. TUM)" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                            <button type="button" onClick={() => handleRefineClick('parties.secondParty.acronym', 'Client Acronym', formData.parties.secondParty.acronym)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative group/refine w-full">
+                                                        <Input value={formData.parties.secondParty.address} onChange={e => updateField('parties.secondParty.address', e.target.value)} placeholder="Client Address" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                        <button type="button" onClick={() => handleRefineClick('parties.secondParty.address', 'Client Address', formData.parties.secondParty.address)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -509,39 +772,52 @@ const ContractGenerator = () => {
                                 {activeTab === '2' && (
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-2 gap-8">
-                                            <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-black/40 border-white/10" />
-                                            <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-black/40 border-white/10" />
+                                            <div className="relative group/refine w-full">
+                                                <Input value={formData.details.projectName} onChange={e => updateField('details.projectName', e.target.value)} placeholder="Project Name" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                <button type="button" onClick={() => handleRefineClick('details.projectName', 'Project Name', formData.details.projectName)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            </div>
+                                            <div className="relative group/refine w-full">
+                                                <Input value={formData.details.territory} onChange={e => updateField('details.territory', e.target.value)} placeholder="Territory" className="h-14 bg-black/40 border-white/10 pr-12" />
+                                                <button type="button" onClick={() => handleRefineClick('details.territory', 'Territory', formData.details.territory)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                            </div>
                                         </div>
-                                        <StudioRichEditor 
-                                            label="Contract Purpose"
-                                            value={formData.details.purpose} 
-                                            onChange={val => updateField('details.purpose', val)} 
-                                            placeholder="Describe the purpose and scope of engagement..." 
-                                            minHeight="200px" 
-                                            accentColor="neon-purple"
-                                        />
+                                        <div className="relative group/refine w-full">
+                                            <StudioRichEditor 
+                                                label="Contract Purpose"
+                                                value={formData.details.purpose} 
+                                                onChange={val => updateField('details.purpose', val)} 
+                                                placeholder="Describe the purpose and scope of engagement..." 
+                                                minHeight="200px" 
+                                                accentColor="neon-purple"
+                                            />
+                                            <button type="button" onClick={() => handleRefineClick('details.purpose', 'Contract Purpose', formData.details.purpose)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                        </div>
                                     </div>
                                 )}
 
                                 {activeTab === '3' && (
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-2 gap-8">
-                                            <div className="relative">
+                                            <div className="relative group/refine w-full">
                                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neon-purple font-black text-xs">{formData.commercials.currency}</span>
-                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-black/40 border-white/10 pl-12" placeholder="Total Value" />
+                                                <Input value={formData.commercials.totalValue} onChange={e => updateField('commercials.totalValue', e.target.value)} className="h-14 bg-black/40 border-white/10 pl-12 pr-12" placeholder="Total Value" />
+                                                <button type="button" onClick={() => handleRefineClick('commercials.totalValue', 'Total Value', formData.commercials.totalValue)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-10" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
                                             </div>
                                             <select value={formData.commercials.currency} onChange={e => updateField('commercials.currency', e.target.value)} className="h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm font-bold">
                                                 <option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option>
                                             </select>
                                         </div>
-                                        <StudioRichEditor 
-                                            label="Payment Schedule"
-                                            value={formData.commercials.paymentSchedule} 
-                                            onChange={val => updateField('commercials.paymentSchedule', val)} 
-                                            placeholder="Payment milestones and schedule..." 
-                                            minHeight="150px" 
-                                            accentColor="neon-purple"
-                                        />
+                                        <div className="relative group/refine w-full">
+                                            <StudioRichEditor 
+                                                label="Payment Schedule"
+                                                value={formData.commercials.paymentSchedule} 
+                                                onChange={val => updateField('commercials.paymentSchedule', val)} 
+                                                placeholder="Payment milestones and schedule..." 
+                                                minHeight="150px" 
+                                                accentColor="neon-purple"
+                                            />
+                                            <button type="button" onClick={() => handleRefineClick('commercials.paymentSchedule', 'Payment Schedule', formData.commercials.paymentSchedule)} className="absolute right-4 top-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-[#A855F7] hover:text-white rounded-xl hover:scale-105 z-[70]" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                        </div>
                                     </div>
                                 )}
 
@@ -552,9 +828,7 @@ const ContractGenerator = () => {
                                         onUpdateClause={updateClause} 
                                         onRemoveClause={removeClause} 
                                         onAddCustom={addCustomClause}
-                                        onImproveClause={handleImproveClause}
-                                        onRegenerateClause={handleRegenerateClause}
-                                        isAILoading={isGenerating}
+                                        onRefineClick={(clauseKey, title, content) => handleRefineClick(clauseKey, title, content)}
                                     />
                                 )}
                                 {activeTab === '7' && (

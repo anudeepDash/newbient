@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import Send from 'lucide-react/dist/esm/icons/send';
@@ -111,7 +112,7 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0 }}
@@ -350,7 +351,8 @@ const InvoiceEmailModal = ({ isOpen, onClose, invoice, onSend }) => {
                     </div>
                 </Card>
             </motion.div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

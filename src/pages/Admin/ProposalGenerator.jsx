@@ -1229,16 +1229,7 @@ const ProposalGenerator = () => {
 
                         {(!isBulkMode || (isBulkMode && bulkProposals.length > 0)) && (
                             <>
-                                {!isBulkMode && (
-                                    <AIPromptBox 
-                                        onGenerate={handleGenerateProposal} 
-                                        isGenerating={isGenerating && generatingSection === 'all'} 
-                                        type="proposal" 
-                                        forceClear={promptBoxClear}
-                                    />
-                                )}
-
-                        <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
+                                <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
                             <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-[2px] bg-neon-green/40" />
@@ -1267,27 +1258,6 @@ const ProposalGenerator = () => {
 
                                 {currentTab?.visibilityKey && (
                                     <div className="flex flex-wrap items-center gap-2 translate-y-1">
-                                        <button 
-                                            onClick={async () => {
-                                                setGeneratingSection(currentTab.id);
-                                                setIsGenerating(true);
-                                                try {
-                                                    const refined = await generateFullDocument('proposal', `Refine the ${currentTab.label} section for: ${formData.campaignName}. Current state for context: ${JSON.stringify(formData)}`, 'Premium');
-                                                    setFormData(prev => ({...prev, ...refined}));
-                                                    addToast(`AI Refinement successful for ${currentTab.label}`, 'success');
-                                                } catch (e) {
-                                                    addToast(e.message, 'error', e.code);
-                                                } finally {
-                                                    setIsGenerating(false);
-                                                    setGeneratingSection(null);
-                                                }
-                                            }}
-                                            disabled={isGenerating}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 text-gray-400 rounded-full hover:bg-neon-green/10 hover:text-neon-green transition-all text-[9px] font-black uppercase tracking-[0.1em] border border-white/10 hover:border-neon-green/20"
-                                        >
-                                            {isGenerating && generatingSection === currentTab.id ? <RefreshCw className="animate-spin" size={10} /> : <Sparkles size={10} />}
-                                            Refine
-                                        </button>
                                         <VisibilityToggle field={currentTab.visibilityKey} />
                                     </div>
                                 )}
@@ -1626,7 +1596,10 @@ const ProposalGenerator = () => {
                                                     <div key={d.id} className="flex items-start gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 mt-4 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
                                                         <div className="flex-1 space-y-3">
-                                                            <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-white/10 pb-2 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
+                                                            <div className="relative group/refine w-full">
+                                                                <input value={d.item} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, item: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-full bg-transparent border-b border-white/10 pb-2 pr-8 text-sm font-bold outline-none focus:border-neon-green/40 transition-all text-white placeholder:text-gray-600" placeholder="Deliverable description..." />
+                                                                <button type="button" onClick={() => handleRefineClick(`deliverables[${idx}].item`, `Deliverable ${idx + 1}`, d.item)} className="absolute right-2 bottom-2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                            </div>
                                                             <div className="flex gap-4">
                                                                 <input value={d.qty} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, qty: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="w-32 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Qty / Unit" />
                                                                 <input value={d.timeline} onChange={e => { const updated = [...formData.deliverables]; updated[idx] = {...d, timeline: e.target.value}; setFormData({...formData, deliverables: updated}); }} className="flex-1 bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-[10px] font-bold outline-none focus:border-neon-green/40 text-gray-300 placeholder:text-gray-600" placeholder="Timeline (e.g. Week 1-2)" />
@@ -1651,7 +1624,10 @@ const ProposalGenerator = () => {
                                                 {(formData.clientRequirements || []).map((r, idx) => (
                                                     <div key={r.id} className="flex items-center gap-4 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
                                                         <span className="text-[10px] font-black text-gray-600 w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>
-                                                        <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="flex-1 bg-transparent border-none text-sm font-bold outline-none text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
+                                                        <div className="relative group/refine flex-1">
+                                                            <input value={r.description} onChange={e => { const updated = [...formData.clientRequirements]; updated[idx] = {...r, description: e.target.value}; setFormData({...formData, clientRequirements: updated}); }} className="w-full bg-transparent border-none pr-8 text-sm font-bold outline-none text-white placeholder:text-gray-600" placeholder="What the client needs to provide..." />
+                                                            <button type="button" onClick={() => handleRefineClick(`clientRequirements[${idx}].description`, `Client Requirement ${idx + 1}`, r.description)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                        </div>
                                                         <button onClick={() => setFormData({...formData, clientRequirements: formData.clientRequirements.filter(x => x.id !== r.id)})} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg"><Trash2 size={14} /></button>
                                                     </div>
                                                 ))}
@@ -1668,8 +1644,11 @@ const ProposalGenerator = () => {
                                         <div className={cn("space-y-12 transition-opacity", isHidden('inventory') && "opacity-30")}>
                                             <div className="flex justify-between items-center px-4"><h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Table</h4><button disabled={isHidden('inventory')} onClick={() => setItems([...items, { id: Date.now(), description: '', qty: 1, price: 0 }])} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl disabled:opacity-30"><Plus size={16} /></button></div>
                                             <div className="space-y-4">{items.map((item, idx) => (
-                                                <div key={item.id} className="flex items-center gap-6 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group transition-all hover:bg-zinc-900/60">
-                                                    <div className="flex-1"><textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." /></div>
+                                                <div key={item.id} className="flex items-center gap-6 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group/refine transition-all hover:bg-zinc-900/60 relative">
+                                                    <div className="flex-1 relative">
+                                                        <textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." />
+                                                        <button type="button" disabled={isHidden('inventory')} onClick={() => handleRefineClick(`items[${idx}].description`, `Resource ${idx + 1} Description`, item.description)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                    </div>
                                                     <div className="flex items-center gap-6">
                                                         <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50" /></div>
                                                         <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
@@ -1789,12 +1768,16 @@ const ProposalGenerator = () => {
                                                 </div>
                                                 <div className="lg:col-span-2 space-y-4">
                                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-2">Settlement Terms</label>
-                                                    <textarea 
-                                                        value={formData.terms} 
-                                                        onChange={e => setFormData({...formData, terms: e.target.value})} 
-                                                        className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('terms') && 'opacity-30')} 
-                                                        style={{ minHeight: "200px" }}
-                                                    />
+                                                    <div className="relative group/refine w-full">
+                                                        <textarea 
+                                                            disabled={isHidden('terms')}
+                                                            value={formData.terms} 
+                                                            onChange={e => setFormData({...formData, terms: e.target.value})} 
+                                                            className={cn("w-full bg-black/40 border border-white/10 focus:border-neon-green/50 rounded-[2rem] p-6 pr-12 text-[13px] font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-[1.8] shadow-inner transition-all", isHidden('terms') && 'opacity-30')} 
+                                                            style={{ minHeight: "200px" }}
+                                                        />
+                                                        <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-4 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1874,38 +1857,6 @@ const ProposalGenerator = () => {
                             </button>
                         </div>
 
-                        {/* AI Refinement Chatbot */}
-                        <div className="mt-8 mb-12 p-6 bg-zinc-900/50 border border-white/5 focus-within:border-neon-green/30 rounded-3xl relative overflow-hidden transition-all duration-300">
-                            <div className="flex flex-col gap-4 relative z-10">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-neon-green/10 rounded-xl">
-                                            <Sparkles size={14} className="text-neon-green" />
-                                        </div>
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Follow-up Refinement</h4>
-                                    </div>
-                                    {isRefining && <span className="text-[9px] font-bold text-neon-green animate-pulse uppercase tracking-widest">Revising Document...</span>}
-                                </div>
-                                <div className="flex gap-3">
-                                    <input 
-                                        type="text" 
-                                        value={refinementPrompt} 
-                                        onChange={e => setRefinementPrompt(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleRefine()}
-                                        placeholder="e.g. 'Add a timeline for Phase 3' or 'Change the client name'" 
-                                        className="flex-1 bg-black/60 border border-white/5 rounded-2xl px-5 py-3.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-neon-green/50 transition-all"
-                                        disabled={isRefining}
-                                    />
-                                    <button 
-                                        onClick={handleRefine}
-                                        disabled={isRefining || !refinementPrompt.trim()}
-                                        className="px-6 py-3.5 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-neon-green hover:text-black hover:border-neon-green transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center min-w-[60px]"
-                                    >
-                                        {isRefining ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                         </>
                         )}
                     </div>
