@@ -751,7 +751,13 @@ const Proposal = () => {
 
                                 {page.type === 'strategy' && (
                                     <div className="space-y-16 py-8">
-                                        <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Execution Roadmap.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {displayProposal.campaignName || "Proposal Plan"}.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Architecture</p>
+                                        </div>
                                         {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                         {!isHidden('primaryGoal') && (
                                             <div className="pt-12">
@@ -766,18 +772,19 @@ const Proposal = () => {
 
                                 {page.type === 'scope' && (
                                     <div className="h-full flex flex-col py-8">
-                                        {!displayProposal.isBulkGenerated && (
-                                            <div className="space-y-4 mb-12">
-                                                <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                                <div className="w-16 h-1 bg-black" />
-                                            </div>
-                                        )}
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {displayProposal.campaignName || "Proposal Plan"}.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {displayProposal.isBulkGenerated ? "EXECUTIVE SUMMARY" : "SCOPE OF WORK"}
+                                            </p>
+                                        </div>
                                         <div className="flex-1 flex flex-col">
                                             <div className="relative">
                                                 {!displayProposal.isBulkGenerated && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />}
                                                 <div className={displayProposal.isBulkGenerated ? "pl-0" : "pl-10"}>
-                                                    {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                    {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
                                                     {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                                 </div>
                                             </div>
@@ -852,25 +859,30 @@ const Proposal = () => {
 
                                 {page.type === 'proposal' && (
                                     <div className="space-y-16 py-8">
-                                        <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {displayProposal.campaignName || "Proposal Plan"}.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Deliverables</p>
+                                        </div>
                                         {(displayProposal.deliverables?.length > 0 && displayProposal.deliverables.some(d => d.item)) && (
                                             <div className="space-y-6">
-                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
-                                                <table className="w-full text-left border-collapse border-2 border-black">
+                                                <table className="w-full text-left border-collapse border border-black">
                                                     <thead>
                                                         <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                            <th className="p-4 w-10">#</th>
-                                                            <th className="p-4">Deliverable</th>
-                                                            <th className="p-4 text-center w-28 border-x border-white/20">Qty / Unit</th>
+                                                            <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                            <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                            <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
                                                             <th className="p-4 text-right w-40">Timeline</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-gray-200">
+                                                    <tbody className="divide-y divide-black/10">
                                                         {displayProposal.deliverables.filter(d => d.item).map((d, i) => (
                                                             <tr key={d.id} className="hover:bg-gray-50">
-                                                                <td className="p-4 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                                <td className="p-4 text-[12px] font-bold text-black">{d.item}</td>
-                                                                <td className="p-4 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
+                                                                <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">{String(i + 1).padStart(2, '0')}</td>
+                                                                <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                                <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
                                                                 <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                             </tr>
                                                         ))}
@@ -880,7 +892,7 @@ const Proposal = () => {
                                         )}
                                         {(displayProposal.clientRequirements?.length > 0 && displayProposal.clientRequirements.some(r => r.description)) && (
                                             <div className="space-y-6 pt-4">
-                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                 <div className="p-6 border-2 border-gray-200 space-y-0">
                                                     {displayProposal.clientRequirements.filter(r => r.description).map((r, i) => (
                                                         <div key={r.id} className={cn("flex items-start gap-4 py-3", i > 0 && "border-t border-gray-100")}>
@@ -896,18 +908,24 @@ const Proposal = () => {
 
                                 {page.type === 'table' && (
                                      <div className="space-y-12 py-8">
-                                         <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
-                                         <table className="w-full text-left border-collapse border-2 border-black">
+                                         <div className="mb-10 space-y-3">
+                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                 {displayProposal.campaignName || "Proposal Plan"}.
+                                             </h3>
+                                             <div className="w-20 h-1.5 bg-neon-green" />
+                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Commercials</p>
+                                         </div>
+                                         <table className="w-full text-left border-collapse border border-black">
                                              <thead>
-                                                 <tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black">
-                                                     {(displayProposal?.tableColumns || defaultColumns).map(col => (
+                                                 <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                     {(displayProposal?.tableColumns || defaultColumns).map((col, cIdx, arr) => (
                                                          <th 
                                                              key={col.key} 
                                                              className={cn(
-                                                                 "p-6",
-                                                                 col.key === 'qty' && "text-center w-24 border-x border-white/20",
-                                                                 col.key === 'price' && "text-right w-48",
-                                                                 !['qty', 'price'].includes(col.key) && col.key !== 'description' && "border-x border-white/20"
+                                                                 "p-4",
+                                                                 cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                 col.key === 'qty' && "text-center w-24",
+                                                                 col.key === 'price' && "text-right w-48"
                                                              )}
                                                          >
                                                              {col.label}
@@ -915,22 +933,27 @@ const Proposal = () => {
                                                      ))}
                                                  </tr>
                                              </thead>
-                                             <tbody className="divide-y divide-gray-200">
+                                             <tbody className="divide-y divide-black/10">
                                                  {page.items.map((item, i) => {
                                                      const cols = displayProposal?.tableColumns || defaultColumns;
                                                      return (
                                                          <tr key={i} className="hover:bg-gray-50">
-                                                             {cols.map(col => {
+                                                             {cols.map((col, cIdx) => {
+                                                                 const isLast = cIdx === cols.length - 1;
+                                                                 const tdClass = cn(
+                                                                     "p-4",
+                                                                     !isLast && "border-r border-black/10"
+                                                                 );
                                                                  if (col.key === 'description') {
-                                                                     return <td key={col.key} className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td>;
+                                                                     return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
                                                                  }
                                                                  if (col.key === 'qty') {
-                                                                     return <td key={col.key} className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td>;
+                                                                     return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
                                                                  }
                                                                  if (col.key === 'price') {
-                                                                     return <td key={col.key} className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td>;
+                                                                     return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
                                                                  }
-                                                                 return <td key={col.key} className="p-6 text-[12px] font-bold text-gray-600 border-x border-gray-100">{item[col.key] || ''}</td>;
+                                                                 return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
                                                              })}
                                                          </tr>
                                                      );
@@ -942,12 +965,13 @@ const Proposal = () => {
 
                                 {page.type === 'custom' && (
                                     <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                        {page.title && (
-                                            <div className="space-y-4">
-                                                <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{page.title}</h3>
-                                                <div className="w-16 h-1 bg-black" />
-                                            </div>
-                                        )}
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {displayProposal.campaignName || "Proposal Plan"}.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">{page.title || "Custom Page"}</p>
+                                        </div>
                                         <div className="flex-1">
                                             {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                         </div>
@@ -957,10 +981,13 @@ const Proposal = () => {
                                 {page.type === 'commercials' && (
                                     <div className="space-y-10 py-6 h-full flex flex-col justify-between">
                                         <div>
-                                            <div className="flex items-center gap-4 mb-10">
-                                                <div className="w-1.5 h-8 bg-black" />
-                                                <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
-                                            </div>
+                                            <div className="mb-10 space-y-3">
+                                                <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                    {displayProposal.campaignName || "Proposal Plan"}.
+                                                </h3>
+                                                <div className="w-20 h-1.5 bg-neon-green" />
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Summary & Terms</p>
+                                            </div>                  
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
                                                 <div className="space-y-8">
                                                     {displayProposal.terms && (
@@ -1194,7 +1221,13 @@ const Proposal = () => {
 
                             {page.type === 'strategy' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Project Timeline.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    <div className="mb-10 space-y-3">
+                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                            {displayProposal.campaignName || "Proposal Plan"}.
+                                        </h3>
+                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Architecture</p>
+                                    </div>
                                     {!isHidden('overview') && <div className="text-xl font-medium leading-[1.7] text-gray-700 text-justify max-w-2xl italic">{renderContent(displayProposal.overview || 'Strategic framework pending...', 'text-lg')}</div>}
                                     {!isHidden('primaryGoal') && (
                                         <div className="pt-12">
@@ -1209,18 +1242,19 @@ const Proposal = () => {
 
                             {page.type === 'scope' && (
                                 <div className="h-full flex flex-col py-8">
-                                    {!displayProposal.isBulkGenerated && (
-                                        <div className="space-y-4 mb-12">
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">Scope of Work.</h3>
-                                            <div className="w-16 h-1 bg-black" />
-                                        </div>
-                                    )}
+                                    <div className="mb-10 space-y-3">
+                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                            {displayProposal.campaignName || "Proposal Plan"}.
+                                        </h3>
+                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                            {displayProposal.isBulkGenerated ? "EXECUTIVE SUMMARY" : "SCOPE OF WORK"}
+                                        </p>
+                                    </div>
                                     <div className="flex-1 flex flex-col">
                                         <div className="relative">
                                             {!displayProposal.isBulkGenerated && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />}
                                             <div className={displayProposal.isBulkGenerated ? "pl-0" : "pl-10"}>
-                                                {!displayProposal.isBulkGenerated && !page.scopePage && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework</p>}
-                                                {!displayProposal.isBulkGenerated && page.scopePage > 1 && <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.5em] mb-6">Execution Framework (Continued)</p>}
                                                 {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                             </div>
                                         </div>
@@ -1251,26 +1285,31 @@ const Proposal = () => {
 
                             {page.type === 'proposal' && (
                                 <div className="space-y-16 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase tracking-tighter text-black">Proposal Plan.</h3><div className="w-16 h-1 bg-neon-green" /></div>
+                                    <div className="mb-10 space-y-3">
+                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                            {displayProposal.campaignName || "Proposal Plan"}.
+                                        </h3>
+                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Deliverables</p>
+                                    </div>
                                     {(displayProposal.deliverables?.length > 0 && displayProposal.deliverables.some(d => d.item)) && (
                                         <div className="space-y-6">
-                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
-                                            <table className="w-full text-left border-collapse border-2 border-black">
+                                            <table className="w-full text-left border-collapse border border-black">
                                                 <thead>
                                                     <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                        <th className="p-5 w-10">#</th>
-                                                        <th className="p-5">Deliverable</th>
-                                                        <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
-                                                        <th className="p-5 text-right w-40">Timeline</th>
+                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                        <th className="p-4 text-right w-40">Timeline</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-200">
+                                                <tbody className="divide-y divide-black/10">
                                                     {displayProposal.deliverables.filter(d => d.item).map((d, i) => (
                                                         <tr key={d.id} className="hover:bg-gray-50">
-                                                            <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                            <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
-                                                            <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
-                                                            <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                            <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">{String(i + 1).padStart(2, '0')}</td>
+                                                            <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                            <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
+                                                            <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -1279,7 +1318,7 @@ const Proposal = () => {
                                     )}
                                     {(displayProposal.clientRequirements?.length > 0 && displayProposal.clientRequirements.some(r => r.description)) && (
                                         <div className="space-y-6 pt-4">
-                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                             <div className="p-8 border-2 border-gray-200 space-y-0">
                                                 {displayProposal.clientRequirements.filter(r => r.description).map((r, i) => (
                                                     <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
@@ -1294,71 +1333,85 @@ const Proposal = () => {
                             )}
 
                             {page.type === 'table' && (
-                                <div className="space-y-12 py-8">
-                                    <div className="space-y-4"><h3 className="text-3xl font-black uppercase text-black">Financial Summary.</h3><div className="w-16 h-1 bg-black" /></div>
-                                    <table className="w-full text-left border-collapse border-2 border-black">
-                                        <thead>
-                                            <tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black">
-                                                {(displayProposal?.tableColumns || defaultColumns).map(col => (
-                                                    <th 
-                                                        key={col.key} 
-                                                        className={cn(
-                                                            "p-6",
-                                                            col.key === 'qty' && "text-center w-24 border-x border-white/20",
-                                                            col.key === 'price' && "text-right w-48",
-                                                            !['qty', 'price'].includes(col.key) && col.key !== 'description' && "border-x border-white/20"
-                                                        )}
-                                                    >
-                                                        {col.label}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {page.items.map((item, i) => {
-                                                const cols = displayProposal?.tableColumns || defaultColumns;
-                                                return (
-                                                    <tr key={i} className="hover:bg-gray-50">
-                                                        {cols.map(col => {
-                                                            if (col.key === 'description') {
-                                                                return <td key={col.key} className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td>;
-                                                            }
-                                                            if (col.key === 'qty') {
-                                                                return <td key={col.key} className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td>;
-                                                            }
-                                                            if (col.key === 'price') {
-                                                                return <td key={col.key} className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td>;
-                                                            }
-                                                            return <td key={col.key} className="p-6 text-[12px] font-bold text-gray-600 border-x border-gray-100">{item[col.key] || ''}</td>;
-                                                        })}
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                            {page.type === 'custom' && (
-                                <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                    {page.title && (
-                                        <div className="space-y-4">
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{page.title}</h3>
-                                            <div className="w-16 h-1 bg-black" />
-                                        </div>
-                                    )}
-                                    <div className="flex-1">
-                                        {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
-                                    </div>
-                                </div>
-                            )}
-
-                            {page.type === 'commercials' && (
-                                 <div className="space-y-10 py-6 h-full flex flex-col justify-between">
-                                     <div>
-                                         <div className="flex items-center gap-4 mb-10">
-                                             <div className="w-1.5 h-8 bg-black" />
-                                             <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
-                                         </div>
+                                 <div className="space-y-12 py-8">
+                                     <div className="mb-10 space-y-3">
+                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                             {displayProposal.campaignName || "Proposal Plan"}.
+                                         </h3>
+                                         <div className="w-20 h-1.5 bg-neon-green" />
+                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Commercials</p>
+                                     </div>
+                                     <table className="w-full text-left border-collapse border border-black">
+                                         <thead>
+                                             <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                 {(displayProposal?.tableColumns || defaultColumns).map((col, cIdx, arr) => (
+                                                     <th 
+                                                         key={col.key} 
+                                                         className={cn(
+                                                             "p-4",
+                                                             cIdx < arr.length - 1 && "border-r border-white/20",
+                                                             col.key === 'qty' && "text-center w-24",
+                                                             col.key === 'price' && "text-right w-48"
+                                                         )}
+                                                     >
+                                                         {col.label}
+                                                     </th>
+                                                 ))}
+                                             </tr>
+                                         </thead>
+                                         <tbody className="divide-y divide-black/10">
+                                             {page.items.map((item, i) => {
+                                                 const cols = displayProposal?.tableColumns || defaultColumns;
+                                                 return (
+                                                     <tr key={i} className="hover:bg-gray-50">
+                                                         {cols.map((col, cIdx) => {
+                                                             const isLast = cIdx === cols.length - 1;
+                                                             const tdClass = cn(
+                                                                 "p-4",
+                                                                 !isLast && "border-r border-black/10"
+                                                             );
+                                                             if (col.key === 'description') {
+                                                                 return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                             }
+                                                             if (col.key === 'qty') {
+                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
+                                                             }
+                                                             if (col.key === 'price') {
+                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
+                                                             }
+                                                             return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                         })}
+                                                     </tr>
+                                                 );
+                                             })}
+                                         </tbody>
+                                     </table>
+                                 </div>
+                             )}
+                             {page.type === 'custom' && (
+                                 <div className="space-y-8 py-8 h-full flex flex-col justify-start">
+                                     <div className="mb-10 space-y-3">
+                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                             {displayProposal.campaignName || "Proposal Plan"}.
+                                         </h3>
+                                         <div className="w-20 h-1.5 bg-neon-green" />
+                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">{page.title || "Custom Page"}</p>
+                                     </div>
+                                     <div className="flex-1">
+                                         {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                     </div>
+                                 </div>
+                             )}
+                             {page.type === 'commercials' && (
+                                  <div className="space-y-10 py-6 h-full flex flex-col justify-between">
+                                      <div>
+                                          <div className="mb-10 space-y-3">
+                                              <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                  {displayProposal.campaignName || "Proposal Plan"}.
+                                              </h3>
+                                              <div className="w-20 h-1.5 bg-neon-green" />
+                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Summary & Terms</p>
+                                          </div>                                   
                                          <div className="grid grid-cols-2 gap-12 items-start">
                                              <div className="space-y-8">
                                                  {displayProposal.terms && (
