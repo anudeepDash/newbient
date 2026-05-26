@@ -3,7 +3,7 @@ import {
     Bold, Italic, List, ListOrdered, Undo2, Redo2, 
     Type, AlignLeft, AlignCenter, AlignRight, 
     Link as LinkIcon, Image as ImageIcon, Sparkles,
-    Loader2
+    Loader2, Heading1, Heading2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useEditorHistory } from '../../hooks/useEditorHistory';
@@ -175,6 +175,26 @@ const StudioRichEditor = ({
                     </div>
                     
                     <div className="flex items-center gap-1 px-2 border-r border-white/10">
+                        <ToolbarButton icon={Heading1} onClick={() => {
+                            const selection = window.getSelection();
+                            if (selection.rangeCount > 0) {
+                                const parent = selection.getRangeAt(0).startContainer.parentNode;
+                                const isH1 = parent.closest('h1');
+                                execCommand('formatBlock', isH1 ? 'p' : 'h1');
+                            } else {
+                                execCommand('formatBlock', 'h1');
+                            }
+                        }} title="Heading 1 (Large Underline Heading)" />
+                        <ToolbarButton icon={Heading2} onClick={() => {
+                            const selection = window.getSelection();
+                            if (selection.rangeCount > 0) {
+                                const parent = selection.getRangeAt(0).startContainer.parentNode;
+                                const isH2 = parent.closest('h2');
+                                execCommand('formatBlock', isH2 ? 'p' : 'h2');
+                            } else {
+                                execCommand('formatBlock', 'h2');
+                            }
+                        }} title="Heading 2 (Medium Underline Heading)" />
                         <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} title="Bold" />
                         <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} title="Italic" />
                     </div>
