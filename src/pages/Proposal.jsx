@@ -516,13 +516,27 @@ const Proposal = () => {
 
     const getPaginatedPages = () => {
         const pages = [];
+
+        const insertCustomPagesFor = (placement) => {
+            if (!isHidden('customPages') && displayProposal.customPages && displayProposal.customPages.length > 0) {
+                displayProposal.customPages.forEach((cp, cpIdx) => {
+                    const target = cp.insertAfter || 'default';
+                    if (target === placement) {
+                        pages.push({ type: 'custom', items: [], title: cp.title, content: cp.content, pageIndex: cpIdx });
+                    }
+                });
+            }
+        };
+
         if (!isHidden('cover')) {
             pages.push({ type: 'cover', items: [] });
         }
+        insertCustomPagesFor('cover');
         
         if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             pages.push({ type: 'strategy', items: [] });
         }
+        insertCustomPagesFor('strategy');
         
         if (!isHidden('scopeOfWork') && displayProposal.scopeOfWork) {
             const estimateBlockHeight = (rawText) => {
@@ -654,22 +668,21 @@ const Proposal = () => {
                 }
             }
         }
+        insertCustomPagesFor('scope');
 
         if (!isHidden('proposal')) {
             pages.push({ type: 'proposal', items: [] });
         }
+        insertCustomPagesFor('proposal');
         
         if (!isHidden('inventory')) {
             let itemsRemaining = [...items];
             if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
             else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
         }
+        insertCustomPagesFor('table');
         
-        if (!isHidden('customPages') && displayProposal.customPages && displayProposal.customPages.length > 0) {
-            displayProposal.customPages.forEach((cp, cpIdx) => {
-                pages.push({ type: 'custom', items: [], title: cp.title, content: cp.content, pageIndex: cpIdx });
-            });
-        }
+        insertCustomPagesFor('default');
         
         if (!isHidden('commercials')) {
             pages.push({ type: 'commercials', items: [] });
