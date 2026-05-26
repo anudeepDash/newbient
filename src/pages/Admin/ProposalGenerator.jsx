@@ -14,6 +14,8 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import Target from 'lucide-react/dist/esm/icons/target';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Zap from 'lucide-react/dist/esm/icons/zap';
@@ -289,6 +291,7 @@ const ProposalGenerator = () => {
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
     const [bulkRawText, setBulkRawText] = useState('');
+    const [bulkCampaignName, setBulkCampaignName] = useState('PROPOSAL PLAN');
 
     const [isBulkMode, setIsBulkMode] = useState(false);
     const [bulkProposals, setBulkProposals] = useState([]);
@@ -514,6 +517,20 @@ const ProposalGenerator = () => {
             const updated = current.includes(field) ? current.filter(f => f !== field) : [...current, field];
             return { ...prev, hiddenFields: updated };
         });
+    };
+
+    const moveCustomPage = (index, direction) => {
+        const pages = [...(formData.customPages || [])];
+        if (direction === 'up' && index > 0) {
+            const temp = pages[index];
+            pages[index] = pages[index - 1];
+            pages[index - 1] = temp;
+        } else if (direction === 'down' && index < pages.length - 1) {
+            const temp = pages[index];
+            pages[index] = pages[index + 1];
+            pages[index + 1] = temp;
+        }
+        setFormData(prev => ({ ...prev, customPages: pages }));
     };
 
     const isHidden = (f) => (formData.hiddenFields || []).includes(f);
@@ -827,7 +844,7 @@ const ProposalGenerator = () => {
             const finalProposal = {
                 clientName: data.clientName || 'Master Client',
                 clientAddress: data.clientAddress || 'Corporate Headquarters',
-                campaignName: data.campaignName || 'Strategic Initiative',
+                campaignName: bulkCampaignName.trim() || data.campaignName || 'PROPOSAL PLAN',
                 campaignDuration: data.campaignDuration || 'TBD',
                 proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
                 coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
@@ -1378,20 +1395,33 @@ const ProposalGenerator = () => {
                                                         </p>
                                                     </div>
 
-                                                    <div className="space-y-3 relative z-10">
-                                                        <div className="flex justify-between items-center px-1">
-                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
-                                                            <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">
-                                                                {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
-                                                            </span>
+                                                    <div className="space-y-4 relative z-10">
+                                                        <div className="flex flex-col gap-1.5 px-1">
+                                                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">First Page Title (Default: PROPOSAL PLAN)</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={bulkCampaignName}
+                                                                onChange={e => setBulkCampaignName(e.target.value)}
+                                                                placeholder="PROPOSAL PLAN"
+                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl px-4 h-12 text-xs font-bold text-white outline-none placeholder:text-gray-700 transition-all shadow-inner"
+                                                            />
                                                         </div>
-                                                        <textarea 
-                                                            value={bulkRawText}
-                                                            onChange={e => setBulkRawText(e.target.value)}
-                                                            rows={5}
-                                                            placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
-                                                            className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
-                                                        />
+
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between items-center px-1">
+                                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
+                                                                <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">
+                                                                    {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
+                                                                </span>
+                                                            </div>
+                                                            <textarea 
+                                                                value={bulkRawText}
+                                                                onChange={e => setBulkRawText(e.target.value)}
+                                                                rows={5}
+                                                                placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
+                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 relative z-10">
@@ -2149,9 +2179,9 @@ const ProposalGenerator = () => {
                                                  </div>
                                              </div>
 
-                                             <div className="flex flex-col gap-8">
-                                                  {/* Horizontal Toggles / Summary Cards */}
-                                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 font-sans">
+                                             <div className="flex flex-col gap-6">
+                                                  {/* Row 1: Taxation & Advance side by side */}
+                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
                                                        {/* Taxation (GST) Card */}
                                                        <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
                                                            {/* Glow effect on hover */}
@@ -2295,140 +2325,201 @@ const ProposalGenerator = () => {
                                                                </div>
                                                            </div>
                                                        </div>
-
-                                                       {/* Live Valuation Summary */}
-                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 flex flex-col gap-3 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
-                                                           {/* Glow */}
-                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-
-                                                           {/* Header */}
-                                                           <div className="flex items-center gap-2 z-10">
-                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all shrink-0">
-                                                                   <CreditCard size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
-                                                               </div>
-                                                               <div className="min-w-0">
-                                                                   <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Summary</p>
-                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Valuation</p>
-                                                               </div>
-                                                           </div>
-
-                                                           {/* Breakdown panel */}
-                                                           <div className="z-10 w-full bg-black/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-2 min-w-0 overflow-hidden">
-
-                                                               {/* Calc from — only shows when 2+ numeric/amount columns */}
-                                                               {(() => {
-                                                                   const allCols = formData.tableColumns || defaultColumns;
-                                                                   const calcCols = allCols.filter(c => c.key !== 'description' && (c.type === 'amount' || c.type === 'number' || c.key === 'price'));
-                                                                   if (calcCols.length <= 1) return null;
-                                                                   return (
-                                                                       <div className="flex items-start gap-2 pb-2 border-b border-white/5 min-w-0">
-                                                                           <span className="text-[8px] font-black text-gray-600 uppercase tracking-wider shrink-0 pt-0.5">Calc</span>
-                                                                           <div className="flex items-center gap-1 flex-wrap min-w-0">
-                                                                               {calcCols.map(c => (
-                                                                                   <button
-                                                                                       key={c.key}
-                                                                                       type="button"
-                                                                                       onClick={() => setFormData({ ...formData, totalSourceColumn: c.key })}
-                                                                                       className={cn(
-                                                                                           "px-2 py-0.5 rounded-full text-[8px] font-black transition-all whitespace-nowrap",
-                                                                                           totalSrcCol === c.key
-                                                                                               ? 'bg-neon-green text-black shadow-[0_0_6px_rgba(57,255,20,0.4)]'
-                                                                                               : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white border border-white/10'
-                                                                                       )}
-                                                                                   >
-                                                                                       {c.label}
-                                                                                   </button>
-                                                                               ))}
-                                                                           </div>
-                                                                       </div>
-                                                                   );
-                                                               })()}
-
-                                                               {/* Subtotal */}
-                                                               <div className="flex justify-between items-center gap-2 min-w-0">
-                                                                   <span className="text-[9px] font-bold text-gray-500 shrink-0">Subtotal</span>
-                                                                   <span className="font-mono text-[10px] font-bold text-white truncate text-right">₹{subtotal.toLocaleString()}</span>
-                                                               </div>
-
-                                                               {/* GST — label notes when it's calculated on override */}
-                                                               {formData.showGst && (
-                                                                   <div className="flex justify-between items-center gap-2 min-w-0">
-                                                                       <span className="text-[9px] font-bold text-gray-500 shrink-0">
-                                                                           GST ({formData.gstRate}%)
-                                                                           {hasOverride && <span className="text-amber-400/70 ml-1 font-normal">›override</span>}
-                                                                       </span>
-                                                                       <span className="font-mono text-[10px] font-bold text-white truncate text-right">₹{gstAmount.toLocaleString()}</span>
-                                                                   </div>
-                                                               )}
-
-                                                               {/* Total section */}
-                                                               <div className="border-t border-white/10 pt-2 mt-0.5 flex flex-col gap-1.5 min-w-0">
-
-                                                                   {/* Override subtotal input row */}
-                                                                   <div className="flex items-center justify-between gap-2 min-w-0">
-                                                                       <div className="flex items-center gap-1 shrink-0">
-                                                                           <span className="text-[9px] font-black text-neon-green uppercase tracking-wider">
-                                                                               {hasOverride ? 'Override' : 'Total'}
-                                                                           </span>
-                                                                           <button
-                                                                               type="button"
-                                                                               title={hasOverride ? 'Clear — revert to auto-calc' : 'Override subtotal manually'}
-                                                                               onClick={() => setFormData({
-                                                                                   ...formData,
-                                                                                   totalOverride: hasOverride ? null : subtotal
-                                                                               })}
-                                                                               className={cn(
-                                                                                   "p-0.5 rounded transition-all",
-                                                                                   hasOverride ? 'text-amber-400 hover:text-red-400' : 'text-gray-600 hover:text-neon-green'
-                                                                               )}
-                                                                           >
-                                                                               {hasOverride ? <RotateCcw size={8} /> : <Pencil size={8} />}
-                                                                           </button>
-                                                                       </div>
-
-                                                                       {hasOverride ? (
-                                                                           <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
-                                                                               <span className="text-[9px] font-black text-amber-400 font-mono shrink-0">₹</span>
-                                                                               <input
-                                                                                   type="number"
-                                                                                   value={formData.totalOverride}
-                                                                                   onChange={e => setFormData({ ...formData, totalOverride: e.target.value === '' ? null : e.target.value })}
-                                                                                   className="bg-transparent border-b border-amber-400/60 focus:border-amber-400 text-xs font-black text-amber-300 font-mono outline-none text-right min-w-0 flex-1"
-                                                                                   style={{ maxWidth: '80px' }}
-                                                                                   placeholder={subtotal.toString()}
-                                                                                   min="0"
-                                                                                   step="100"
-                                                                               />
-                                                                               <span className="text-[8px] text-gray-600 shrink-0">base</span>
-                                                                           </div>
-                                                                       ) : (
-                                                                           <span className="font-mono text-xs font-black text-neon-green drop-shadow-[0_0_8px_rgba(57,255,20,0.3)] truncate">
-                                                                               ₹{totalAmount.toLocaleString()}
-                                                                           </span>
-                                                                       )}
-                                                                   </div>
-
-                                                                   {/* Final total (override base + GST) */}
-                                                                   {hasOverride && (
-                                                                       <div className="flex items-center justify-between gap-2 bg-neon-green/5 border border-neon-green/10 rounded-xl px-2.5 py-1.5 min-w-0">
-                                                                           <span className="text-[8px] font-black text-neon-green uppercase tracking-wider shrink-0">Final Total</span>
-                                                                           <span className="font-mono text-[11px] font-black text-neon-green drop-shadow-[0_0_6px_rgba(57,255,20,0.4)] truncate">
-                                                                               ₹{totalAmount.toLocaleString()}
-                                                                           </span>
-                                                                       </div>
-                                                                   )}
-
-                                                                   {/* Auto-calc reference when overridden */}
-                                                                   {hasOverride && (
-                                                                       <div className="flex items-center justify-between gap-2 min-w-0">
-                                                                           <span className="text-[8px] text-gray-600">auto-calc</span>
-                                                                           <span className="text-[8px] text-gray-600 font-mono line-through truncate">₹{computedTotal.toLocaleString()}</span>
-                                                                       </div>
-                                                                   )}
-                                                               </div>
-                                                           </div>
-                                                       </div>
                                                   </div>
+
+                                                  {/* Row 2: Live Valuation Summary */}
+                                                  <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-6 md:p-8 flex flex-col gap-6 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
+                                                            {/* Glow */}
+                                                            <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+
+                                                            {/* Header */}
+                                                            <div className="flex items-center gap-2.5 z-10 border-b border-white/5 pb-4">
+                                                                <div className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all shrink-0">
+                                                                    <CreditCard size={18} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="text-xs font-black text-neon-green uppercase tracking-widest leading-none">Summary</p>
+                                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Valuation Matrix</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Flat 12-column Layout */}
+                                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-6 items-start z-10 w-full">
+                                                                
+                                                                {/* Column 1: Details */}
+                                                                <div className="lg:col-span-4 col-span-12 flex flex-col gap-4 min-w-0 h-full justify-between">
+                                                                    <div className="space-y-4">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">01 / Ledger Details</span>
+                                                                            <span className="text-[8px] text-gray-500 uppercase mt-0.5">Base & GST calculations</span>
+                                                                        </div>
+                                                                        
+                                                                        <div className="space-y-3">
+                                                                            {/* Subtotal */}
+                                                                            <div className="flex justify-between items-baseline py-2.5 border-b border-white/5">
+                                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Subtotal</span>
+                                                                                <span className="font-mono text-sm font-black text-white">₹{subtotal.toLocaleString()}</span>
+                                                                            </div>
+
+                                                                            {/* GST */}
+                                                                            {formData.showGst ? (
+                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-white/5">
+                                                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                                                        GST ({formData.gstRate}%)
+                                                                                        {hasOverride && <span className="text-amber-400 text-[8px] font-bold uppercase tracking-wider">› override</span>}
+                                                                                    </span>
+                                                                                    <span className="font-mono text-sm font-black text-white">₹{gstAmount.toLocaleString()}</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex justify-between items-baseline py-2.5 border-b border-white/5 opacity-40">
+                                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">GST (Exempt)</span>
+                                                                                    <span className="font-mono text-sm font-black text-gray-500">₹0</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-[8px] text-gray-600 font-mono uppercase tracking-widest mt-2">
+                                                                        ID: {formData.campaignNumber || 'DRAFT'}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Column 2: Estimate Display */}
+                                                                <div className="lg:col-span-5 col-span-12 flex flex-col gap-4 min-w-0">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">02 / Estimate Total</span>
+                                                                        <span className="text-[8px] text-gray-500 uppercase mt-0.5">Final payable amount</span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="relative overflow-hidden bg-black/60 border border-white/10 hover:border-neon-green/30 rounded-2xl px-2.5 py-4 sm:px-4 sm:py-5 flex flex-col justify-between min-h-[120px] transition-all duration-300 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group/estimate">
+                                                                        <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.015)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
+                                                                        
+                                                                        <div className="flex justify-between items-center z-10">
+                                                                            <span className="text-[8px] font-black text-neon-green uppercase tracking-widest">
+                                                                                {hasOverride ? 'Override Total' : 'Estimate (Incl. Tax)'}
+                                                                            </span>
+                                                                            {hasOverride && (
+                                                                                <span className="text-[7px] font-black text-amber-400 uppercase bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md">
+                                                                                    Manual
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="mt-2 z-10">
+                                                                            {(() => {
+                                                                                const totalStr = `₹${totalAmount.toLocaleString()}`;
+                                                                                const getFontSize = (str) => {
+                                                                                    const len = str.length;
+                                                                                    if (len >= 12) return "text-sm sm:text-base lg:text-sm xl:text-lg";
+                                                                                    if (len >= 10) return "text-base sm:text-lg lg:text-base xl:text-xl";
+                                                                                    if (len >= 8) return "text-lg sm:text-xl lg:text-lg xl:text-2xl";
+                                                                                    return "text-xl sm:text-2xl lg:text-xl xl:text-3xl";
+                                                                                };
+                                                                                return (
+                                                                                    <span className={cn(
+                                                                                        "font-mono font-black text-neon-green drop-shadow-[0_0_15px_#39ff14] select-all whitespace-nowrap block tracking-tighter",
+                                                                                        getFontSize(totalStr)
+                                                                                    )}>
+                                                                                        {totalStr}
+                                                                                    </span>
+                                                                                );
+                                                                            })()}
+                                                                        </div>
+
+                                                                        {hasOverride && (
+                                                                            <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-center text-[8px] text-gray-500 z-10 uppercase tracking-wider">
+                                                                                <span>Auto-Calc</span>
+                                                                                <span className="font-mono line-through">₹{computedTotal.toLocaleString()}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Column 3: Parameters */}
+                                                                <div className="lg:col-span-3 col-span-12 flex flex-col gap-5 min-w-0">
+                                                                    
+                                                                    {/* Subtotal Source */}
+                                                                    {(() => {
+                                                                        const allCols = formData.tableColumns || defaultColumns;
+                                                                        const calcCols = allCols.filter(c => c.key !== 'description' && (c.type === 'amount' || c.type === 'number' || c.key === 'price'));
+                                                                        return (
+                                                                            <div className="space-y-2">
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">03 / Source Column</span>
+                                                                                    <span className="text-[8px] text-gray-500 uppercase mt-0.5">Summing source for subtotal</span>
+                                                                                </div>
+                                                                                <div className="flex flex-wrap gap-1.5">
+                                                                                    {calcCols.map(c => (
+                                                                                        <button
+                                                                                            key={c.key}
+                                                                                            type="button"
+                                                                                            onClick={() => setFormData({ ...formData, totalSourceColumn: c.key })}
+                                                                                            className={cn(
+                                                                                                "px-2.5 py-1 rounded-xl text-[8px] font-black transition-all border whitespace-nowrap uppercase tracking-wider",
+                                                                                                totalSrcCol === c.key
+                                                                                                    ? 'bg-neon-green text-black border-neon-green shadow-[0_0_8px_rgba(57,255,20,0.3)]'
+                                                                                                    : 'bg-white/5 border-white/5 text-gray-400 hover:text-white'
+                                                                                            )}
+                                                                                        >
+                                                                                            {c.label}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+
+                                                                    {/* Override subtotal */}
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[9px] font-black text-neon-green/60 uppercase tracking-widest">Subtotal Override</span>
+                                                                                <span className="text-[8px] text-gray-500 uppercase mt-0.5">Manual subtotal control</span>
+                                                                            </div>
+                                                                            
+                                                                            {hasOverride && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setFormData({ ...formData, totalOverride: null })}
+                                                                                    className="flex items-center gap-1 text-[8px] font-black text-red-400 hover:text-red-300 uppercase tracking-wider"
+                                                                                >
+                                                                                    <RotateCcw size={8} />
+                                                                                    <span>Reset</span>
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {hasOverride ? (
+                                                                            <div className="space-y-1.5">
+                                                                                <div className="flex items-center gap-2 bg-amber-400/5 border border-amber-400/20 rounded-xl px-3 py-1.5 focus-within:border-amber-400/40 transition-all">
+                                                                                    <span className="text-xs font-black text-amber-400 font-mono">₹</span>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        value={formData.totalOverride}
+                                                                                        onChange={e => setFormData({ ...formData, totalOverride: e.target.value === '' ? null : e.target.value })}
+                                                                                        className="bg-transparent text-xs font-black text-amber-300 font-mono outline-none w-full min-w-0"
+                                                                                        placeholder={subtotal.toString()}
+                                                                                        min="0"
+                                                                                        step="100"
+                                                                                    />
+                                                                                </div>
+                                                                                <p className="text-[7px] font-bold text-amber-400/80 uppercase tracking-wider leading-tight">
+                                                                                    ⚠️ GST updates on override base.
+                                                                                </p>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setFormData({ ...formData, totalOverride: subtotal })}
+                                                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-white/5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-[8px] font-black uppercase rounded-xl transition-all tracking-wider"
+                                                                            >
+                                                                                <Pencil size={8} className="text-gray-500" />
+                                                                                <span>Activate Override</span>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
                                                   {/* Full Width Editor */}
                                                  <div className="space-y-4 relative group/editor group/refine w-full">
@@ -2661,16 +2752,42 @@ const ProposalGenerator = () => {
                                                         <div key={cp.id} className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 relative group">
                                                             <div className="flex items-center justify-between">
                                                                 <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">Custom Page {String(idx + 1).padStart(2, '0')}</span>
-                                                                <button 
-                                                                    disabled={isHidden('customPages')}
-                                                                    onClick={() => {
-                                                                        const updated = (formData.customPages || []).filter(p => p.id !== cp.id);
-                                                                        setFormData({ ...formData, customPages: updated });
-                                                                    }}
-                                                                    className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-xl"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {/* Move Up */}
+                                                                    <button 
+                                                                        type="button" 
+                                                                        disabled={isHidden('customPages') || idx === 0}
+                                                                        onClick={() => moveCustomPage(idx, 'up')}
+                                                                        className="p-2 text-gray-500 hover:text-neon-green hover:bg-neon-green/5 transition-all rounded-xl disabled:opacity-20 disabled:hover:bg-transparent"
+                                                                        title="Move Up"
+                                                                    >
+                                                                        <ChevronUp size={16} />
+                                                                    </button>
+                                                                    
+                                                                    {/* Move Down */}
+                                                                    <button 
+                                                                        type="button" 
+                                                                        disabled={isHidden('customPages') || idx === (formData.customPages || []).length - 1}
+                                                                        onClick={() => moveCustomPage(idx, 'down')}
+                                                                        className="p-2 text-gray-500 hover:text-neon-green hover:bg-neon-green/5 transition-all rounded-xl disabled:opacity-20 disabled:hover:bg-transparent"
+                                                                        title="Move Down"
+                                                                    >
+                                                                        <ChevronDown size={16} />
+                                                                    </button>
+
+                                                                    {/* Delete */}
+                                                                    <button 
+                                                                        disabled={isHidden('customPages')}
+                                                                        onClick={() => {
+                                                                            const updated = (formData.customPages || []).filter(p => p.id !== cp.id);
+                                                                            setFormData({ ...formData, customPages: updated });
+                                                                        }}
+                                                                        className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-xl"
+                                                                        title="Delete Page"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                             <div className="grid grid-cols-1 gap-6">
                                                                 <div className="space-y-2">
@@ -2819,7 +2936,7 @@ const ProposalGenerator = () => {
                                                     </div>
                                                     {!isHidden('coverDescription') && (
                                                         <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
-                                                            {renderContent(formData.coverDescription || 'Cover description pending...')}
+                                            {renderContent(formData.coverDescription || 'Cover description pending...')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -2828,8 +2945,12 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
                                             <div className="space-y-12 py-10 px-4">
-                                                <div className="border-l-4 border-black pl-8">
-                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3>
+                                                <div className="mb-10 space-y-3">
+                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                        {formData.campaignName || "Proposal Plan"}.
+                                                    </h3>
+                                                    <div className="w-20 h-1.5 bg-neon-green" />
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Architecture</p>
                                                 </div>
                                                 {!isHidden('overview') && (
                                                     <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">
@@ -2849,43 +2970,53 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'scope' && (
                                             <div className="h-full flex flex-col py-10 px-4">
-                                                {!formData.isBulkGenerated && (
-                                                    <div className="mb-16 border-l-4 border-black pl-8">
-                                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Scope of Work.</h3>
-                                                    </div>
-                                                )}
-                                                <div className="flex-1">
-                                                    <div className="pl-0">
-                                                        {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                                <div className="mb-10 space-y-3">
+                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                        {formData.campaignName || "Proposal Plan"}.
+                                                    </h3>
+                                                    <div className="w-20 h-1.5 bg-neon-green" />
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                        {formData.isBulkGenerated ? "EXECUTIVE SUMMARY" : "SCOPE OF WORK"}
+                                                    </p>
+                                                </div>
+                                                <div className="flex-1 flex flex-col">
+                                                    <div className="relative">
+                                                        {!formData.isBulkGenerated && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-neon-green" />}
+                                                        <div className={formData.isBulkGenerated ? "pl-0" : "pl-10"}>
+                                                            {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
                                             <div className="space-y-12 py-10 px-4">
-                                                <div className="mb-16 border-l-4 border-black pl-8">
-                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Deliverables.</h3>
+                                                <div className="mb-10 space-y-3">
+                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                        {formData.campaignName || "Proposal Plan"}.
+                                                    </h3>
+                                                    <div className="w-20 h-1.5 bg-neon-green" />
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Deliverables</p>
                                                 </div>
                                                 
                                                 {!isHidden('deliverables') && (
                                                     <div className="space-y-6">
-                                                        <table className="w-full text-left">
+                                                        <table className="w-full text-left border-collapse border border-black">
                                                             <thead>
-                                                                <tr className="border-b-4 border-black text-[10px] font-black uppercase text-black tracking-[0.3em]">
-                                                                    <th className="py-6 pr-4">Specification</th>
-                                                                    <th className="py-6 px-4 text-center w-32">Volume</th>
-                                                                    <th className="py-6 pl-4 text-right w-40">Timeline</th>
+                                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                    <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                                    <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                                    <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                                    <th className="p-4 text-right w-40">Timeline</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody className="divide-y-2 divide-gray-100">
+                                                            <tbody className="divide-y divide-black/10">
                                                                 {formData.deliverables.filter(d => d.item).map((d, i) => (
-                                                                    <tr key={d.id}>
-                                                                        <td className="py-8 pr-4">
-                                                                            <p className="text-[15px] font-black text-black mb-1 uppercase tracking-tight">{d.item}</p>
-                                                                            <p className="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Spec ID: {String(i+1).padStart(3, '0')}</p>
-                                                                        </td>
-                                                                        <td className="py-8 px-4 text-center text-[14px] font-black text-gray-500">{d.qty || '—'}</td>
-                                                                        <td className="py-8 pl-4 text-right text-[11px] font-black text-black uppercase tracking-widest bg-zinc-50/50">{d.timeline || '—'}</td>
+                                                                    <tr key={d.id} className="hover:bg-gray-50">
+                                                                        <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">{String(i + 1).padStart(2, '0')}</td>
+                                                                        <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                                        <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
+                                                                        <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -2895,7 +3026,7 @@ const ProposalGenerator = () => {
 
                                                 {!isHidden('clientRequirements') && (
                                                     <div className="pt-8 border-t border-gray-100">
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Prerequisites</p>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                         <div className="grid grid-cols-2 gap-4">
                                                             {formData.clientRequirements.filter(r => r.description).map((r, i) => (
                                                                 <div key={r.id} className="flex items-start gap-3 p-4 bg-zinc-50 rounded-lg">
@@ -2910,21 +3041,24 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'table' && (
                                             <div className="space-y-12 py-6">
-                                                <div className="mb-16 border-l-4 border-black pl-8">
-                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
+                                                <div className="mb-10 space-y-3">
+                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                        {formData.campaignName || "Proposal Plan"}.
+                                                    </h3>
+                                                    <div className="w-20 h-1.5 bg-neon-green" />
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Commercials</p>
                                                 </div>
-                                                <table className="w-full text-left">
+                                                <table className="w-full text-left border-collapse border border-black">
                                                     <thead>
-                                                        <tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest">
-                                                            {(formData.tableColumns || defaultColumns).map((col) => (
+                                                        <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                            {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => (
                                                                 <th 
                                                                     key={col.key} 
                                                                     className={cn(
-                                                                        "py-4",
-                                                                        col.key === 'description' && "pr-4",
-                                                                        col.key === 'qty' && "px-4 text-center w-24",
-                                                                        col.key === 'price' && "pl-4 text-right w-48",
-                                                                        !['description', 'qty', 'price'].includes(col.key) && "px-4"
+                                                                        "p-4",
+                                                                        cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                        col.key === 'qty' && "text-center w-24",
+                                                                        col.key === 'price' && "text-right w-48"
                                                                     )}
                                                                 >
                                                                     {col.label}
@@ -2932,22 +3066,27 @@ const ProposalGenerator = () => {
                                                             ))}
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-gray-100">
+                                                    <tbody className="divide-y divide-black/10">
                                                         {paginatedPages[currentPreviewPage].items.map((item, i) => {
                                                             const cols = formData.tableColumns || defaultColumns;
                                                             return (
-                                                                <tr key={i}>
-                                                                    {cols.map(col => {
+                                                                <tr key={i} className="hover:bg-gray-50">
+                                                                    {cols.map((col, cIdx) => {
+                                                                        const isLast = cIdx === cols.length - 1;
+                                                                        const tdClass = cn(
+                                                                            "p-4",
+                                                                            !isLast && "border-r border-black/10"
+                                                                        );
                                                                         if (col.key === 'description') {
-                                                                            return <td key={col.key} className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td>;
+                                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description}</td>;
                                                                         }
                                                                         if (col.key === 'qty') {
-                                                                            return <td key={col.key} className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td>;
+                                                                            return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
                                                                         }
                                                                         if (col.key === 'price') {
-                                                                            return <td key={col.key} className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td>;
+                                                                            return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
                                                                         }
-                                                                        return <td key={col.key} className="py-6 px-4 text-[12px] font-medium text-gray-700">{item[col.key] || ''}</td>;
+                                                                        return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-700")}>{item[col.key] || ''}</td>;
                                                                     })}
                                                                 </tr>
                                                             );
@@ -2958,12 +3097,13 @@ const ProposalGenerator = () => {
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'custom' && (
                                             <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                                {paginatedPages[currentPreviewPage]?.title && (
-                                                    <div className="space-y-4">
-                                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{paginatedPages[currentPreviewPage].title}</h3>
-                                                        <div className="w-16 h-1 bg-black" />
-                                                    </div>
-                                                )}
+                                                <div className="mb-10 space-y-3">
+                                                    <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                        {formData.campaignName || "Proposal Plan"}.
+                                                    </h3>
+                                                    <div className="w-20 h-1.5 bg-neon-green" />
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">{paginatedPages[currentPreviewPage]?.title || "Custom Page"}</p>
+                                                </div>
                                                 <div className="flex-1">
                                                     {renderContent(paginatedPages[currentPreviewPage]?.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                                 </div>
@@ -2972,9 +3112,12 @@ const ProposalGenerator = () => {
                                         {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
                                             <div className="space-y-10 py-6 h-full flex flex-col justify-between">
                                                 <div>
-                                                    <div className="flex items-center gap-4 mb-10">
-                                                        <div className="w-1.5 h-8 bg-black" />
-                                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {formData.campaignName || "Proposal Plan"}.
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Summary & Terms</p>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-12 items-start">
                                                         <div className="space-y-8">
@@ -3158,23 +3301,22 @@ const ProposalGenerator = () => {
                                     </div>
                                     {(formData.deliverables?.length > 0 && formData.deliverables.some(d => d.item)) && !isHidden('deliverables') && (
                                         <div className="space-y-6">
-                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Deliverables</p>
-                                            <table className="w-full text-left border-collapse border-2 border-black">
+                                            <table className="w-full text-left border-collapse border border-black">
                                                 <thead>
                                                     <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                        <th className="p-5 w-10">#</th>
-                                                        <th className="p-5">Deliverable</th>
-                                                        <th className="p-5 text-center w-28 border-x border-white/20">Qty / Unit</th>
-                                                        <th className="p-5 text-right w-40">Timeline</th>
+                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                        <th className="p-4 text-right w-40">Timeline</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-200">
+                                                <tbody className="divide-y divide-black/10">
                                                     {formData.deliverables.filter(d => d.item).map((d, i) => (
                                                         <tr key={d.id} className="hover:bg-gray-50">
-                                                            <td className="p-5 text-[11px] font-black text-gray-400">{String(i + 1).padStart(2, '0')}</td>
-                                                            <td className="p-5 text-[12px] font-bold text-black">{d.item}</td>
-                                                            <td className="p-5 text-center text-[12px] font-bold text-gray-600 border-x border-gray-100">{d.qty || '—'}</td>
-                                                            <td className="p-5 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                            <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">{String(i + 1).padStart(2, '0')}</td>
+                                                            <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                            <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
+                                                            <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -3183,7 +3325,7 @@ const ProposalGenerator = () => {
                                     )}
                                     {(formData.clientRequirements?.length > 0 && formData.clientRequirements.some(r => r.description)) && (
                                         <div className="space-y-6 pt-4">
-                                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.4em]">Requirements From Client</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                             <div className="p-8 border-2 border-gray-200 space-y-0">
                                                 {formData.clientRequirements.filter(r => r.description).map((r, i) => (
                                                     <div key={r.id} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
@@ -3198,20 +3340,24 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'table' && (
                                 <div className="space-y-12 py-8">
-                                    <div className="mb-16 border-l-4 border-black pl-8">
-                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
+                                    <div className="mb-10 space-y-3">
+                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                            {formData.campaignName || "Proposal Plan"}.
+                                        </h3>
+                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Commercials</p>
                                     </div>
-                                    <table className="w-full text-left border-collapse border-2 border-black">
+                                    <table className="w-full text-left border-collapse border border-black">
                                         <thead>
-                                            <tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black">
-                                                {(formData.tableColumns || defaultColumns).map(col => (
+                                            <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => (
                                                     <th 
                                                         key={col.key} 
                                                         className={cn(
-                                                            "p-6",
-                                                            col.key === 'qty' && "text-center w-24 border-x border-white/20",
-                                                            col.key === 'price' && "text-right w-48",
-                                                            !['qty', 'price'].includes(col.key) && col.key !== 'description' && "border-x border-white/20"
+                                                            "p-4",
+                                                            cIdx < arr.length - 1 && "border-r border-white/20",
+                                                            col.key === 'qty' && "text-center w-24",
+                                                            col.key === 'price' && "text-right w-48"
                                                         )}
                                                     >
                                                         {col.label}
@@ -3219,22 +3365,27 @@ const ProposalGenerator = () => {
                                                 ))}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-200">
+                                        <tbody className="divide-y divide-black/10">
                                             {page.items.map((item, i) => {
                                                 const cols = formData.tableColumns || defaultColumns;
                                                 return (
                                                     <tr key={i} className="hover:bg-gray-50">
-                                                        {cols.map(col => {
+                                                        {cols.map((col, cIdx) => {
+                                                            const isLast = cIdx === cols.length - 1;
+                                                            const tdClass = cn(
+                                                                "p-4",
+                                                                !isLast && "border-r border-black/10"
+                                                            );
                                                             if (col.key === 'description') {
-                                                                return <td key={col.key} className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td>;
+                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
                                                             }
                                                             if (col.key === 'qty') {
-                                                                 return <td key={col.key} className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td>;
+                                                                 return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
                                                             }
                                                             if (col.key === 'price') {
-                                                                 return <td key={col.key} className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td>;
+                                                                 return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
                                                             }
-                                                            return <td key={col.key} className="p-6 text-[12px] font-bold text-gray-600 border-x border-gray-100">{item[col.key] || ''}</td>;
+                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
                                                         })}
                                                     </tr>
                                                 );
@@ -3245,12 +3396,13 @@ const ProposalGenerator = () => {
                             )}
                             {page.type === 'custom' && (
                                 <div className="space-y-8 py-8 h-full flex flex-col justify-start">
-                                    {page.title && (
-                                        <div className="space-y-4">
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{page.title}</h3>
-                                            <div className="w-16 h-1 bg-black" />
-                                        </div>
-                                    )}
+                                    <div className="mb-10 space-y-3">
+                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                            {formData.campaignName || "Proposal Plan"}.
+                                        </h3>
+                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">{page.title || "Custom Page"}</p>
+                                    </div>
                                     <div className="flex-1">
                                         {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                     </div>
@@ -3259,9 +3411,12 @@ const ProposalGenerator = () => {
                             {page.type === 'commercials' && (
                                  <div className="space-y-10 py-6 h-full flex flex-col justify-between">
                                      <div>
-                                         <div className="flex items-center gap-4 mb-10">
-                                             <div className="w-1.5 h-8 bg-black" />
-                                             <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
+                                         <div className="mb-10 space-y-3">
+                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                 {formData.campaignName || "Proposal Plan"}.
+                                             </h3>
+                                             <div className="w-20 h-1.5 bg-neon-green" />
+                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Summary & Terms</p>
                                          </div>
                                          <div className="grid grid-cols-2 gap-12 items-start">
                                              <div className="space-y-8">
