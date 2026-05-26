@@ -552,12 +552,28 @@ const ProposalGenerator = () => {
 
     const getPaginatedPages = () => {
         const pages = [];
+
+        const insertCustomPagesFor = (placement) => {
+            if (!isHidden('customPages') && formData.customPages && formData.customPages.length > 0) {
+                formData.customPages.forEach((cp, cpIdx) => {
+                    const target = cp.insertAfter || 'default';
+                    if (target === placement) {
+                        pages.push({ type: 'custom', items: [], title: cp.title, content: cp.content, pageIndex: cpIdx });
+                    }
+                });
+            }
+        };
+
         if (!isHidden('cover')) {
             pages.push({ type: 'cover', items: [] });
         }
+        insertCustomPagesFor('cover');
+
         if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
             pages.push({ type: 'strategy', items: [] });
         }
+        insertCustomPagesFor('strategy');
+
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
             const estimateBlockHeight = (rawText) => {
                 const isHtml = rawText.includes('<') && rawText.includes('>');
@@ -688,19 +704,22 @@ const ProposalGenerator = () => {
                 }
             }
         }
+        insertCustomPagesFor('scope');
+
         if (!isHidden('proposal')) {
             pages.push({ type: 'proposal', items: [] });
         }
+        insertCustomPagesFor('proposal');
+
         if (!isHidden('inventory')) {
             let itemsRemaining = [...items];
             if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
             else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
         }
-        if (!isHidden('customPages') && formData.customPages && formData.customPages.length > 0) {
-            formData.customPages.forEach((cp, cpIdx) => {
-                pages.push({ type: 'custom', items: [], title: cp.title, content: cp.content, pageIndex: cpIdx });
-            });
-        }
+        insertCustomPagesFor('table');
+
+        insertCustomPagesFor('default');
+
         if (!isHidden('commercials')) {
             pages.push({ type: 'commercials', items: [] });
         }
@@ -2789,7 +2808,7 @@ const ProposalGenerator = () => {
                                                                     </button>
                                                                 </div>
                                                             </div>
-                                                            <div className="grid grid-cols-1 gap-6">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                 <div className="space-y-2">
                                                                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Page Title</label>
                                                                     <input 
@@ -2804,6 +2823,32 @@ const ProposalGenerator = () => {
                                                                         className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-white outline-none transition-all placeholder:text-gray-800" 
                                                                     />
                                                                 </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Placement / Order</label>
+                                                                    <div className="relative">
+                                                                        <select
+                                                                            disabled={isHidden('customPages')}
+                                                                            value={cp.insertAfter || 'default'}
+                                                                            onChange={e => {
+                                                                                const updated = [...(formData.customPages || [])];
+                                                                                updated[idx] = { ...cp, insertAfter: e.target.value };
+                                                                                setFormData({ ...formData, customPages: updated });
+                                                                            }}
+                                                                            className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-xs font-black px-5 text-white outline-none transition-all appearance-none cursor-pointer"
+                                                                        >
+                                                                            <option value="default" className="bg-zinc-950">Before Commercials (Default)</option>
+                                                                            <option value="cover" className="bg-zinc-950">After Cover Page</option>
+                                                                            <option value="strategy" className="bg-zinc-950">After Strategic Framework</option>
+                                                                            <option value="scope" className="bg-zinc-950">After Project Scope</option>
+                                                                            <option value="proposal" className="bg-zinc-950">After Deliverables</option>
+                                                                            <option value="table" className="bg-zinc-950">After Resource Table</option>
+                                                                        </select>
+                                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                                                            <ChevronDown size={14} />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                                 <div className="relative group/editor group/refine">
                                                                     <StudioRichEditor 
                                                                         label="Page Content"
@@ -2827,7 +2872,6 @@ const ProposalGenerator = () => {
                                                                         <Sparkles size={14} className="animate-pulse" />
                                                                     </button>
                                                                 </div>
-                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
