@@ -81,14 +81,60 @@ const logoOptions = [
     };
 
     const getHtmlBlocks = (html) => {
-        const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
-        const blocks = [];
-        let match;
-        while ((match = regex.exec(html)) !== null) {
-            blocks.push(match[0]);
+        if (!html) return [];
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            let root = doc.body;
+            // Unpack single wrapper div if present (like ProseMirror or class-based editors)
+            if (root.children.length === 1 && root.firstElementChild.tagName.toLowerCase() === 'div') {
+                root = root.firstElementChild;
+            }
+            const blocks = [];
+            Array.from(root.children).forEach(child => {
+                const tagName = child.tagName.toLowerCase();
+                if (tagName === 'ul' || tagName === 'ol') {
+                    const lis = Array.from(child.children);
+                    if (lis.length > 0) {
+                        lis.forEach(li => {
+                            blocks.push(`<${tagName} class="space-y-1">${li.outerHTML}</${tagName}>`);
+                        });
+                    } else {
+                        blocks.push(child.outerHTML);
+                    }
+                } else {
+                    blocks.push(child.outerHTML);
+                }
+            });
+            if (blocks.length === 0) return [html];
+            return blocks;
+        } catch (e) {
+            console.error("DOMParser error, fallback to regex:", e);
+            const regex = /<(p|div|ul|ol|h[1-6])\b[^>]*?>([\s\S]*?)<\/\1>/gi;
+            const blocks = [];
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+                const tag = match[1].toLowerCase();
+                const content = match[2];
+                const fullMatch = match[0];
+                if (tag === 'ul' || tag === 'ol') {
+                    const liRegex = /<li\b[^>]*?>([\s\S]*?)<\/li>/gi;
+                    let liMatch;
+                    let liCount = 0;
+                    while ((liMatch = liRegex.exec(content)) !== null) {
+                        blocks.push(`<${tag} class="space-y-1">${liMatch[0]}</${tag}>`);
+                        liCount++;
+                    }
+                    if (liCount === 0) {
+                        blocks.push(fullMatch);
+                    }
+                } else {
+                    blocks.push(fullMatch);
+                }
+            }
+            if (blocks.length === 0) return [html];
+            return blocks;
         }
-        if (blocks.length === 0) return [html];
-        return blocks;
     };
 
     const processHtmlHeadings = (html) => {
@@ -403,40 +449,86 @@ const AIStudio = () => {
         }
         if (!isHidden('scopeOfWork') && activeProposalData.scopeOfWork) {
             const estimateBlockHeight = (rawText) => {
-                let h = 0;
-                const text = htmlToPlainText(rawText);
-                const rawLines = text.split('\n');
-                const lines = [];
-                rawLines.forEach(rl => {
-                    const parts = rl.split(/\s(?=\d+\.\s)/);
-                    if (parts.length > 1) lines.push(...parts);
-                    else lines.push(rl);
-                });
+                const isHtml = rawText.includes('<') && rawText.includes('>');
+                if (!isHtml) {
+                    let h = 0;
+                    const text = htmlToPlainText(rawText);
+                    const rawLines = text.split('\n');
+                    const lines = [];
+                    rawLines.forEach(rl => {
+                        const parts = rl.split(/\s(?=\d+\.\s)/);
+                        if (parts.length > 1) lines.push(...parts);
+                        else lines.push(rl);
+                    });
 
-                let inList = false;
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) { h += 12; inList = false; continue; }
-                    
-                    if (line.match(/^[-*_]{3,}$/)) { h += 66; inList = false; continue; }
-                    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-                    if (headingMatch) {
-                        inList = false;
-                        h += headingMatch[1].length <= 2 ? 72 : 48;
-                        if (headingMatch[2].length > 40) h += 24; 
-                    } else if (line.match(/^[•\-\*]\s/)) {
-                        h += (Math.ceil((line.length - 2) / 100) * 24);
-                        if (!inList) { h += 24; inList = true; }
-                        else { h += 6; }
-                    } else {
-                        inList = false;
-                        h += (Math.ceil(line.length / 110) * 24) + 16;
+                    let inList = false;
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) { h += 8; inList = false; continue; }
+                        
+                        if (line.match(/^[-*_]{3,}$/)) {
+                            inList = false;
+                            h += 40;
+                            continue;
+                        }
+
+                        const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+                        if (headingMatch) {
+                            inList = false;
+                            h += headingMatch[1].length <= 2 ? 48 : 32;
+                            if (headingMatch[2].length > 40) h += 20; 
+                        } else if (line.match(/^[•\-\*]\s/)) {
+                            h += (Math.ceil((line.length - 2) / 100) * 20);
+                            if (!inList) { h += 16; inList = true; }
+                            else { h += 4; }
+                        } else {
+                            inList = false;
+                            h += (Math.ceil(line.length / 110) * 20) + 8;
+                        }
                     }
+                    return h;
                 }
-                return h;
+
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
+                    const container = doc.body.firstElementChild;
+                    let totalH = 0;
+                    
+                    Array.from(container.children).forEach(child => {
+                        const tag = child.tagName.toLowerCase();
+                        const text = child.textContent || '';
+                        
+                        if (tag.startsWith('h')) {
+                            const level = parseInt(tag.substring(1)) || 2;
+                            totalH += level <= 2 ? 40 : 28;
+                            totalH += (Math.ceil(text.length / 80) * 20);
+                        } else if (tag === 'ul' || tag === 'ol') {
+                            const lis = child.querySelectorAll('li');
+                            if (lis.length > 0) {
+                                lis.forEach(li => {
+                                    const liText = li.textContent || '';
+                                    totalH += (Math.ceil(liText.length / 95) * 20) + 4;
+                                });
+                            } else {
+                                totalH += (Math.ceil(text.length / 95) * 20) + 4;
+                            }
+                        } else {
+                            if (text.trim() === '') {
+                                totalH += 8;
+                            } else {
+                                totalH += (Math.ceil(text.length / 100) * 20) + 12;
+                            }
+                        }
+                    });
+                    return totalH;
+                } catch (e) {
+                    console.error("HTML estimation failed, fallback:", e);
+                    return 200;
+                }
             };
 
-            const MAX_PAGE_HEIGHT = 780;
+            const MAX_PAGE_HEIGHT = 820;
             const totalHeight = estimateBlockHeight(activeProposalData.scopeOfWork);
             
             if (totalHeight <= MAX_PAGE_HEIGHT) {
@@ -491,7 +583,7 @@ const AIStudio = () => {
             if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
             else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
         }
-        if (!isHidden('commercials') && (!isHidden('terms') || !isHidden('paymentDetails'))) {
+        if (!isHidden('commercials')) {
             pages.push({ type: 'commercials', items: [] });
         }
         return pages;
@@ -699,27 +791,27 @@ const AIStudio = () => {
                         clientAddress: data.clientAddress || 'Corporate Headquarters',
                         campaignName: data.campaignName || 'Strategic Initiative',
                         campaignDuration: data.campaignDuration || 'TBD',
-                        proposalNumber: `NBQ-BLK-${Math.floor(1000 + Math.random() * 9000)}`,
+                        proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
                         coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
                         overview: '',
                         primaryGoal: '',
                         deliverables: [],
                         clientRequirements: [],
                         scopeOfWork: data.scopeOfWork && data.scopeOfWork.length > 10 ? data.scopeOfWork : promptText,
-                        terms: '',
-                        paymentDetails: '',
+                        terms: '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+                        paymentDetails: 'Account Name: YOUR NAME\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: yourname@upi',
                         gstRate: 18,
-                        advanceRequested: 0,
-                        showGst: false,
+                        advanceRequested: 50,
+                        showGst: true,
                         showSeal: false,
-                        showSignatures: false,
+                        showSignatures: true,
                         signatureType: 'handwritten',
                         providerSignature: '',
                         clientSignature: '',
                         senderName: 'Authorized Signatory',
                         senderDesignation: 'Director of Operations',
                         status: 'Draft',
-                        hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
+                        hiddenFields: ['strategy', 'proposal', 'inventory'],
                         selectedLogo: 'entertainment',
                         items: [],
                         subtotal: 0,
@@ -984,6 +1076,7 @@ const AIStudio = () => {
     // Signature Modal hooks
     const [isSigModalOpen, setIsSigModalOpen] = useState(false);
     const [sigTarget, setSigTarget] = useState('provider'); // 'provider' | 'client'
+    const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
 
     const handleSigSave = (dataUrl) => {
         if (activeEngine === 'proposal') {
@@ -1750,55 +1843,111 @@ const AIStudio = () => {
                                                         </table>
                                                     </div>
                                                 )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
-                                                    <div className="space-y-12 py-6">
-                                                        <div className="mb-16 border-l-4 border-black pl-8">
-                                                            <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-16 items-stretch">
-                                                            <div className="space-y-8">
-                                                                {activeProposalData.terms && (<div className="space-y-4"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b border-gray-100 pb-2">Conditions</h4><div className="text-[11px] font-medium text-gray-500 leading-relaxed space-y-2">{renderContent(activeProposalData.terms)}</div></div>)}
-                                                                {activeProposalData.paymentDetails && (<div className="pt-8 border-t border-gray-100"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Settlement Details</p><div className="text-[11px] font-mono font-bold text-black whitespace-pre-line bg-zinc-50 p-6 rounded-lg">{activeProposalData.paymentDetails}</div></div>)}
-                                                            </div>
-                                                            <div className="space-y-4">
-                                                                <div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">Subtotal</span><span className="text-lg font-black text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
-                                                                {activeProposalData.showGst && (<div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">GST ({activeProposalData.gstRate}%)</span><span className="text-lg font-black text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span></div>)}
-                                                                <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Estimated Cost</p><h2 className="text-4xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-[#39FF14]" /></div>
-                                                                {activeProposalData.advanceRequested > 0 && (<div className="mt-8 p-6 bg-black text-white rounded-lg flex justify-between items-center"><span className="text-[10px] font-black uppercase tracking-widest">Advance Fee ({activeProposalData.advanceRequested}%)</span><span className="text-xl font-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span></div>)}
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-12 pt-12 border-t border-gray-100 grid grid-cols-2 gap-16 relative">
-                                                            <div className="space-y-6">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                                <div className="h-32 flex items-center justify-start relative">
-                                                                    {activeProposalData.showSignatures && activeProposalData.providerSignature ? (
-                                                                        <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
-                                                                    ) : (
-                                                                        <p className="text-[18px] font-formal italic text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                {paginatedPages[currentPreviewPage]?.type === 'commercials' && (() => {
+                                                    const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
+                                                    return (
+                                                        <div className="space-y-10 py-8 flex flex-col h-full justify-between">
+                                                            {/* Row 1: Terms, Payment details & Totals */}
+                                                            <div className="grid grid-cols-2 gap-8 items-start">
+                                                                {/* Terms & Payment info */}
+                                                                <div className="space-y-4">
+                                                                    {!isFieldHidden('terms') && (
+                                                                        <div className="space-y-2">
+                                                                            <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">General Terms</h4>
+                                                                            <div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(activeProposalData.terms)}</div>
+                                                                        </div>
                                                                     )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
-                                                                </div>
-                                                                <p className="text-[9px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                            </div>
-                                                            <div className="space-y-6 text-right">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                <div className="h-32 flex items-center justify-end relative">
-                                                                    {activeProposalData.showSignatures && activeProposalData.clientSignature ? (
-                                                                        <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
-                                                                    ) : (
-                                                                        <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
+                                                                    {!isFieldHidden('paymentDetails') && (
+                                                                        <div className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
+                                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p>
+                                                                            <div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(activeProposalData.paymentDetails)}</div>
+                                                                        </div>
                                                                     )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
                                                                 </div>
-                                                                <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                                
+                                                                {/* Totals, GST, Advance Requirement */}
+                                                                <div className="space-y-4">
+                                                                    <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">Financial Settlement</h4>
+                                                                    <div className="grid grid-cols-2 gap-3">
+                                                                        <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">Net Value</span><span className="text-sm font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
+                                                                        {activeProposalData.showGst ? (
+                                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST ({activeProposalData.gstRate}%)</span><span className="text-sm font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span></div>
+                                                                        ) : (
+                                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST</span><span className="text-sm font-bold text-gray-400 font-mono">Exempt</span></div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="p-5 bg-black text-right relative overflow-hidden rounded-2xl shadow-lg"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Quotation Value</p><h2 className="text-2xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" /></div>
+                                                                    {(activeProposalData.advanceRequested > 0) && (
+                                                                        <div className="p-4 bg-neon-green/5 border-2 border-dashed border-neon-green/20 rounded-2xl flex items-center justify-between">
+                                                                            <div>
+                                                                                <span className="text-[8px] font-black text-gray-400 tracking-widest block uppercase">Advance Required ({activeProposalData.advanceRequested}%)</span>
+                                                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Prior to commencement</span>
+                                                                            </div>
+                                                                            <span className="text-lg font-black text-black font-mono">₹{(proposalTotalAmount * (activeProposalData.advanceRequested || 50) / 100).toLocaleString()}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                            {activeProposalData.showSeal && (
-                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply"><DocumentSeal className="w-44 h-44" /></div>
+
+                                                            {/* Row 2: Collapsible Signatures, Stamp & Footprints */}
+                                                            {currentPreviewPage === paginatedPages.length - 1 && !isFieldHidden('signatures') && (
+                                                                <div className="border border-gray-200 rounded-2xl overflow-hidden mt-4 bg-white">
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
+                                                                        className="w-full px-5 py-3 bg-gray-50 flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-200 no-print"
+                                                                    >
+                                                                        <span className="flex items-center gap-2"><ShieldCheck size={14} /> Authorization Signatures & Verification</span>
+                                                                        <span className="text-neon-green">{isSignaturesCollapsed ? 'Expand +' : 'Collapse -'}</span>
+                                                                    </button>
+                                                                    
+                                                                    <div className={cn(
+                                                                        "transition-all duration-300", 
+                                                                        (!isSignaturesCollapsed || isSaving) ? "max-h-[1000px] opacity-100 p-5" : "max-h-0 opacity-0 pointer-events-none no-print",
+                                                                        "print-visible"
+                                                                    )}>
+                                                                        <div className="relative">
+                                                                            <div className="grid grid-cols-2 gap-8 relative z-20">
+                                                                                <div className="space-y-4">
+                                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                                    <div className="h-16 flex items-end">
+                                                                                        {activeProposalData.providerSignature ? (
+                                                                                            <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                                        ) : (
+                                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-60">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="space-y-0.5">
+                                                                                        <p className="text-[10px] font-black uppercase text-black">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className="space-y-4 text-right">
+                                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                                    <div className="h-16 flex items-end justify-end">
+                                                                                        {activeProposalData.clientSignature ? (
+                                                                                            <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                                        ) : (
+                                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-30">Type name to sign</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <p className="text-[10px] font-black uppercase text-black">Acknowledged & Accepted</p>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {activeProposalData.showSeal && (
+                                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                                                                                    <DocumentSeal className="w-28 h-28" />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
@@ -1884,19 +2033,96 @@ const AIStudio = () => {
                                             </table>
                                         </div>
                                     )}
-                                    {page.type === 'commercials' && (
-                                        <div className="space-y-12 py-6">
-                                            <div className="grid grid-cols-2 gap-16 items-stretch">
-                                                <div className="space-y-8">
-                                                    {activeProposalData.terms && (<div className="space-y-4"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b border-gray-100 pb-2">Conditions</h4><div className="text-[11px] font-medium text-gray-500 leading-relaxed space-y-2">{renderContent(activeProposalData.terms)}</div></div>)}
+                                    {page.type === 'commercials' && (() => {
+                                        const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
+                                        return (
+                                            <div className="space-y-10 py-8 flex flex-col h-full justify-between">
+                                                {/* Row 1: Terms, Payment details & Totals */}
+                                                <div className="grid grid-cols-2 gap-8 items-start">
+                                                    {/* Terms & Payment info */}
+                                                    <div className="space-y-4">
+                                                        {!isFieldHidden('terms') && (
+                                                            <div className="space-y-2">
+                                                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">General Terms</h4>
+                                                                <div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(activeProposalData.terms)}</div>
+                                                            </div>
+                                                        )}
+                                                        {!isFieldHidden('paymentDetails') && (
+                                                            <div className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p>
+                                                                <div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(activeProposalData.paymentDetails)}</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Totals, GST, Advance Requirement */}
+                                                    <div className="space-y-4">
+                                                        <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">Financial Settlement</h4>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">Net Value</span><span className="text-sm font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
+                                                            {activeProposalData.showGst ? (
+                                                                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST ({activeProposalData.gstRate}%)</span><span className="text-sm font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span></div>
+                                                            ) : (
+                                                                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST</span><span className="text-sm font-bold text-gray-400 font-mono">Exempt</span></div>
+                                                            )}
+                                                        </div>
+                                                        <div className="p-5 bg-black text-right relative overflow-hidden rounded-2xl shadow-lg"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Quotation Value</p><h2 className="text-2xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" /></div>
+                                                        {(activeProposalData.advanceRequested > 0) && (
+                                                            <div className="p-4 bg-neon-green/5 border-2 border-dashed border-neon-green/20 rounded-2xl flex items-center justify-between">
+                                                                <div>
+                                                                    <span className="text-[8px] font-black text-gray-400 tracking-widest block uppercase">Advance Required ({activeProposalData.advanceRequested}%)</span>
+                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Prior to commencement</span>
+                                                                </div>
+                                                                <span className="text-lg font-black text-black font-mono">₹{(proposalTotalAmount * (activeProposalData.advanceRequested || 50) / 100).toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">Subtotal</span><span className="text-lg font-black text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
-                                                    <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Estimated Cost</p><h2 className="text-4xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2></div>
-                                                </div>
+
+                                                {/* Row 2: Signatures (always expanded in PDF export) */}
+                                                {!isFieldHidden('signatures') && (
+                                                    <div className="border border-gray-200 rounded-2xl overflow-hidden mt-4 bg-white p-5">
+                                                        <div className="relative">
+                                                            <div className="grid grid-cols-2 gap-8 relative z-20">
+                                                                <div className="space-y-4">
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                    <div className="h-16 flex items-end">
+                                                                        {activeProposalData.providerSignature ? (
+                                                                            <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                        ) : (
+                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-60">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="text-[10px] font-black uppercase text-black">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-4 text-right">
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                    <div className="h-16 flex items-end justify-end">
+                                                                        {activeProposalData.clientSignature ? (
+                                                                            <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                        ) : (
+                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-30">Type name to sign</p>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[10px] font-black uppercase text-black">Acknowledged & Accepted</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {activeProposalData.showSeal && (
+                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                                                                    <DocumentSeal className="w-28 h-28" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

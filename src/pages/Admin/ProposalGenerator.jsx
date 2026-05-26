@@ -34,6 +34,10 @@ import Cpu from 'lucide-react/dist/esm/icons/cpu';
 import PenTool from 'lucide-react/dist/esm/icons/pen-tool';
 import Lock from 'lucide-react/dist/esm/icons/lock';
 import Stamp from 'lucide-react/dist/esm/icons/stamp';
+import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -256,6 +260,18 @@ import DocumentSeal from '../../components/ui/DocumentSeal';
     };
 
 
+const defaultColumns = [
+    { key: 'description', label: 'Resource Inventory', type: 'text' },
+    { key: 'qty', label: 'Qty', type: 'number' },
+    { key: 'price', label: 'Amount (INR)', type: 'amount' }
+];
+
+const COLUMN_TYPES = [
+    { value: 'text',   label: 'Text',   icon: 'T' },
+    { value: 'number', label: 'Number', icon: '#' },
+    { value: 'amount', label: 'Amount', icon: '₹' },
+];
+
 const ProposalGenerator = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -271,6 +287,7 @@ const ProposalGenerator = () => {
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+    const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
     const [bulkRawText, setBulkRawText] = useState('');
 
     const [isBulkMode, setIsBulkMode] = useState(false);
@@ -407,7 +424,10 @@ const ProposalGenerator = () => {
         senderDesignation: 'Director of Operations',
         status: 'Draft',
         hiddenFields: [],
-        selectedLogo: 'entertainment' 
+        selectedLogo: 'entertainment',
+        customPages: [],
+        totalOverride: null,
+        totalSourceColumn: 'price'
     });
 
     const [singleItems, setSingleItems] = useState([
@@ -477,9 +497,16 @@ const ProposalGenerator = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-    const gstAmount = formData.showGst ? (subtotal * formData.gstRate) / 100 : 0;
-    const totalAmount = subtotal + gstAmount;
+    const totalSrcCol = formData.totalSourceColumn || 'price';
+    const subtotal = items.reduce((sum, item) => {
+        if (totalSrcCol === 'price') return sum + (Number(item.qty) * Number(item.price));
+        return sum + (Number(item[totalSrcCol]) || 0);
+    }, 0);
+    const hasOverride = formData.totalOverride !== null && formData.totalOverride !== undefined && formData.totalOverride !== '';
+    const overrideBase = hasOverride ? Number(formData.totalOverride) : subtotal;
+    const gstAmount = formData.showGst ? (overrideBase * formData.gstRate) / 100 : 0;
+    const computedTotal = subtotal + (formData.showGst ? (subtotal * formData.gstRate) / 100 : 0);
+    const totalAmount = hasOverride ? (overrideBase + gstAmount) : computedTotal;
 
     const toggleFieldVisibility = (field) => {
         setFormData(prev => {
@@ -516,45 +543,86 @@ const ProposalGenerator = () => {
         }
         if (!isHidden('scopeOfWork') && formData.scopeOfWork) {
             const estimateBlockHeight = (rawText) => {
-                let h = 0;
-                const text = htmlToPlainText(rawText);
-                const rawLines = text.split('\n');
-                const lines = [];
-                rawLines.forEach(rl => {
-                    const parts = rl.split(/\s(?=\d+\.\s)/);
-                    if (parts.length > 1) lines.push(...parts);
-                    else lines.push(rl);
-                });
+                const isHtml = rawText.includes('<') && rawText.includes('>');
+                if (!isHtml) {
+                    let h = 0;
+                    const text = htmlToPlainText(rawText);
+                    const rawLines = text.split('\n');
+                    const lines = [];
+                    rawLines.forEach(rl => {
+                        const parts = rl.split(/\s(?=\d+\.\s)/);
+                        if (parts.length > 1) lines.push(...parts);
+                        else lines.push(rl);
+                    });
 
-                let inList = false;
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) { h += 12; inList = false; continue; }
-                    
-                    if (line.match(/^[-*_]{3,}$/)) {
-                        inList = false;
-                        h += 66; // my-8 (64px) + line (1.5px)
-                        continue;
-                    }
+                    let inList = false;
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) { h += 8; inList = false; continue; }
+                        
+                        if (line.match(/^[-*_]{3,}$/)) {
+                            inList = false;
+                            h += 40;
+                            continue;
+                        }
 
-                    const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-                    if (headingMatch) {
-                        inList = false;
-                        h += headingMatch[1].length <= 2 ? 72 : 48;
-                        if (headingMatch[2].length > 40) h += 24; 
-                    } else if (line.match(/^[•\-\*]\s/)) {
-                        h += (Math.ceil((line.length - 2) / 100) * 24);
-                        if (!inList) { h += 24; inList = true; }
-                        else { h += 6; }
-                    } else {
-                        inList = false;
-                        h += (Math.ceil(line.length / 110) * 24) + 16;
+                        const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+                        if (headingMatch) {
+                            inList = false;
+                            h += headingMatch[1].length <= 2 ? 48 : 32;
+                            if (headingMatch[2].length > 40) h += 20; 
+                        } else if (line.match(/^[•\-\*]\s/)) {
+                            h += (Math.ceil((line.length - 2) / 100) * 20);
+                            if (!inList) { h += 16; inList = true; }
+                            else { h += 4; }
+                        } else {
+                            inList = false;
+                            h += (Math.ceil(line.length / 110) * 20) + 8;
+                        }
                     }
+                    return h;
                 }
-                return h;
+
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
+                    const container = doc.body.firstElementChild;
+                    let totalH = 0;
+                    
+                    Array.from(container.children).forEach(child => {
+                        const tag = child.tagName.toLowerCase();
+                        const text = child.textContent || '';
+                        
+                        if (tag.startsWith('h')) {
+                            const level = parseInt(tag.substring(1)) || 2;
+                            totalH += level <= 2 ? 40 : 28;
+                            totalH += (Math.ceil(text.length / 80) * 20);
+                        } else if (tag === 'ul' || tag === 'ol') {
+                            const lis = child.querySelectorAll('li');
+                            if (lis.length > 0) {
+                                lis.forEach(li => {
+                                    const liText = li.textContent || '';
+                                    totalH += (Math.ceil(liText.length / 95) * 20) + 4;
+                                });
+                            } else {
+                                totalH += (Math.ceil(text.length / 95) * 20) + 4;
+                            }
+                        } else {
+                            if (text.trim() === '') {
+                                totalH += 8;
+                            } else {
+                                totalH += (Math.ceil(text.length / 100) * 20) + 12;
+                            }
+                        }
+                    });
+                    return totalH;
+                } catch (e) {
+                    console.error("HTML estimation failed, fallback:", e);
+                    return 200;
+                }
             };
 
-            const MAX_PAGE_HEIGHT = 780;
+            const MAX_PAGE_HEIGHT = 820;
             const totalHeight = estimateBlockHeight(formData.scopeOfWork);
             
             if (totalHeight <= MAX_PAGE_HEIGHT) {
@@ -611,7 +679,12 @@ const ProposalGenerator = () => {
             if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
             else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
         }
-        if (!isHidden('commercials') && (!isHidden('terms') || !isHidden('paymentDetails'))) {
+        if (!isHidden('customPages') && formData.customPages && formData.customPages.length > 0) {
+            formData.customPages.forEach((cp, cpIdx) => {
+                pages.push({ type: 'custom', items: [], title: cp.title, content: cp.content, pageIndex: cpIdx });
+            });
+        }
+        if (!isHidden('commercials')) {
             pages.push({ type: 'commercials', items: [] });
         }
         return pages;
@@ -621,15 +694,16 @@ const ProposalGenerator = () => {
         try {
             const rawProposalData = { ...formData, items, totalAmount, subtotal, updatedAt: new Date().toISOString() };
             const proposalData = JSON.parse(JSON.stringify(rawProposalData));
-            if (id) await updateProposal(id, proposalData);
-            else await addProposal({ ...proposalData, createdAt: new Date().toISOString() });
-            
-            setPromptBoxClear(true);
-            setTimeout(() => setPromptBoxClear(false), 100);
-            
-            navigate('/admin/proposals');
-        } catch (error) {
-            useStore.getState().addToast("Couldn't save the proposal. Please try again.", 'error');
+            if (id) {
+                await updateProposal(id, proposalData);
+                addToast('Strategic Memorandum Updated', 'success');
+            } else {
+                const newDocId = await addProposal(proposalData);
+                addToast('Strategic Memorandum Created', 'success');
+                navigate(`/admin/edit-proposal/${newDocId}`);
+            }
+        } catch (err) {
+            addToast(`Storage integrity breach: ${err.message}`, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -755,7 +829,7 @@ const ProposalGenerator = () => {
                 clientAddress: data.clientAddress || 'Corporate Headquarters',
                 campaignName: data.campaignName || 'Strategic Initiative',
                 campaignDuration: data.campaignDuration || 'TBD',
-                proposalNumber: `NBQ-BLK-${Math.floor(1000 + Math.random() * 9000)}`,
+                proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
                 coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
                 overview: '',
                 primaryGoal: '',
@@ -783,6 +857,7 @@ const ProposalGenerator = () => {
                 status: 'Draft',
                 hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
                 selectedLogo: 'entertainment',
+                customPages: [],
                 items: [],
                 subtotal: 0,
                 gstAmount: 0,
@@ -968,7 +1043,7 @@ const ProposalGenerator = () => {
                     clientAddress: data.clientAddress || 'Corporate Headquarters',
                     campaignName: data.campaignName || 'Strategic Initiative',
                     campaignDuration: data.campaignDuration || 'TBD',
-                    proposalNumber: `NBQ-BLK-${Math.floor(1000 + Math.random() * 9000)}`,
+                    proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
                     coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
                     overview: '',
                     primaryGoal: '',
@@ -996,6 +1071,7 @@ const ProposalGenerator = () => {
                     status: 'Draft',
                     hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
                     selectedLogo: 'entertainment',
+                    customPages: [],
                     items: [],
                     subtotal: 0,
                     gstAmount: 0,
@@ -1103,7 +1179,8 @@ const ProposalGenerator = () => {
         { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
         { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
         { id: '5', label: 'Commercials', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
-        { id: '6', label: 'Settlement', icon: CreditCard, desc: 'Payment Terms', visibilityKey: 'commercials' }
+        { id: '6', label: 'Settlement', icon: CreditCard, desc: 'Payment Terms', visibilityKey: 'commercials' },
+        { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' }
     ];
 
 
@@ -1774,195 +1851,875 @@ const ProposalGenerator = () => {
                                 )}
                                 {activeTab === '5' && (
                                     <div className="space-y-8">
-                                        <div className="flex items-center gap-4 px-4">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resource Inventory</label>
-                                            <VisibilityToggle field="inventory" />
+                                        <div className="flex items-center justify-between px-4">
+                                            <div className="flex items-center gap-4">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resource Inventory</label>
+                                                <VisibilityToggle field="inventory" />
+                                            </div>
                                         </div>
-                                        <div className={cn("space-y-12 transition-opacity", isHidden('inventory') && "opacity-30")}>
-                                            <div className="flex justify-between items-center px-4"><h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Table</h4><button disabled={isHidden('inventory')} onClick={() => setItems([...items, { id: Date.now(), description: '', qty: 1, price: 0 }])} className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl disabled:opacity-30"><Plus size={16} /></button></div>
-                                            <div className="space-y-4">{items.map((item, idx) => (
-                                                <div key={item.id} className="flex items-center gap-6 bg-zinc-900/40 p-4 pl-6 rounded-3xl border border-white/5 group/refine transition-all hover:bg-zinc-900/60 relative">
-                                                    <div className="flex-1 relative">
-                                                        <textarea disabled={isHidden('inventory')} value={item.description} onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} rows={1} className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" placeholder="Resource Description..." />
-                                                        <button type="button" disabled={isHidden('inventory')} onClick={() => handleRefineClick(`items[${idx}].description`, `Resource ${idx + 1} Description`, item.description)} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+
+                                        <div className={cn("space-y-8 transition-opacity", isHidden('inventory') && "opacity-30")}>
+                                            {/* Manage Columns Section */}
+                                            <div className="bg-[#0b0b0c]/40 border border-white/5 rounded-3xl p-6 space-y-4">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">Table Architecture</p>
+                                                        <h4 className="text-sm font-black text-white uppercase tracking-wider">Configure Columns</h4>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="flex flex-col items-center"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Qty</span><input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-16 bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50" /></div>
-                                                        <div className="flex flex-col items-end"><span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5 pr-2">Price</span><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span><input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-32 bg-black/40 border border-white/10 h-10 pl-7 pr-4 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" /></div></div>
-                                                        <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30"><Trash2 size={16} /></button>
-                                                    </div>
+                                                    <button 
+                                                        disabled={isHidden('inventory')}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const cols = formData.tableColumns || [...defaultColumns];
+                                                            const newColKey = `custom_${Date.now()}`;
+                                                            const updatedCols = [...cols, { key: newColKey, label: 'New Column' }];
+                                                            setFormData({ ...formData, tableColumns: updatedCols });
+                                                            const updatedItems = items.map(item => ({ ...item, [newColKey]: '' }));
+                                                            setItems(updatedItems);
+                                                        }}
+                                                        className="px-3 py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green hover:bg-neon-green hover:text-black transition-all rounded-xl text-[9px] font-black uppercase tracking-wider disabled:opacity-30"
+                                                    >
+                                                        + Add Column
+                                                    </button>
                                                 </div>
-                                            ))}</div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(formData.tableColumns || defaultColumns).map((col, cIdx) => {
+                                                        const isProtected = ['description', 'qty', 'price'].includes(col.key);
+                                                        const colType = col.type || 'text';
+                                                        const typeInfo = COLUMN_TYPES.find(t => t.value === colType) || COLUMN_TYPES[0];
+                                                        const nextType = COLUMN_TYPES[(COLUMN_TYPES.findIndex(t => t.value === colType) + 1) % COLUMN_TYPES.length].value;
+                                                        return (
+                                                            <div 
+                                                                key={col.key} 
+                                                                draggable={!isHidden('inventory')}
+                                                                onDragStart={(e) => {
+                                                                    e.dataTransfer.setData('text/plain', cIdx);
+                                                                }}
+                                                                onDragOver={(e) => {
+                                                                    e.preventDefault();
+                                                                }}
+                                                                onDrop={(e) => {
+                                                                    e.preventDefault();
+                                                                    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                                                                    if (sourceIndex === cIdx) return;
+                                                                    const cols = [...(formData.tableColumns || defaultColumns)];
+                                                                    const [draggedCol] = cols.splice(sourceIndex, 1);
+                                                                    cols.splice(cIdx, 0, draggedCol);
+                                                                    setFormData({ ...formData, tableColumns: cols });
+                                                                }}
+                                                                className={cn(
+                                                                    "inline-flex items-center gap-1 bg-black/50 border border-white/10 pl-1.5 pr-1 py-1 rounded-full transition-all group/col",
+                                                                    !isHidden('inventory') ? "cursor-grab active:cursor-grabbing hover:border-neon-green/30 hover:bg-neon-green/5" : ""
+                                                                )}
+                                                            >
+                                                                {!isHidden('inventory') && (
+                                                                    <GripVertical size={10} className="text-gray-600 shrink-0 select-none" />
+                                                                )}
+                                                                {/* Type badge — click to cycle */}
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={isHidden('inventory') || isProtected}
+                                                                    onClick={() => {
+                                                                        const cols = [...(formData.tableColumns || defaultColumns)];
+                                                                        cols[cIdx] = { ...col, type: nextType };
+                                                                        setFormData({ ...formData, tableColumns: cols });
+                                                                    }}
+                                                                    title={`Type: ${typeInfo.label} — click to change`}
+                                                                    className={cn(
+                                                                        "shrink-0 w-4 h-4 flex items-center justify-center rounded-full text-[8px] font-black transition-all",
+                                                                        colType === 'amount' ? 'bg-neon-green/20 text-neon-green border border-neon-green/30' :
+                                                                        colType === 'number' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                                                        'bg-white/5 text-gray-500 border border-white/10',
+                                                                        isProtected ? 'opacity-40 cursor-default' : 'hover:scale-110 cursor-pointer'
+                                                                    )}
+                                                                >
+                                                                    {typeInfo.icon}
+                                                                </button>
+                                                                <input
+                                                                    disabled={isHidden('inventory')}
+                                                                    type="text"
+                                                                    value={col.label}
+                                                                    onChange={e => {
+                                                                        const cols = [...(formData.tableColumns || defaultColumns)];
+                                                                        cols[cIdx] = { ...col, label: e.target.value };
+                                                                        setFormData({ ...formData, tableColumns: cols });
+                                                                    }}
+                                                                    className="bg-transparent border-none text-[10px] font-bold text-white/80 outline-none focus:text-neon-green w-auto min-w-[40px]"
+                                                                    style={{ width: `${Math.max(40, col.label.length * 7)}px` }}
+                                                                    placeholder="Column"
+                                                                    draggable
+                                                                    onDragStart={(e) => {
+                                                                        e.stopPropagation();
+                                                                    }}
+                                                                />
+                                                                {!isProtected && (
+                                                                    <button
+                                                                        disabled={isHidden('inventory')}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const cols = (formData.tableColumns || defaultColumns).filter(c => c.key !== col.key);
+                                                                            setFormData({ ...formData, tableColumns: cols });
+                                                                            const updatedItems = items.map(item => {
+                                                                                const copy = { ...item };
+                                                                                delete copy[col.key];
+                                                                                return copy;
+                                                                            });
+                                                                            setItems(updatedItems);
+                                                                        }}
+                                                                        className="shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/5 text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all disabled:opacity-30"
+                                                                    >
+                                                                        <X size={8} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Resource Table Row list */}
+                                            <div className="space-y-6">
+                                                <div className="flex justify-between items-center px-4">
+                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Table</h4>
+                                                    <button 
+                                                        disabled={isHidden('inventory')} 
+                                                        onClick={() => {
+                                                            const newObj = { id: Date.now(), description: '', qty: 1, price: 0 };
+                                                            const cols = formData.tableColumns || defaultColumns;
+                                                            cols.forEach(col => {
+                                                                if (!['id', 'description', 'qty', 'price'].includes(col.key)) {
+                                                                    newObj[col.key] = '';
+                                                                }
+                                                            });
+                                                            setItems([...items, newObj]);
+                                                        }} 
+                                                        className="p-3 bg-neon-green text-black rounded-xl hover:scale-105 transition-all shadow-xl disabled:opacity-30"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {items.map((item, idx) => {
+                                                        const cols = formData.tableColumns || defaultColumns;
+                                                        const descCol = cols.find(c => c.key === 'description') || { key: 'description', label: 'Resource Inventory' };
+                                                        const otherCols = cols.filter(c => c.key !== 'description');
+                                                        return (
+                                                            <div key={item.id} className="flex flex-col gap-4 bg-zinc-900/40 p-5 rounded-3xl border border-white/5 group/refine transition-all hover:bg-zinc-900/60 relative">
+                                                                <div className="flex items-start gap-4">
+                                                                    <div className="flex-1 relative">
+                                                                        <span className="text-[8px] font-black text-neon-green uppercase tracking-widest mb-1.5 block">{descCol.label}</span>
+                                                                        <textarea 
+                                                                            disabled={isHidden('inventory')} 
+                                                                            value={item.description} 
+                                                                            onChange={e => { const newItems = [...items]; newItems[idx].description = e.target.value; setItems(newItems); }} 
+                                                                            rows={1} 
+                                                                            className="w-full bg-transparent border-none p-0 pr-8 text-sm font-bold outline-none resize-none scrollbar-hide text-white placeholder:text-gray-600" 
+                                                                            placeholder={`${descCol.label}...`} 
+                                                                        />
+                                                                        <button type="button" disabled={isHidden('inventory')} onClick={() => handleRefineClick(`items[${idx}].description`, `${descCol.label} ${idx + 1}`, item.description)} className="absolute right-2 top-[22px] opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-1 text-neon-green hover:text-white rounded-lg hover:scale-105 z-10 disabled:opacity-0" title="Refine with AI"><Sparkles size={11} className="animate-pulse" /></button>
+                                                                    </div>
+                                                                    <button disabled={isHidden('inventory')} onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2 text-gray-600 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-lg disabled:opacity-30 mt-4"><Trash2 size={16} /></button>
+                                                                </div>
+
+                                                                {otherCols.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-4 items-end pt-2 border-t border-white/[0.03]">
+                                                                        {otherCols.map(col => {
+                                                                            if (col.key === 'qty') {
+                                                                                return (
+                                                                                    <div key={col.key} className="flex flex-col items-start w-20">
+                                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
+                                                                                        <input disabled={isHidden('inventory')} type="number" value={item.qty} onChange={e => { const newItems = [...items]; newItems[idx].qty = Number(e.target.value); setItems(newItems); }} className="w-full bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-white" />
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            if (col.key === 'price') {
+                                                                                return (
+                                                                                    <div key={col.key} className="flex flex-col items-start w-32">
+                                                                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
+                                                                                        <div className="relative w-full">
+                                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
+                                                                                            <input disabled={isHidden('inventory')} type="number" value={item.price} onChange={e => { const newItems = [...items]; newItems[idx].price = Number(e.target.value); setItems(newItems); }} className="w-full bg-black/40 border border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            // Custom column — render based on type
+                                                                            const colType = col.type || 'text';
+                                                                            return (
+                                                                                <div key={col.key} className={cn("flex flex-col items-start", (colType === 'amount' || colType === 'number') ? 'w-32' : 'min-w-[120px] flex-1')}>
+                                                                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1.5">{col.label}</span>
+                                                                                    {colType === 'amount' ? (
+                                                                                        <div className="relative w-full">
+                                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-neon-green">₹</span>
+                                                                                            <input
+                                                                                                disabled={isHidden('inventory')}
+                                                                                                type="number"
+                                                                                                value={item[col.key] || ''}
+                                                                                                onChange={e => {
+                                                                                                    const newItems = [...items];
+                                                                                                    newItems[idx][col.key] = e.target.value;
+                                                                                                    setItems(newItems);
+                                                                                                }}
+                                                                                                className="w-full bg-black/40 border border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
+                                                                                                placeholder="0"
+                                                                                            />
+                                                                                        </div>
+                                                                                    ) : colType === 'number' ? (
+                                                                                        <input
+                                                                                            disabled={isHidden('inventory')}
+                                                                                            type="number"
+                                                                                            value={item[col.key] || ''}
+                                                                                            onChange={e => {
+                                                                                                const newItems = [...items];
+                                                                                                newItems[idx][col.key] = e.target.value;
+                                                                                                setItems(newItems);
+                                                                                            }}
+                                                                                            className="w-full bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-white"
+                                                                                            placeholder="0"
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <input
+                                                                                            disabled={isHidden('inventory')}
+                                                                                            type="text"
+                                                                                            value={item[col.key] || ''}
+                                                                                            onChange={e => {
+                                                                                                const newItems = [...items];
+                                                                                                newItems[idx][col.key] = e.target.value;
+                                                                                                setItems(newItems);
+                                                                                            }}
+                                                                                            className="w-full bg-black/40 border border-white/10 h-10 px-4 rounded-lg text-xs font-bold outline-none focus:border-neon-green/50 text-white placeholder:text-gray-700"
+                                                                                            placeholder={`${col.label}...`}
+                                                                                        />
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                                 {activeTab === '6' && (
-                                    <div className="flex flex-col gap-8">
-                                        <div className="flex flex-col gap-8">
-                                            {/* Security Controls - Full Width */}
-                                            <div className="p-8 md:p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
-                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="w-14 h-14 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20 shrink-0">
-                                                            <ShieldCheck size={28} className="text-neon-green" />
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Verification</p>
-                                                            <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Security Controls.</h3>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col gap-4">
-                                                        <button 
-                                                            onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
-                                                            className={cn(
-                                                                "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
-                                                                formData.showSeal 
-                                                                    ? "bg-neon-green text-black border-neon-green shadow-[0_20px_40px_rgba(57,255,20,0.25)]" 
-                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
-                                                            )}
-                                                        >
-                                                            <div className={cn(
-                                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                formData.showSeal ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
-                                                            )}>
-                                                                <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-black" : "text-gray-500")} />
-                                                            </div>
-                                                            <div className="text-left">
-                                                                <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSeal ? "text-black/60" : "text-gray-600")}>Protocol</p>
-                                                                <p className="text-[11px] font-black uppercase tracking-widest">Official Seal</p>
-                                                            </div>
-                                                        </button>
+                                     <div className="flex flex-col gap-8">
+                                         <style>{`
+                                             .custom-range-slider {
+                                                 -webkit-appearance: none;
+                                                 appearance: none;
+                                                 background: transparent;
+                                                 width: 100%;
+                                             }
+                                             .custom-range-slider::-webkit-slider-runnable-track {
+                                                 background: rgba(0, 0, 0, 0.6);
+                                                 border: 1px solid rgba(255, 255, 255, 0.05);
+                                                 height: 6px;
+                                                 border-radius: 9999px;
+                                             }
+                                             .custom-range-slider::-webkit-slider-thumb {
+                                                 -webkit-appearance: none;
+                                                 appearance: none;
+                                                 background: #39ff14;
+                                                 border: 3px solid #09090b;
+                                                 width: 16px;
+                                                 height: 16px;
+                                                 border-radius: 50%;
+                                                 margin-top: -6px;
+                                                 box-shadow: 0 0 10px #39ff14;
+                                                 cursor: pointer;
+                                                 transition: all 0.2s ease-in-out;
+                                             }
+                                             .custom-range-slider::-webkit-slider-thumb:hover {
+                                                 transform: scale(1.2);
+                                                 box-shadow: 0 0 15px #39ff14;
+                                             }
+                                         `}</style>
+                                         {/* Row 1: Commercial Matrix & Terms (Financial Center) */}
+                                         <div className="p-8 md:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
+                                             <div className="flex items-center justify-between">
+                                                 <div className="space-y-1">
+                                                      <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Commercial Center.</h3>
+                                                      <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Financial Matrix & Settlement</p>
+                                                 </div>
+                                                 <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
+                                                      <CreditCard size={20} className="text-neon-green" />
+                                                 </div>
+                                             </div>
 
-                                                        <button 
-                                                            onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
-                                                            className={cn(
-                                                                "h-20 w-full rounded-3xl border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
-                                                                formData.showSignatures 
-                                                                    ? "bg-neon-green text-black border-neon-green shadow-[0_20px_40px_rgba(57,255,20,0.25)]" 
-                                                                    : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/20 hover:bg-white/[0.05]"
-                                                            )}
-                                                        >
-                                                            <div className={cn(
-                                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
-                                                                formData.showSignatures ? "bg-black/10 scale-110 shadow-inner" : "bg-white/5"
-                                                            )}>
-                                                                <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-black" : "text-gray-500")} />
-                                                            </div>
-                                                            <div className="text-left">
-                                                                <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSignatures ? "text-black/60" : "text-gray-600")}>Protocol</p>
-                                                                <p className="text-[11px] font-black uppercase tracking-widest">Digital Sign</p>
-                                                            </div>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                             <div className="flex flex-col gap-8">
+                                                  {/* Horizontal Toggles / Summary Cards */}
+                                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 font-sans">
+                                                       {/* Taxation (GST) Card */}
+                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                           {/* Glow effect on hover */}
+                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                           
+                                                           <div className="flex items-center gap-2 z-10">
+                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
+                                                                   <span className="text-xs font-black text-gray-400 group-hover/card:text-neon-green transition-colors font-mono">%</span>
+                                                               </div>
+                                                               <div className="flex-1">
+                                                                   <div className="flex items-center gap-1.5">
+                                                                       <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Taxation</p>
+                                                                       <span className={cn(
+                                                                           "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                                                                           formData.showGst ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
+                                                                       )} />
+                                                                   </div>
+                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">GST Setup</p>
+                                                               </div>
+                                                           </div>
 
-                                            {/* Signatory Identity - Full Width */}
-                                            <div className="p-10 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] relative overflow-hidden">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Authorized Representative</label>
-                                                        <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="h-20 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
-                                                    </div>
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Designation</label>
-                                                        <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director" className="h-20 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-[1.5rem] text-lg font-black px-8 text-white outline-none transition-all placeholder:text-gray-800" />
-                                                    </div>
-                                                </div>
+                                                           <div className="flex flex-col gap-2 z-10 w-full">
+                                                               <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
+                                                                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">GST Active</span>
+                                                                   <button 
+                                                                       type="button"
+                                                                       onClick={() => setFormData({...formData, showGst: !formData.showGst})} 
+                                                                       className={cn(
+                                                                           "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
+                                                                           formData.showGst ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                       )}
+                                                                   >
+                                                                       <div className={cn(
+                                                                           "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
+                                                                           formData.showGst ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
+                                                                       )} />
+                                                                   </button>
+                                                               </div>
+
+                                                               {formData.showGst ? (
+                                                                   <div className="space-y-1.5">
+                                                                       <div className="flex items-center justify-between bg-black/50 border border-white/5 rounded-xl px-3 py-1 focus-within:border-neon-green/30">
+                                                                           <span className="text-[8px] font-black text-gray-500 uppercase">Rate (%)</span>
+                                                                           <input 
+                                                                               type="number" 
+                                                                               min="0" 
+                                                                               max="100" 
+                                                                               value={formData.gstRate} 
+                                                                               onChange={e => setFormData({...formData, gstRate: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))})} 
+                                                                               className="bg-transparent font-mono text-xs font-black text-neon-green w-10 text-right outline-none" 
+                                                                           />
+                                                                       </div>
+                                                                       {/* Presets */}
+                                                                       <div className="flex gap-1">
+                                                                           {[5, 12, 18, 28].map((rate) => (
+                                                                               <button
+                                                                                   key={rate}
+                                                                                   type="button"
+                                                                                   onClick={() => setFormData({...formData, gstRate: rate})}
+                                                                                   className={cn(
+                                                                                       "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
+                                                                                       formData.gstRate === rate 
+                                                                                           ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
+                                                                                           : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                                                                                   )}
+                                                                               >
+                                                                                   {rate}%
+                                                                               </button>
+                                                                           ))}
+                                                                       </div>
+                                                                   </div>
+                                                               ) : (
+                                                                   <div className="w-full h-[58px] relative bg-black/40 rounded-xl border border-dashed border-white/5 flex items-center justify-center gap-1.5 overflow-hidden transition-all duration-300 group-hover/card:border-white/10">
+                                                                       <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none" />
+                                                                       <Lock size={11} className="text-gray-600" />
+                                                                       <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Tax Exempt</span>
+                                                                   </div>
+                                                               )}
+                                                           </div>
+                                                       </div>
+
+                                                       {/* Advance Request Card */}
+                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                           {/* Glow effect on hover */}
+                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                           
+                                                           <div className="flex items-center gap-2 z-10">
+                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
+                                                                   <Zap size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                               </div>
+                                                               <div className="flex-1">
+                                                                   <div className="flex items-center gap-1.5">
+                                                                       <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Advance</p>
+                                                                       <span className={cn(
+                                                                           "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                                                                           formData.advanceRequested > 0 ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
+                                                                       )} />
+                                                                   </div>
+                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Commencement</p>
+                                                               </div>
+                                                           </div>
+
+                                                           <div className="flex flex-col gap-2 z-10 w-full">
+                                                               <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
+                                                                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Retainer</span>
+                                                                   <span className="text-[9px] font-black text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded-lg select-none font-mono tracking-widest">
+                                                                       {formData.advanceRequested}%
+                                                                   </span>
+                                                               </div>
+
+                                                               <div className="space-y-1.5">
+                                                                   <div className="relative flex items-center w-full px-1 py-1">
+                                                                       <input 
+                                                                           type="range" 
+                                                                           min="0" 
+                                                                           max="100" 
+                                                                           step="5" 
+                                                                           value={formData.advanceRequested} 
+                                                                           onChange={e => setFormData({...formData, advanceRequested: parseInt(e.target.value)})} 
+                                                                           className="w-full custom-range-slider cursor-pointer outline-none" 
+                                                                       />
+                                                                   </div>
+                                                                   {/* Presets */}
+                                                                   <div className="flex gap-1">
+                                                                       {[0, 30, 50, 100].map((pct) => (
+                                                                           <button
+                                                                               key={pct}
+                                                                               type="button"
+                                                                               onClick={() => setFormData({...formData, advanceRequested: pct})}
+                                                                               className={cn(
+                                                                                   "flex-1 py-1 rounded-lg text-[9px] font-mono font-bold transition-all border",
+                                                                                   formData.advanceRequested === pct 
+                                                                                       ? "bg-neon-green text-black border-neon-green font-black shadow-[0_0_10px_rgba(57,255,20,0.2)]" 
+                                                                                       : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                                                                               )}
+                                                                           >
+                                                                               {pct}%
+                                                                           </button>
+                                                                       ))}
+                                                                   </div>
+                                                               </div>
+                                                           </div>
+                                                       </div>
+
+                                                       {/* Live Valuation Summary */}
+                                                       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 flex flex-col gap-3 transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card w-full min-w-0">
+                                                           {/* Glow */}
+                                                           <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+
+                                                           {/* Header */}
+                                                           <div className="flex items-center gap-2 z-10">
+                                                               <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all shrink-0">
+                                                                   <CreditCard size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                               </div>
+                                                               <div className="min-w-0">
+                                                                   <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Summary</p>
+                                                                   <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Valuation</p>
+                                                               </div>
+                                                           </div>
+
+                                                           {/* Breakdown panel */}
+                                                           <div className="z-10 w-full bg-black/40 border border-white/5 rounded-2xl p-3 flex flex-col gap-2 min-w-0 overflow-hidden">
+
+                                                               {/* Calc from — only shows when 2+ numeric/amount columns */}
+                                                               {(() => {
+                                                                   const allCols = formData.tableColumns || defaultColumns;
+                                                                   const calcCols = allCols.filter(c => c.key !== 'description' && (c.type === 'amount' || c.type === 'number' || c.key === 'price'));
+                                                                   if (calcCols.length <= 1) return null;
+                                                                   return (
+                                                                       <div className="flex items-start gap-2 pb-2 border-b border-white/5 min-w-0">
+                                                                           <span className="text-[8px] font-black text-gray-600 uppercase tracking-wider shrink-0 pt-0.5">Calc</span>
+                                                                           <div className="flex items-center gap-1 flex-wrap min-w-0">
+                                                                               {calcCols.map(c => (
+                                                                                   <button
+                                                                                       key={c.key}
+                                                                                       type="button"
+                                                                                       onClick={() => setFormData({ ...formData, totalSourceColumn: c.key })}
+                                                                                       className={cn(
+                                                                                           "px-2 py-0.5 rounded-full text-[8px] font-black transition-all whitespace-nowrap",
+                                                                                           totalSrcCol === c.key
+                                                                                               ? 'bg-neon-green text-black shadow-[0_0_6px_rgba(57,255,20,0.4)]'
+                                                                                               : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white border border-white/10'
+                                                                                       )}
+                                                                                   >
+                                                                                       {c.label}
+                                                                                   </button>
+                                                                               ))}
+                                                                           </div>
+                                                                       </div>
+                                                                   );
+                                                               })()}
+
+                                                               {/* Subtotal */}
+                                                               <div className="flex justify-between items-center gap-2 min-w-0">
+                                                                   <span className="text-[9px] font-bold text-gray-500 shrink-0">Subtotal</span>
+                                                                   <span className="font-mono text-[10px] font-bold text-white truncate text-right">₹{subtotal.toLocaleString()}</span>
+                                                               </div>
+
+                                                               {/* GST — label notes when it's calculated on override */}
+                                                               {formData.showGst && (
+                                                                   <div className="flex justify-between items-center gap-2 min-w-0">
+                                                                       <span className="text-[9px] font-bold text-gray-500 shrink-0">
+                                                                           GST ({formData.gstRate}%)
+                                                                           {hasOverride && <span className="text-amber-400/70 ml-1 font-normal">›override</span>}
+                                                                       </span>
+                                                                       <span className="font-mono text-[10px] font-bold text-white truncate text-right">₹{gstAmount.toLocaleString()}</span>
+                                                                   </div>
+                                                               )}
+
+                                                               {/* Total section */}
+                                                               <div className="border-t border-white/10 pt-2 mt-0.5 flex flex-col gap-1.5 min-w-0">
+
+                                                                   {/* Override subtotal input row */}
+                                                                   <div className="flex items-center justify-between gap-2 min-w-0">
+                                                                       <div className="flex items-center gap-1 shrink-0">
+                                                                           <span className="text-[9px] font-black text-neon-green uppercase tracking-wider">
+                                                                               {hasOverride ? 'Override' : 'Total'}
+                                                                           </span>
+                                                                           <button
+                                                                               type="button"
+                                                                               title={hasOverride ? 'Clear — revert to auto-calc' : 'Override subtotal manually'}
+                                                                               onClick={() => setFormData({
+                                                                                   ...formData,
+                                                                                   totalOverride: hasOverride ? null : subtotal
+                                                                               })}
+                                                                               className={cn(
+                                                                                   "p-0.5 rounded transition-all",
+                                                                                   hasOverride ? 'text-amber-400 hover:text-red-400' : 'text-gray-600 hover:text-neon-green'
+                                                                               )}
+                                                                           >
+                                                                               {hasOverride ? <RotateCcw size={8} /> : <Pencil size={8} />}
+                                                                           </button>
+                                                                       </div>
+
+                                                                       {hasOverride ? (
+                                                                           <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
+                                                                               <span className="text-[9px] font-black text-amber-400 font-mono shrink-0">₹</span>
+                                                                               <input
+                                                                                   type="number"
+                                                                                   value={formData.totalOverride}
+                                                                                   onChange={e => setFormData({ ...formData, totalOverride: e.target.value === '' ? null : e.target.value })}
+                                                                                   className="bg-transparent border-b border-amber-400/60 focus:border-amber-400 text-xs font-black text-amber-300 font-mono outline-none text-right min-w-0 flex-1"
+                                                                                   style={{ maxWidth: '80px' }}
+                                                                                   placeholder={subtotal.toString()}
+                                                                                   min="0"
+                                                                                   step="100"
+                                                                               />
+                                                                               <span className="text-[8px] text-gray-600 shrink-0">base</span>
+                                                                           </div>
+                                                                       ) : (
+                                                                           <span className="font-mono text-xs font-black text-neon-green drop-shadow-[0_0_8px_rgba(57,255,20,0.3)] truncate">
+                                                                               ₹{totalAmount.toLocaleString()}
+                                                                           </span>
+                                                                       )}
+                                                                   </div>
+
+                                                                   {/* Final total (override base + GST) */}
+                                                                   {hasOverride && (
+                                                                       <div className="flex items-center justify-between gap-2 bg-neon-green/5 border border-neon-green/10 rounded-xl px-2.5 py-1.5 min-w-0">
+                                                                           <span className="text-[8px] font-black text-neon-green uppercase tracking-wider shrink-0">Final Total</span>
+                                                                           <span className="font-mono text-[11px] font-black text-neon-green drop-shadow-[0_0_6px_rgba(57,255,20,0.4)] truncate">
+                                                                               ₹{totalAmount.toLocaleString()}
+                                                                           </span>
+                                                                       </div>
+                                                                   )}
+
+                                                                   {/* Auto-calc reference when overridden */}
+                                                                   {hasOverride && (
+                                                                       <div className="flex items-center justify-between gap-2 min-w-0">
+                                                                           <span className="text-[8px] text-gray-600">auto-calc</span>
+                                                                           <span className="text-[8px] text-gray-600 font-mono line-through truncate">₹{computedTotal.toLocaleString()}</span>
+                                                                       </div>
+                                                                   )}
+                                                               </div>
+                                                           </div>
+                                                       </div>
+                                                  </div>
+
+                                                  {/* Full Width Editor */}
+                                                 <div className="space-y-4 relative group/editor group/refine w-full">
+                                                     <div className="relative w-full">
+                                                          <StudioRichEditor 
+                                                              label="Settlement Terms"
+                                                              value={formData.terms} 
+                                                              onChange={val => setFormData({...formData, terms: val})} 
+                                                              placeholder="Payment milestones, terms of settlement..." 
+                                                              minHeight="260px"
+                                                              accentColor="neon-green"
+                                                              className={cn(isHidden('terms') && 'opacity-30')}
+                                                          />
+                                                          <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div className="border border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
+                                             {/* Collapsible Header */}
+                                             <div 
+                                                 className="flex items-center justify-between p-8 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-all"
+                                                 onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
+                                             >
+                                                 <div className="flex items-center gap-6">
+                                                     <div className="w-14 h-14 rounded-2xl bg-neon-green/10 flex items-center justify-center border border-neon-green/20 shrink-0">
+                                                         <ShieldCheck size={28} className="text-neon-green" />
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em]">Authorization</p>
+                                                         <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Signatures & Seals.</h3>
+                                                     </div>
+                                                 </div>
+                                                 <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
+                                                     <VisibilityToggle field="signatures" />
+                                                     <button 
+                                                         onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
+                                                         className="p-2 text-gray-400 hover:text-white transition-colors"
+                                                     >
+                                                         <span className="text-[10px] font-black uppercase tracking-widest">{isSignaturesCollapsed ? 'Expand +' : 'Collapse -'}</span>
+                                                     </button>
+                                                 </div>
+                                             </div>
+
+                                             {/* Collapsible Content */}
+                                             <div className={cn(
+                                                 "transition-all duration-500 overflow-hidden",
+                                                 isSignaturesCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100 border-t border-white/5"
+                                             )}>
+                                                  <div className="p-8 md:p-10 space-y-10">
+                                                      {/* Sub-toggles: Official Seal and Digital Sign */}
+                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                          <button 
+                                                              type="button"
+                                                              onClick={() => setFormData({...formData, showSeal: !formData.showSeal})} 
+                                                              className={cn(
+                                                                  "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
+                                                                  formData.showSeal 
+                                                                      ? "bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
+                                                                      : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/10 hover:bg-white/[0.04]"
+                                                              )}
+                                                          >
+                                                              {formData.showSeal && (
+                                                                  <span className="absolute top-3.5 right-3.5 flex h-2 w-2">
+                                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
+                                                                  </span>
+                                                              )}
+                                                              <div className={cn(
+                                                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
+                                                                  formData.showSeal ? "bg-neon-green/10 border border-neon-green/20" : "bg-white/5 border border-white/5"
+                                                              )}>
+                                                                  <Stamp size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSeal ? "text-neon-green" : "text-gray-500")} />
+                                                              </div>
+                                                              <div className="text-left">
+                                                                  <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSeal ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
+                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSeal ? "text-white" : "text-gray-400")}>Official Seal</p>
+                                                              </div>
+                                                          </button>
+
+                                                          <button 
+                                                              type="button"
+                                                              onClick={() => setFormData({...formData, showSignatures: !formData.showSignatures})} 
+                                                              className={cn(
+                                                                  "h-20 w-full rounded-[1.8rem] border transition-all duration-500 group/btn relative overflow-hidden flex items-center px-6 gap-5",
+                                                                  formData.showSignatures 
+                                                                      ? "bg-zinc-950/60 text-neon-green border-neon-green/30 shadow-[0_0_20px_rgba(57,255,20,0.1)]" 
+                                                                      : "bg-white/[0.02] text-gray-500 border-white/5 hover:border-white/10 hover:bg-white/[0.04]"
+                                                              )}
+                                                          >
+                                                              {formData.showSignatures && (
+                                                                  <span className="absolute top-3.5 right-3.5 flex h-2 w-2">
+                                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
+                                                                  </span>
+                                                              )}
+                                                              <div className={cn(
+                                                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0",
+                                                                  formData.showSignatures ? "bg-neon-green/10 border border-neon-green/20" : "bg-white/5 border border-white/5"
+                                                              )}>
+                                                                  <PenTool size={22} className={cn("transition-transform duration-500 group-hover/btn:rotate-12", formData.showSignatures ? "text-neon-green" : "text-gray-500")} />
+                                                              </div>
+                                                              <div className="text-left">
+                                                                  <p className={cn("text-[8px] font-black uppercase tracking-[0.2em] mb-0.5", formData.showSignatures ? "text-neon-green/50" : "text-gray-600")}>Protocol</p>
+                                                                  <p className={cn("text-[11px] font-black uppercase tracking-widest", formData.showSignatures ? "text-white" : "text-gray-400")}>Digital Signatures</p>
+                                                              </div>
+                                                          </button>
+                                                      </div>
+
+                                                      {/* Signatory Identity Form */}
+                                                      <div className="p-8 bg-white/[0.01] border border-white/5 rounded-[2rem] hover:border-white/10 transition-colors">
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                              <div className="relative bg-black/60 border border-white/5 focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
+                                                                  <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Authorized Representative</span>
+                                                                  <input value={formData.senderName} onChange={e => setFormData({...formData, senderName: e.target.value})} placeholder="Full Legal Name" className="w-full bg-transparent border-none text-sm font-black text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
+                                                              </div>
+                                                              <div className="relative bg-black/60 border border-white/5 focus-within:border-neon-green/30 focus-within:shadow-[0_0_15px_rgba(57,255,20,0.03)] rounded-[1.2rem] px-5 pt-6 pb-2.5 transition-all duration-300">
+                                                                  <span className="absolute top-2.5 left-5 text-[8px] font-black text-gray-500 uppercase tracking-[0.25em] pointer-events-none">Designation</span>
+                                                                  <input value={formData.senderDesignation} onChange={e => setFormData({...formData, senderDesignation: e.target.value})} placeholder="e.g. Director of Operations" className="w-full bg-transparent border-none text-sm font-black text-white outline-none p-0 pt-0.5 transition-all placeholder:text-zinc-800 caret-neon-green" />
+                                                              </div>
+                                                          </div>
+                                                      </div>
+
+                                                      {/* Pad & Seals */}
+                                                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                                          {/* Signature Pad */}
+                                                          <div className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
+                                                              <div className="flex items-center justify-between mb-6">
+                                                                  <h4 className="text-lg font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
+                                                                  {formData.providerSignature && (
+                                                                      <button onClick={() => setFormData({...formData, providerSignature: null})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear Pad</button>
+                                                                  )}
+                                                              </div>
+                                                              <div onClick={() => setIsSignatureModalOpen(true)} className="h-48 bg-black/80 rounded-[2rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-neon-green/40 transition-all relative overflow-hidden group/pad">
+                                                                  {/* Dotted Grid Background */}
+                                                                  <div className="absolute inset-0 bg-[radial-gradient(rgba(57,255,20,0.05)_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
+                                                                  {/* Corner Brackets */}
+                                                                  <div className="absolute top-3 left-3 w-3.5 h-3.5 border-t-2 border-l-2 border-neon-green/30 rounded-tl-sm pointer-events-none" />
+                                                                  <div className="absolute top-3 right-3 w-3.5 h-3.5 border-t-2 border-r-2 border-neon-green/30 rounded-tr-sm pointer-events-none" />
+                                                                  <div className="absolute bottom-3 left-3 w-3.5 h-3.5 border-b-2 border-l-2 border-neon-green/30 rounded-bl-sm pointer-events-none" />
+                                                                  <div className="absolute bottom-3 right-3 w-3.5 h-3.5 border-b-2 border-r-2 border-neon-green/30 rounded-br-sm pointer-events-none" />
+                                                                  
+                                                                  {formData.providerSignature ? (
+                                                                      <img src={formData.providerSignature} className="max-h-[70%] object-contain invert brightness-200 drop-shadow-[0_0_30px_rgba(57,255,20,0.4)] relative z-10" alt="Signature" />
+                                                                  ) : (
+                                                                      <div className="flex flex-col items-center gap-3 text-white/5 group-hover/pad:text-neon-green/30 transition-all relative z-10">
+                                                                          <PenTool size={24} />
+                                                                          <p className="text-[9px] font-black uppercase tracking-[0.5em]">Execute Pad</p>
+                                                                      </div>
+                                                                  )}
+                                                              </div>
+                                                          </div>
+
+                                                          {/* Integrity Hub */}
+                                                          <div className="p-8 bg-white/[0.01] border border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 relative overflow-hidden group">
+                                                              <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                                              <div className="relative shrink-0 flex items-center justify-center w-40 h-40">
+                                                                  <div className="relative z-10 scale-90">
+                                                                      <DocumentSeal className="w-24 h-24 drop-shadow-[0_0_35px_rgba(57,255,20,0.25)]" />
+                                                                  </div>
+                                                                  {/* Concentric Rotating Rings */}
+                                                                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} className="absolute w-32 h-32 border border-dashed border-neon-green/30 rounded-full pointer-events-none" />
+                                                                  <motion.div animate={{ rotate: -360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} className="absolute w-36 h-36 border border-dotted border-neon-green/15 rounded-full pointer-events-none" />
+                                                                  {/* Decorative Tech Crosshairs */}
+                                                                  <div className="absolute w-full h-[1px] bg-white/[0.03] pointer-events-none" />
+                                                                  <div className="absolute h-full w-[1px] bg-white/[0.03] pointer-events-none" />
+                                                              </div>
+                                                              <div className="text-center space-y-3.5 w-full z-10">
+                                                                  <div className="space-y-1">
+                                                                      <p className="text-[9px] font-black text-neon-green uppercase tracking-[0.4em] drop-shadow-[0_0_8px_rgba(57,255,20,0.2)]">Execution Reference</p>
+                                                                      <p className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">AUTHENTICATION DECRYPT HASH</p>
+                                                                  </div>
+                                                                  <div className="relative group/ref bg-black/60 px-6 py-3.5 rounded-[1.5rem] border border-white/5 group-hover:border-neon-green/30 transition-all duration-300 inline-block w-full max-w-[260px]">
+                                                                      {/* Tech Corner Accents */}
+                                                                      <div className="absolute top-2 left-2 w-1.5 h-1.5 border-t border-l border-neon-green/30" />
+                                                                      <div className="absolute top-2 right-2 w-1.5 h-1.5 border-t border-r border-neon-green/30" />
+                                                                      <div className="absolute bottom-2 left-2 w-1.5 h-1.5 border-b border-l border-neon-green/30" />
+                                                                      <div className="absolute bottom-2 right-2 w-1.5 h-1.5 border-b border-r border-neon-green/30" />
+                                                                      
+                                                                      <h2 className="text-md lg:text-lg font-black text-white tracking-[0.08em] italic uppercase font-mono">
+                                                                          NB-<span className="text-neon-green">{formData.campaignNumber || 'PROPOSAL-26'}</span>
+                                                                      </h2>
+                                                                      <div className="flex items-center justify-center gap-1 mt-1.5 text-[6.5px] font-black text-gray-500 uppercase tracking-widest">
+                                                                          <span className="w-1 h-1 bg-neon-green rounded-full animate-ping" />
+                                                                          <span>SECURE SYSTEM SIGNED</span>
+                                                                      </div>
+                                                                  </div>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     </div>
+                                 )}
+                                {activeTab === '7' && (
+                                    <div className="space-y-8">
+                                        <div className="flex justify-between items-center px-4">
+                                            <div className="space-y-1">
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Custom Proposal Pages</h4>
+                                                <p className="text-xs text-gray-600">Add blank pages with custom titles and content to your document.</p>
                                             </div>
+                                            <button 
+                                                disabled={isHidden('customPages')}
+                                                onClick={() => {
+                                                    const currentCustom = formData.customPages || [];
+                                                    setFormData({
+                                                        ...formData,
+                                                        customPages: [
+                                                            ...currentCustom,
+                                                            { id: String(Date.now()), title: 'New Custom Page', content: '' }
+                                                        ]
+                                                    });
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-neon-green text-black rounded-xl font-black uppercase text-[9px] tracking-widest hover:scale-105 transition-all shadow-xl disabled:opacity-30"
+                                            >
+                                                <Plus size={14} /> Add Blank Page
+                                            </button>
                                         </div>
 
-                                        {/* Row 2: Commercial Matrix & Terms */}
-                                        <div className="p-8 md:p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] space-y-10 relative overflow-hidden">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">Commercial Hub.</h3>
-                                                    <p className="text-[10px] font-bold text-neon-green uppercase tracking-[0.3em]">Financial Matrix & Settlement</p>
+                                        <div className={cn("space-y-8 transition-opacity", isHidden('customPages') && "opacity-30")}>
+                                            {!(formData.customPages && formData.customPages.length > 0) ? (
+                                                <div className="p-16 border-2 border-dashed border-white/5 rounded-[2.5rem] text-center text-gray-600 space-y-4">
+                                                    <FileText size={36} className="mx-auto text-gray-700" />
+                                                    <p className="text-[10px] font-black uppercase tracking-widest">No custom pages added yet</p>
                                                 </div>
-                                                <div className="p-3 bg-neon-green/10 rounded-2xl border border-neon-green/20">
-                                                    <CreditCard size={20} className="text-neon-green" />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                                <div className="space-y-6">
-                                                    <div className="p-6 bg-black/40 rounded-2xl border border-white/5 space-y-4">
-                                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Taxation (GST)</p>
-                                                        <div className="flex items-center justify-between">
-                                                            <button onClick={() => setFormData({...formData, showGst: !formData.showGst})} className={cn("w-12 h-7 rounded-full transition-all flex items-center px-1.5", formData.showGst ? "bg-neon-green" : "bg-white/10")}>
-                                                                <div className={cn("w-4 h-4 rounded-full bg-black transition-all", formData.showGst ? "translate-x-5" : "translate-x-0")} />
-                                                            </button>
-                                                            <span className="text-sm font-black text-white">{formData.gstRate}%</span>
+                                            ) : (
+                                                <div className="space-y-8">
+                                                    {(formData.customPages || []).map((cp, idx) => (
+                                                        <div key={cp.id} className="p-8 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] space-y-6 relative group">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">Custom Page {String(idx + 1).padStart(2, '0')}</span>
+                                                                <button 
+                                                                    disabled={isHidden('customPages')}
+                                                                    onClick={() => {
+                                                                        const updated = (formData.customPages || []).filter(p => p.id !== cp.id);
+                                                                        setFormData({ ...formData, customPages: updated });
+                                                                    }}
+                                                                    className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all rounded-xl"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-6">
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Page Title</label>
+                                                                    <input 
+                                                                        disabled={isHidden('customPages')}
+                                                                        value={cp.title} 
+                                                                        onChange={e => {
+                                                                            const updated = [...(formData.customPages || [])];
+                                                                            updated[idx] = { ...cp, title: e.target.value };
+                                                                            setFormData({ ...formData, customPages: updated });
+                                                                        }} 
+                                                                        placeholder="Page Title (e.g. Terms of Service, Project Timelines)" 
+                                                                        className="h-14 w-full bg-black/60 border border-white/5 focus:border-neon-green/50 rounded-xl text-sm font-black px-5 text-white outline-none transition-all placeholder:text-gray-800" 
+                                                                    />
+                                                                </div>
+                                                                <div className="relative group/editor group/refine">
+                                                                    <StudioRichEditor 
+                                                                        label="Page Content"
+                                                                        value={cp.content} 
+                                                                        onChange={val => {
+                                                                            const updated = [...(formData.customPages || [])];
+                                                                            updated[idx] = { ...cp, content: val };
+                                                                            setFormData({ ...formData, customPages: updated });
+                                                                        }} 
+                                                                        placeholder="Enter the body of your custom page..." 
+                                                                        minHeight="260px"
+                                                                        accentColor="neon-green"
+                                                                    />
+                                                                    <button 
+                                                                        type="button" 
+                                                                        disabled={isHidden('customPages')} 
+                                                                        onClick={() => handleRefineClick(`customPages[${idx}].content`, `Custom Page ${idx + 1} Content`, cp.content)} 
+                                                                        className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" 
+                                                                        title="Refine with AI"
+                                                                    >
+                                                                        <Sparkles size={14} className="animate-pulse" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="p-6 bg-black/40 rounded-2xl border border-white/5 space-y-4">
-                                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Advance Request (%)</p>
-                                                        <div className="flex items-center gap-4">
-                                                            <input type="range" min="0" max="100" step="5" value={formData.advanceRequested} onChange={e => setFormData({...formData, advanceRequested: parseInt(e.target.value)})} className="flex-1 accent-neon-green" />
-                                                            <span className="text-sm font-black text-white w-10 text-right">{formData.advanceRequested}%</span>
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                                <div className="lg:col-span-2 space-y-4 relative group/editor group/refine">
-                                                    <div className="relative w-full">
-                                                        <StudioRichEditor 
-                                                            label="Settlement Terms"
-                                                            value={formData.terms} 
-                                                            onChange={val => setFormData({...formData, terms: val})} 
-                                                            placeholder="Payment milestones, terms of settlement..." 
-                                                            minHeight="200px"
-                                                            accentColor="neon-green"
-                                                            className={cn(isHidden('terms') && 'opacity-30')}
-                                                        />
-                                                        <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Row 3: Signature & Seal HUB */}
-                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                            {/* Signature Pad */}
-                                            <div className="p-10 bg-zinc-900/40 border border-white/5 rounded-[3rem] relative overflow-hidden group">
-                                                <div className="flex items-center justify-between mb-8">
-                                                    <h4 className="text-xl font-black text-white uppercase tracking-tighter italic">Signature Capture.</h4>
-                                                    {formData.providerSignature && (
-                                                        <button onClick={() => setFormData({...formData, providerSignature: null})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear Pad</button>
-                                                    )}
-                                                </div>
-                                                <div onClick={() => setIsSignatureModalOpen(true)} className="h-64 bg-black/80 rounded-[2.5rem] border border-white/5 flex items-center justify-center cursor-pointer hover:border-neon-green/40 transition-all relative overflow-hidden group/pad">
-                                                    {formData.providerSignature ? (
-                                                        <img src={formData.providerSignature} className="max-h-[70%] object-contain invert brightness-200 drop-shadow-[0_0_30px_rgba(57,255,20,0.4)]" alt="Signature" />
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-4 text-white/5 group-hover/pad:text-neon-green/30 transition-all">
-                                                            <PenTool size={32} />
-                                                            <p className="text-[10px] font-black uppercase tracking-[0.6em]">Execute Pad</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Integrity Hub */}
-                                            <div className="p-10 bg-white/[0.02] border border-white/5 rounded-[3.5rem] flex flex-col items-center justify-center gap-8 relative overflow-hidden group">
-                                                <div className="absolute inset-0 bg-neon-green/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative shrink-0 scale-90">
-                                                    <DocumentSeal className="w-40 h-40 drop-shadow-[0_0_40px_rgba(57,255,20,0.2)]" />
-                                                    <motion.div animate={{ rotate: -360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-neon-green/20 rounded-full pointer-events-none" />
-                                                </div>
-                                                <div className="text-center space-y-4 w-full">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">Execution Reference</p>
-                                                    <div className="bg-black/60 px-8 py-5 rounded-[2rem] border border-white/10 group-hover:border-neon-green/40 transition-all inline-block">
-                                                        <h2 className="text-2xl lg:text-3xl font-black text-white tracking-[0.1em] italic uppercase">
-                                                            NB-<span className="text-neon-green">{formData.campaignNumber || 'PROPOSAL-26'}</span>
-                                                        </h2>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
-                            </motion.div>
-                        </AnimatePresence>
+                             </motion.div>
+                         </AnimatePresence>
 
                         {/* Section Navigation Footer */}
                         <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
@@ -2159,93 +2916,152 @@ const ProposalGenerator = () => {
                                                 <table className="w-full text-left">
                                                     <thead>
                                                         <tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest">
-                                                            <th className="py-4 pr-4">Description</th>
-                                                            <th className="py-4 px-4 text-center w-24">Qty</th>
-                                                            <th className="py-4 pl-4 text-right w-48">Value (INR)</th>
+                                                            {(formData.tableColumns || defaultColumns).map((col) => (
+                                                                <th 
+                                                                    key={col.key} 
+                                                                    className={cn(
+                                                                        "py-4",
+                                                                        col.key === 'description' && "pr-4",
+                                                                        col.key === 'qty' && "px-4 text-center w-24",
+                                                                        col.key === 'price' && "pl-4 text-right w-48",
+                                                                        !['description', 'qty', 'price'].includes(col.key) && "px-4"
+                                                                    )}
+                                                                >
+                                                                    {col.label}
+                                                                </th>
+                                                            ))}
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-100">
-                                                        {paginatedPages[currentPreviewPage].items.map((item, i) => (
-                                                            <tr key={i}>
-                                                                <td className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td>
-                                                                <td className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td>
-                                                                <td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td>
-                                                            </tr>
-                                                        ))}
+                                                        {paginatedPages[currentPreviewPage].items.map((item, i) => {
+                                                            const cols = formData.tableColumns || defaultColumns;
+                                                            return (
+                                                                <tr key={i}>
+                                                                    {cols.map(col => {
+                                                                        if (col.key === 'description') {
+                                                                            return <td key={col.key} className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td>;
+                                                                        }
+                                                                        if (col.key === 'qty') {
+                                                                            return <td key={col.key} className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td>;
+                                                                        }
+                                                                        if (col.key === 'price') {
+                                                                            return <td key={col.key} className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td>;
+                                                                        }
+                                                                        return <td key={col.key} className="py-6 px-4 text-[12px] font-medium text-gray-700">{item[col.key] || ''}</td>;
+                                                                    })}
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             </div>
                                         )}
-                                        {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
-                                            <div className="space-y-12 py-6">
-                                                <div className="mb-16 border-l-4 border-black pl-8">
-                                                    <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-16 items-stretch">
-                                                    <div className="space-y-8">
-                                                        {!isHidden('terms') && (
-                                                            <div className="space-y-4">
-                                                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b border-gray-100 pb-2">Conditions</h4>
-                                                                <div className="text-[11px] font-medium text-gray-500 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
-                                                            </div>
-                                                        )}
-                                                        {!isHidden('paymentDetails') && (
-                                                            <div className="pt-8 border-t border-gray-100">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Settlement Details</p>
-                                                                <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line bg-zinc-50 p-6 rounded-lg">{formData.paymentDetails}</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                        {paginatedPages[currentPreviewPage]?.type === 'custom' && (
+                                            <div className="space-y-8 py-8 h-full flex flex-col justify-start">
+                                                {paginatedPages[currentPreviewPage]?.title && (
                                                     <div className="space-y-4">
-                                                        <div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">Subtotal</span><span className="text-lg font-black text-black font-mono">₹{subtotal.toLocaleString()}</span></div>
-                                                        {formData.showGst && (<div className="flex justify-between items-center py-4 border-b border-gray-100"><span className="text-[11px] font-bold text-gray-400 uppercase">GST ({formData.gstRate}%)</span><span className="text-lg font-black text-black font-mono">₹{gstAmount.toLocaleString()}</span></div>)}
-                                                        <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl"><p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Estimated Cost</p><h2 className="text-4xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-2 h-full bg-neon-green" /></div>
-                                                        {formData.advanceRequested > 0 && (
-                                                            <div className="mt-8 p-6 bg-black text-white rounded-lg flex justify-between items-center">
-                                                                <span className="text-[10px] font-black uppercase tracking-widest">Advance Fee ({formData.advanceRequested}%)</span>
-                                                                <span className="text-xl font-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
+                                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{paginatedPages[currentPreviewPage].title}</h3>
+                                                        <div className="w-16 h-1 bg-black" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    {renderContent(paginatedPages[currentPreviewPage]?.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
+                                            <div className="space-y-10 py-6 h-full flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex items-center gap-4 mb-10">
+                                                        <div className="w-1.5 h-8 bg-black" />
+                                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-12 items-start">
+                                                        <div className="space-y-8">
+                                                            {formData.terms && (
+                                                                <div className="space-y-3">
+                                                                    <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
+                                                                    <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
+                                                                </div>
+                                                            )}
+                                                            {formData.paymentDetails && (
+                                                                <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                                    <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{formData.paymentDetails}</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
+                                                                <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                                    <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
+                                                                </div>
+                                                                {formData.showGst && (
+                                                                    <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
+                                                                        <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                                    <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
+                                                                </div>
+                                                                {formData.advanceRequested > 0 && (
+                                                                    <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
+                                                                        <div>
+                                                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
+                                                                            <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                        </div>
+                                                                        <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Authentication Layer */}
+                                                {!isHidden('signatures') && (formData.showSignatures || formData.showSeal) && (
+                                                    <div className="mt-12 pt-12 border-t border-gray-100 grid grid-cols-2 gap-16 relative">
+                                                        {/* Provider Signature */}
+                                                        <div className="space-y-6">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                            <div className="h-32 flex items-center justify-start relative">
+                                                                {formData.showSignatures && formData.providerSignature ? (
+                                                                    <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
+                                                                ) : (
+                                                                    <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
+                                                                )}
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                            </div>
+                                                            <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
+                                                            <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
+                                                        </div>
+
+                                                        {/* Client Signature */}
+                                                        <div className="space-y-6 text-right">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
+                                                            <div className="h-32 flex items-center justify-end relative">
+                                                                {formData.showSignatures && formData.clientSignature ? (
+                                                                    <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
+                                                                ) : (
+                                                                    <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
+                                                                )}
+                                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
+                                                            </div>
+                                                            <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                        </div>
+
+                                                        {/* Official Seal Overlay */}
+                                                        {formData.showSeal && (
+                                                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
+                                                                <DocumentSeal className="w-44 h-44" />
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                                {/* Authentication Layer */}
-                                                <div className="mt-12 pt-12 border-t border-gray-100 grid grid-cols-2 gap-16 relative">
-                                                    {/* Provider Signature */}
-                                                    <div className="space-y-6">
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                        <div className="h-32 flex items-center justify-start relative">
-                                                            {formData.showSignatures && formData.providerSignature ? (
-                                                                <img src={formData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale" />
-                                                            ) : (
-                                                                <p className="text-[18px] font-formal italic text-black opacity-40">{formData.senderName || 'Authorized Signatory'}</p>
-                                                            )}
-                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
-                                                        </div>
-                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">{formData.senderName || 'Authorized Signatory'}</p>
-                                                        <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">{formData.senderDesignation || 'Director of Operations'}</p>
-                                                    </div>
-
-                                                    {/* Client Signature */}
-                                                    <div className="space-y-6 text-right">
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {formData.clientName || 'Valued Partner'}</p>
-                                                        <div className="h-32 flex items-center justify-end relative">
-                                                            {formData.showSignatures && formData.clientSignature ? (
-                                                                <img src={formData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale" />
-                                                            ) : (
-                                                                <p className="text-[18px] font-formal italic text-black opacity-20">Type name to sign</p>
-                                                            )}
-                                                            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/10" />
-                                                        </div>
-                                                        <p className="text-[9px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
-                                                    </div>
-
-                                                    {/* Official Seal Overlay */}
-                                                    {formData.showSeal && (
-                                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
-                                                            <DocumentSeal className="w-44 h-44" />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         )}
                                         </div>
@@ -2385,40 +3201,114 @@ const ProposalGenerator = () => {
                                     <div className="mb-16 border-l-4 border-black pl-8">
                                         <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
                                     </div>
-                                    <table className="w-full text-left border-collapse border-2 border-black"><thead><tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black"><th className="p-6">Resource Inventory</th><th className="p-6 text-center w-24 border-x border-white/20">Qty</th><th className="p-6 text-right w-48">Amount (INR)</th></tr></thead><tbody className="divide-y divide-gray-200">{page.items.map((item, i) => (<tr key={i} className="hover:bg-gray-50"><td className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td><td className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td><td className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td></tr>))}</tbody></table>
+                                    <table className="w-full text-left border-collapse border-2 border-black">
+                                        <thead>
+                                            <tr className="bg-black text-[10px] font-black uppercase text-white tracking-[0.4em] border-b-2 border-black">
+                                                {(formData.tableColumns || defaultColumns).map(col => (
+                                                    <th 
+                                                        key={col.key} 
+                                                        className={cn(
+                                                            "p-6",
+                                                            col.key === 'qty' && "text-center w-24 border-x border-white/20",
+                                                            col.key === 'price' && "text-right w-48",
+                                                            !['qty', 'price'].includes(col.key) && col.key !== 'description' && "border-x border-white/20"
+                                                        )}
+                                                    >
+                                                        {col.label}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {page.items.map((item, i) => {
+                                                const cols = formData.tableColumns || defaultColumns;
+                                                return (
+                                                    <tr key={i} className="hover:bg-gray-50">
+                                                        {cols.map(col => {
+                                                            if (col.key === 'description') {
+                                                                return <td key={col.key} className="p-6 text-[13px] font-black uppercase text-black text-justify">{item.description || 'Asset'}</td>;
+                                                            }
+                                                            if (col.key === 'qty') {
+                                                                 return <td key={col.key} className="p-6 text-center text-[13px] font-bold text-gray-600 border-x border-gray-100">{item.qty}</td>;
+                                                            }
+                                                            if (col.key === 'price') {
+                                                                 return <td key={col.key} className="p-6 text-right text-[13px] font-black tracking-widest text-black">₹{item.price.toLocaleString()}</td>;
+                                                            }
+                                                            return <td key={col.key} className="p-6 text-[12px] font-bold text-gray-600 border-x border-gray-100">{item[col.key] || ''}</td>;
+                                                        })}
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                            {page.type === 'custom' && (
+                                <div className="space-y-8 py-8 h-full flex flex-col justify-start">
+                                    {page.title && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-3xl font-black uppercase tracking-tighter text-black">{page.title}</h3>
+                                            <div className="w-16 h-1 bg-black" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                    </div>
                                 </div>
                             )}
                             {page.type === 'commercials' && (
-                                <div className="space-y-16 py-8">
-                                    <div className="mb-16 border-l-4 border-black pl-8">
-                                        <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Summary & Terms.</h3>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-16 items-stretch">
-                                        <div className="space-y-12">
-                                            {!isHidden('terms') && <div className="space-y-6"><h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4><div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(formData.terms)}</div></div>}
-                                            {!isHidden('paymentDetails') && <div className="p-8 bg-gray-50 border border-gray-200 space-y-4"><p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p><div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(formData.paymentDetails)}</div></div>}
-                                        </div>
-                                        <div className="space-y-6">
-                                            <div className="p-8 border-2 border-black flex flex-col items-start gap-1 bg-gray-50"><span className="text-[11px] font-black text-black uppercase tracking-widest">Total Net Project Value</span><span className="text-xl font-black text-black tracking-widest font-mono">₹{subtotal.toLocaleString()}</span></div>
-                                            {formData.showGst && (
-                                                <div className="p-8 border border-gray-200 flex flex-col items-start gap-1 text-gray-500">
-                                                    <span className="text-[10px] font-black uppercase">GST ({formData.gstRate}%)</span>
-                                                    <span className="text-xl font-black font-mono">₹{gstAmount.toLocaleString()}</span>
-                                                </div>
-                                            )}
-                                            <div className="p-10 bg-black text-right relative overflow-hidden shadow-xl">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Total Quotation Value</p>
-                                                <h2 className="text-6xl font-black tracking-tighter text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
-                                                <div className="absolute top-0 right-0 w-2 h-full bg-neon-green" />
-                                            </div>
-                                            {(formData.advanceRequested > 0) && (
-                                                <div className="p-8 bg-neon-green/10 border-2 border-neon-green/20 flex flex-col items-start gap-2">
-                                                    <span className="text-[11px] font-black text-black uppercase tracking-widest">Advance Fee Required</span>
-                                                    <span className="text-3xl font-black text-black font-mono italic">₹{(totalAmount * (formData.advanceRequested || 50) / 100).toLocaleString()}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                 <div className="space-y-10 py-6 h-full flex flex-col justify-between">
+                                     <div>
+                                         <div className="flex items-center gap-4 mb-10">
+                                             <div className="w-1.5 h-8 bg-black" />
+                                             <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic uppercase">Summary & Terms.</h3>
+                                         </div>
+                                         <div className="grid grid-cols-2 gap-12 items-start">
+                                             <div className="space-y-8">
+                                                 {formData.terms && (
+                                                     <div className="space-y-3">
+                                                         <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
+                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
+                                                     </div>
+                                                 )}
+                                                 {formData.paymentDetails && (
+                                                     <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{formData.paymentDetails}</div>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                             <div className="space-y-4">
+                                                 <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
+                                                     <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                         <span className="text-base font-bold text-black font-mono">₹{subtotal.toLocaleString()}</span>
+                                                     </div>
+                                                     {formData.showGst && (
+                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({formData.gstRate}%)</span>
+                                                             <span className="text-base font-bold text-black font-mono">₹{gstAmount.toLocaleString()}</span>
+                                                         </div>
+                                                     )}
+                                                     <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                         <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{totalAmount.toLocaleString()}</h2>
+                                                         <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
+                                                     </div>
+                                                     {formData.advanceRequested > 0 && (
+                                                         <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
+                                                             <div>
+                                                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({formData.advanceRequested}%)</span>
+                                                                 <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                             </div>
+                                                             <span className="text-xl font-black text-black font-mono">₹{(totalAmount * formData.advanceRequested / 100).toLocaleString()}</span>
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
+
                                     {/* Authentication Layer (Export) */}
                                     {(formData.showSeal || formData.showSignatures) && (
                                         <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
