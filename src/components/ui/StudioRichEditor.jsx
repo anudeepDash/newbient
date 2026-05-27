@@ -358,7 +358,10 @@ const StudioRichEditor = ({
                 isFocused ? focusBorderClass : "border-white/5"
             )}>
                 {/* Toolbar */}
-                <div className="flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl rounded-t-[2rem]">
+                <div className={cn(
+                    "flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl rounded-t-[2rem]",
+                    showTableSelector ? "relative z-30" : "relative z-10"
+                )}>
                     <div className="flex items-center gap-1 pr-2 border-r border-white/10">
                         <ToolbarButton icon={Undo2} onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
                         <ToolbarButton icon={Redo2} onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" />
@@ -470,7 +473,10 @@ const StudioRichEditor = ({
                 {/* Editor Surface & Placeholder Container */}
                 <div 
                     onClick={handleEditorClick}
-                    className="relative rounded-b-[2rem]"
+                    className={cn(
+                        "relative rounded-b-[2rem]",
+                        selectedImage ? "z-30" : "z-20"
+                    )}
                 >
                     <div 
                         ref={editorRef}
