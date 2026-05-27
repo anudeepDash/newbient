@@ -266,6 +266,31 @@ export const generateInvoiceEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+                
+                @media (prefers-color-scheme: dark) {
+                    ${!isDark ? `
+                        .logo-light { display: none !important; }
+                        .logo-dark { display: block !important; }
+                    ` : ''}
+                }
+
+                @media (prefers-color-scheme: light) {
+                    ${isDark ? `
+                        .logo-light { display: block !important; }
+                        .logo-dark { display: none !important; }
+                    ` : ''}
+                }
+
+                ${isDark ? `
+                    [data-ogsc] .logo-light { display: block !important; }
+                    [data-ogsc] .logo-dark { display: none !important; }
+                ` : `
+                    [data-ogsc] .logo-light { display: none !important; }
+                    [data-ogsc] .logo-dark { display: block !important; }
+                `}
+
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
@@ -280,7 +305,10 @@ export const generateInvoiceEmailHTML = (data) => {
             <span class="preheader">Invoice ${invoiceNumber} for ${clientName} — ₹${amount}</span>
             <div class="container">
                 <div class="header">
-                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">INVOICE</div>
@@ -492,6 +520,31 @@ export const generateOfficialHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+                
+                @media (prefers-color-scheme: dark) {
+                    ${!isDark ? `
+                        .logo-light { display: none !important; }
+                        .logo-dark { display: block !important; }
+                    ` : ''}
+                }
+
+                @media (prefers-color-scheme: light) {
+                    ${isDark ? `
+                        .logo-light { display: block !important; }
+                        .logo-dark { display: none !important; }
+                    ` : ''}
+                }
+
+                ${isDark ? `
+                    [data-ogsc] .logo-light { display: block !important; }
+                    [data-ogsc] .logo-dark { display: none !important; }
+                ` : `
+                    [data-ogsc] .logo-light { display: none !important; }
+                    [data-ogsc] .logo-dark { display: block !important; }
+                `}
+
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
@@ -506,7 +559,10 @@ export const generateOfficialHTML = (data) => {
             <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
             <div class="container">
                 <div class="header">
-                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">${category}</div>
@@ -987,6 +1043,31 @@ export const generateProposalEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+                
+                @media (prefers-color-scheme: dark) {
+                    ${!isDark ? `
+                        .logo-light { display: none !important; }
+                        .logo-dark { display: block !important; }
+                    ` : ''}
+                }
+
+                @media (prefers-color-scheme: light) {
+                    ${isDark ? `
+                        .logo-light { display: block !important; }
+                        .logo-dark { display: none !important; }
+                    ` : ''}
+                }
+
+                ${isDark ? `
+                    [data-ogsc] .logo-light { display: block !important; }
+                    [data-ogsc] .logo-dark { display: none !important; }
+                ` : `
+                    [data-ogsc] .logo-light { display: none !important; }
+                    [data-ogsc] .logo-dark { display: block !important; }
+                `}
+
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
@@ -1001,7 +1082,10 @@ export const generateProposalEmailHTML = (data) => {
             <span class="preheader">Proposal ${proposalNumber} for ${clientName}</span>
             <div class="container">
                 <div class="header">
-                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">PROPOSAL</div>
@@ -1154,6 +1238,31 @@ export const generateAgreementEmailHTML = (data) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+                
+                @media (prefers-color-scheme: dark) {
+                    ${!isDark ? `
+                        .logo-light { display: none !important; }
+                        .logo-dark { display: block !important; }
+                    ` : ''}
+                }
+
+                @media (prefers-color-scheme: light) {
+                    ${isDark ? `
+                        .logo-light { display: block !important; }
+                        .logo-dark { display: none !important; }
+                    ` : ''}
+                }
+
+                ${isDark ? `
+                    [data-ogsc] .logo-light { display: block !important; }
+                    [data-ogsc] .logo-dark { display: none !important; }
+                ` : `
+                    [data-ogsc] .logo-light { display: none !important; }
+                    [data-ogsc] .logo-dark { display: block !important; }
+                `}
+
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
                     .content { padding: 30px 20px !important; }
@@ -1168,7 +1277,10 @@ export const generateAgreementEmailHTML = (data) => {
             <span class="preheader">Contract ${agreementNumber} — ${secondPartyName}</span>
             <div class="container">
                 <div class="header">
-                    <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">CONTRACT</div>
