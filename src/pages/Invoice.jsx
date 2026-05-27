@@ -428,10 +428,10 @@ const Invoice = () => {
                     ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2 block"
                     : "text-[11px] font-semibold text-gray-800 mt-4 mb-1 block";
                 elements.push(<p key={i} className={headingClass}>{headingText}</p>);
-            } else if (line.match(/^[•\-\*]\s/)) {
+            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) { 
-                    items.push(lines[i].replace(/^[•\-\*]\s/, '')); 
+                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { 
+                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); 
                     i++; 
                 }
                 elements.push(
