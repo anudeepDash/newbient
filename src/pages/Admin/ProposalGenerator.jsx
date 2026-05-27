@@ -739,16 +739,16 @@ const ProposalGenerator = () => {
                     hiddenFields: proposal.hiddenFields || [], 
                     selectedLogo: proposal.selectedLogo || 'entertainment',
                     hideTotalColumn: proposal.hideTotalColumn || false,
-                    strategyTitle: proposal.strategyTitle || 'EXECUTIVE SUMMARY',
-                    strategySub: proposal.strategySub || 'STRATEGIC OUTLINE',
-                    scopeTitle: proposal.scopeTitle || 'SCOPE OF WORK',
-                    scopeSub: proposal.scopeSub || 'RESOURCE DELIVERABLES',
-                    proposalTitle: proposal.proposalTitle || 'DELIVERABLES',
-                    proposalSub: proposal.proposalSub || 'PROJECT INVENTORY',
-                    inventoryTitle: proposal.inventoryTitle || 'RESOURCE INVENTORY',
-                    inventorySub: proposal.inventorySub || 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: proposal.commercialsTitle || 'COMMERCIAL TERMS',
-                    commercialsSub: proposal.commercialsSub || 'SETTLEMENT & SIGN-OFF'
+                    strategyTitle: proposal.strategyTitle ?? 'EXECUTIVE SUMMARY',
+                    strategySub: proposal.strategySub ?? 'STRATEGIC OUTLINE',
+                    scopeTitle: proposal.scopeTitle ?? 'SCOPE OF WORK',
+                    scopeSub: proposal.scopeSub ?? 'RESOURCE DELIVERABLES',
+                    proposalTitle: proposal.proposalTitle ?? 'DELIVERABLES',
+                    proposalSub: proposal.proposalSub ?? 'PROJECT INVENTORY',
+                    inventoryTitle: proposal.inventoryTitle ?? 'RESOURCE INVENTORY',
+                    inventorySub: proposal.inventorySub ?? 'COMMERCIALS BREAKDOWN',
+                    commercialsTitle: proposal.commercialsTitle ?? 'COMMERCIAL TERMS',
+                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'
                 });
                 setSingleItems(proposal.items || []);
                 hasInitializedRef.current = true;
@@ -2105,8 +2105,8 @@ const ProposalGenerator = () => {
                                 {activeTab === '2' && (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
-                                             <Input label="Section Title" value={formData.strategyTitle || 'EXECUTIVE SUMMARY'} onChange={(e) => setFormData({ ...formData, strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
-                                             <Input label="Section Subtitle" value={formData.strategySub || 'STRATEGIC OUTLINE'} onChange={(e) => setFormData({ ...formData, strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
+                                             <Input label="Section Title" value={formData.strategyTitle ?? 'EXECUTIVE SUMMARY'} onChange={(e) => setFormData({ ...formData, strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
+                                             <Input label="Section Subtitle" value={formData.strategySub ?? 'STRATEGIC OUTLINE'} onChange={(e) => setFormData({ ...formData, strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
                                              <div className="relative w-full">
@@ -2141,8 +2141,8 @@ const ProposalGenerator = () => {
                                  {activeTab === '3' && (
                                      <div className="space-y-12">
                                          <div className="grid grid-cols-2 gap-4">
-                                             <Input label="Section Title" value={formData.scopeTitle || 'SCOPE OF WORK'} onChange={(e) => setFormData({ ...formData, scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
-                                             <Input label="Section Subtitle" value={formData.scopeSub || 'RESOURCE DELIVERABLES'} onChange={(e) => setFormData({ ...formData, scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
+                                             <Input label="Section Title" value={formData.scopeTitle ?? 'SCOPE OF WORK'} onChange={(e) => setFormData({ ...formData, scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
+                                             <Input label="Section Subtitle" value={formData.scopeSub ?? 'RESOURCE DELIVERABLES'} onChange={(e) => setFormData({ ...formData, scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
                                          </div>
                                          <div className="space-y-4 relative group/editor group/refine">
                                              <div className="relative w-full">
@@ -2163,8 +2163,8 @@ const ProposalGenerator = () => {
                                  {activeTab === '4' && (
                                      <div className="space-y-16">
                                          <div className="grid grid-cols-2 gap-4 px-2">
-                                             <Input label="Section Title" value={formData.proposalTitle || 'DELIVERABLES'} onChange={(e) => setFormData({ ...formData, proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
-                                             <Input label="Section Subtitle" value={formData.proposalSub || 'PROJECT INVENTORY'} onChange={(e) => setFormData({ ...formData, proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
+                                             <Input label="Section Title" value={formData.proposalTitle ?? 'DELIVERABLES'} onChange={(e) => setFormData({ ...formData, proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
+                                             <Input label="Section Subtitle" value={formData.proposalSub ?? 'PROJECT INVENTORY'} onChange={(e) => setFormData({ ...formData, proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
                                          </div>
                                          {/* Deliverables Section */}
                                          <div className="space-y-8">
@@ -2238,8 +2238,8 @@ const ProposalGenerator = () => {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 px-4">
-                                            <Input label="Section Title" value={formData.inventoryTitle || 'RESOURCE INVENTORY'} onChange={(e) => setFormData({ ...formData, inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
-                                            <Input label="Section Subtitle" value={formData.inventorySub || 'COMMERCIALS BREAKDOWN'} onChange={(e) => setFormData({ ...formData, inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
+                                            <Input label="Section Title" value={formData.inventoryTitle ?? 'RESOURCE INVENTORY'} onChange={(e) => setFormData({ ...formData, inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
+                                            <Input label="Section Subtitle" value={formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} onChange={(e) => setFormData({ ...formData, inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
                                         </div>
 
                                         <div className={cn("space-y-8 transition-opacity", isHidden('inventory') && "opacity-30")}>
@@ -2491,8 +2491,8 @@ const ProposalGenerator = () => {
                                 {activeTab === '6' && (
                                      <div className="flex flex-col gap-8">
                                          <div className="grid grid-cols-2 gap-4 bg-zinc-900/20 p-6 border border-white/5 rounded-[2rem]">
-                                             <Input label="Section Title" value={formData.commercialsTitle || 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
-                                             <Input label="Section Subtitle" value={formData.commercialsSub || 'SETTLEMENT & SIGN-OFF'} onChange={(e) => setFormData({ ...formData, commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
+                                             <Input label="Section Title" value={formData.commercialsTitle ?? 'COMMERCIAL TERMS'} onChange={(e) => setFormData({ ...formData, commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
+                                             <Input label="Section Subtitle" value={formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'} onChange={(e) => setFormData({ ...formData, commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
                                          </div>
                                          <style>{`
                                              .custom-range-slider {
@@ -3391,11 +3391,11 @@ const ProposalGenerator = () => {
                                             <div className="space-y-16 py-8">
                                                 <div className="mb-10 space-y-3">
                                                     <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                                        {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.strategySub || 'STRATEGIC OUTLINE'}
+                                                        {formData.strategySub ?? 'STRATEGIC OUTLINE'}
                                                     </p>
                                                 </div>
                                                 {paginatedPages[currentPreviewPage].overviewText && (
@@ -3417,11 +3417,11 @@ const ProposalGenerator = () => {
                                             <div className="h-full flex flex-col py-8">
                                                 <div className="mb-10 space-y-3">
                                                     <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.scopeTitle || 'SCOPE OF WORK'}
+                                                        {formData.scopeTitle ?? 'SCOPE OF WORK'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                                        {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                                     </p>
                                                 </div>
                                                 <div className="flex-1 flex flex-col">
@@ -3433,11 +3433,11 @@ const ProposalGenerator = () => {
                                             <div className="space-y-16 py-8">
                                                 <div className="mb-10 space-y-3">
                                                     <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.proposalTitle || 'DELIVERABLES'}
+                                                        {formData.proposalTitle ?? 'DELIVERABLES'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                        {formData.proposalSub || 'PROJECT INVENTORY'}
+                                                        {formData.proposalSub ?? 'PROJECT INVENTORY'}
                                                     </p>
                                                 </div>
                                                 
@@ -3487,13 +3487,13 @@ const ProposalGenerator = () => {
                                             <div className="space-y-12 py-8">
                                                 <div className="mb-10 space-y-3">
                                                     <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                        {formData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                                        {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                                     </h3>
                                                     <div className="w-20 h-1.5 bg-neon-green" />
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                         {paginatedPages[currentPreviewPage].tablePageIdx > 1 
-                                                            ? `${formData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
-                                                            : (formData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                            ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
+                                                            : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                                     </p>
                                                 </div>
                                                 <table className="w-full text-left border-collapse border border-black">
@@ -3579,11 +3579,11 @@ const ProposalGenerator = () => {
                                                 <div>
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {formData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                            {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {formData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                            {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                         </p>
                                                     </div>
                                                     <div className={cn(
@@ -3737,11 +3737,11 @@ const ProposalGenerator = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                            {formData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.strategySub || 'STRATEGIC OUTLINE'}
+                                            {formData.strategySub ?? 'STRATEGIC OUTLINE'}
                                         </p>
                                     </div>
                                     {page.overviewText && (
@@ -3763,11 +3763,11 @@ const ProposalGenerator = () => {
                                 <div className="h-full flex flex-col py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.scopeTitle || 'SCOPE OF WORK'}
+                                            {formData.scopeTitle ?? 'SCOPE OF WORK'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                            {formData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                         </p>
                                     </div>
                                     <div className="flex-1 flex flex-col">
@@ -3779,11 +3779,11 @@ const ProposalGenerator = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.proposalTitle || 'DELIVERABLES'}
+                                            {formData.proposalTitle ?? 'DELIVERABLES'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {formData.proposalSub || 'PROJECT INVENTORY'}
+                                            {formData.proposalSub ?? 'PROJECT INVENTORY'}
                                         </p>
                                     </div>
                                     {page.deliverables?.length > 0 && (
@@ -3831,13 +3831,13 @@ const ProposalGenerator = () => {
                                 <div className="space-y-12 py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {formData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                            {formData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                             {page.tablePageIdx > 1 
-                                                ? `${formData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                : (formData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                ? `${formData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
+                                                : (formData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                         </p>
                                     </div>
                                     <table className="w-full text-left border-collapse border border-black">
@@ -3922,11 +3922,11 @@ const ProposalGenerator = () => {
                                      <div>
                                          <div className="mb-10 space-y-3">
                                              <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                 {formData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                 {formData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                              </h3>
                                              <div className="w-20 h-1.5 bg-neon-green" />
                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                 {formData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                 {formData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                              </p>
                                          </div>
                                          <div className={cn(

@@ -25,6 +25,115 @@ const StudioRichEditor = ({
     const [showTableSelector, setShowTableSelector] = useState(false);
     const [hoveredGrid, setHoveredGrid] = useState({ rows: 0, cols: 0 });
 
+    // States for image resizing and styling
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imageTooltipPos, setImageTooltipPos] = useState({ top: 0, left: 0 });
+
+    const handleEditorClick = (e) => {
+        if (e.target.tagName === 'IMG') {
+            if (selectedImage && selectedImage !== e.target) {
+                selectedImage.removeAttribute('data-selected');
+            }
+            e.target.setAttribute('data-selected', 'true');
+            setSelectedImage(e.target);
+        } else {
+            if (selectedImage) {
+                selectedImage.removeAttribute('data-selected');
+            }
+            setSelectedImage(null);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedImage && editorRef.current) {
+            const updateTooltipPosition = () => {
+                if (!selectedImage) return;
+                const imgRect = selectedImage.getBoundingClientRect();
+                const containerRect = editorRef.current.parentNode.getBoundingClientRect();
+                
+                // Position tooltip at top-center of the image
+                const top = imgRect.top - containerRect.top - 50; // 50px above the image
+                const left = imgRect.left - containerRect.left + (imgRect.width / 2);
+                
+                setImageTooltipPos({ top, left });
+            };
+
+            updateTooltipPosition();
+            
+            window.addEventListener('resize', updateTooltipPosition);
+            return () => {
+                window.removeEventListener('resize', updateTooltipPosition);
+            };
+        }
+    }, [selectedImage]);
+
+    useEffect(() => {
+        if (!selectedImage) return;
+
+        const handleDocumentClick = (e) => {
+            const isClickInside = editorRef.current?.contains(e.target);
+            const isClickOnTooltip = e.target.closest('.image-tooltip-popover');
+            
+            if (!isClickInside && !isClickOnTooltip) {
+                selectedImage.removeAttribute('data-selected');
+                setSelectedImage(null);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            document.addEventListener('click', handleDocumentClick);
+        }, 10);
+
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('click', handleDocumentClick);
+        };
+    }, [selectedImage]);
+
+    const resizeImage = (widthPercent) => {
+        if (selectedImage) {
+            selectedImage.style.width = widthPercent;
+            selectedImage.style.height = 'auto'; // Prevent elongation!
+            selectedImage.setAttribute('width', widthPercent);
+            updateValue(editorRef.current.innerHTML);
+            setTimeout(() => {
+                if (selectedImage && editorRef.current) {
+                    const imgRect = selectedImage.getBoundingClientRect();
+                    const containerRect = editorRef.current.parentNode.getBoundingClientRect();
+                    setImageTooltipPos({
+                        top: imgRect.top - containerRect.top - 50,
+                        left: imgRect.left - containerRect.left + (imgRect.width / 2)
+                    });
+                }
+            }, 50);
+        }
+    };
+
+    const alignImage = (alignment) => {
+        if (selectedImage) {
+            selectedImage.style.display = 'block';
+            if (alignment === 'left') {
+                selectedImage.style.marginLeft = '0';
+                selectedImage.style.marginRight = 'auto';
+            } else if (alignment === 'center') {
+                selectedImage.style.marginLeft = 'auto';
+                selectedImage.style.marginRight = 'auto';
+            } else if (alignment === 'right') {
+                selectedImage.style.marginLeft = 'auto';
+                selectedImage.style.marginRight = '0';
+            }
+            updateValue(editorRef.current.innerHTML);
+        }
+    };
+
+    const removeImage = () => {
+        if (selectedImage) {
+            selectedImage.remove();
+            setSelectedImage(null);
+            updateValue(editorRef.current.innerHTML);
+        }
+    };
+
     const handleImageFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -123,6 +232,13 @@ const StudioRichEditor = ({
     };
 
     const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            if (selectedImage) {
+                selectedImage.removeAttribute('data-selected');
+            }
+            setSelectedImage(null);
+        }
+
         // Handle Tab
         if (e.key === 'Tab') {
             e.preventDefault();
@@ -351,114 +467,233 @@ const StudioRichEditor = ({
 
                 </div>
 
-                {/* Editor Surface */}
+                {/* Editor Surface & Placeholder Container */}
                 <div 
-                    ref={editorRef}
-                    contentEditable
-                    onInput={handleInput}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onKeyDown={handleKeyDown}
-                    onPaste={async (e) => {
-                        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                        let hasImages = false;
-                        
-                        for (let i = 0; i < items.length; i++) {
-                            const item = items[i];
-                            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                                hasImages = true;
-                                e.preventDefault();
-                                const file = item.getAsFile();
-                                if (!file) continue;
+                    onClick={handleEditorClick}
+                    className="relative rounded-b-[2rem]"
+                >
+                    <div 
+                        ref={editorRef}
+                        contentEditable
+                        onInput={handleInput}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        onKeyDown={handleKeyDown}
+                        onPaste={async (e) => {
+                            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                            let hasImages = false;
+                            
+                            for (let i = 0; i < items.length; i++) {
+                                const item = items[i];
+                                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                                    hasImages = true;
+                                    e.preventDefault();
+                                    const file = item.getAsFile();
+                                    if (!file) continue;
 
-                                // Save selection
-                                const selection = window.getSelection();
-                                let savedRange = null;
-                                if (selection.rangeCount > 0) {
-                                    savedRange = selection.getRangeAt(0).cloneRange();
-                                }
-
-                                setIsUploading(true);
-                                try {
-                                    const url = await useStore.getState().uploadToCloudinary(file);
-                                    if (url) {
-                                        // Restore selection
-                                        if (savedRange) {
-                                            selection.removeAllRanges();
-                                            selection.addRange(savedRange);
-                                        }
-                                        // Insert image at cursor
-                                        document.execCommand('insertImage', false, url);
-                                        updateValue(editorRef.current.innerHTML);
+                                    // Save selection
+                                    const selection = window.getSelection();
+                                    let savedRange = null;
+                                    if (selection.rangeCount > 0) {
+                                        savedRange = selection.getRangeAt(0).cloneRange();
                                     }
-                                } catch (err) {
-                                    console.error("Paste upload failed:", err);
-                                    useStore.getState().addToast?.("Upload failed.", "error");
-                                } finally {
-                                    setIsUploading(false);
-                                }
-                            }
-                        }
-                    }}
-                    onDragOver={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
-                    onDrop={async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        const files = e.dataTransfer.files;
-                        if (files && files.length > 0) {
-                            // Find drop position
-                            const selection = window.getSelection();
-                            let dropRange = null;
-                            if (document.caretRangeFromPoint) {
-                                dropRange = document.caretRangeFromPoint(e.clientX, e.clientY);
-                            } else if (e.rangeParent) {
-                                dropRange = document.createRange();
-                                dropRange.setStart(e.rangeParent, e.rangeOffset);
-                            }
 
-                            for (let i = 0; i < files.length; i++) {
-                                const file = files[i];
-                                if (file.type.startsWith('image/')) {
                                     setIsUploading(true);
                                     try {
                                         const url = await useStore.getState().uploadToCloudinary(file);
                                         if (url) {
-                                            // Restore drop position
-                                            if (dropRange) {
+                                            // Restore selection
+                                            if (savedRange) {
                                                 selection.removeAllRanges();
-                                                selection.addRange(dropRange);
+                                                selection.addRange(savedRange);
                                             }
+                                            // Insert image at cursor
                                             document.execCommand('insertImage', false, url);
                                             updateValue(editorRef.current.innerHTML);
                                         }
                                     } catch (err) {
-                                        console.error("Drop upload failed:", err);
+                                        console.error("Paste upload failed:", err);
                                         useStore.getState().addToast?.("Upload failed.", "error");
                                     } finally {
                                         setIsUploading(false);
                                     }
+                                    return;
                                 }
                             }
-                        }
-                    }}
-                    className={cn(
-                        "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
-                        "min-h-[150px]",
-                        isUploading && "opacity-50 pointer-events-none"
-                    )}
-                    style={{ minHeight, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                />
 
-                {/* Placeholder Overlay */}
-                {!value && !isFocused && !isUploading && (
-                    <div className="absolute top-[84px] left-6 pointer-events-none text-gray-700 text-[11px] font-medium italic">
-                        {placeholder}
-                    </div>
-                )}
+                            // Sanitize HTML paste to remove white/black colors, font sizes, font families
+                            const html = e.clipboardData.getData('text/html');
+                            if (html) {
+                                e.preventDefault();
+                                
+                                const cleanHtmlOnPaste = (htmlString) => {
+                                    const parser = new DOMParser();
+                                    const docObj = parser.parseFromString(htmlString, 'text/html');
+                                    
+                                    const cleanElement = (element) => {
+                                        if (element.hasAttribute('style')) {
+                                            element.style.color = '';
+                                            element.style.backgroundColor = '';
+                                            element.style.background = '';
+                                            element.style.fontFamily = '';
+                                            element.style.fontSize = '';
+                                            
+                                            if (!element.getAttribute('style')?.trim()) {
+                                                element.removeAttribute('style');
+                                            }
+                                        }
+                                        
+                                        if (element.tagName.toLowerCase() === 'font') {
+                                            element.removeAttribute('color');
+                                            element.removeAttribute('face');
+                                            element.removeAttribute('size');
+                                        }
+                                        
+                                        element.removeAttribute('class');
+                                        element.removeAttribute('id');
+                                        
+                                        for (let i = 0; i < element.children.length; i++) {
+                                            cleanElement(element.children[i]);
+                                        }
+                                    };
+                                    
+                                    if (docObj.body) {
+                                        cleanElement(docObj.body);
+                                        return docObj.body.innerHTML;
+                                    }
+                                    return htmlString;
+                                };
+
+                                const cleanedHtml = cleanHtmlOnPaste(html);
+                                document.execCommand('insertHTML', false, cleanedHtml);
+                                updateValue(editorRef.current.innerHTML);
+                            } else {
+                                const text = e.clipboardData.getData('text/plain');
+                                if (text) {
+                                    e.preventDefault();
+                                    document.execCommand('insertText', false, text);
+                                    updateValue(editorRef.current.innerHTML);
+                                }
+                            }
+                        }}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onDrop={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const files = e.dataTransfer.files;
+                            if (files && files.length > 0) {
+                                // Find drop position
+                                const selection = window.getSelection();
+                                let dropRange = null;
+                                if (document.caretRangeFromPoint) {
+                                    dropRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+                                } else if (e.rangeParent) {
+                                    dropRange = document.createRange();
+                                    dropRange.setStart(e.rangeParent, e.rangeOffset);
+                                }
+
+                                for (let i = 0; i < files.length; i++) {
+                                    const file = files[i];
+                                    if (file.type.startsWith('image/')) {
+                                        setIsUploading(true);
+                                        try {
+                                            const url = await useStore.getState().uploadToCloudinary(file);
+                                            if (url) {
+                                                // Restore drop position
+                                                if (dropRange) {
+                                                    selection.removeAllRanges();
+                                                    selection.addRange(dropRange);
+                                                }
+                                                document.execCommand('insertImage', false, url);
+                                                updateValue(editorRef.current.innerHTML);
+                                            }
+                                        } catch (err) {
+                                            console.error("Drop upload failed:", err);
+                                            useStore.getState().addToast?.("Upload failed.", "error");
+                                        } finally {
+                                            setIsUploading(false);
+                                        }
+                                    }
+                                }
+                            }
+                        }}
+                        className={cn(
+                            "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
+                            "min-h-[150px]",
+                            isUploading && "opacity-50 pointer-events-none"
+                        )}
+                        style={{ minHeight, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    />
+
+                    {/* Placeholder Overlay */}
+                    {!value && !isFocused && !isUploading && (
+                        <div className="absolute top-0 left-0 p-6 pointer-events-none text-gray-700 text-[11px] font-medium italic leading-relaxed">
+                            {placeholder}
+                        </div>
+                    )}
+
+                    {/* Image Toolbar Popover */}
+                    {selectedImage && (
+                        <div 
+                            className="image-tooltip-popover absolute bg-zinc-950 border border-white/10 rounded-2xl p-2 shadow-2xl z-[80] flex items-center gap-2 backdrop-blur-md transition-all duration-200"
+                            style={{
+                                top: `${imageTooltipPos.top}px`,
+                                left: `${imageTooltipPos.left}px`,
+                                transform: 'translateX(-50%)'
+                            }}
+                            onMouseDown={(e) => e.preventDefault()} // Prevent losing focus
+                        >
+                            <div className="flex items-center gap-1 border-r border-white/10 pr-2">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider px-1">Size</span>
+                                {['25%', '50%', '75%', '100%'].map((w) => (
+                                    <button
+                                        key={w}
+                                        type="button"
+                                        onClick={() => resizeImage(w)}
+                                        className={cn(
+                                            "px-2 py-1 rounded text-[10px] font-bold transition-all",
+                                            selectedImage.style.width === w 
+                                                ? "bg-neon-green/20 text-neon-green" 
+                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        {w}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="flex items-center gap-1 border-r border-white/10 pr-2">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider px-1">Align</span>
+                                {[
+                                    { id: 'left', label: 'Left' },
+                                    { id: 'center', label: 'Center' },
+                                    { id: 'right', label: 'Right' }
+                                ].map((a) => (
+                                    <button
+                                        key={a.id}
+                                        type="button"
+                                        onClick={() => alignImage(a.id)}
+                                        className="px-2 py-1 rounded text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/5"
+                                    >
+                                        {a.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={removeImage}
+                                className="px-2 py-1 rounded text-[10px] font-bold text-red-500 hover:bg-red-500/10 transition-all"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 {/* Uploading Overlay */}
                 {isUploading && (
