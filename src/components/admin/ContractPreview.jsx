@@ -46,9 +46,9 @@ const renderFormatted = (text, baseClass = 'text-[12px] font-serif text-black le
         ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
         : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
       elements.push(<p key={i} className={headingClass}>{headingText}</p>);
-    } else if (line.match(/^[•\-\*]\s/)) {
+    } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
       const items = [];
-      while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) { items.push(lines[i].replace(/^[•\-\*]\s/, '')); i++; }
+      while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) { items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim()); i++; }
       elements.push(<ul key={`ul-${i}`} className="article-content pl-8 space-y-2 my-3">{items.map((item, j) => <li key={j} className={baseClass} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />)}</ul>);
       continue;
     } else {

@@ -87,10 +87,10 @@ const renderChatMessage = (text) => {
             const headingText = headingMatch[2];
             const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
             elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-        } else if (line.match(/^[•\-\*]\s/)) {
+        } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
             const items = [];
-            while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
-                items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+            while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
+                items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim());
                 i++;
             }
             elements.push(
@@ -101,10 +101,10 @@ const renderChatMessage = (text) => {
                 </ul>
             );
             continue;
-        } else if (line.match(/^\d+\.\s/)) {
+        } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
             const items = [];
-            while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-                items.push(lines[i].replace(/^\d+\.\s/, ''));
+            while (i < lines.length && lines[i].match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
+                items.push(lines[i].replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim());
                 i++;
             }
             elements.push(

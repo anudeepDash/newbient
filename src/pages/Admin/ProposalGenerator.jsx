@@ -123,8 +123,8 @@ const estimateBlockHeight = (rawText) => {
                     const hText = headingMatch[2];
                     const lineCount = Math.max(1, Math.ceil(hText.length / 85));
                     h += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
-                } else if (trimmed.match(/^[•\-\*]\s/)) {
-                    const liText = trimmed.replace(/^[•\-\*]\s/, '');
+                } else if (trimmed.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
+                    const liText = trimmed.replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '');
                     const lineCount = Math.max(1, Math.ceil(liText.length / 90));
                     h += (lineCount * 20) + 4;
                 } else {
@@ -372,10 +372,10 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                 const headingText = headingMatch[2];
                 const sizeClass = level === 1 ? "text-[13px] font-bold" : level === 2 ? "text-[12px] font-bold" : "text-[11px] font-semibold text-zinc-400";
                 elements.push(<p key={i} className={cn(sizeClass, "mt-2 mb-1 text-white")} dangerouslySetInnerHTML={{ __html: formatInline(headingText) }} />);
-            } else if (line.match(/^[•\-\*]\s/)) {
+            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
-                while (i < lines.length && lines[i].match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].replace(/^[•\-\*]\s/, ''));
+                while (i < lines.length && lines[i].match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
+                    items.push(lines[i].replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, '').trim());
                     i++;
                 }
                 elements.push(
@@ -386,10 +386,10 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                     </ul>
                 );
                 continue;
-            } else if (line.match(/^\d+\.\s/)) {
+            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
-                while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-                    items.push(lines[i].replace(/^\d+\.\s/, ''));
+                while (i < lines.length && lines[i].match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
+                    items.push(lines[i].replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim());
                     i++;
                 }
                 elements.push(
@@ -446,10 +446,10 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                     ? "text-[12px] font-bold text-black border-b border-black/10 pb-1 mt-6 mb-2"
                     : "text-[11px] font-semibold text-gray-800 mt-4 mb-1";
                 elements.push(<p key={i} className={headingClass}>{headingText}</p>);
-            } else if (line.match(/^[•\-\*]\s/)) {
+            } else if (line.match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
-                while (i < lines.length && lines[i].trim().match(/^[•\-\*]\s/)) {
-                    items.push(lines[i].trim().replace(/^[•\-\*]\s/, ''));
+                while (i < lines.length && lines[i].trim().match(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/)) {
+                    items.push(lines[i].trim().replace(/^[•\-\*](?:\s|&nbsp;|\u00a0)+/, ''));
                     i++;
                 }
                 elements.push(
@@ -458,15 +458,15 @@ const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
                     </div>
                 );
                 continue;
-            } else if (line.match(/^\d+\.\s/)) {
+            } else if (line.match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
                 const items = [];
-                while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                while (i < lines.length && lines[i].trim().match(/^\d+\.(?:\s|&nbsp;|\u00a0)+/)) {
                     const l = lines[i].trim();
-                    const match = l.match(/^(\d+)\.\s(.*)/);
+                    const match = l.match(/^(\d+)\.(?:\s|&nbsp;|\u00a0)+(.*)/);
                     if (match) {
-                        items.push({ num: match[1], text: match[2] });
+                        items.push({ num: match[1], text: match[2].trim() });
                     } else {
-                        items.push({ num: '•', text: l.replace(/^\d+\.\s/, '') });
+                        items.push({ num: '•', text: l.replace(/^\d+\.(?:\s|&nbsp;|\u00a0)+/, '').trim() });
                     }
                     i++;
                 }
