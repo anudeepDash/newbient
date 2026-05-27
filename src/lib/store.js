@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendBookingConfirmation } from './email';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
@@ -15,6 +16,75 @@ const getCachedSession = () => {
     } catch (e) {
         return null;
     }
+};
+
+const uploadBase64ToStorage = async (base64String, path) => {
+    if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:image/')) {
+        return base64String;
+    }
+    try {
+        const response = await fetch(base64String);
+        const blob = await response.blob();
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, blob);
+        return await getDownloadURL(storageRef);
+    } catch (e) {
+        console.error("Failed to upload base64 image to Firebase Storage:", e);
+        throw e;
+    }
+};
+
+const processAndUploadBase64Fields = async (obj, pathPrefix) => {
+    if (typeof obj === 'string' && obj.startsWith('data:image/')) {
+        const uniqueId = Math.random().toString(36).substring(2, 9);
+        const mimeType = obj.match(/data:(image\/[a-zA-Z0-9.-]+);base64/)?.[1] || 'image/png';
+        const extension = mimeType.split('/')[1] || 'png';
+        const storagePath = `${pathPrefix}_image_${uniqueId}.${extension}`;
+        return await uploadBase64ToStorage(obj, storagePath);
+    }
+
+    if (typeof obj === 'string' && obj.includes('data:image/')) {
+        const regex = /src=["'](data:image\/[^"']+)["']/g;
+        let match;
+        let newStr = obj;
+        const uploads = [];
+        while ((match = regex.exec(obj)) !== null) {
+            const base64Str = match[1];
+            uploads.push(base64Str);
+        }
+
+        for (const base64Str of uploads) {
+            const uniqueId = Math.random().toString(36).substring(2, 9);
+            const mimeType = base64Str.match(/data:(image\/[a-zA-Z0-9.-]+);base64/)?.[1] || 'image/png';
+            const extension = mimeType.split('/')[1] || 'png';
+            const storagePath = `${pathPrefix}_embedded_${uniqueId}.${extension}`;
+            try {
+                const url = await uploadBase64ToStorage(base64Str, storagePath);
+                newStr = newStr.replace(base64Str, url);
+            } catch (e) {
+                console.error("Failed to upload embedded base64:", e);
+            }
+        }
+        return newStr;
+    }
+
+    if (Array.isArray(obj)) {
+        const newArr = [];
+        for (let i = 0; i < obj.length; i++) {
+            newArr.push(await processAndUploadBase64Fields(obj[i], `${pathPrefix}_arr${i}`));
+        }
+        return newArr;
+    }
+
+    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+        const newObj = {};
+        for (const [key, value] of Object.entries(obj)) {
+            newObj[key] = await processAndUploadBase64Fields(value, `${pathPrefix}_${key}`);
+        }
+        return newObj;
+    }
+
+    return obj;
 };
 
 const initialUser = getCachedSession();
@@ -781,7 +851,14 @@ export const useStore = create((set, get) => ({
             createdByEmail: user?.email || null
         });
         delete cleaned.id;
-        return await addDoc(collection(db, 'proposals'), cleaned);
+
+        const docRef = doc(collection(db, 'proposals'));
+        const proposalId = docRef.id;
+
+        const processed = await processAndUploadBase64Fields(cleaned, `signatures/proposals/${proposalId}`);
+
+        await setDoc(docRef, processed);
+        return proposalId;
     },
     logDocumentAccess: async (type, id, metadata) => {
         const col = type === 'proposal' ? 'proposals' : 'agreements';
@@ -807,7 +884,10 @@ export const useStore = create((set, get) => ({
         };
         const cleaned = deepClean({ ...updates });
         delete cleaned.id;
-        await updateDoc(doc(db, 'proposals', id), cleaned);
+
+        const processed = await processAndUploadBase64Fields(cleaned, `signatures/proposals/${id}`);
+
+        await updateDoc(doc(db, 'proposals', id), processed);
     },
     updateProposalStatus: async (id, status) => {
         await updateDoc(doc(db, 'proposals', id), { status });
@@ -867,7 +947,14 @@ export const useStore = create((set, get) => ({
             createdByEmail: user?.email || null
         });
         delete cleaned.id;
-        return await addDoc(collection(db, 'agreements'), cleaned);
+
+        const docRef = doc(collection(db, 'agreements'));
+        const agreementId = docRef.id;
+
+        const processed = await processAndUploadBase64Fields(cleaned, `signatures/agreements/${agreementId}`);
+
+        await setDoc(docRef, processed);
+        return agreementId;
     },
     updateAgreement: async (id, updates) => {
         const deepClean = (obj) => {
@@ -882,7 +969,10 @@ export const useStore = create((set, get) => ({
         };
         const cleaned = deepClean({ ...updates });
         delete cleaned.id;
-        await updateDoc(doc(db, 'agreements', id), cleaned);
+
+        const processed = await processAndUploadBase64Fields(cleaned, `signatures/agreements/${id}`);
+
+        await updateDoc(doc(db, 'agreements', id), processed);
     },
     updateAgreementStatus: async (id, status) => {
         await updateDoc(doc(db, 'agreements', id), { status });

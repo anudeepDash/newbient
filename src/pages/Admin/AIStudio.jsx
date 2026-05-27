@@ -44,7 +44,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import DocumentSeal from '../../components/ui/DocumentSeal';
-import StudioRichEditor from '../../components/ui/StudioRichEditor';
+import StudioRichEditor, { MultiPageRichEditor } from '../../components/ui/StudioRichEditor';
 
 // Legal Sub-components
 import useContractGenerator from '../../components/admin/useContractGenerator';
@@ -303,6 +303,257 @@ const logoOptions = [
     };
 
 
+const estimateBlockHeight = (rawText) => {
+    if (!rawText) return 0;
+    const isHtml = rawText.includes('<') && rawText.includes('>');
+    
+    const estimateTextNodeHeight = (text) => {
+        if (!text) return 0;
+        const paragraphs = text.split('\n');
+        let h = 0;
+        paragraphs.forEach(p => {
+            const trimmed = p.trim();
+            if (!trimmed) {
+                h += 28; // Empty paragraph height (1.2rem + margin)
+            } else if (trimmed.match(/^[-*_]{3,}$/)) {
+                h += 40; // Horizontal rule
+            } else {
+                const headingMatch = trimmed.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
+                if (headingMatch) {
+                    const level = headingMatch[1].length;
+                    const hText = headingMatch[2];
+                    const lineCount = Math.max(1, Math.ceil(hText.length / 85));
+                    h += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
+                } else if (trimmed.match(/^[•\-\*]\s/)) {
+                    const liText = trimmed.replace(/^[•\-\*]\s/, '');
+                    const lineCount = Math.max(1, Math.ceil(liText.length / 90));
+                    h += (lineCount * 20) + 4;
+                } else {
+                    const lineCount = Math.max(1, Math.ceil(trimmed.length / 95));
+                    h += (lineCount * 21) + 8;
+                }
+            }
+        });
+        return h;
+    };
+
+    if (!isHtml) {
+        return estimateTextNodeHeight(rawText);
+    }
+
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
+        const container = doc.body.firstElementChild || doc.body;
+        let totalH = 0;
+
+        const processNode = (node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent.trim();
+                if (text) {
+                    totalH += estimateTextNodeHeight(text);
+                }
+                return;
+            }
+
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+            const tag = node.tagName.toLowerCase();
+            if (tag === 'p' || tag === 'div') {
+                const html = node.innerHTML.trim();
+                if (!html || html === '<br>' || html === '<br/>' || html === '<br />') {
+                    totalH += 28;
+                } else {
+                    const parts = html.split(/<br\s*\/?>/gi);
+                    parts.forEach((part, partIdx) => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = part;
+                        const text = tempDiv.textContent.trim();
+                        if (text) {
+                            const lineCount = Math.max(1, Math.ceil(text.length / 95));
+                            totalH += (lineCount * 21);
+                        } else {
+                            if (partIdx > 0 || parts.length > 1) {
+                                totalH += 21; // Empty line via br
+                            }
+                        }
+                    });
+                    totalH += 8; // Margin bottom
+                }
+            } else if (tag.startsWith('h') && tag.length === 2) {
+                const level = parseInt(tag.substring(1)) || 2;
+                const text = node.textContent.trim();
+                const lineCount = Math.max(1, Math.ceil(text.length / 85));
+                totalH += level <= 2 ? (lineCount * 22 + 28) : (lineCount * 18 + 16);
+            } else if (tag === 'ul' || tag === 'ol') {
+                totalH += 12; // Wrapper margin
+                const lis = node.querySelectorAll('li');
+                if (lis.length > 0) {
+                    lis.forEach(li => {
+                        const liText = li.textContent.trim();
+                        const lineCount = Math.max(1, Math.ceil(liText.length / 90));
+                        totalH += (lineCount * 20) + 4;
+                    });
+                } else {
+                    const text = node.textContent.trim();
+                    const lineCount = Math.max(1, Math.ceil(text.length / 90));
+                    totalH += (lineCount * 20) + 4;
+                }
+            } else if (tag === 'br') {
+                totalH += 21;
+            } else {
+                const hasBlockChildren = Array.from(node.children).some(c => 
+                    ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'].includes(c.tagName.toLowerCase())
+                );
+                if (hasBlockChildren) {
+                    Array.from(node.childNodes).forEach(processNode);
+                } else {
+                    const text = node.textContent.trim();
+                    if (text) {
+                        const lineCount = Math.max(1, Math.ceil(text.length / 95));
+                        totalH += (lineCount * 21) + 8;
+                    }
+                }
+            }
+        };
+
+        Array.from(container.childNodes).forEach(processNode);
+        return totalH;
+    } catch (e) {
+        console.error("HTML estimation failed, fallback:", e);
+        return estimateTextNodeHeight(htmlToPlainText(rawText));
+    }
+};
+
+const splitTextIntoPages = (rawText, maxPageHeight = 800) => {
+    if (!rawText) return [''];
+    
+    // First, split by manual page breaks
+    const pageBreakRegex = /<div[^>]*class="[^"]*page-break[^"]*"[^>]*><\/div>/gi;
+    const manualPages = rawText.split(pageBreakRegex);
+    
+    const finalPages = [];
+    
+    const splitSinglePageByHeight = (pageContent) => {
+        if (!pageContent) return [''];
+        if (estimateBlockHeight(pageContent) <= maxPageHeight) {
+            return [pageContent];
+        }
+        
+        const isHtml = pageContent.includes('<') && pageContent.includes('>');
+        
+        if (!isHtml) {
+            const lines = pageContent.split('\n');
+            const pages = [];
+            let currentPageText = '';
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const testText = currentPageText ? currentPageText + '\n' + line : line;
+                if (estimateBlockHeight(testText) > maxPageHeight) {
+                    if (currentPageText) {
+                        pages.push(currentPageText);
+                        currentPageText = line;
+                    } else {
+                        pages.push(line);
+                        currentPageText = '';
+                    }
+                } else {
+                    currentPageText = testText;
+                }
+            }
+            if (currentPageText) {
+                pages.push(currentPageText);
+            }
+            return pages;
+        }
+        
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<div>${pageContent}</div>`, 'text/html');
+            const container = doc.body.firstElementChild || doc.body;
+            const blocks = Array.from(container.childNodes);
+            
+            const pages = [];
+            let currentPageDiv = document.createElement('div');
+            
+            for (let i = 0; i < blocks.length; i++) {
+                const block = blocks[i].cloneNode(true);
+                const testDiv = currentPageDiv.cloneNode(true);
+                testDiv.appendChild(block.cloneNode(true));
+                
+                if (estimateBlockHeight(testDiv.innerHTML) > maxPageHeight) {
+                    const blockTag = block.nodeType === Node.ELEMENT_NODE ? block.tagName.toLowerCase() : '';
+                    if (blockTag === 'p' || blockTag === 'div') {
+                        const html = block.innerHTML;
+                        const brParts = html.split(/<br\s*\/?>/gi);
+                        
+                        if (brParts.length > 1) {
+                            let partDiv = document.createElement(blockTag);
+                            for (let j = 0; j < brParts.length; j++) {
+                                const part = brParts[j];
+                                const lineTestDiv = currentPageDiv.cloneNode(true);
+                                const lineTestBlock = partDiv.cloneNode(true);
+                                if (j > 0) lineTestBlock.innerHTML += '<br>' + part;
+                                else lineTestBlock.innerHTML = part;
+                                lineTestDiv.appendChild(lineTestBlock);
+                                
+                                if (estimateBlockHeight(lineTestDiv.innerHTML) > maxPageHeight) {
+                                    if (currentPageDiv.innerHTML.trim()) {
+                                        if (partDiv.innerHTML.trim()) {
+                                            currentPageDiv.appendChild(partDiv);
+                                        }
+                                        pages.push(currentPageDiv.innerHTML);
+                                        currentPageDiv = document.createElement('div');
+                                    }
+                                    partDiv = document.createElement(blockTag);
+                                    partDiv.innerHTML = part;
+                                } else {
+                                    if (j > 0) partDiv.innerHTML += '<br>' + part;
+                                    else partDiv.innerHTML = part;
+                                }
+                            }
+                            if (partDiv.innerHTML.trim()) {
+                                currentPageDiv.appendChild(partDiv);
+                            }
+                            continue;
+                        }
+                    }
+                    
+                    if (currentPageDiv.innerHTML.trim()) {
+                        pages.push(currentPageDiv.innerHTML);
+                        currentPageDiv = document.createElement('div');
+                        currentPageDiv.appendChild(block);
+                    } else {
+                        currentPageDiv.appendChild(block);
+                        pages.push(currentPageDiv.innerHTML);
+                        currentPageDiv = document.createElement('div');
+                    }
+                } else {
+                    currentPageDiv.appendChild(block);
+                }
+            }
+            
+            if (currentPageDiv.innerHTML.trim()) {
+                pages.push(currentPageDiv.innerHTML);
+            }
+            
+            return pages.length > 0 ? pages : [pageContent];
+        } catch (e) {
+            console.error("HTML split failed, fallback:", e);
+            return [pageContent];
+        }
+    };
+
+    manualPages.forEach(part => {
+        const subPages = splitSinglePageByHeight(part);
+        finalPages.push(...subPages);
+    });
+
+    return finalPages.length > 0 ? finalPages : [''];
+};
+
+
 const AIStudio = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -341,6 +592,7 @@ const AIStudio = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const previewContainerRef = useRef(null);
+    const [isManualCalibrationExpanded, setIsManualCalibrationExpanded] = useState(false);
 
     // ────────────────────────────────────────────────────────────────────────
     // 1. PROPOSAL ENGINE STATE & FUNCTIONS
@@ -378,7 +630,18 @@ const AIStudio = () => {
         senderDesignation: 'Director of Operations',
         status: 'Draft',
         hiddenFields: [],
-        selectedLogo: 'entertainment'
+        selectedLogo: 'entertainment',
+        hideTotalColumn: false,
+        strategyTitle: 'EXECUTIVE SUMMARY',
+        strategySub: 'STRATEGIC OUTLINE',
+        scopeTitle: 'SCOPE OF WORK',
+        scopeSub: 'RESOURCE DELIVERABLES',
+        proposalTitle: 'DELIVERABLES',
+        proposalSub: 'PROJECT INVENTORY',
+        inventoryTitle: 'RESOURCE INVENTORY',
+        inventorySub: 'COMMERCIALS BREAKDOWN',
+        commercialsTitle: 'COMMERCIAL TERMS',
+        commercialsSub: 'SETTLEMENT & SIGN-OFF'
     });
 
     const [proposalItems, setProposalItems] = useState([
@@ -388,6 +651,7 @@ const AIStudio = () => {
     // Active working states for Proposal (taking bulk index if bulk mode active)
     const activeProposalData = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? bulkProposals[selectedBulkIndex] : proposalFormData;
     const activeProposalItems = (isBulkMode && bulkProposals.length > 0 && bulkProposals[selectedBulkIndex]) ? (bulkProposals[selectedBulkIndex]?.items || []) : proposalItems;
+    const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
 
     const setProposalDataState = (updater) => {
         if (isBulkMode && bulkProposals.length > 0) {
@@ -426,7 +690,18 @@ const AIStudio = () => {
                 setProposalFormData({ 
                     ...proposal, 
                     hiddenFields: proposal.hiddenFields || [], 
-                    selectedLogo: proposal.selectedLogo || 'entertainment' 
+                    selectedLogo: proposal.selectedLogo || 'entertainment',
+                    hideTotalColumn: proposal.hideTotalColumn || false,
+                    strategyTitle: proposal.strategyTitle || 'EXECUTIVE SUMMARY',
+                    strategySub: proposal.strategySub || 'STRATEGIC OUTLINE',
+                    scopeTitle: proposal.scopeTitle || 'SCOPE OF WORK',
+                    scopeSub: proposal.scopeSub || 'RESOURCE DELIVERABLES',
+                    proposalTitle: proposal.proposalTitle || 'DELIVERABLES',
+                    proposalSub: proposal.proposalSub || 'PROJECT INVENTORY',
+                    inventoryTitle: proposal.inventoryTitle || 'RESOURCE INVENTORY',
+                    inventorySub: proposal.inventorySub || 'COMMERCIALS BREAKDOWN',
+                    commercialsTitle: proposal.commercialsTitle || 'COMMERCIAL TERMS',
+                    commercialsSub: proposal.commercialsSub || 'SETTLEMENT & SIGN-OFF'
                 });
                 setProposalItems(proposal.items || []);
                 hasInitializedProposalRef.current = true;
@@ -441,151 +716,194 @@ const AIStudio = () => {
     // Proposal pagination height estimators
     const getProposalPaginatedPages = useCallback(() => {
         const pages = [];
-        const isHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
-        
-        if (!isHidden('cover')) pages.push({ type: 'cover', items: [] });
-        if (!isHidden('strategy') && (!isHidden('overview') || !isHidden('primaryGoal'))) {
-            pages.push({ type: 'strategy', items: [] });
+
+        const insertCustomPagesFor = (placement) => {
+            if (!isFieldHidden('customPages') && activeProposalData.customPages && activeProposalData.customPages.length > 0) {
+                activeProposalData.customPages.forEach((cp, cpIdx) => {
+                    const target = cp.insertAfter || 'default';
+                    if (target === placement) {
+                        const cpPages = splitTextIntoPages(cp.content || '', 800);
+                        cpPages.forEach((cpText, cpSubIdx) => {
+                            pages.push({
+                                type: 'custom',
+                                items: [],
+                                title: cpPages.length > 1 ? `${cp.title} (Part ${cpSubIdx + 1})` : cp.title,
+                                content: cpText,
+                                pageIndex: cpIdx,
+                                customSubIdx: cpSubIdx
+                            });
+                        });
+                    }
+                });
+            }
+        };
+
+        if (!isFieldHidden('cover')) {
+            pages.push({ type: 'cover', items: [] });
         }
-        if (!isHidden('scopeOfWork') && activeProposalData.scopeOfWork) {
-            const estimateBlockHeight = (rawText) => {
-                const isHtml = rawText.includes('<') && rawText.includes('>');
-                if (!isHtml) {
-                    let h = 0;
-                    const text = htmlToPlainText(rawText);
-                    const rawLines = text.split('\n');
-                    const lines = [];
-                    rawLines.forEach(rl => {
-                        const parts = rl.split(/\s(?=\d+\.\s)/);
-                        if (parts.length > 1) lines.push(...parts);
-                        else lines.push(rl);
-                    });
+        insertCustomPagesFor('cover');
 
-                    let inList = false;
-                    for (let line of lines) {
-                        line = line.trim();
-                        if (!line) { h += 8; inList = false; continue; }
-                        
-                        if (line.match(/^[-*_]{3,}$/)) {
-                            inList = false;
-                            h += 40;
-                            continue;
-                        }
-
-                        const headingMatch = line.match(/^(#{1,6})(?:\s|&nbsp;|\u00a0)+(.*)$/);
-                        if (headingMatch) {
-                            inList = false;
-                            h += headingMatch[1].length <= 2 ? 48 : 32;
-                            if (headingMatch[2].length > 40) h += 20; 
-                        } else if (line.match(/^[•\-\*]\s/)) {
-                            h += (Math.ceil((line.length - 2) / 100) * 20);
-                            if (!inList) { h += 16; inList = true; }
-                            else { h += 4; }
-                        } else {
-                            inList = false;
-                            h += (Math.ceil(line.length / 110) * 20) + 8;
-                        }
-                    }
-                    return h;
-                }
-
-                try {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(`<div>${rawText}</div>`, 'text/html');
-                    const container = doc.body.firstElementChild;
-                    let totalH = 0;
-                    
-                    Array.from(container.children).forEach(child => {
-                        const tag = child.tagName.toLowerCase();
-                        const text = child.textContent || '';
-                        
-                        if (tag.startsWith('h')) {
-                            const level = parseInt(tag.substring(1)) || 2;
-                            totalH += level <= 2 ? 40 : 28;
-                            totalH += (Math.ceil(text.length / 80) * 20);
-                        } else if (tag === 'ul' || tag === 'ol') {
-                            const lis = child.querySelectorAll('li');
-                            if (lis.length > 0) {
-                                lis.forEach(li => {
-                                    const liText = li.textContent || '';
-                                    totalH += (Math.ceil(liText.length / 95) * 20) + 4;
-                                });
-                            } else {
-                                totalH += (Math.ceil(text.length / 95) * 20) + 4;
-                            }
-                        } else {
-                            if (text.trim() === '') {
-                                totalH += 8;
-                            } else {
-                                totalH += (Math.ceil(text.length / 100) * 20) + 12;
-                            }
-                        }
-                    });
-                    return totalH;
-                } catch (e) {
-                    console.error("HTML estimation failed, fallback:", e);
-                    return 200;
-                }
-            };
-
-            const MAX_PAGE_HEIGHT = 820;
-            const totalHeight = estimateBlockHeight(activeProposalData.scopeOfWork);
+        if (!isFieldHidden('strategy') && (!isFieldHidden('overview') || !isFieldHidden('primaryGoal'))) {
+            const overviewHtml = !isFieldHidden('overview') ? (activeProposalData.overview || '') : '';
+            const primaryGoalHtml = !isFieldHidden('primaryGoal') ? (activeProposalData.primaryGoal || '') : '';
             
-            if (totalHeight <= MAX_PAGE_HEIGHT) {
-                 pages.push({ type: 'scope', items: [], scopeText: activeProposalData.scopeOfWork });
+            const overviewPages = splitTextIntoPages(overviewHtml, 800);
+            const lastOverviewPage = overviewPages[overviewPages.length - 1] || '';
+            const goalContainerHeight = primaryGoalHtml ? estimateBlockHeight(primaryGoalHtml) + 120 : 0;
+            
+            if (estimateBlockHeight(lastOverviewPage) + goalContainerHeight <= 800) {
+                overviewPages.forEach((opText, opIdx) => {
+                    if (opIdx === overviewPages.length - 1) {
+                        pages.push({
+                            type: 'strategy',
+                            overviewText: opText,
+                            primaryGoalText: primaryGoalHtml,
+                            strategyPage: opIdx + 1,
+                            isLastStrategy: true
+                        });
+                    } else {
+                        pages.push({
+                            type: 'strategy',
+                            overviewText: opText,
+                            primaryGoalText: '',
+                            strategyPage: opIdx + 1,
+                            isLastStrategy: false
+                        });
+                    }
+                });
             } else {
-                let currentPageText = '';
-                let pageIndex = 1;
-                const isHtml = activeProposalData.scopeOfWork.includes('<') && activeProposalData.scopeOfWork.includes('>');
+                overviewPages.forEach((opText, opIdx) => {
+                    pages.push({
+                        type: 'strategy',
+                        overviewText: opText,
+                        primaryGoalText: '',
+                        strategyPage: opIdx + 1,
+                        isLastStrategy: false
+                    });
+                });
+                pages.push({
+                    type: 'strategy',
+                    overviewText: '',
+                    primaryGoalText: primaryGoalHtml,
+                    strategyPage: overviewPages.length + 1,
+                    isLastStrategy: true
+                });
+            }
+        }
+        insertCustomPagesFor('strategy');
 
-                if (isHtml) {
-                    const blocks = getHtmlBlocks(activeProposalData.scopeOfWork);
-                    for (let i = 0; i < blocks.length; i++) {
-                        const testText = currentPageText ? currentPageText + '\n' + blocks[i] : blocks[i];
-                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
-                            if (currentPageText) {
-                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                                currentPageText = blocks[i];
-                            } else {
-                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
-                                currentPageText = '';
-                            }
-                        } else {
-                            currentPageText = testText;
-                        }
-                    }
-                } else {
-                    const words = activeProposalData.scopeOfWork.split(' ');
-                    for (let i = 0; i < words.length; i++) {
-                        const testText = currentPageText ? currentPageText + ' ' + words[i] : words[i];
-                        if (estimateBlockHeight(testText) > MAX_PAGE_HEIGHT) {
-                            if (currentPageText) {
-                                pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
-                                currentPageText = words[i];
-                            } else {
-                                pages.push({ type: 'scope', items: [], scopeText: testText.trim(), scopePage: pageIndex++ });
-                                currentPageText = '';
-                            }
-                        } else {
-                            currentPageText = testText;
-                        }
-                    }
-                }
-                
-                if (currentPageText.trim()) {
-                    pages.push({ type: 'scope', items: [], scopeText: currentPageText.trim(), scopePage: pageIndex++ });
+        if (!isFieldHidden('scopeOfWork') && activeProposalData.scopeOfWork) {
+            const scopePages = splitTextIntoPages(activeProposalData.scopeOfWork, 800);
+            scopePages.forEach((spText, spIdx) => {
+                pages.push({
+                    type: 'scope',
+                    items: [],
+                    scopeText: spText,
+                    scopePage: spIdx + 1,
+                    isLastScope: spIdx === scopePages.length - 1
+                });
+            });
+        }
+        insertCustomPagesFor('scope');
+
+        if (!isFieldHidden('proposal')) {
+            const activeDeliverables = (activeProposalData.deliverables || []).filter(d => d.item);
+            const clientReqs = (activeProposalData.clientRequirements || []).filter(r => r.description);
+            
+            if (activeDeliverables.length === 0) {
+                pages.push({
+                    type: 'proposal',
+                    deliverables: [],
+                    clientRequirements: clientReqs,
+                    proposalPage: 1,
+                    isLastProposal: true
+                });
+            } else {
+                let delsRemaining = [...activeDeliverables];
+                let pageIdx = 1;
+                while (delsRemaining.length > 0) {
+                    const chunk = delsRemaining.splice(0, 10);
+                    const isLast = delsRemaining.length === 0;
+                    pages.push({
+                        type: 'proposal',
+                        deliverables: chunk,
+                        clientRequirements: isLast ? clientReqs : [],
+                        proposalPage: pageIdx++,
+                        isLastProposal: isLast,
+                        startIndex: (pageIdx - 2) * 10
+                    });
                 }
             }
         }
-        if (!isHidden('proposal')) pages.push({ type: 'proposal', items: [] });
-        if (!isHidden('inventory')) {
+        insertCustomPagesFor('proposal');
+
+        if (!isFieldHidden('inventory')) {
             let itemsRemaining = [...activeProposalItems];
             if (itemsRemaining.length === 0) pages.push({ type: 'table', items: [] });
-            else while (itemsRemaining.length > 0) pages.push({ type: 'table', items: itemsRemaining.splice(0, 10) });
+            else {
+                let pIdx = 1;
+                while (itemsRemaining.length > 0) {
+                    pages.push({ 
+                        type: 'table', 
+                        items: itemsRemaining.splice(0, 10),
+                        tablePageIdx: pIdx++ 
+                    });
+                }
+            }
         }
-        if (!isHidden('commercials')) {
-            pages.push({ type: 'commercials', items: [] });
+        insertCustomPagesFor('table');
+
+        insertCustomPagesFor('default');
+
+        if (!isFieldHidden('commercials')) {
+            const termsHtml = activeProposalData.terms || '';
+            const paymentDetailsHtml = activeProposalData.paymentDetails || '';
+            
+            if (termsHtml) {
+                const termsPages = splitTextIntoPages(termsHtml, 800);
+                const lastTermsPageText = termsPages[termsPages.length - 1];
+                const finalPageStaticHeight = 550;
+                const lastTermsHeight = estimateBlockHeight(lastTermsPageText) + (paymentDetailsHtml ? 100 : 0);
+                
+                if (lastTermsHeight + finalPageStaticHeight <= 800) {
+                    for (let i = 0; i < termsPages.length - 1; i++) {
+                        pages.push({
+                            type: 'terms_only',
+                            termsText: termsPages[i],
+                            termsPageIdx: i + 1
+                        });
+                    }
+                    pages.push({
+                        type: 'commercials',
+                        termsText: lastTermsPageText,
+                        paymentDetailsText: paymentDetailsHtml,
+                        items: []
+                    });
+                } else {
+                    for (let i = 0; i < termsPages.length; i++) {
+                        pages.push({
+                            type: 'terms_only',
+                            termsText: termsPages[i],
+                            termsPageIdx: i + 1
+                        });
+                    }
+                    pages.push({
+                        type: 'commercials',
+                        termsText: '',
+                        paymentDetailsText: paymentDetailsHtml,
+                        items: []
+                    });
+                }
+            } else {
+                pages.push({
+                    type: 'commercials',
+                    termsText: '',
+                    paymentDetailsText: paymentDetailsHtml,
+                    items: []
+                });
+            }
         }
+        insertCustomPagesFor('commercials');
         return pages;
     }, [activeProposalData, activeProposalItems]);
 
@@ -817,7 +1135,18 @@ const AIStudio = () => {
                         subtotal: 0,
                         gstAmount: 0,
                         totalAmount: 0,
-                        isBulkGenerated: true
+                        isBulkGenerated: true,
+                        hideTotalColumn: false,
+                        strategyTitle: 'EXECUTIVE SUMMARY',
+                        strategySub: 'STRATEGIC OUTLINE',
+                        scopeTitle: 'SCOPE OF WORK',
+                        scopeSub: 'RESOURCE DELIVERABLES',
+                        proposalTitle: 'DELIVERABLES',
+                        proposalSub: 'PROJECT INVENTORY',
+                        inventoryTitle: 'RESOURCE INVENTORY',
+                        inventorySub: 'COMMERCIALS BREAKDOWN',
+                        commercialsTitle: 'COMMERCIAL TERMS',
+                        commercialsSub: 'SETTLEMENT & SIGN-OFF'
                     };
                     setBulkProposals([finalProposal]);
                     setSelectedBulkIndex(0);
@@ -1181,7 +1510,7 @@ const AIStudio = () => {
             <div className="flex-1 flex min-h-0 relative overflow-hidden">
                 
                 {/* LEFT CONTROL PANEL (AI, CHAT, FORMS) */}
-                <div className="w-full lg:w-[48%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden">
+                <div className="w-full lg:w-[52%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden">
                     
                     {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
                     <div className="p-6 border-b border-white/5 relative overflow-hidden shrink-0">
@@ -1420,16 +1749,27 @@ const AIStudio = () => {
                     </div>
 
                     {/* Collapsible Forms Section */}
-                    <div className="p-6 shrink-0 max-h-[40vh] flex flex-col min-h-0 bg-black/20 overflow-y-auto pb-24">
-                        <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
+                    <div className={cn(
+                        "p-6 shrink-0 flex flex-col min-h-0 bg-black/20 transition-all duration-300",
+                        isManualCalibrationExpanded ? "max-h-[45vh] overflow-y-auto pb-24" : "max-h-[50px] overflow-hidden pb-0"
+                    )}>
+                        <div 
+                            className="flex items-center justify-between border-b border-white/5 pb-2 cursor-pointer select-none"
+                            onClick={() => setIsManualCalibrationExpanded(!isManualCalibrationExpanded)}
+                        >
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] flex items-center gap-2">
                                 <Settings size={12} />
                                 Manual Calibration
                             </span>
+                            <span className="text-zinc-500 hover:text-white transition-colors">
+                                {isManualCalibrationExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                            </span>
                         </div>
 
-                        {/* Engine Form switcher */}
-                        {activeEngine === 'proposal' ? (
+                        {isManualCalibrationExpanded && (
+                            <div className="flex-1 flex flex-col min-h-0 mt-4">
+                                {/* Engine Form switcher */}
+                                {activeEngine === 'proposal' ? (
                             // PROPOSAL ENGINE FORMS
                             <div className="flex-1 flex flex-col min-h-0">
                                 {/* Proposal Local form Tabs */}
@@ -1472,20 +1812,31 @@ const AIStudio = () => {
 
                                     {proposalActiveTab === '2' && (
                                         <div className="space-y-4">
-                                            <Input label="Executive Overview" value={activeProposalData.overview} onChange={(e) => setProposalDataState({ overview: e.target.value })} textarea rows={5} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Section Title" value={activeProposalData.strategyTitle} onChange={(e) => setProposalDataState({ strategyTitle: e.target.value })} placeholder="EXECUTIVE SUMMARY" />
+                                                <Input label="Section Subtitle" value={activeProposalData.strategySub} onChange={(e) => setProposalDataState({ strategySub: e.target.value })} placeholder="STRATEGIC OUTLINE" />
+                                            </div>
+                                            <MultiPageRichEditor label="Executive Overview" value={activeProposalData.overview} onChange={(val) => setProposalDataState({ overview: val })} minHeight="200px" accentColor="neon-green" />
                                             <Input label="Primary Goal" value={activeProposalData.primaryGoal} onChange={(e) => setProposalDataState({ primaryGoal: e.target.value })} placeholder="Dominant marketing or brand statement..." textarea />
                                         </div>
                                     )}
 
                                     {proposalActiveTab === '3' && (
                                         <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Scope of Work (Markdown)</label>
-                                            <StudioRichEditor value={activeProposalData.scopeOfWork} onChange={(val) => setProposalDataState({ scopeOfWork: val })} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Section Title" value={activeProposalData.scopeTitle} onChange={(e) => setProposalDataState({ scopeTitle: e.target.value })} placeholder="SCOPE OF WORK" />
+                                                <Input label="Section Subtitle" value={activeProposalData.scopeSub} onChange={(e) => setProposalDataState({ scopeSub: e.target.value })} placeholder="RESOURCE DELIVERABLES" />
+                                            </div>
+                                            <MultiPageRichEditor label="Scope of Work" value={activeProposalData.scopeOfWork} onChange={(val) => setProposalDataState({ scopeOfWork: val })} minHeight="250px" accentColor="neon-green" />
                                         </div>
                                     )}
 
                                     {proposalActiveTab === '4' && (
                                         <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Section Title" value={activeProposalData.proposalTitle} onChange={(e) => setProposalDataState({ proposalTitle: e.target.value })} placeholder="DELIVERABLES" />
+                                                <Input label="Section Subtitle" value={activeProposalData.proposalSub} onChange={(e) => setProposalDataState({ proposalSub: e.target.value })} placeholder="PROJECT INVENTORY" />
+                                            </div>
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Deliverables List</span><button onClick={() => setProposalDataState(prev => ({ deliverables: [...prev.deliverables, { id: Date.now(), item: '', qty: '1', timeline: '' }] }))} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
                                                 {activeProposalData.deliverables.map((d, index) => (
@@ -1512,6 +1863,10 @@ const AIStudio = () => {
 
                                     {proposalActiveTab === '5' && (
                                         <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Section Title" value={activeProposalData.inventoryTitle} onChange={(e) => setProposalDataState({ inventoryTitle: e.target.value })} placeholder="RESOURCE INVENTORY" />
+                                                <Input label="Section Subtitle" value={activeProposalData.inventorySub} onChange={(e) => setProposalDataState({ inventorySub: e.target.value })} placeholder="COMMERCIALS BREAKDOWN" />
+                                            </div>
                                             <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase text-zinc-400">Line items (Estimated Cost)</span><button onClick={() => setProposalItemsState(prev => [...prev, { id: Date.now(), description: '', qty: 1, unit: 'Phase', price: 0 }])} className="p-1 hover:bg-white/10 rounded-lg text-[#39FF14]"><Plus size={14} /></button></div>
                                             {activeProposalItems.map((item, index) => (
                                                 <div key={item.id} className="bg-zinc-950 p-3 border border-white/5 rounded-2xl flex flex-col gap-2">
@@ -1533,6 +1888,10 @@ const AIStudio = () => {
 
                                     {proposalActiveTab === '6' && (
                                         <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input label="Section Title" value={activeProposalData.commercialsTitle} onChange={(e) => setProposalDataState({ commercialsTitle: e.target.value })} placeholder="COMMERCIAL TERMS" />
+                                                <Input label="Section Subtitle" value={activeProposalData.commercialsSub} onChange={(e) => setProposalDataState({ commercialsSub: e.target.value })} placeholder="SETTLEMENT & SIGN-OFF" />
+                                            </div>
                                             <Input label="Conditions & Terms" value={activeProposalData.terms} onChange={(e) => setProposalDataState({ terms: e.target.value })} textarea rows={4} />
                                             <Input label="Settlement Details" value={activeProposalData.paymentDetails} onChange={(e) => setProposalDataState({ paymentDetails: e.target.value })} textarea rows={4} />
                                             <div className="grid grid-cols-2 gap-4">
@@ -1543,6 +1902,10 @@ const AIStudio = () => {
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
                                                     <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Show GST breakdown
+                                                </label>
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+                                                    <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+                                                    Hide Totals Column
                                                 </label>
                                             </div>
                                         </div>
@@ -1717,6 +2080,8 @@ const AIStudio = () => {
                                 </div>
                             </div>
                         )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1738,7 +2103,7 @@ const AIStudio = () => {
                     </div>
 
                     {/* Scale Wrapper to fit A4 container */}
-                    <div style={{ width: '794px', height: '1123px', position: 'relative', shrink: 0 }}>
+                    <div style={{ width: '794px', height: '1123px', position: 'relative', flexShrink: 0 }}>
                         <div style={{
                             width: '794px',
                             height: '1123px',
@@ -1753,7 +2118,14 @@ const AIStudio = () => {
                                 <AnimatePresence mode="wait">
                                     <motion.div key={currentPreviewPage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] shadow-2xl rounded-[2px] overflow-hidden">
                                         <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", currentPreviewPage > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                                            <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
+                                            <div className="flex flex-col gap-6 items-start">
+                                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", currentPreviewPage > 0 && "h-8")} crossOrigin="anonymous" />
+                                            </div>
+                                            {currentPreviewPage > 0 && (
+                                                <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
+                                                    {activeProposalData.campaignName || activeProposalData.projectName}
+                                                </div>
+                                            )}
                                             <div className="text-right space-y-3">
                                                 <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", currentPreviewPage > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", currentPreviewPage > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
                                                 {currentPreviewPage === 0 && (
@@ -1763,196 +2135,321 @@ const AIStudio = () => {
                                         </div>
 
                                         <div className="flex-1 overflow-hidden relative">
-                                            <div className="absolute inset-0 flex flex-col px-1">
-                                                {paginatedPages[currentPreviewPage]?.type === 'cover' && (
-                                                    <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                                        <div className="grid grid-cols-2 gap-10">
-                                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2><p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p></div></div>
-                                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
-                                                        </div>
-                                                        <div className="pt-16 space-y-10">
-                                                            <div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Project Overview</p></div>
-                                                            <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">{renderContent(activeProposalData.coverDescription || 'Cover description pending...')}</div>
-                                                        </div>
-                                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Business Proposal</p></div></div>
+                                            <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
+                                            {paginatedPages[currentPreviewPage]?.type === 'cover' && (
+                                                <div className="h-full flex flex-col justify-start space-y-20 py-8">
+                                                    <div className="grid grid-cols-2 gap-10">
+                                                        <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
+                                                        <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
                                                     </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
-                                                    <div className="space-y-12 py-10 px-4">
-                                                        <div className="border-l-4 border-black pl-8"><h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Architecture.</h3></div>
-                                                        <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">{renderContent(activeProposalData.overview || 'Strategic framework pending...', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div>
-                                                        {activeProposalData.primaryGoal && (
-                                                            <div className="pt-16 p-12 bg-zinc-50 border border-gray-100 rounded-3xl space-y-6">
-                                                                <div className="flex items-center gap-4"><div className="w-12 h-[2px] bg-black" /><p className="text-[10px] font-black text-black uppercase tracking-[0.4em]">Project Details</p></div>
-                                                                <div className="text-2xl font-black text-black leading-tight italic tracking-tight">{renderContent(activeProposalData.primaryGoal)}</div>
+                                                    <div className="pt-16 space-y-10">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-1 bg-black" />
+                                                            <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
+                                                        </div>
+                                                        {!isFieldHidden('coverDescription') && (
+                                                            <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
+                                                                {renderContent(activeProposalData.coverDescription || 'Cover description pending...')}
                                                             </div>
                                                         )}
                                                     </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'scope' && (
-                                                    <div className="h-full flex flex-col py-10 px-4">
-                                                        {!activeProposalData.isBulkGenerated && (
-                                                            <div className="mb-16 border-l-4 border-black pl-8">
-                                                                <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Scope of Work.</h3>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-1"><div className="pl-0">{renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div></div>
+                                                    <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'strategy' && (
+                                                <div className="space-y-16 py-8">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {activeProposalData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            {activeProposalData.strategySub || 'STRATEGIC OUTLINE'}
+                                                        </p>
                                                     </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
-                                                    <div className="space-y-12 py-10 px-4">
-                                                        <div className="mb-16 border-l-4 border-black pl-8"><h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Deliverables.</h3></div>
-                                                        <table className="w-full text-left">
-                                                            <thead>
-                                                                <tr className="border-b-4 border-black text-[10px] font-black uppercase text-black tracking-[0.3em]"><th className="py-6 pr-4">Specification</th><th className="py-6 px-4 text-center w-32">Volume</th><th className="py-6 pl-4 text-right w-40">Timeline</th></tr>
-                                                            </thead>
-                                                            <tbody className="divide-y-2 divide-gray-100">
-                                                                {activeProposalData.deliverables.filter(d => d.item).map((d, i) => (
-                                                                    <tr key={d.id}>
-                                                                        <td className="py-8 pr-4"><p className="text-[15px] font-black text-black mb-1 uppercase tracking-tight">{d.item}</p><p className="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Spec ID: {String(i+1).padStart(3, '0')}</p></td>
-                                                                        <td className="py-8 px-4 text-center text-[14px] font-black text-gray-500">{d.qty || '—'}</td>
-                                                                        <td className="py-8 pl-4 text-right text-[11px] font-black text-black uppercase tracking-widest bg-zinc-50/50">{d.timeline || '—'}</td>
+                                                    {paginatedPages[currentPreviewPage].overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage].overviewText)}</div>}
+                                                    {paginatedPages[currentPreviewPage].primaryGoalText && (
+                                                        <div className="pt-12">
+                                                            <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
+                                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage].primaryGoalText)}</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'scope' && (
+                                                <div className="h-full flex flex-col py-8">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {activeProposalData.scopeTitle || 'SCOPE OF WORK'}
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            {activeProposalData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex-1 flex flex-col">
+    {renderContent(paginatedPages[currentPreviewPage]?.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+</div>
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'proposal' && (
+                                                <div className="space-y-16 py-8">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {activeProposalData.proposalTitle || 'DELIVERABLES'}
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            {activeProposalData.proposalSub || 'PROJECT INVENTORY'}
+                                                        </p>
+                                                    </div>
+                                                    {paginatedPages[currentPreviewPage].deliverables?.length > 0 && (
+                                                        <div className="space-y-6">
+                                                            <table className="w-full text-left border-collapse border border-black">
+                                                                <thead>
+                                                                    <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                        <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                                        <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                                        <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                                        <th className="p-4 text-right w-40">Timeline</th>
                                                                     </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                        {activeProposalData.clientRequirements?.length > 0 && (
-                                                            <div className="pt-8 border-t border-gray-100">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Prerequisites</p>
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    {activeProposalData.clientRequirements.filter(r => r.description).map((r) => (
-                                                                        <div key={r.id} className="flex items-start gap-3 p-4 bg-zinc-50 rounded-lg"><span className="w-1.5 h-1.5 bg-[#39FF14] rounded-full mt-1.5 shrink-0" /><p className="text-[12px] font-bold text-black leading-tight">{r.description}</p></div>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-black/10">
+                                                                    {paginatedPages[currentPreviewPage].deliverables.map((d, i) => (
+                                                                        <tr key={d.id || i} className="hover:bg-gray-50">
+                                                                            <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
+                                                                                {String((paginatedPages[currentPreviewPage].startIndex || 0) + i + 1).padStart(2, '0')}
+                                                                            </td>
+                                                                            <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                                            <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
+                                                                            <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                                        </tr>
                                                                     ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'table' && (
-                                                    <div className="space-y-12 py-6">
-                                                        <div className="mb-16 border-l-4 border-black pl-8">
-                                                            <h3 className="text-3xl font-black text-black tracking-tighter leading-none italic">Commercials.</h3>
+                                                                </tbody>
+                                                            </table>
                                                         </div>
-                                                        <table className="w-full text-left">
-                                                            <thead><tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest"><th className="py-4 pr-4">Description</th><th className="py-4 px-4 text-center w-24">Qty</th><th className="py-4 pl-4 text-right w-48">Value (INR)</th></tr></thead>
-                                                            <tbody className="divide-y divide-gray-100">
-                                                                {paginatedPages[currentPreviewPage].items.map((item, i) => (
-                                                                    <tr key={i}><td className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td><td className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td><td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td></tr>
+                                                    )}
+                                                    {paginatedPages[currentPreviewPage].clientRequirements?.length > 0 && (
+                                                        <div className="space-y-6 pt-4">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                            <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                                {paginatedPages[currentPreviewPage].clientRequirements.map((r, i) => (
+                                                                    <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                                        <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                                        <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
+                                                                    </div>
                                                                 ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
-                                                {paginatedPages[currentPreviewPage]?.type === 'commercials' && (() => {
-                                                    const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
-                                                    return (
-                                                        <div className="space-y-10 py-8 flex flex-col h-full justify-between">
-                                                            {/* Row 1: Terms, Payment details & Totals */}
-                                                            <div className="grid grid-cols-2 gap-8 items-start">
-                                                                {/* Terms & Payment info */}
-                                                                <div className="space-y-4">
-                                                                    {!isFieldHidden('terms') && (
-                                                                        <div className="space-y-2">
-                                                                            <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">General Terms</h4>
-                                                                            <div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(activeProposalData.terms)}</div>
-                                                                        </div>
-                                                                    )}
-                                                                    {!isFieldHidden('paymentDetails') && (
-                                                                        <div className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
-                                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p>
-                                                                            <div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(activeProposalData.paymentDetails)}</div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                
-                                                                {/* Totals, GST, Advance Requirement */}
-                                                                <div className="space-y-4">
-                                                                    <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">Financial Settlement</h4>
-                                                                    <div className="grid grid-cols-2 gap-3">
-                                                                        <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">Net Value</span><span className="text-sm font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
-                                                                        {activeProposalData.showGst ? (
-                                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST ({activeProposalData.gstRate}%)</span><span className="text-sm font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span></div>
-                                                                        ) : (
-                                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST</span><span className="text-sm font-bold text-gray-400 font-mono">Exempt</span></div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="p-5 bg-black text-right relative overflow-hidden rounded-2xl shadow-lg"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Quotation Value</p><h2 className="text-2xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" /></div>
-                                                                    {(activeProposalData.advanceRequested > 0) && (
-                                                                        <div className="p-4 bg-neon-green/5 border-2 border-dashed border-neon-green/20 rounded-2xl flex items-center justify-between">
-                                                                            <div>
-                                                                                <span className="text-[8px] font-black text-gray-400 tracking-widest block uppercase">Advance Required ({activeProposalData.advanceRequested}%)</span>
-                                                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Prior to commencement</span>
-                                                                            </div>
-                                                                            <span className="text-lg font-black text-black font-mono">₹{(proposalTotalAmount * (activeProposalData.advanceRequested || 50) / 100).toLocaleString()}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
                                                             </div>
-
-                                                            {/* Row 2: Collapsible Signatures, Stamp & Footprints */}
-                                                            {currentPreviewPage === paginatedPages.length - 1 && !isFieldHidden('signatures') && (
-                                                                <div className="border border-gray-200 rounded-2xl overflow-hidden mt-4 bg-white">
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => setIsSignaturesCollapsed(!isSignaturesCollapsed)}
-                                                                        className="w-full px-5 py-3 bg-gray-50 flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-black border-b border-gray-200 no-print"
-                                                                    >
-                                                                        <span className="flex items-center gap-2"><ShieldCheck size={14} /> Authorization Signatures & Verification</span>
-                                                                        <span className="text-neon-green">{isSignaturesCollapsed ? 'Expand +' : 'Collapse -'}</span>
-                                                                    </button>
-                                                                    
-                                                                    <div className={cn(
-                                                                        "transition-all duration-300", 
-                                                                        (!isSignaturesCollapsed || isSaving) ? "max-h-[1000px] opacity-100 p-5" : "max-h-0 opacity-0 pointer-events-none no-print",
-                                                                        "print-visible"
-                                                                    )}>
-                                                                        <div className="relative">
-                                                                            <div className="grid grid-cols-2 gap-8 relative z-20">
-                                                                                <div className="space-y-4">
-                                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                                                    <div className="h-16 flex items-end">
-                                                                                        {activeProposalData.providerSignature ? (
-                                                                                            <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                                        ) : (
-                                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-60">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <div className="space-y-0.5">
-                                                                                        <p className="text-[10px] font-black uppercase text-black">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <div className="space-y-4 text-right">
-                                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                                    <div className="h-16 flex items-end justify-end">
-                                                                                        {activeProposalData.clientSignature ? (
-                                                                                            <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                                        ) : (
-                                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-30">Type name to sign</p>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <p className="text-[10px] font-black uppercase text-black">Acknowledged & Accepted</p>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            {activeProposalData.showSeal && (
-                                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
-                                                                                    <DocumentSeal className="w-28 h-28" />
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                    );
-                                                })()}
+                                                    )}
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'table' && (
+                                                <div className="space-y-12 py-8">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {activeProposalData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            {paginatedPages[currentPreviewPage].tablePageIdx > 1 
+                                                                ? `${activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
+                                                                : (activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                        </p>
+                                                    </div>
+                                                    <table className="w-full text-left border-collapse border border-black">
+                                                        <thead>
+                                                            <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                {(activeProposalData.tableColumns || [
+                                                                    { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                    { key: 'qty', label: 'Qty', type: 'number' },
+                                                                    { key: 'price', label: 'Value (INR)', type: 'number' }
+                                                                ]).map((col, cIdx, arr) => (
+                                                                    <th 
+                                                                        key={col.key} 
+                                                                        className={cn(
+                                                                            "p-4",
+                                                                            cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                            col.key === 'qty' && "text-center w-24",
+                                                                            col.key === 'price' && "text-right w-48"
+                                                                        )}
+                                                                    >
+                                                                        {col.label}
+                                                                    </th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-black/10">
+                                                            {paginatedPages[currentPreviewPage].items.map((item, i) => {
+                                                                const cols = activeProposalData.tableColumns || [
+                                                                    { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                    { key: 'qty', label: 'Qty', type: 'number' },
+                                                                    { key: 'price', label: 'Value (INR)', type: 'number' }
+                                                                ];
+                                                                return (
+                                                                    <tr key={i} className="hover:bg-gray-50">
+                                                                        {cols.map((col, cIdx) => {
+                                                                            const isLast = cIdx === cols.length - 1;
+                                                                            const tdClass = cn(
+                                                                                "p-4",
+                                                                                !isLast && "border-r border-black/10"
+                                                                            );
+                                                                            if (col.key === 'description') {
+                                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                                            }
+                                                                            if (col.key === 'qty') {
+                                                                                 return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
+                                                                            }
+                                                                            if (col.key === 'price') {
+                                                                                 return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
+                                                                            }
+                                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                                        })}
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'custom' && (
+                                                <div className="space-y-8 py-8 h-full flex flex-col justify-start">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            {paginatedPages[currentPreviewPage].title ? paginatedPages[currentPreviewPage].title.toUpperCase() : "CUSTOM PAGE"}
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                            {(activeProposalData.customPages?.[paginatedPages[currentPreviewPage].pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        {renderContent(paginatedPages[currentPreviewPage].content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'terms_only' && (
+                                                <div className="space-y-12 py-10 px-4">
+                                                    <div className="mb-10 space-y-3">
+                                                        <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                            GENERAL TERMS.
+                                                        </h3>
+                                                        <div className="w-20 h-1.5 bg-neon-green" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage].termsPageIdx}</p>
+                                                    </div>
+                                                    <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
+                                                        {renderContent(paginatedPages[currentPreviewPage].termsText)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {paginatedPages[currentPreviewPage]?.type === 'commercials' && (
+                                                 <div className="space-y-10 py-6 h-full flex flex-col justify-between">
+                                                     <div>
+                                                         <div className="mb-10 space-y-3">
+                                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                                 {activeProposalData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                             </h3>
+                                                             <div className="w-20 h-1.5 bg-neon-green" />
+                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                                 {activeProposalData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                             </p>
+                                                         </div>
+                                                         <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
+                                                             <div className="space-y-8">
+                                                                 {paginatedPages[currentPreviewPage].termsText && (
+                                                                     <div className="space-y-3">
+                                                                         <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
+                                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage].termsText)}</div>
+                                                                     </div>
+                                                                 )}
+                                                                 {paginatedPages[currentPreviewPage].paymentDetailsText && (
+                                                                     <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+                                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage].paymentDetailsText}</div>
+                                                                     </div>
+                                                                 )}
+                                                             </div>
+                                                             {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
+                                                                 <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
+                                                                     <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                                         <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
+                                                                     </div>
+                                                                     {activeProposalData.showGst && (
+                                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
+                                                                             <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
+                                                                         </div>
+                                                                     )}
+                                                                     <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                                         <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
+                                                                         <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
+                                                                     </div>
+                                                                     {activeProposalData.advanceRequested > 0 && (
+                                                                         <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
+                                                                             <div>
+                                                                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
+                                                                                 <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                             </div>
+                                                                             <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
+                                                                         </div>
+                                                                     )}
+                                                                 </div>
+                                                             </div>)}
+                                                         </div>
+                                                     </div>
+
+                                                     {/* Authentication Layer (Preview) */}
+                                                     {currentPreviewPage === paginatedPages.length - 1 && (activeProposalData.showSeal || activeProposalData.showSignatures) && (
+                                                         <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
+                                                             {/* Provider Signature */}
+                                                             <div className="space-y-6">
+                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                                 <div className="h-40 flex items-center justify-start relative">
+                                                                     {activeProposalData.showSignatures && activeProposalData.providerSignature ? (
+                                                                         <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                     ) : (
+                                                                         <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                     )}
+                                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                 </div>
+                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                                 <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                             </div>
+
+                                                             {/* Client Signature */}
+                                                             <div className="space-y-6 text-right">
+                                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                                 <div className="h-40 flex items-center justify-end relative">
+                                                                     {activeProposalData.showSignatures && activeProposalData.clientSignature ? (
+                                                                         <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                                     ) : (
+                                                                         <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
+                                                                     )}
+                                                                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                                 </div>
+                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                             </div>
+
+                                                             {/* Official Seal Overlay */}
+                                                             {activeProposalData.showSeal && (
+                                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
+                                                                     <DocumentSeal className="w-56 h-56" />
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                            )}
                                             </div>
                                         </div>
                                         <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                                            <p>Newbi Entertainment ©</p>
-                                            <p className="text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
+                                            <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                                            <p className="w-1/3 text-center text-gray-600 truncate px-2">{activeProposalData.campaignName || activeProposalData.projectName || ''}</p>
+                                            <p className="w-1/3 text-right text-black">Page {currentPreviewPage + 1} of {paginatedPages.length}</p>
                                         </div>
                                     </motion.div>
                                 </AnimatePresence>
@@ -1975,155 +2472,338 @@ const AIStudio = () => {
                     proposalPaginatedPages.map((page, idx) => (
                         <div key={idx} className="proposal-page-render w-[794px] h-[1123px] bg-white text-black relative flex flex-col p-[15mm] mb-10">
                             <div className={cn("flex justify-between items-end mb-8 pb-4 border-b-2 border-black", idx > 0 && "mb-4 pb-2 opacity-40 border-gray-200")}>
-                                <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                                <div className="flex flex-col gap-6 items-start">
+                                    <img src={currentLogo.path} alt="Logo" className={cn("h-16 w-auto object-contain", idx > 0 && "h-8")} crossOrigin="anonymous" />
+                                </div>
+                                {idx > 0 && (
+                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] truncate max-w-[300px]">
+                                        {activeProposalData.campaignName || activeProposalData.projectName}
+                                    </div>
+                                )}
                                 <div className="text-right space-y-3">
                                     <div><h4 className={cn("text-[10px] font-black uppercase text-black tracking-[0.4em] mb-0", idx > 0 && "text-[7px]")}>Quotation</h4><p className={cn("text-lg font-black text-black tracking-widest font-mono", idx > 0 && "text-sm")}>{activeProposalData.proposalNumber}</p></div>
+                                    {idx === 0 && (
+                                        <div className="space-y-0.5"><p className="text-[8px] font-black text-gray-400 uppercase">Issue Date</p><p className="text-[10px] font-black text-black">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p></div>
+                                    )}
                                 </div>
                             </div>
+
                             <div className="flex-1 overflow-hidden relative">
-                                <div className="absolute inset-0 flex flex-col px-1">
-                                    {page.type === 'cover' && (
-                                        <div className="h-full flex flex-col justify-start space-y-20 py-8">
-                                            <div className="grid grid-cols-2 gap-10">
-                                                <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2><p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p></div></div>
-                                                <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Details</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Period: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
+                                <div className="absolute inset-0 overflow-hidden flex flex-col px-1">
+                                {page.type === 'cover' && (
+                                    <div className="h-full flex flex-col justify-start space-y-20 py-8">
+                                        <div className="grid grid-cols-2 gap-10">
+                                            <div className="space-y-6 min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Client Entity</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug break-words">{activeProposalData.clientName || 'Valued Partner'}</h2>{!isFieldHidden('clientAddress') && <p className="text-[12px] font-medium text-gray-500 whitespace-pre-line leading-relaxed">{activeProposalData.clientAddress || 'Client Address'}</p>}</div></div>
+                                            <div className="space-y-6 text-right min-w-0"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 pb-2">Project Specification</p><div className="space-y-2"><h2 className="text-lg font-black uppercase text-black leading-snug italic break-words">{activeProposalData.campaignName || 'Project Title'}</h2><p className="text-[12px] font-black text-neon-green bg-black px-3 py-1 inline-block uppercase tracking-widest">Duration: {activeProposalData.campaignDuration || 'TBD'}</p></div></div>
+                                        </div>
+                                        <div className="pt-16 space-y-10">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-1 bg-black" />
+                                                <p className="text-[11px] font-black uppercase tracking-[0.6em]">Official Strategic Quotation</p>
                                             </div>
-                                            <div className="pt-16 space-y-10">
-                                                <div className="flex items-center gap-4"><div className="w-12 h-1 bg-black" /><p className="text-[11px] font-black uppercase tracking-[0.6em]">Project Overview</p></div>
-                                                <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">{renderContent(activeProposalData.coverDescription || 'Cover description pending...')}</div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {page.type === 'strategy' && (
-                                        <div className="space-y-12 py-10 px-4">
-                                            <div className="space-y-2 border-l-4 border-black pl-8"><p className="text-[10px] font-black text-neon-green uppercase tracking-[0.5em]">Strategic Context</p><h3 className="text-5xl font-black text-black tracking-tighter uppercase leading-none">Architecture.</h3></div>
-                                            <div className="text-[14px] leading-[1.8] text-gray-700 font-medium text-justify">{renderContent(activeProposalData.overview || 'Strategic framework pending...')}</div>
-                                        </div>
-                                    )}
-                                    {page.type === 'scope' && (
-                                        <div className="h-full flex flex-col py-10 px-4">
-                                            <div className="flex-1"><div className="pl-0">{renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}</div></div>
-                                        </div>
-                                    )}
-                                    {page.type === 'proposal' && (
-                                        <div className="space-y-12 py-10 px-4">
-                                            <table className="w-full text-left">
-                                                <thead><tr className="border-b-4 border-black text-[10px] font-black uppercase text-black tracking-[0.3em]"><th className="py-6 pr-4">Specification</th><th className="py-6 px-4 text-center w-32">Volume</th><th className="py-6 pl-4 text-right w-40">Timeline</th></tr></thead>
-                                                <tbody className="divide-y-2 divide-gray-100">
-                                                    {activeProposalData.deliverables.filter(d => d.item).map((d, i) => (
-                                                        <tr key={d.id}>
-                                                            <td className="py-8 pr-4"><p className="text-[15px] font-black text-black mb-1 uppercase tracking-tight">{d.item}</p></td>
-                                                            <td className="py-8 px-4 text-center text-[14px] font-black text-gray-500">{d.qty || '—'}</td>
-                                                            <td className="py-8 pl-4 text-right text-[11px] font-black text-black uppercase tracking-widest bg-zinc-50/50">{d.timeline || '—'}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                    {page.type === 'table' && (
-                                        <div className="space-y-12 py-6">
-                                            <table className="w-full text-left">
-                                                <thead><tr className="border-b-2 border-black text-[10px] font-black uppercase text-black tracking-widest"><th className="py-4 pr-4">Description</th><th className="py-4 px-4 text-center w-24">Qty</th><th className="py-4 pl-4 text-right w-48">Value (INR)</th></tr></thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {page.items.map((item, i) => (
-                                                        <tr key={i}><td className="py-6 pr-4 text-[13px] font-bold text-black">{item.description}</td><td className="py-6 px-4 text-center text-[12px] font-bold text-gray-500">{item.qty}</td><td className="py-6 pl-4 text-right text-[13px] font-black tracking-widest text-black font-mono">₹{item.price.toLocaleString()}</td></tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                    {page.type === 'commercials' && (() => {
-                                        const isFieldHidden = (f) => (activeProposalData.hiddenFields || []).includes(f);
-                                        return (
-                                            <div className="space-y-10 py-8 flex flex-col h-full justify-between">
-                                                {/* Row 1: Terms, Payment details & Totals */}
-                                                <div className="grid grid-cols-2 gap-8 items-start">
-                                                    {/* Terms & Payment info */}
-                                                    <div className="space-y-4">
-                                                        {!isFieldHidden('terms') && (
-                                                            <div className="space-y-2">
-                                                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">General Terms</h4>
-                                                                <div className="text-[11px] font-semibold text-gray-600 leading-relaxed">{renderContent(activeProposalData.terms)}</div>
-                                                            </div>
-                                                        )}
-                                                        {!isFieldHidden('paymentDetails') && (
-                                                            <div className="p-5 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
-                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Information</p>
-                                                                <div className="text-[11px] font-semibold font-mono text-black leading-relaxed">{renderContent(activeProposalData.paymentDetails)}</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    {/* Totals, GST, Advance Requirement */}
-                                                    <div className="space-y-4">
-                                                        <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-1">Financial Settlement</h4>
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">Net Value</span><span className="text-sm font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span></div>
-                                                            {activeProposalData.showGst ? (
-                                                                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST ({activeProposalData.gstRate}%)</span><span className="text-sm font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span></div>
-                                                            ) : (
-                                                                <div className="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col justify-center"><span className="text-[8px] font-black text-gray-400 uppercase">GST</span><span className="text-sm font-bold text-gray-400 font-mono">Exempt</span></div>
-                                                            )}
-                                                        </div>
-                                                        <div className="p-5 bg-black text-right relative overflow-hidden rounded-2xl shadow-lg"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Quotation Value</p><h2 className="text-2xl font-black tracking-tighter text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2><div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" /></div>
-                                                        {(activeProposalData.advanceRequested > 0) && (
-                                                            <div className="p-4 bg-neon-green/5 border-2 border-dashed border-neon-green/20 rounded-2xl flex items-center justify-between">
-                                                                <div>
-                                                                    <span className="text-[8px] font-black text-gray-400 tracking-widest block uppercase">Advance Required ({activeProposalData.advanceRequested}%)</span>
-                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Prior to commencement</span>
-                                                                </div>
-                                                                <span className="text-lg font-black text-black font-mono">₹{(proposalTotalAmount * (activeProposalData.advanceRequested || 50) / 100).toLocaleString()}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                            {!isFieldHidden('coverDescription') && (
+                                                <div className="text-lg font-medium text-gray-700 leading-relaxed max-w-2xl">
+                                                    {renderContent(activeProposalData.coverDescription || 'Cover description pending...')}
                                                 </div>
-
-                                                {/* Row 2: Signatures (always expanded in PDF export) */}
-                                                {!isFieldHidden('signatures') && (
-                                                    <div className="border border-gray-200 rounded-2xl overflow-hidden mt-4 bg-white p-5">
-                                                        <div className="relative">
-                                                            <div className="grid grid-cols-2 gap-8 relative z-20">
-                                                                <div className="space-y-4">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
-                                                                    <div className="h-16 flex items-end">
-                                                                        {activeProposalData.providerSignature ? (
-                                                                            <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                        ) : (
-                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-60">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="space-y-0.5">
-                                                                        <p className="text-[10px] font-black uppercase text-black">{activeProposalData.senderName || 'Authorized Signatory'}</p>
-                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest italic">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="space-y-4 text-right">
-                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
-                                                                    <div className="h-16 flex items-end justify-end">
-                                                                        {activeProposalData.clientSignature ? (
-                                                                            <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
-                                                                        ) : (
-                                                                            <p className="text-2xl font-signature text-black leading-none italic opacity-30">Type name to sign</p>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-[10px] font-black uppercase text-black">Acknowledged & Accepted</p>
-                                                                </div>
-                                                            </div>
-
-                                                            {activeProposalData.showSeal && (
-                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-80 mix-blend-multiply">
-                                                                    <DocumentSeal className="w-28 h-28" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                            )}
+                                        </div>
+                                        <div className="mt-auto grid grid-cols-2 gap-10 pt-10 border-t border-gray-100"><div><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Quote Reference</p><p className="text-[11px] font-black text-black">{activeProposalData.proposalNumber}</p></div><div className="text-right"><p className="text-[9px] font-black text-gray-400 uppercase mb-2">Classification</p><p className="text-[11px] font-black text-black italic">Strategic Commercial</p></div></div>
+                                    </div>
+                                )}
+                                {page.type === 'strategy' && (
+                                    <div className="space-y-16 py-8">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {activeProposalData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {activeProposalData.strategySub || 'STRATEGIC OUTLINE'}
+                                            </p>
+                                        </div>
+                                        {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
+                                        {page.primaryGoalText && (
+                                            <div className="pt-12">
+                                                <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
+                                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
+                                                    <div className="text-lg font-black text-black leading-relaxed">{renderContent(page.primaryGoalText)}</div>
+                                                </div>
                                             </div>
-                                        );
-                                    })()}
+                                        )}
+                                    </div>
+                                )}
+                                {page.type === 'scope' && (
+                                    <div className="h-full flex flex-col py-8">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {activeProposalData.scopeTitle || 'SCOPE OF WORK'}
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {activeProposalData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                            </p>
+                                        </div>
+                                        <div className="flex-1 flex flex-col">
+    {renderContent(page.scopeText || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+</div>
+                                    </div>
+                                )}
+                                {page.type === 'proposal' && (
+                                    <div className="space-y-16 py-8">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {activeProposalData.proposalTitle || 'DELIVERABLES'}
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {activeProposalData.proposalSub || 'PROJECT INVENTORY'}
+                                            </p>
+                                        </div>
+                                        {page.deliverables?.length > 0 && (
+                                            <div className="space-y-6">
+                                                <table className="w-full text-left border-collapse border border-black">
+                                                    <thead>
+                                                        <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                            <th className="p-4 w-12 text-center border-r border-white/20">#</th>
+                                                            <th className="p-4 border-r border-white/20">Deliverable</th>
+                                                            <th className="p-4 text-center w-28 border-r border-white/20">Qty / Unit</th>
+                                                            <th className="p-4 text-right w-40">Timeline</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-black/10">
+                                                        {page.deliverables.map((d, i) => (
+                                                            <tr key={d.id || i} className="hover:bg-gray-50">
+                                                                <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
+                                                                    {String((page.startIndex || 0) + i + 1).padStart(2, '0')}
+                                                                </td>
+                                                                <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
+                                                                <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
+                                                                <td className="p-4 text-right text-[11px] font-black text-black uppercase tracking-wider">{d.timeline || '—'}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                        {page.clientRequirements?.length > 0 && (
+                                            <div className="space-y-6 pt-4">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
+                                                <div className="p-8 border-2 border-gray-200 space-y-0">
+                                                    {page.clientRequirements.map((r, i) => (
+                                                        <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
+                                                            <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
+                                                            <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {page.type === 'table' && (
+                                    <div className="space-y-12 py-8">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {activeProposalData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {page.tablePageIdx > 1 
+                                                    ? `${activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
+                                                    : (activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                            </p>
+                                        </div>
+                                        <table className="w-full text-left border-collapse border border-black">
+                                            <thead>
+                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                    {(activeProposalData.tableColumns || [
+                                                        { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                        { key: 'qty', label: 'Qty', type: 'number' },
+                                                        { key: 'price', label: 'Value (INR)', type: 'number' }
+                                                    ]).map((col, cIdx, arr) => (
+                                                        <th 
+                                                            key={col.key} 
+                                                            className={cn(
+                                                                "p-4",
+                                                                cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                col.key === 'qty' && "text-center w-24",
+                                                                col.key === 'price' && "text-right w-48"
+                                                            )}
+                                                        >
+                                                            {col.label}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-black/10">
+                                                {page.items.map((item, i) => {
+                                                    const cols = activeProposalData.tableColumns || [
+                                                        { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                        { key: 'qty', label: 'Qty', type: 'number' },
+                                                        { key: 'price', label: 'Value (INR)', type: 'number' }
+                                                    ];
+                                                    return (
+                                                        <tr key={i} className="hover:bg-gray-50">
+                                                            {cols.map((col, cIdx) => {
+                                                                const isLast = cIdx === cols.length - 1;
+                                                                const tdClass = cn(
+                                                                    "p-4",
+                                                                    !isLast && "border-r border-black/10"
+                                                                );
+                                                                if (col.key === 'description') {
+                                                                    return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                                }
+                                                                if (col.key === 'qty') {
+                                                                     return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
+                                                                }
+                                                                if (col.key === 'price') {
+                                                                     return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
+                                                                }
+                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                            })}
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {page.type === 'custom' && (
+                                    <div className="space-y-8 py-8 h-full flex flex-col justify-start">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                {page.title ? page.title.toUpperCase() : "CUSTOM PAGE"}
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                {(activeProposalData.customPages?.[page.pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
+                                            </p>
+                                        </div>
+                                        <div className="flex-1">
+                                            {renderContent(page.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                        </div>
+                                    </div>
+                                )}
+                                {page.type === 'terms_only' && (
+                                    <div className="space-y-12 py-10 px-4">
+                                        <div className="mb-10 space-y-3">
+                                            <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                GENERAL TERMS.
+                                            </h3>
+                                            <div className="w-20 h-1.5 bg-neon-green" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {page.termsPageIdx}</p>
+                                        </div>
+                                        <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
+                                            {renderContent(page.termsText)}
+                                        </div>
+                                    </div>
+                                )}
+                                {page.type === 'commercials' && (
+                                     <div className="space-y-10 py-6 h-full flex flex-col justify-between">
+                                         <div>
+                                             <div className="mb-10 space-y-3">
+                                                 <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
+                                                     {activeProposalData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                 </h3>
+                                                 <div className="w-20 h-1.5 bg-neon-green" />
+                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
+                                                     {activeProposalData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                 </p>
+                                             </div>
+                                             <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
+                                                 <div className="space-y-8">
+                                                     {page.termsText && (
+                                                         <div className="space-y-3">
+                                                             <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
+                                                             <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
+                                                         </div>
+                                                     )}
+                                                     {page.paymentDetailsText && (
+                                                         <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+                                                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
+                                                             <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                                 {!activeProposalData.hideTotalColumn && (<div className="space-y-4">
+                                                     <div className="bg-gray-50/50 border border-gray-250/60 rounded-[2rem] p-8 space-y-6">
+                                                         <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
+                                                             <span className="text-base font-bold text-black font-mono">₹{proposalSubtotal.toLocaleString()}</span>
+                                                         </div>
+                                                         {activeProposalData.showGst && (
+                                                             <div className="flex justify-between items-center pb-4 border-b border-gray-200/60">
+                                                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GST ({activeProposalData.gstRate}%)</span>
+                                                                 <span className="text-base font-bold text-black font-mono">₹{proposalGstAmount.toLocaleString()}</span>
+                                                             </div>
+                                                         )}
+                                                         <div className="p-8 bg-black text-right relative overflow-hidden rounded-[1.5rem] shadow-xl">
+                                                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Total Estimated Cost</p>
+                                                             <h2 className="text-3xl font-black tracking-widest text-white font-mono leading-none">₹{proposalTotalAmount.toLocaleString()}</h2>
+                                                             <div className="absolute top-0 right-0 w-1.5 h-full bg-neon-green" />
+                                                         </div>
+                                                         {activeProposalData.advanceRequested > 0 && (
+                                                             <div className="p-6 bg-neon-green/5 border border-neon-green/20 rounded-[1.5rem] flex justify-between items-center">
+                                                                 <div>
+                                                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Advance Fee ({activeProposalData.advanceRequested}%)</span>
+                                                                     <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider block">Due upon signature</span>
+                                                                 </div>
+                                                                 <span className="text-xl font-black text-black font-mono">₹{(proposalTotalAmount * activeProposalData.advanceRequested / 100).toLocaleString()}</span>
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 </div>)}
+                                             </div>
+                                         </div>
+
+                                         {/* Authentication Layer (Export) */}
+                                         {(activeProposalData.showSeal || activeProposalData.showSignatures) && (
+                                             <div className="mt-20 pt-12 border-t-2 border-black/5 grid grid-cols-2 gap-20 relative">
+                                                 {/* Provider Signature */}
+                                                 <div className="space-y-6">
+                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For Newbi Entertainment</p>
+                                                     <div className="h-40 flex items-center justify-start relative">
+                                                         {activeProposalData.showSignatures && activeProposalData.providerSignature ? (
+                                                             <img src={activeProposalData.providerSignature} alt="Provider Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                         ) : (
+                                                             <p className="text-[24px] font-signature text-black opacity-40">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                         )}
+                                                         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                     </div>
+                                                     <p className="text-[11px] font-black text-black uppercase tracking-widest">{activeProposalData.senderName || 'Authorized Signatory'}</p>
+                                                     <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{activeProposalData.senderDesignation || 'Director of Operations'}</p>
+                                                 </div>
+
+                                                 {/* Client Signature */}
+                                                 <div className="space-y-6 text-right">
+                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">For {activeProposalData.clientName || 'Valued Partner'}</p>
+                                                     <div className="h-40 flex items-center justify-end relative">
+                                                         {activeProposalData.showSignatures && activeProposalData.clientSignature ? (
+                                                             <img src={activeProposalData.clientSignature} alt="Client Signature" className="h-full object-contain grayscale mix-blend-multiply" crossOrigin="anonymous" />
+                                                         ) : (
+                                                             <p className="text-[24px] font-signature text-black opacity-10">Type name to sign</p>
+                                                         )}
+                                                         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                                                     </div>
+                                                     <p className="text-[11px] font-black text-black uppercase tracking-widest">Acknowledged & Accepted</p>
+                                                 </div>
+
+                                                 {/* Official Seal Overlay */}
+                                                 {activeProposalData.showSeal && (
+                                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 opacity-90 mix-blend-multiply">
+                                                         <DocumentSeal className="w-56 h-56" />
+                                                     </div>
+                                                 )}
+                                             </div>
+                                         )}
+                                     </div>
+                                )}
                                 </div>
+                            </div>
+                            <div className="mt-auto pt-8 pb-10 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                                <p className="w-1/3 text-left">Newbi Entertainment ©</p>
+                                <p className="w-1/3 text-center text-gray-600 truncate px-2">{activeProposalData.campaignName || activeProposalData.projectName || ''}</p>
+                                <p className="w-1/3 text-right text-black">Page {idx + 1} of {proposalPaginatedPages.length}</p>
                             </div>
                         </div>
                     ))

@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { 
     Bold, Italic, List, ListOrdered, Undo2, Redo2, 
     Type, AlignLeft, AlignCenter, AlignRight, 
     Link as LinkIcon, Image as ImageIcon, Sparkles,
-    Loader2, Heading1, Heading2
+    Loader2, Heading1, Heading2, Table, Split
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useEditorHistory } from '../../hooks/useEditorHistory';
@@ -19,8 +19,81 @@ const StudioRichEditor = ({
     accentColor = "neon-blue"
 }) => {
     const editorRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [showTableSelector, setShowTableSelector] = useState(false);
+    const [hoveredGrid, setHoveredGrid] = useState({ rows: 0, cols: 0 });
+
+    const handleImageFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (editorRef.current) {
+                editorRef.current.focus();
+            }
+            const selection = window.getSelection();
+            let savedRange = null;
+            if (selection.rangeCount > 0) {
+                savedRange = selection.getRangeAt(0).cloneRange();
+            }
+
+            setIsUploading(true);
+            try {
+                const url = await useStore.getState().uploadToCloudinary(file);
+                if (url) {
+                    if (savedRange) {
+                        selection.removeAllRanges();
+                        selection.addRange(savedRange);
+                    }
+                    document.execCommand('insertImage', false, url);
+                    updateValue(editorRef.current.innerHTML);
+                }
+            } catch (err) {
+                console.error("Toolbar upload failed:", err);
+                useStore.getState().addToast?.("Upload failed.", "error");
+            } finally {
+                setIsUploading(false);
+            }
+        }
+    };
+
+    const handleInsertTable = (rowCount, colCount) => {
+        setShowTableSelector(false);
+        setHoveredGrid({ rows: 0, cols: 0 });
+        
+        if (editorRef.current) {
+            editorRef.current.focus();
+        }
+        
+        let tableHtml = `<table class="w-full text-left border-collapse border border-black my-6">`;
+        
+        // Header Row
+        tableHtml += `<thead><tr class="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">`;
+        for (let c = 1; c <= colCount; c++) {
+            const isLastCol = c === colCount;
+            tableHtml += `<th class="p-4 ${isLastCol ? '' : 'border-r border-white/20'}">Header ${c}</th>`;
+        }
+        tableHtml += `</tr></thead>`;
+        
+        // Body Rows
+        const bodyRowsCount = rowCount > 1 ? rowCount - 1 : 0;
+        if (bodyRowsCount > 0) {
+            tableHtml += `<tbody class="divide-y divide-black/10">`;
+            for (let r = 1; r <= bodyRowsCount; r++) {
+                tableHtml += `<tr class="hover:bg-gray-50">`;
+                for (let c = 1; c <= colCount; c++) {
+                    const isLastCol = c === colCount;
+                    tableHtml += `<td class="p-4 text-[12px] font-medium text-black ${isLastCol ? '' : 'border-r border-black/10'}">Cell ${r}-${c}</td>`;
+                }
+                tableHtml += `</tr>`;
+            }
+            tableHtml += `</tbody>`;
+        }
+        
+        tableHtml += `</table><p><br></p>`;
+        
+        execCommand('insertHTML', tableHtml);
+    };
     
     // Sync external value with internal contenteditable only when necessary
     useEffect(() => {
@@ -140,6 +213,7 @@ const StudioRichEditor = ({
     const ToolbarButton = ({ icon: Icon, onClick, active, disabled, title }) => (
         <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={onClick}
             disabled={disabled}
             className={cn(
@@ -164,11 +238,11 @@ const StudioRichEditor = ({
             )}
             
             <div className={cn(
-                "relative bg-black/40 border transition-all duration-500 rounded-[2rem] overflow-hidden",
+                "relative bg-black/40 border transition-all duration-500 rounded-[2rem]",
                 isFocused ? focusBorderClass : "border-white/5"
             )}>
                 {/* Toolbar */}
-                <div className="flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl">
+                <div className="flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl rounded-t-[2rem]">
                     <div className="flex items-center gap-1 pr-2 border-r border-white/10">
                         <ToolbarButton icon={Undo2} onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
                         <ToolbarButton icon={Redo2} onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" />
@@ -210,35 +284,69 @@ const StudioRichEditor = ({
                         <ToolbarButton icon={AlignRight} onClick={() => execCommand('justifyRight')} title="Align Right" />
                     </div>
 
-                    <div className="flex items-center gap-1 pl-2">
+                    <div className="flex items-center gap-1 pl-2 relative">
                         <ToolbarButton icon={LinkIcon} onClick={() => {
                             const url = prompt("Enter link URL:");
                             if (url) execCommand('createLink', url);
                         }} title="Insert Link" />
-                        <ToolbarButton icon={ImageIcon} onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = 'image/*';
-                            input.onchange = async (e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                    setIsUploading(true);
-                                    try {
-                                        const url = await useStore.getState().uploadToCloudinary(file);
-                                        if (url) {
-                                            document.execCommand('insertImage', false, url);
-                                            updateValue(editorRef.current.innerHTML);
-                                        }
-                                    } catch (err) {
-                                        console.error("Toolbar upload failed:", err);
-                                        useStore.getState().addToast?.("Upload failed.", "error");
-                                    } finally {
-                                        setIsUploading(false);
-                                    }
+                        <ToolbarButton 
+                            icon={ImageIcon} 
+                            onClick={() => {
+                                if (fileInputRef.current) {
+                                    fileInputRef.current.value = '';
+                                    fileInputRef.current.click();
                                 }
-                            };
-                            input.click();
-                        }} title="Upload Image" />
+                            }} 
+                            title="Add Image (Upload)" 
+                        />
+                        
+                        <div className="relative flex items-center justify-center">
+                            <ToolbarButton 
+                                icon={Table} 
+                                onClick={() => setShowTableSelector(!showTableSelector)} 
+                                active={showTableSelector}
+                                title="Insert Table" 
+                            />
+                            {showTableSelector && (
+                                <div 
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className="absolute top-full mt-2 right-0 bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2"
+                                    onMouseLeave={() => setHoveredGrid({ rows: 0, cols: 0 })}
+                                >
+                                    <div className="text-[9px] font-black uppercase tracking-wider text-neon-green text-center">
+                                        {hoveredGrid.rows > 0 && hoveredGrid.cols > 0 
+                                            ? `${hoveredGrid.rows} x ${hoveredGrid.cols} Table` 
+                                            : "Select Table Size"}
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        {Array.from({ length: 6 }).map((_, rIdx) => (
+                                            <div key={rIdx} className="flex gap-1">
+                                                {Array.from({ length: 6 }).map((_, cIdx) => {
+                                                    const row = rIdx + 1;
+                                                    const col = cIdx + 1;
+                                                    const isHighlighted = row <= hoveredGrid.rows && col <= hoveredGrid.cols;
+                                                    return (
+                                                        <button
+                                                            key={cIdx}
+                                                            type="button"
+                                                            onMouseDown={(e) => e.preventDefault()}
+                                                            onMouseEnter={() => setHoveredGrid({ rows: row, cols: col })}
+                                                            onClick={() => handleInsertTable(row, col)}
+                                                            className={cn(
+                                                                "w-5 h-5 rounded transition-all border",
+                                                                isHighlighted 
+                                                                    ? "bg-neon-green/30 border-neon-green shadow-[0_0_5px_rgba(57,255,20,0.3)]" 
+                                                                    : "bg-white/5 border-white/10 hover:border-white/20"
+                                                            )}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                 </div>
@@ -338,7 +446,7 @@ const StudioRichEditor = ({
                         }
                     }}
                     className={cn(
-                        "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white",
+                        "w-full p-6 text-[11px] font-medium text-white/90 focus:outline-none leading-relaxed article-content prose prose-invert prose-sm max-w-none break-words article-content-force-white rounded-b-[2rem]",
                         "min-h-[150px]",
                         isUploading && "opacity-50 pointer-events-none"
                     )}
@@ -354,7 +462,7 @@ const StudioRichEditor = ({
 
                 {/* Uploading Overlay */}
                 {isUploading && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3 rounded-[2rem]">
                         <div className="relative">
                             <div className={cn("absolute inset-0 blur-xl opacity-50 rounded-full", uploadBgClass)} />
                             <Loader2 className={cn("animate-spin relative z-10", loaderTextClass)} size={32} />
@@ -362,7 +470,90 @@ const StudioRichEditor = ({
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">Processing Media...</span>
                     </div>
                 )}
+
+                {/* Hidden input for direct OS uploader */}
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleImageFileChange} 
+                />
             </div>
+        </div>
+    );
+};
+
+export const MultiPageRichEditor = ({
+    value = '',
+    onChange,
+    label,
+    placeholder,
+    minHeight = "200px",
+    accentColor = "neon-green"
+}) => {
+    // Split value into pages by the page-break div markup
+    const pages = useMemo(() => {
+        if (!value) return [''];
+        const parts = value.split(/<div[^>]*class="[^"]*page-break[^"]*"[^>]*><\/div>/gi);
+        return parts.length > 0 ? parts : [''];
+    }, [value]);
+
+    const handlePageChange = (index, newContent) => {
+        const newPages = [...pages];
+        newPages[index] = newContent;
+        const joined = newPages.join('<div class="page-break"></div>');
+        onChange(joined);
+    };
+
+    const addPage = () => {
+        const newPages = [...pages, ''];
+        const joined = newPages.join('<div class="page-break"></div>');
+        onChange(joined);
+    };
+
+    const removePage = (index) => {
+        if (pages.length <= 1) return;
+        const newPages = pages.filter((_, i) => i !== index);
+        const joined = newPages.join('<div class="page-break"></div>');
+        onChange(joined);
+    };
+
+    return (
+        <div className="space-y-6">
+            {pages.map((pageContent, idx) => (
+                <div key={idx} className="relative bg-zinc-950/20 border border-white/5 rounded-[2rem] p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <span className="text-[10px] font-black text-neon-green/60 uppercase tracking-widest bg-neon-green/5 border border-neon-green/10 px-3 py-1 rounded-full">
+                            {label} — Page {idx + 1}
+                        </span>
+                        {pages.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => removePage(idx)}
+                                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-all rounded-xl text-[9px] font-black uppercase tracking-wider"
+                                title="Remove Page Break"
+                            >
+                                Remove Page
+                            </button>
+                        )}
+                    </div>
+                    <StudioRichEditor
+                        value={pageContent}
+                        onChange={(val) => handlePageChange(idx, val)}
+                        placeholder={placeholder}
+                        minHeight={minHeight}
+                        accentColor={accentColor}
+                    />
+                </div>
+            ))}
+            <button
+                type="button"
+                onClick={addPage}
+                className="w-full py-4 border border-dashed border-white/10 hover:border-neon-green/30 hover:bg-neon-green/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-neon-green transition-all flex items-center justify-center gap-2"
+            >
+                <span>+ Add Page Break (Create New Page)</span>
+            </button>
         </div>
     );
 };
