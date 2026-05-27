@@ -1036,11 +1036,11 @@ const Proposal = () => {
                                     <div className="space-y-16 py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {displayProposal.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                                {displayProposal.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {displayProposal.strategySub || 'STRATEGIC OUTLINE'}
+                                                {displayProposal.strategySub ?? 'STRATEGIC OUTLINE'}
                                             </p>
                                         </div>
                                         {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
@@ -1059,11 +1059,11 @@ const Proposal = () => {
                                     <div className="h-full flex flex-col py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {displayProposal.scopeTitle || 'SCOPE OF WORK'}
+                                                {displayProposal.scopeTitle ?? 'SCOPE OF WORK'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {displayProposal.scopeSub || 'RESOURCE DELIVERABLES'}
+                                                {displayProposal.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                             </p>
                                         </div>
                                         <div className="flex-1 flex flex-col">
@@ -1141,11 +1141,11 @@ const Proposal = () => {
                                     <div className="space-y-16 py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {displayProposal.proposalTitle || 'DELIVERABLES'}
+                                                {displayProposal.proposalTitle ?? 'DELIVERABLES'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {displayProposal.proposalSub || 'PROJECT INVENTORY'}
+                                                {displayProposal.proposalSub ?? 'PROJECT INVENTORY'}
                                             </p>
                                         </div>
                                         {page.deliverables?.length > 0 && (
@@ -1194,13 +1194,13 @@ const Proposal = () => {
                                      <div className="space-y-12 py-8">
                                          <div className="mb-10 space-y-3">
                                              <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                 {displayProposal.inventoryTitle || 'RESOURCE INVENTORY'}
+                                                 {displayProposal.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                              </h3>
                                              <div className="w-20 h-1.5 bg-neon-green" />
                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                  {page.tablePageIdx > 1 
-                                                     ? `${displayProposal.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                     : (displayProposal.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                     ? `${displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
+                                                     : (displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                              </p>
                                          </div>
                                          <table className="w-full text-left border-collapse border border-black">
@@ -1288,11 +1288,11 @@ const Proposal = () => {
                                         <div>
                                             <div className="mb-10 space-y-3">
                                                 <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                    {displayProposal.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                    {displayProposal.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                 </h3>
                                                 <div className="w-20 h-1.5 bg-neon-green" />
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                    {displayProposal.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                    {displayProposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                 </p>
                                             </div>                  
                                             <div className={cn("grid gap-12 items-start", displayProposal.hideTotalColumn ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
@@ -1536,11 +1536,11 @@ const Proposal = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {displayProposal.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                             {displayProposal.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {displayProposal.strategySub || 'STRATEGIC OUTLINE'}
+                                            {displayProposal.strategySub ?? 'STRATEGIC OUTLINE'}
                                         </p>
                                     </div>
                                     {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
@@ -1559,11 +1559,11 @@ const Proposal = () => {
                                 <div className="h-full flex flex-col py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {displayProposal.scopeTitle || 'SCOPE OF WORK'}
+                                            {displayProposal.scopeTitle ?? 'SCOPE OF WORK'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {displayProposal.scopeSub || 'RESOURCE DELIVERABLES'}
+                                            {displayProposal.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                         </p>
                                     </div>
                                     <div className="flex-1 flex flex-col">
@@ -1608,11 +1608,11 @@ const Proposal = () => {
                                 <div className="space-y-16 py-8">
                                     <div className="mb-10 space-y-3">
                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                            {displayProposal.proposalTitle || 'DELIVERABLES'}
+                                            {displayProposal.proposalTitle ?? 'DELIVERABLES'}
                                         </h3>
                                         <div className="w-20 h-1.5 bg-neon-green" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                            {displayProposal.proposalSub || 'PROJECT INVENTORY'}
+                                            {displayProposal.proposalSub ?? 'PROJECT INVENTORY'}
                                         </p>
                                     </div>
                                     {page.deliverables?.length > 0 && (
@@ -1661,13 +1661,13 @@ const Proposal = () => {
                                  <div className="space-y-12 py-8">
                                      <div className="mb-10 space-y-3">
                                          <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                             {displayProposal.inventoryTitle || 'RESOURCE INVENTORY'}
+                                             {displayProposal.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                          </h3>
                                          <div className="w-20 h-1.5 bg-neon-green" />
                                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                              {page.tablePageIdx > 1 
-                                                 ? `${displayProposal.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                 : (displayProposal.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                 ? `${displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
+                                                 : (displayProposal.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                          </p>
                                      </div>
                                      <table className="w-full text-left border-collapse border border-black">
@@ -1755,11 +1755,11 @@ const Proposal = () => {
                                       <div>
                                           <div className="mb-10 space-y-3">
                                               <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                  {displayProposal.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                  {displayProposal.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                               </h3>
                                               <div className="w-20 h-1.5 bg-neon-green" />
                                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                  {displayProposal.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                  {displayProposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                               </p>
                                           </div>                                   
                                          <div className={cn("grid gap-12 items-start", displayProposal.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>

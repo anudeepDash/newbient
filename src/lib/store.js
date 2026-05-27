@@ -19,50 +19,91 @@ const getCachedSession = () => {
 };
 
 const uploadBase64ToStorage = async (base64String, path) => {
-    if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:image/')) {
+    if (!base64String || typeof base64String !== 'string' || !base64String.startsWith('data:') || !base64String.includes(';base64,')) {
         return base64String;
     }
+    
+    let blob = null;
+    let mimeType = 'image/png';
+    let extension = 'png';
     try {
         const response = await fetch(base64String);
-        const blob = await response.blob();
+        blob = await response.blob();
+        mimeType = blob.type || 'image/png';
+        extension = mimeType.split('/')[1] || 'png';
+    } catch (e) {
+        console.error("Failed to parse base64 data URL to Blob:", e);
+        throw new Error(`Invalid base64 payload: ${e.message}`);
+    }
+
+    try {
         const storageRef = ref(storage, path);
         await uploadBytes(storageRef, blob);
         return await getDownloadURL(storageRef);
     } catch (e) {
-        console.error("Failed to upload base64 image to Firebase Storage:", e);
-        throw e;
+        console.warn("Failed to upload base64 file to Firebase Storage, trying Cloudinary fallback...", e);
+        try {
+            const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud";
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+            const data = new FormData();
+            data.append("file", blob, `asset.${extension}`);
+            data.append("upload_preset", preset);
+            data.append("cloud_name", cloudName);
+
+            let resourceType = "image";
+            if (mimeType.startsWith("video/")) resourceType = "video";
+            else if (mimeType.startsWith("audio/")) resourceType = "video";
+            else if (!mimeType.startsWith("image/")) resourceType = "raw";
+
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
+                method: "POST", 
+                body: data 
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error?.message || "Cloudinary upload failed");
+            }
+            const uploadedFile = await res.json();
+            return uploadedFile.secure_url;
+        } catch (cloudinaryError) {
+            console.error("Cloudinary fallback also failed:", cloudinaryError);
+            throw new Error(`Upload failed for file asset. Original storage error: ${e.message}. Cloudinary fallback error: ${cloudinaryError.message}`);
+        }
     }
 };
 
 const processAndUploadBase64Fields = async (obj, pathPrefix) => {
-    if (typeof obj === 'string' && obj.startsWith('data:image/')) {
+    if (typeof obj === 'string' && obj.startsWith('data:') && obj.includes(';base64,')) {
         const uniqueId = Math.random().toString(36).substring(2, 9);
-        const mimeType = obj.match(/data:(image\/[a-zA-Z0-9.-]+);base64/)?.[1] || 'image/png';
+        const mimeType = obj.match(/data:([a-zA-Z0-9.+\-_/]+);base64/)?.[1] || 'image/png';
         const extension = mimeType.split('/')[1] || 'png';
-        const storagePath = `${pathPrefix}_image_${uniqueId}.${extension}`;
+        const storagePath = `${pathPrefix}_file_${uniqueId}.${extension}`;
         return await uploadBase64ToStorage(obj, storagePath);
     }
 
-    if (typeof obj === 'string' && obj.includes('data:image/')) {
-        const regex = /src=["'](data:image\/[^"']+)["']/g;
+    if (typeof obj === 'string' && obj.includes(';base64,')) {
+        const regex = /(data:[a-zA-Z0-9.+\-_/]+;base64,[^"'\s\)\\\&<>]+)/g;
         let match;
         let newStr = obj;
         const uploads = [];
         while ((match = regex.exec(obj)) !== null) {
             const base64Str = match[1];
-            uploads.push(base64Str);
+            if (!uploads.includes(base64Str)) {
+                uploads.push(base64Str);
+            }
         }
 
         for (const base64Str of uploads) {
             const uniqueId = Math.random().toString(36).substring(2, 9);
-            const mimeType = base64Str.match(/data:(image\/[a-zA-Z0-9.-]+);base64/)?.[1] || 'image/png';
+            const mimeType = base64Str.match(/data:([a-zA-Z0-9.+\-_/]+);base64/)?.[1] || 'image/png';
             const extension = mimeType.split('/')[1] || 'png';
             const storagePath = `${pathPrefix}_embedded_${uniqueId}.${extension}`;
             try {
                 const url = await uploadBase64ToStorage(base64Str, storagePath);
-                newStr = newStr.replace(base64Str, url);
+                newStr = newStr.replaceAll(base64Str, url);
             } catch (e) {
                 console.error("Failed to upload embedded base64:", e);
+                throw e; // Propagate error so that save fails with explanation instead of silent write failure
             }
         }
         return newStr;
@@ -887,6 +928,26 @@ export const useStore = create((set, get) => ({
 
         const processed = await processAndUploadBase64Fields(cleaned, `signatures/proposals/${id}`);
 
+        // Heal/trim accessLogs to prevent Firestore size limit issues if the document or update is bloated
+        if (processed.accessLogs && Array.isArray(processed.accessLogs)) {
+            if (processed.accessLogs.length > 10) {
+                processed.accessLogs = processed.accessLogs.slice(0, 10);
+            }
+        } else {
+            try {
+                const docRef = doc(db, 'proposals', id);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > 10) {
+                        processed.accessLogs = data.accessLogs.slice(0, 10);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to auto-heal accessLogs for proposal:", err);
+            }
+        }
+
         await updateDoc(doc(db, 'proposals', id), processed);
     },
     updateProposalStatus: async (id, status) => {
@@ -971,6 +1032,26 @@ export const useStore = create((set, get) => ({
         delete cleaned.id;
 
         const processed = await processAndUploadBase64Fields(cleaned, `signatures/agreements/${id}`);
+
+        // Heal/trim accessLogs to prevent Firestore size limit issues if the document or update is bloated
+        if (processed.accessLogs && Array.isArray(processed.accessLogs)) {
+            if (processed.accessLogs.length > 10) {
+                processed.accessLogs = processed.accessLogs.slice(0, 10);
+            }
+        } else {
+            try {
+                const docRef = doc(db, 'agreements', id);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.accessLogs && Array.isArray(data.accessLogs) && data.accessLogs.length > 10) {
+                        processed.accessLogs = data.accessLogs.slice(0, 10);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to auto-heal accessLogs for agreement:", err);
+            }
+        }
 
         await updateDoc(doc(db, 'agreements', id), processed);
     },

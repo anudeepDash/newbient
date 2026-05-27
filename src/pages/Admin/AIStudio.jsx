@@ -692,16 +692,16 @@ const AIStudio = () => {
                     hiddenFields: proposal.hiddenFields || [], 
                     selectedLogo: proposal.selectedLogo || 'entertainment',
                     hideTotalColumn: proposal.hideTotalColumn || false,
-                    strategyTitle: proposal.strategyTitle || 'EXECUTIVE SUMMARY',
-                    strategySub: proposal.strategySub || 'STRATEGIC OUTLINE',
-                    scopeTitle: proposal.scopeTitle || 'SCOPE OF WORK',
-                    scopeSub: proposal.scopeSub || 'RESOURCE DELIVERABLES',
-                    proposalTitle: proposal.proposalTitle || 'DELIVERABLES',
-                    proposalSub: proposal.proposalSub || 'PROJECT INVENTORY',
-                    inventoryTitle: proposal.inventoryTitle || 'RESOURCE INVENTORY',
-                    inventorySub: proposal.inventorySub || 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: proposal.commercialsTitle || 'COMMERCIAL TERMS',
-                    commercialsSub: proposal.commercialsSub || 'SETTLEMENT & SIGN-OFF'
+                    strategyTitle: proposal.strategyTitle ?? 'EXECUTIVE SUMMARY',
+                    strategySub: proposal.strategySub ?? 'STRATEGIC OUTLINE',
+                    scopeTitle: proposal.scopeTitle ?? 'SCOPE OF WORK',
+                    scopeSub: proposal.scopeSub ?? 'RESOURCE DELIVERABLES',
+                    proposalTitle: proposal.proposalTitle ?? 'DELIVERABLES',
+                    proposalSub: proposal.proposalSub ?? 'PROJECT INVENTORY',
+                    inventoryTitle: proposal.inventoryTitle ?? 'RESOURCE INVENTORY',
+                    inventorySub: proposal.inventorySub ?? 'COMMERCIALS BREAKDOWN',
+                    commercialsTitle: proposal.commercialsTitle ?? 'COMMERCIAL TERMS',
+                    commercialsSub: proposal.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'
                 });
                 setProposalItems(proposal.items || []);
                 hasInitializedProposalRef.current = true;
@@ -2160,11 +2160,11 @@ const AIStudio = () => {
                                                 <div className="space-y-16 py-8">
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                                            {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.strategySub || 'STRATEGIC OUTLINE'}
+                                                            {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
                                                         </p>
                                                     </div>
                                                     {paginatedPages[currentPreviewPage].overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage].overviewText)}</div>}
@@ -2182,11 +2182,11 @@ const AIStudio = () => {
                                                 <div className="h-full flex flex-col py-8">
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.scopeTitle || 'SCOPE OF WORK'}
+                                                            {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                                            {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                                         </p>
                                                     </div>
                                                     <div className="flex-1 flex flex-col">
@@ -2198,11 +2198,11 @@ const AIStudio = () => {
                                                 <div className="space-y-16 py-8">
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.proposalTitle || 'DELIVERABLES'}
+                                                            {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {activeProposalData.proposalSub || 'PROJECT INVENTORY'}
+                                                            {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
                                                         </p>
                                                     </div>
                                                     {paginatedPages[currentPreviewPage].deliverables?.length > 0 && (
@@ -2250,13 +2250,13 @@ const AIStudio = () => {
                                                 <div className="space-y-12 py-8">
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {activeProposalData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                                            {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                             {paginatedPages[currentPreviewPage].tablePageIdx > 1 
-                                                                ? `${activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
-                                                                : (activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                                ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
+                                                                : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                                         </p>
                                                     </div>
                                                     <table className="w-full text-left border-collapse border border-black">
@@ -2349,11 +2349,11 @@ const AIStudio = () => {
                                                      <div>
                                                          <div className="mb-10 space-y-3">
                                                              <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                                 {activeProposalData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                                 {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                              </h3>
                                                              <div className="w-20 h-1.5 bg-neon-green" />
                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                                 {activeProposalData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                                 {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                              </p>
                                                          </div>
                                                          <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
@@ -2514,11 +2514,11 @@ const AIStudio = () => {
                                     <div className="space-y-16 py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.strategyTitle || 'EXECUTIVE SUMMARY'}
+                                                {activeProposalData.strategyTitle ?? 'EXECUTIVE SUMMARY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.strategySub || 'STRATEGIC OUTLINE'}
+                                                {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
                                             </p>
                                         </div>
                                         {page.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(page.overviewText)}</div>}
@@ -2536,11 +2536,11 @@ const AIStudio = () => {
                                     <div className="h-full flex flex-col py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.scopeTitle || 'SCOPE OF WORK'}
+                                                {activeProposalData.scopeTitle ?? 'SCOPE OF WORK'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.scopeSub || 'RESOURCE DELIVERABLES'}
+                                                {activeProposalData.scopeSub ?? 'RESOURCE DELIVERABLES'}
                                             </p>
                                         </div>
                                         <div className="flex-1 flex flex-col">
@@ -2552,11 +2552,11 @@ const AIStudio = () => {
                                     <div className="space-y-16 py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.proposalTitle || 'DELIVERABLES'}
+                                                {activeProposalData.proposalTitle ?? 'DELIVERABLES'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                {activeProposalData.proposalSub || 'PROJECT INVENTORY'}
+                                                {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
                                             </p>
                                         </div>
                                         {page.deliverables?.length > 0 && (
@@ -2604,13 +2604,13 @@ const AIStudio = () => {
                                     <div className="space-y-12 py-8">
                                         <div className="mb-10 space-y-3">
                                             <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                {activeProposalData.inventoryTitle || 'RESOURCE INVENTORY'}
+                                                {activeProposalData.inventoryTitle ?? 'RESOURCE INVENTORY'}
                                             </h3>
                                             <div className="w-20 h-1.5 bg-neon-green" />
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
                                                 {page.tablePageIdx > 1 
-                                                    ? `${activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
-                                                    : (activeProposalData.inventorySub || 'COMMERCIALS BREAKDOWN')}
+                                                    ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${page.tablePageIdx}` 
+                                                    : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                             </p>
                                         </div>
                                         <table className="w-full text-left border-collapse border border-black">
@@ -2703,11 +2703,11 @@ const AIStudio = () => {
                                          <div>
                                              <div className="mb-10 space-y-3">
                                                  <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                     {activeProposalData.commercialsTitle || 'COMMERCIAL TERMS'}
+                                                     {activeProposalData.commercialsTitle ?? 'COMMERCIAL TERMS'}
                                                  </h3>
                                                  <div className="w-20 h-1.5 bg-neon-green" />
                                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                     {activeProposalData.commercialsSub || 'SETTLEMENT & SIGN-OFF'}
+                                                     {activeProposalData.commercialsSub ?? 'SETTLEMENT & SIGN-OFF'}
                                                  </p>
                                              </div>
                                              <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>

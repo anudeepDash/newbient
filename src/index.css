@@ -139,7 +139,23 @@
 }
 
 .article-content img {
-  @apply rounded-[2rem] md:rounded-[3rem] border border-white/10 my-16 w-full shadow-2xl;
+  @apply rounded-[2rem] md:rounded-[3rem] border border-white/10 my-16 max-w-full h-auto object-contain shadow-2xl;
+}
+
+/* Editor specific styles for interactive image formatting */
+[contenteditable] img {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 100%;
+  height: auto !important; /* Force auto height in editor to prevent elongation */
+}
+
+[contenteditable] img:hover {
+  outline: 2px solid #39FF14 !important; /* neon-green */
+}
+
+[contenteditable] img[data-selected="true"] {
+  outline: 3px solid #39FF14 !important;
 }
 
 .article-content-force-white * {
@@ -342,6 +358,25 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   color: #374151 !important; /* Force readable text-gray-700 color */
   font-family: 'Outfit', sans-serif !important;
 }
+
+.proposal-page-render .article-content span,
+.proposal-page-render .article-content font,
+.proposal-page-render .article-content em,
+.proposal-page-render .article-content i,
+.proposal-page-render .article-content u,
+.agreement-page-render .article-content span,
+.agreement-page-render .article-content font,
+.agreement-page-render .article-content em,
+.agreement-page-render .article-content i,
+.agreement-page-render .article-content u,
+.invoice-page-render .article-content span,
+.invoice-page-render .article-content font,
+.invoice-page-render .article-content em,
+.invoice-page-render .article-content i,
+.invoice-page-render .article-content u {
+  color: inherit !important;
+}
+
 
 .proposal-page-render .article-content h1,
 .proposal-page-render .article-content h2,
