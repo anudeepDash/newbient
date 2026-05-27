@@ -3591,16 +3591,16 @@ const ProposalGenerator = () => {
                                                         formData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2"
                                                     )}>
                                                         <div className="space-y-8">
-                                                            {formData.terms && (
+                                                            {paginatedPages[currentPreviewPage]?.termsText && (
                                                                 <div className="space-y-3">
                                                                     <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                                    <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
+                                                                    <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage].termsText)}</div>
                                                                 </div>
                                                             )}
-                                                            {formData.paymentDetails && (
+                                                            {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
                                                                 <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
                                                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                                    <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{formData.paymentDetails}</div>
+                                                                    <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage].paymentDetailsText}</div>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -3934,16 +3934,16 @@ const ProposalGenerator = () => {
                                              formData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2"
                                          )}>
                                              <div className="space-y-8">
-                                                 {formData.terms && (
+                                                 {page.termsText && (
                                                      <div className="space-y-3">
                                                          <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(formData.terms)}</div>
+                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
                                                      </div>
                                                  )}
-                                                 {formData.paymentDetails && (
+                                                 {page.paymentDetailsText && (
                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
                                                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{formData.paymentDetails}</div>
+                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
                                                      </div>
                                                  )}
                                              </div>

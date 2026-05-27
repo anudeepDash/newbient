@@ -388,6 +388,10 @@ const StudioRichEditor = ({
                                 execCommand('formatBlock', 'h2');
                             }
                         }} title="Heading 2 (Medium Underline Heading)" />
+                        <ToolbarButton icon={Type} onClick={() => {
+                            execCommand('formatBlock', 'p');
+                            execCommand('removeFormat');
+                        }} title="Normal Text / Clear Formatting" />
                         <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} title="Bold" />
                         <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} title="Italic" />
                     </div>
@@ -533,19 +537,21 @@ const StudioRichEditor = ({
                                 e.preventDefault();
                                 
                                 const cleanHtmlOnPaste = (htmlString) => {
+                                    // Convert h3, h4, h5, h6 headings to standard paragraph p tags to prevent unsupported heading sizes
+                                    let processedHtml = htmlString
+                                        .replace(/<h[3-6]([^>]*)>/gi, '<p$1>')
+                                        .replace(/<\/h[3-6]>/gi, '</p>');
+
                                     const parser = new DOMParser();
-                                    const docObj = parser.parseFromString(htmlString, 'text/html');
+                                    const docObj = parser.parseFromString(processedHtml, 'text/html');
                                     
                                     const cleanElement = (element) => {
+                                        // Strip all inline styles except text alignment (text-align)
                                         if (element.hasAttribute('style')) {
-                                            element.style.color = '';
-                                            element.style.backgroundColor = '';
-                                            element.style.background = '';
-                                            element.style.fontFamily = '';
-                                            element.style.fontSize = '';
-                                            
-                                            if (!element.getAttribute('style')?.trim()) {
-                                                element.removeAttribute('style');
+                                            const textAlign = element.style.textAlign;
+                                            element.removeAttribute('style');
+                                            if (textAlign) {
+                                                element.style.textAlign = textAlign;
                                             }
                                         }
                                         
@@ -567,7 +573,7 @@ const StudioRichEditor = ({
                                         cleanElement(docObj.body);
                                         return docObj.body.innerHTML;
                                     }
-                                    return htmlString;
+                                    return processedHtml;
                                 };
 
                                 const cleanedHtml = cleanHtmlOnPaste(html);
