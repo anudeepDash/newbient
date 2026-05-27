@@ -2260,7 +2260,7 @@ export const useStore = create((set, get) => ({
         set({ fcmToken: token });
     },
     logDocumentAccess: async (type, docId, metadata) => {
-        const col = type === 'proposal' ? 'proposals' : 'agreements';
+        const col = type === 'proposal' ? 'proposals' : type === 'invoice' ? 'invoices' : 'agreements';
         const docRef = doc(db, col, docId);
         const logEntry = {
             ...metadata,
@@ -2275,6 +2275,33 @@ export const useStore = create((set, get) => ({
             });
         } catch (err) {
             console.error("Log access failed:", err);
+        }
+    },
+    clearAllAccessLogs: async () => {
+        const { proposals, agreements, invoices } = get();
+        const updatePromises = [];
+        
+        proposals.forEach(p => {
+            if (p.id) {
+                updatePromises.push(updateDoc(doc(db, 'proposals', p.id), { accessLogs: [] }));
+            }
+        });
+        agreements.forEach(a => {
+            if (a.id) {
+                updatePromises.push(updateDoc(doc(db, 'agreements', a.id), { accessLogs: [] }));
+            }
+        });
+        invoices.forEach(i => {
+            if (i.id) {
+                updatePromises.push(updateDoc(doc(db, 'invoices', i.id), { accessLogs: [] }));
+            }
+        });
+        
+        try {
+            await Promise.all(updatePromises);
+            console.log("Successfully cleared all access logs.");
+        } catch (err) {
+            console.error("Failed to clear access logs:", err);
         }
     },
 }));

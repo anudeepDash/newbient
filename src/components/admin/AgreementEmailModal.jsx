@@ -58,6 +58,15 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
     }, [agreement?.id, isOpen]);
 
     const previewHtml = useMemo(() => {
+        const emails = emailData.to.split(/[\s,;]+/).map(e => e.trim()).filter(Boolean);
+        const firstEmail = emails[0] || '';
+        const queryParams = new URLSearchParams({
+            via: 'email',
+            email: firstEmail,
+            name: agreement?.parties?.secondParty?.name || ''
+        }).toString();
+        const dynamicUrl = `${window.location.origin}/agreement/${agreement?.id}?${queryParams}`;
+
         return generateAgreementEmailHTML({
             headerText: emailData.headerText,
             messageBody: emailData.messageBody,
@@ -65,7 +74,7 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
             secondPartyName: agreement?.parties?.secondParty?.name || 'Client',
             projectName: agreement?.details?.projectName || '',
             effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : '',
-            agreementUrl,
+            agreementUrl: dynamicUrl,
             theme: emailData.theme
         });
     }, [emailData, agreement]);
@@ -73,38 +82,55 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
     const handleSend = async (e) => {
         if (e) e.preventDefault();
         if (!emailData.to) {
-            setStatus({ type: 'error', text: 'Please enter a recipient email address.' });
+            setStatus({ type: 'error', text: 'Please enter at least one recipient email address.' });
+            return;
+        }
+
+        const emails = emailData.to.split(/[\s,;]+/).map(e => e.trim()).filter(Boolean);
+        if (emails.length === 0) {
+            setStatus({ type: 'error', text: 'Please enter a valid email address.' });
             return;
         }
 
         setSending(true);
-        setStatus({ type: 'info', text: 'Sending contract email...' });
+        setStatus({ type: 'info', text: `Sending contract email to ${emails.length} recipient(s)...` });
 
         try {
-            const htmlContent = generateAgreementEmailHTML({
-                headerText: emailData.headerText,
-                messageBody: emailData.messageBody,
-                agreementNumber: agreement?.agreementNumber || 'AGR-0000',
-                secondPartyName: agreement?.parties?.secondParty?.name || 'Client',
-                projectName: agreement?.details?.projectName || '',
-                effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : '',
-                agreementUrl,
-                theme: emailData.theme
+            const sendPromises = emails.map(async (recipientEmail) => {
+                const queryParams = new URLSearchParams({
+                    via: 'email',
+                    email: recipientEmail,
+                    name: agreement?.parties?.secondParty?.name || ''
+                }).toString();
+                const dynamicUrl = `${window.location.origin}/agreement/${agreement?.id}?${queryParams}`;
+
+                const htmlContent = generateAgreementEmailHTML({
+                    headerText: emailData.headerText,
+                    messageBody: emailData.messageBody,
+                    agreementNumber: agreement?.agreementNumber || 'AGR-0000',
+                    secondPartyName: agreement?.parties?.secondParty?.name || 'Client',
+                    projectName: agreement?.details?.projectName || '',
+                    effectiveDate: agreement?.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : '',
+                    agreementUrl: dynamicUrl,
+                    theme: emailData.theme
+                });
+
+                return onSend({
+                    to: recipientEmail,
+                    subject: emailData.subject,
+                    html: htmlContent
+                });
             });
 
-            await onSend({
-                to: emailData.to,
-                subject: emailData.subject,
-                html: htmlContent
-            });
+            await Promise.all(sendPromises);
 
-            setStatus({ type: 'success', text: 'Contract email sent successfully!' });
+            setStatus({ type: 'success', text: `Contract email sent to ${emails.length} recipient(s) successfully!` });
             setTimeout(() => {
                 onClose();
             }, 2000);
         } catch (error) {
             console.error('Send failed:', error);
-            setStatus({ type: 'error', text: 'Failed to send email. Please try again.' });
+            setStatus({ type: 'error', text: 'Failed to send email. Please check the email formats and try again.' });
         } finally {
             setSending(false);
         }
@@ -160,13 +186,13 @@ const AgreementEmailModal = ({ isOpen, onClose, agreement, onSend }) => {
                                 {/* Recipient */}
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                        <Mail size={12} className="text-neon-purple" /> Recipient Email
+                                        <Mail size={12} className="text-neon-purple" /> Recipient Email(s)
                                     </label>
                                     <Input
-                                        type="email"
+                                        type="text"
                                         value={emailData.to}
                                         onChange={(e) => setEmailData({ ...emailData, to: e.target.value })}
-                                        placeholder="client@example.com"
+                                        placeholder="client@example.com, partner@example.com"
                                         className="h-14 bg-black/50 border-white/5 rounded-2xl text-sm font-bold focus:border-neon-purple/30"
                                         required
                                     />

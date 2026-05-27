@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import Download from 'lucide-react/dist/esm/icons/download';
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
@@ -127,23 +127,50 @@ const Agreement = () => {
         }
     }, [id, agreements, user]);
 
+    const location = useLocation();
+    const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+
     useEffect(() => {
-        const fetchIp = async () => {
+        if (isAdmin || !displayAgreement) return;
+
+        const fetchIpAndLog = async () => {
+            let detectedIp = 'Hidden/Protected';
             try {
                 const res = await fetch('https://api.ipify.org?format=json');
                 const data = await res.json();
+                detectedIp = data.ip;
                 setIpAddress(data.ip);
-                if (id) {
-                    logDocumentAccess('agreement', id, {
-                        ip: data.ip,
-                        userAgent: navigator.userAgent,
-                        userEmail: user?.email || 'Guest'
-                    });
-                }
             } catch (e) { console.error("IP detection failed", e); }
+
+            const searchParams = new URLSearchParams(location.search);
+            const via = searchParams.get('via');
+            const email = searchParams.get('email');
+            const name = searchParams.get('name');
+
+            const cacheKey = `last_viewed_agreement_${id}`;
+            const lastViewed = localStorage.getItem(cacheKey);
+            const tenMins = 10 * 60 * 1000;
+
+            if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
+                try {
+                    await logDocumentAccess('agreement', id, {
+                        ip: detectedIp,
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        screen: `${window.screen.width}x${window.screen.height}`,
+                        language: navigator.language,
+                        userEmail: user?.email || 'Guest',
+                        userName: user?.displayName || '',
+                        via: via || null,
+                        shareEmail: email || null,
+                        shareName: name || null
+                    });
+                    localStorage.setItem(cacheKey, new Date().toISOString());
+                } catch (err) { console.error("Log access failed:", err); }
+            }
         };
-        fetchIp();
-    }, [id]);
+        fetchIpAndLog();
+    }, [id, isAdmin, displayAgreement, user, location.search]);
 
     useEffect(() => {
         if (displayAgreement) {

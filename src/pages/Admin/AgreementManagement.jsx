@@ -44,8 +44,18 @@ const ContractManagement = () => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [showDeleteModal, setShowDeleteModal] = useState(null);
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [sharingAgreement, setSharingAgreement] = useState(null);
     const [emailModalAgreement, setEmailModalAgreement] = useState(null);
+
+    const getBrowserName = (ua) => {
+        if (!ua) return 'Browser';
+        if (ua.includes('Firefox/')) return 'Firefox';
+        if (ua.includes('Edg/')) return 'Edge';
+        if (ua.includes('Chrome/')) return 'Chrome';
+        if (ua.includes('Safari/') && !ua.includes('Chrome')) return 'Safari';
+        return 'Browser';
+    };
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -76,10 +86,10 @@ const ContractManagement = () => {
         try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } 
     };
     const handleDuplicate = async (id) => { try { await duplicateAgreement(id); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } };
-    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}`); useStore.getState().addToast('Link copied!', 'success'); };
-    const handleWhatsApp = (a) => { const url = `${window.location.origin}/agreement/${a.id}`; window.open(`https://wa.me/?text=${encodeURIComponent(`Contract from Newbi Entertainment: ${url}`)}`, '_blank'); };
+    const handleCopyLink = (id) => { navigator.clipboard.writeText(`${window.location.origin}/agreement/${id}?via=link`); useStore.getState().addToast('Link copied!', 'success'); };
+    const handleWhatsApp = (a) => { const url = `${window.location.origin}/agreement/${a.id}?via=whatsapp`; window.open(`https://wa.me/?text=${encodeURIComponent(`Contract from Newbi Entertainment: ${url}`)}`, '_blank'); };
     const handleNativeShare = async (a) => {
-        const url = `${window.location.origin}/agreement/${a.id}`;
+        const url = `${window.location.origin}/agreement/${a.id}?via=share`;
         if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
             try { await navigator.share({ title: `Contract - ${a.parties?.secondParty?.name}`, text: 'View your contract from Newbi Entertainment.', url }); return; } catch {}
         }
@@ -322,16 +332,108 @@ const ContractManagement = () => {
                                             </button>
                                         </>
                                     )}
-                                    <div className="space-y-3 md:space-y-4">
+                                    <div className="space-y-4">
                                         <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Logs</p>
-                                        {(selectedAnalytics.accessLogs || []).length > 0 ? (
-                                            [...(selectedAnalytics.accessLogs || [])].reverse().slice(0, 10).map((log, i) => (
-                                                <div key={i} className="p-3 md:p-4 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
-                                                    <div className="flex items-center gap-3 md:gap-4"><div className="w-1.5 h-1.5 rounded-full bg-neon-purple" /><div><p className="text-[10px] md:text-[11px] font-bold">{log.userEmail || 'Guest'}</p><p className="text-[8px] font-bold text-gray-600 uppercase">{log.ip || 'Unknown IP'}</p></div></div>
-                                                    <div className="text-right"><p className="text-[9px] md:text-[10px] font-black text-neon-purple">{new Date(log.timestamp).toLocaleTimeString()}</p><p className="text-[8px] font-bold text-gray-600">{new Date(log.timestamp).toLocaleDateString()}</p></div>
-                                                </div>
-                                            ))
-                                        ) : <div className="py-8 md:py-10 text-center border-2 border-dashed border-white/5 rounded-2xl"><p className="text-[9px] md:text-[10px] font-black text-gray-700 uppercase tracking-widest">No access logs yet.</p></div>}
+                                        
+                                        <div className="flex border-b border-white/10">
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('email')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                    activeAnalyticsTab === 'email' 
+                                                        ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
+                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                )}
+                                            >
+                                                Email Opens (Personalized)
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('general')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                    activeAnalyticsTab === 'general' 
+                                                        ? "border-neon-purple text-neon-purple bg-neon-purple/5" 
+                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                )}
+                                            >
+                                                Direct / Link Opens
+                                            </button>
+                                        </div>
+
+                                        {(() => {
+                                            const logs = selectedAnalytics.accessLogs || [];
+                                            const emailLogs = logs.filter(log => log.via === 'email');
+                                            const generalLogs = logs.filter(log => log.via !== 'email');
+                                            const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
+
+                                            if (activeLogs.length > 0) {
+                                                return (
+                                                    <div className="space-y-3">
+                                                        {[...activeLogs].reverse().map((log, i) => {
+                                                            const browserName = getBrowserName(log.userAgent);
+                                                            return (
+                                                                <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
+                                                                    <div className="flex items-start justify-between">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="p-2 bg-white/5 rounded-lg text-gray-400">
+                                                                                {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
+                                                                            </div>
+                                                                            <div>
+                                                                                {activeAnalyticsTab === 'email' ? (
+                                                                                    <>
+                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                            {log.shareName || 'Anonymous Email Recipient'}
+                                                                                        </p>
+                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                            {log.shareEmail || 'No email log'}
+                                                                                        </p>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                            {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
+                                                                                        </p>
+                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                            Anonymous Client View
+                                                                                        </p>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] font-black text-neon-purple uppercase tracking-widest">
+                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                            </p>
+                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                                                                        <div>
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
+                                                                            <span className="text-white font-mono">{log.ip || 'Protected'}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
+                                                                            <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                            {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
                                     </div>
                                 </div>
                             </motion.div>

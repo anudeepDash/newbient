@@ -36,12 +36,23 @@ import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLay
 const ProposalManagement = () => {
     const navigate = useNavigate();
     const { proposals, deleteProposal, updateProposalStatus, duplicateProposal, user } = useStore();
+    
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [viewMode, setViewMode] = useState('grid');
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [sharingProposal, setSharingProposal] = useState(null);
     const [emailModalProposal, setEmailModalProposal] = useState(null);
+
+    const getBrowserName = (ua) => {
+        if (!ua) return 'Browser';
+        if (ua.includes('Firefox/')) return 'Firefox';
+        if (ua.includes('Edg/')) return 'Edge';
+        if (ua.includes('Chrome/')) return 'Chrome';
+        if (ua.includes('Safari/') && !ua.includes('Chrome')) return 'Safari';
+        return 'Browser';
+    };
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -64,7 +75,7 @@ const ProposalManagement = () => {
         });
 
     const handleCopyLink = (id) => {
-        const link = `${window.location.origin}/proposal/${id}`;
+        const link = `${window.location.origin}/proposal/${id}?via=link`;
         navigator.clipboard.writeText(link);
         useStore.getState().addToast(`Proposal link copied!`, 'success');
     };
@@ -118,7 +129,7 @@ const ProposalManagement = () => {
     };
 
     const handleWhatsAppShare = (proposal) => {
-        const url = `${window.location.origin}/proposal/${proposal.id}`;
+        const url = `${window.location.origin}/proposal/${proposal.id}?via=whatsapp`;
         const text = `Greetings from Newbi Entertainment. Here is your Strategic Proposal: ${url}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, '_blank');
@@ -126,7 +137,7 @@ const ProposalManagement = () => {
     };
 
     const handleNativeShare = async (proposal) => {
-        const url = `${window.location.origin}/proposal/${proposal.id}`;
+        const url = `${window.location.origin}/proposal/${proposal.id}?via=share`;
         
         // If native share is available and it's a mobile device, use it directly
         if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -500,29 +511,106 @@ const ProposalManagement = () => {
 
                                     <div className="space-y-4">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recent Access Events</p>
-                                        {(selectedAnalytics.accessLogs || []).length > 0 ? (
-                                            <div className="space-y-3">
-                                                {[...(selectedAnalytics.accessLogs || [])].reverse().map((log, i) => (
-                                                    <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between group hover:bg-white/[0.05] transition-all">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="p-2 bg-white/5 rounded-lg text-gray-400"><Globe size={14} /></div>
-                                                            <div>
-                                                                <p className="text-[11px] font-bold text-white">{log.platform || 'Browser Session'}</p>
-                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{log.screen || 'Desktop View'}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
-                                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">{new Date(log.timestamp).toLocaleDateString()}</p>
-                                                        </div>
+                                        
+                                        <div className="flex border-b border-white/10">
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('email')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                    activeAnalyticsTab === 'email' 
+                                                        ? "border-neon-green text-neon-green bg-neon-green/5" 
+                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                )}
+                                            >
+                                                Email Opens (Personalized)
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveAnalyticsTab('general')}
+                                                className={cn(
+                                                    "flex-1 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2",
+                                                    activeAnalyticsTab === 'general' 
+                                                        ? "border-neon-green text-neon-green bg-neon-green/5" 
+                                                        : "border-transparent text-gray-400 hover:text-white"
+                                                )}
+                                            >
+                                                Direct / Link Opens
+                                            </button>
+                                        </div>
+
+                                        {(() => {
+                                            const logs = selectedAnalytics.accessLogs || [];
+                                            const emailLogs = logs.filter(log => log.via === 'email');
+                                            const generalLogs = logs.filter(log => log.via !== 'email');
+                                            const activeLogs = activeAnalyticsTab === 'email' ? emailLogs : generalLogs;
+
+                                            if (activeLogs.length > 0) {
+                                                return (
+                                                    <div className="space-y-3">
+                                                        {[...activeLogs].reverse().map((log, i) => {
+                                                            const browserName = getBrowserName(log.userAgent);
+                                                            return (
+                                                                <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
+                                                                    <div className="flex items-start justify-between">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="p-2 bg-white/5 rounded-lg text-gray-400">
+                                                                                {activeAnalyticsTab === 'email' ? <Mail size={14} /> : <Globe size={14} />}
+                                                                            </div>
+                                                                            <div>
+                                                                                {activeAnalyticsTab === 'email' ? (
+                                                                                    <>
+                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                            {log.shareName || 'Anonymous Email Recipient'}
+                                                                                        </p>
+                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                            {log.shareEmail || 'No email log'}
+                                                                                        </p>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <p className="text-[11px] font-bold text-white">
+                                                                                            {log.via === 'whatsapp' ? 'WhatsApp Link Share' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
+                                                                                        </p>
+                                                                                        <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                            Anonymous Client View
+                                                                                        </p>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] font-black text-neon-green uppercase tracking-widest">
+                                                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                            </p>
+                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                                                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                                                                        <div>
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
+                                                                            <span className="text-white font-mono">{log.ip || 'Protected'}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
+                                                                            <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-2xl">
-                                                <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No access logs recorded yet.</p>
-                                            </div>
-                                        )}
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                            {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : 'No general link views recorded.'}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
                                     </div>
                                 </div>
                             </motion.div>
