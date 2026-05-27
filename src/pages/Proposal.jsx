@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import Download from 'lucide-react/dist/esm/icons/download';
 import Printer from 'lucide-react/dist/esm/icons/printer';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
@@ -351,55 +351,53 @@ const Proposal = () => {
         }
     }, [user, verificationEmail]);
 
-    useEffect(() => {
-        if (proposal && !isAdmin) {
-            const logAccess = async () => {
-                const deviceDetails = {
-                    ua: navigator.userAgent,
-                    platform: navigator.platform,
-                    language: navigator.language,
-                    timestamp: new Date().toISOString(),
-                    screen: `${window.screen.width}x${window.screen.height}`
-                };
-                
-                try {
-                    const currentLogs = proposal.accessLogs || [];
-                    const lastLog = currentLogs[currentLogs.length - 1];
-                    const tenMins = 10 * 60 * 1000;
-                    if (!lastLog || (new Date() - new Date(lastLog.timestamp) > tenMins)) {
-                        await useStore.getState().updateProposal(id, { 
-                            lastOpened: new Date().toISOString(),
-                            accessLogs: [...currentLogs, deviceDetails]
-                        });
-                    }
-                } catch (err) {
-                    console.error("Analytics error:", err);
-                }
-            };
-            logAccess();
-        }
-    }, [id, isAdmin, proposal]);
+    const location = useLocation();
 
     useEffect(() => {
-        const fetchIp = async () => {
+        if (!proposal || isAdmin) return;
+
+        const fetchIpAndLog = async () => {
+            let detectedIp = 'Hidden/Protected';
             try {
                 const res = await fetch('https://api.ipify.org?format=json');
                 const data = await res.json();
+                detectedIp = data.ip;
                 setIpAddress(data.ip);
-                
-                if (id && displayProposal) {
-                    useStore.getState().logDocumentAccess('proposal', id, {
-                        ip: data.ip,
-                        userAgent: navigator.userAgent,
-                        userEmail: useStore.getState().user?.email || 'Guest'
-                    });
-                }
             } catch (e) {
                 console.error("IP detection failed", e);
             }
+
+            const searchParams = new URLSearchParams(location.search);
+            const via = searchParams.get('via');
+            const email = searchParams.get('email');
+            const name = searchParams.get('name');
+
+            const cacheKey = `last_viewed_proposal_${id}`;
+            const lastViewed = localStorage.getItem(cacheKey);
+            const tenMins = 10 * 60 * 1000;
+
+            if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
+                try {
+                    await useStore.getState().logDocumentAccess('proposal', id, {
+                        ip: detectedIp,
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        screen: `${window.screen.width}x${window.screen.height}`,
+                        language: navigator.language,
+                        userEmail: user?.email || 'Guest',
+                        userName: user?.displayName || '',
+                        via: via || null,
+                        shareEmail: email || null,
+                        shareName: name || null
+                    });
+                    localStorage.setItem(cacheKey, new Date().toISOString());
+                } catch (err) {
+                    console.error("Analytics error:", err);
+                }
+            }
         };
-        if (displayProposal) fetchIp();
-    }, [id, displayProposal]);
+        fetchIpAndLog();
+    }, [id, isAdmin, proposal, user, location.search]);
 
     useEffect(() => {
         if (displayProposal) {

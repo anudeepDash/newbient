@@ -46,7 +46,17 @@ const InvoiceManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [selectedAnalytics, setSelectedAnalytics] = useState(null);
+    const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('email');
     const [emailModalInvoice, setEmailModalInvoice] = useState(null);
+
+    const getBrowserName = (ua) => {
+        if (!ua) return 'Browser';
+        if (ua.includes('Firefox/')) return 'Firefox';
+        if (ua.includes('Edg/')) return 'Edge';
+        if (ua.includes('Chrome/')) return 'Chrome';
+        if (ua.includes('Safari/') && !ua.includes('Chrome')) return 'Safari';
+        return 'Browser';
+    };
 
     const vaultTabs = [
         { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
@@ -77,9 +87,26 @@ const InvoiceManagement = () => {
         });
 
     const handleCopyLink = (id) => {
-        const link = `${window.location.origin}/invoice/${id}`;
+        const link = `${window.location.origin}/invoice/${id}?via=link`;
         navigator.clipboard.writeText(link);
         useStore.getState().addToast(`Invoice link copied!`, 'success');
+    };
+
+    const handleNativeShare = async (invoice) => {
+        const url = `${window.location.origin}/invoice/${invoice.id}?via=share`;
+        if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            try {
+                await navigator.share({
+                    title: `Invoice #${invoice.invoiceNumber}`,
+                    text: `View your invoice from Newbi Entertainment.`,
+                    url: url
+                });
+                return;
+            } catch (err) {
+                console.error("Share failed:", err);
+            }
+        }
+        handleCopyLink(invoice.id);
     };
 
     const handleDelete = (id, inv) => {
@@ -356,7 +383,7 @@ const InvoiceManagement = () => {
                                                 <div className="flex bg-white/5 border border-white/5 rounded-xl overflow-hidden p-1">
                                                     <button 
                                                         onClick={() => {
-                                                            const text = `Invoice from Newbi: ${window.location.origin}/invoice/${inv.id}`;
+                                                            const text = `Invoice from Newbi: ${window.location.origin}/invoice/${inv.id}?via=whatsapp`;
                                                             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                                                         }}
                                                         className="h-10 w-10 hover:bg-green-500/20 text-green-500 rounded-lg transition-all flex items-center justify-center"
@@ -533,32 +560,124 @@ const InvoiceManagement = () => {
                                             <span className="text-[8px] font-black text-neon-blue uppercase tracking-widest">Live Tracking Active</span>
                                         </div>
                                     </div>
-                                    {(selectedAnalytics.accessLogs || []).length > 0 ? (
-                                        <div className="space-y-3">
-                                            {[...(selectedAnalytics.accessLogs || [])].reverse().map((log, i) => (
-                                                <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between group hover:bg-white/[0.05] hover:border-neon-blue/20 transition-all duration-500">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-400 group-hover:text-neon-blue transition-colors"><Globe size={16} /></div>
-                                                        <div>
-                                                            <p className="text-xs font-bold text-white group-hover:text-neon-blue transition-colors">{log.platform || 'Browser Session'}</p>
-                                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">{log.screen || 'Desktop View'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-[11px] font-black text-white uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString()}</p>
-                                                        <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest mt-1">{new Date(log.timestamp).toLocaleDateString()}</p>
-                                                    </div>
+
+                                    {/* Tabs */}
+                                    <div className="flex border-b border-white/10">
+                                        <button 
+                                            onClick={() => setActiveAnalyticsTab('email')}
+                                            className={cn(
+                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                activeAnalyticsTab === 'email' 
+                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                    : "border-transparent text-gray-400 hover:text-white"
+                                            )}
+                                        >
+                                            Email Shared
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveAnalyticsTab('whatsapp')}
+                                            className={cn(
+                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                activeAnalyticsTab === 'whatsapp' 
+                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                    : "border-transparent text-gray-400 hover:text-white"
+                                            )}
+                                        >
+                                            WhatsApp
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveAnalyticsTab('general')}
+                                            className={cn(
+                                                "flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 text-center",
+                                                activeAnalyticsTab === 'general' 
+                                                    ? "border-neon-blue text-neon-blue bg-neon-blue/5" 
+                                                    : "border-transparent text-gray-400 hover:text-white"
+                                            )}
+                                        >
+                                            Direct Links
+                                        </button>
+                                    </div>
+
+                                    {(() => {
+                                        const logs = selectedAnalytics.accessLogs || [];
+                                        const emailLogs = logs.filter(log => log.via === 'email');
+                                        const whatsappLogs = logs.filter(log => log.via === 'whatsapp');
+                                        const generalLogs = logs.filter(log => log.via !== 'email' && log.via !== 'whatsapp');
+                                        
+                                        const activeLogs = activeAnalyticsTab === 'email' 
+                                            ? emailLogs 
+                                            : activeAnalyticsTab === 'whatsapp' 
+                                                ? whatsappLogs 
+                                                : generalLogs;
+
+                                        if (activeLogs.length > 0) {
+                                            return (
+                                                <div className="space-y-3">
+                                                    {[...activeLogs].reverse().map((log, i) => {
+                                                        const browserName = getBrowserName(log.userAgent);
+                                                        return (
+                                                            <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-3 group hover:bg-white/[0.05] transition-all">
+                                                                <div className="flex items-start justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="p-2 bg-white/5 rounded-lg text-gray-400">
+                                                                            {activeAnalyticsTab === 'email' ? <Mail size={14} /> : activeAnalyticsTab === 'whatsapp' ? <MessageCircle size={14} /> : <Globe size={14} />}
+                                                                        </div>
+                                                                        <div>
+                                                                            {activeAnalyticsTab === 'email' ? (
+                                                                                <>
+                                                                                    <p className="text-[11px] font-bold text-white">
+                                                                                        {log.shareName || 'Anonymous Email Recipient'}
+                                                                                    </p>
+                                                                                    <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                        {log.shareEmail || 'No email log'}
+                                                                                    </p>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <p className="text-[11px] font-bold text-white">
+                                                                                        {log.via === 'whatsapp' ? 'WhatsApp Share View' : log.via === 'link' ? 'Direct Copy Link' : log.via === 'share' ? 'Native Device Share' : 'General Link Access'}
+                                                                                    </p>
+                                                                                    <p className="text-[9px] font-semibold text-gray-400 mt-0.5">
+                                                                                        Anonymous Client View
+                                                                                    </p>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <p className="text-[10px] font-black text-neon-blue uppercase tracking-widest">
+                                                                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        </p>
+                                                                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                                                            {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                                                                    <div>
+                                                                        <span className="text-gray-600 font-bold block text-[8px]">IP ADDRESS</span>
+                                                                        <span className="text-white font-mono">{log.ip || 'Protected'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-gray-600 font-bold block text-[8px]">DEVICE / RESOLUTION</span>
+                                                                        <span>{browserName} on {log.platform || 'OS'} ({log.screen || 'N/A'})</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="py-20 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/5 rounded-[2rem] bg-white/[0.01]">
-                                            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
-                                                <Activity size={24} />
-                                            </div>
-                                            <p className="text-[10px] font-black text-gray-700 uppercase tracking-widest">No access history recorded.</p>
-                                        </div>
-                                    )}
+                                            );
+                                        } else {
+                                            return (
+                                                <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                                        {activeAnalyticsTab === 'email' ? 'No email opens recorded.' : activeAnalyticsTab === 'whatsapp' ? 'No WhatsApp opens recorded.' : 'No direct link views recorded.'}
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                    })()}
                                 </div>
 
                                 {/* Payment Claim Review */}

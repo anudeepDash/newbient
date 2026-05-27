@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Download from 'lucide-react/dist/esm/icons/download';
 import Printer from 'lucide-react/dist/esm/icons/printer';
@@ -25,9 +25,10 @@ import { notifyAdmins } from '../lib/notificationTriggers';
 
 const Invoice = () => {
     const { id } = useParams();
-    const { invoices, updateInvoiceStatus, loading, user } = useStore();
+    const { invoices, updateInvoiceStatus, loading, user, logDocumentAccess } = useStore();
     const invoice = invoices.find(inv => inv.id === id);
     const isAdmin = (localStorage.getItem('adminAuth') === 'true') || (user?.role === 'super_admin' || user?.role === 'developer');
+    const location = useLocation();
     const invoiceRef = useRef(null);
     const printFrameRef = useRef(null);
     const [scale, setScale] = React.useState(1);
@@ -85,22 +86,62 @@ const Invoice = () => {
 
 
     React.useEffect(() => {
-        if (invoice && !isAdmin) {
-            // Update last opened timestamp for non-admins
-            const updateLastOpened = async () => {
-                try {
-                    await useStore.getState().updateInvoice(id, { 
-                        lastOpened: new Date().toISOString() 
-                    });
-                } catch (err) {
-                    console.error("Analytics error:", err);
-                }
-            };
-            updateLastOpened();
-        }
+        if (!invoice || isAdmin) return;
 
+        const fetchIpAndLog = async () => {
+            let detectedIp = 'Hidden/Protected';
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                detectedIp = data.ip;
+            } catch (e) {
+                console.error("IP detection failed", e);
+            }
+
+            const searchParams = new URLSearchParams(location.search);
+            const via = searchParams.get('via');
+            const email = searchParams.get('email');
+            const name = searchParams.get('name');
+
+            const cacheKey = `last_viewed_invoice_${id}`;
+            const lastViewed = localStorage.getItem(cacheKey);
+            const tenMins = 10 * 60 * 1000;
+
+            if (!lastViewed || (new Date() - new Date(lastViewed) > tenMins) || via === 'email') {
+                try {
+                    await logDocumentAccess('invoice', id, {
+                        ip: detectedIp,
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        screen: `${window.screen.width}x${window.screen.height}`,
+                        language: navigator.language,
+                        userEmail: user?.email || 'Guest',
+                        userName: user?.displayName || '',
+                        via: via || null,
+                        shareEmail: email || null,
+                        shareName: name || null
+                    });
+                    localStorage.setItem(cacheKey, new Date().toISOString());
+                } catch (err) {
+                    console.error("Log access failed:", err);
+                }
+            }
+
+            try {
+                await useStore.getState().updateInvoice(id, { 
+                    lastOpened: new Date().toISOString() 
+                });
+            } catch (err) {
+                console.error("Analytics error:", err);
+            }
+        };
+
+        fetchIpAndLog();
+    }, [id, isAdmin, invoice, user, location.search, logDocumentAccess]);
+
+    React.useEffect(() => {
         // Automatic Payment Verification Logic
-        const searchParams = new URLSearchParams(window.location.search);
+        const searchParams = new URLSearchParams(location.search);
         const paymentStatus = searchParams.get('status');
         const txid = searchParams.get('txid');
 
@@ -124,7 +165,7 @@ const Invoice = () => {
             };
             verifyAndMarkPaid();
         }
-    }, [id, isAdmin, invoice, updateInvoiceStatus]);
+    }, [id, invoice, location.search, updateInvoiceStatus]);
 
     const isQuickUpload = invoice?.pdfUrl && (!invoice.items || invoice.items.length === 0);
 
