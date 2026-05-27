@@ -156,14 +156,60 @@ const ContractGenerator = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionCategory, setSuggestionCategory] = useState(0);
     const [refinementContext, setRefinementContext] = useState(null);
+    const [refinementPrompt, setRefinementPrompt] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
+
+    const htmlToPlainText = (html) => {
+        if (!html) return '';
+        if (!html.includes('<') || !html.includes('>')) return html;
+        let text = html;
+        text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|ul|ol)>/gi, '\n');
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;/gi, ' ').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&');
+        return text.trim();
+    };
 
     const handleRefineClick = (fieldKey, fieldLabel, currentValue) => {
         setRefinementContext({
             fieldKey,
             fieldLabel,
-            currentValue
+            currentValue: currentValue || ''
         });
-        setActiveTab('ai');
+    };
+
+    const handleInlineRefineSubmit = async () => {
+        if (!refinementPrompt.trim() || isRefining || !refinementContext) return;
+        setIsRefining(true);
+        try {
+            const refined = await refineFieldContent(
+                'contract',
+                refinementContext.fieldLabel,
+                refinementContext.currentValue,
+                refinementPrompt.trim(),
+                'Premium'
+            );
+
+            const fieldKey = refinementContext.fieldKey;
+            if (fieldKey.startsWith('clauses[')) {
+                const match = fieldKey.match(/clauses\[([^\]]+)\]/);
+                if (match) {
+                    const clauseId = match[1];
+                    updateClause(clauseId, { content: refined });
+                }
+            } else {
+                updateField(fieldKey, refined);
+            }
+
+            addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
+            setRefinementContext(null);
+            setRefinementPrompt('');
+        } catch (err) {
+            console.error(err);
+            addToast(`Refinement failed: ${err.message}`, 'error');
+        } finally {
+            setIsRefining(false);
+        }
     };
 
     const chatEndRef = useRef(null);
@@ -1210,6 +1256,97 @@ const ContractGenerator = () => {
                     <ContractPreview key={`export-${idx}`} formData={formData} paginatedPages={paginatedPages} currentPage={idx} />
                 ))}
             </div>
+
+            {/* Field Refinement Modal */}
+            <AnimatePresence>
+                {refinementContext && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm no-print"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col text-white"
+                        >
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                                <div className="flex items-center gap-3">
+                                    <Sparkles size={18} className="text-[#A855F7] animate-pulse" />
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-white">AI Field Refinement</h3>
+                                        <p className="text-[10px] text-gray-500 font-semibold mt-0.5">Refining: {refinementContext.fieldLabel}</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setRefinementContext(null)}
+                                    className="p-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-gray-400 hover:text-white transition-all"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            
+                            <div className="p-6 space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Current Content Preview</label>
+                                    <div className="p-4 bg-black/40 border border-white/5 rounded-2xl max-h-40 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                        {htmlToPlainText(refinementContext.currentValue) || <span className="italic text-gray-600">Field is currently empty</span>}
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">Refinement Prompt</label>
+                                    <textarea
+                                        value={refinementPrompt}
+                                        onChange={(e) => setRefinementPrompt(e.target.value)}
+                                        placeholder="Tell AI how to refine this text (e.g., 'make it more formal', 'clarify payment deadlines', 'shorten to 1 sentence')..."
+                                        className="w-full h-28 bg-black/40 border border-white/5 focus:border-[#A855F7]/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.1)] rounded-2xl p-4 text-[12px] font-medium text-white placeholder-gray-600 focus:outline-none transition-all resize-none"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                                e.preventDefault();
+                                                handleInlineRefineSubmit();
+                                            }
+                                        }}
+                                    />
+                                    <div className="flex justify-between items-center text-[9px] text-gray-500 font-semibold px-1">
+                                        <span>Press Ctrl+Enter to Refine</span>
+                                        <span>Refined field will update instantly in the preview</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 border-t border-white/5 bg-black/20 flex justify-end gap-3">
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setRefinementContext(null)}
+                                    className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 animate-none"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    disabled={isRefining || !refinementPrompt.trim()}
+                                    onClick={handleInlineRefineSubmit}
+                                    className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-neon-purple text-black hover:scale-105 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.2)] disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    {isRefining ? (
+                                        <>
+                                            <RefreshCw className="animate-spin" size={12} />
+                                            <span>Refining...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={12} />
+                                            <span>Refine Field</span>
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <SignatureModal 
                 isOpen={isSignatureModalOpen} 

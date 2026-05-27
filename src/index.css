@@ -431,9 +431,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .agreement-page-render .article-content p:empty,
 .agreement-page-render .article-content p:has(br:only-child),
 .agreement-page-render .article-content p:has(> br:only-child) {
-  margin-bottom: 0.125rem !important;
-  height: 0.25rem !important;
-  line-height: 0 !important;
+  margin-bottom: 0.5rem !important;
+  height: 1.2rem !important;
+  line-height: 1.6 !important;
 }
 
 .proposal-page-render .article-content ul,
@@ -457,6 +457,109 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .proposal-page-render .space-y-3 > :not([hidden]) ~ :not([hidden]) {
   margin-top: 0.75rem !important;
 }
+
+/* Table styling inside .article-content (white theme live preview & public preview) */
+.article-content table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  text-align: left !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  border: 1px solid #000000 !important;
+}
+
+.article-content table th {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3em !important;
+  padding: 0.75rem 1rem !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+.article-content table th:last-child {
+  border-right: none !important;
+}
+
+.article-content table td {
+  padding: 0.75rem 1rem !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #000000 !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.article-content table td:last-child {
+  border-right: none !important;
+}
+
+.article-content table tr {
+  background-color: transparent !important;
+}
+
+.article-content table tr:hover {
+  background-color: #f9fafb !important;
+}
+
+.article-content table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Table styling inside dark rich editor surfaces (force white) */
+.article-content-force-white table {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.article-content-force-white table th {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.article-content-force-white table td {
+  color: #ffffff !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.article-content-force-white table tr {
+  background-color: transparent !important;
+}
+
+.article-content-force-white table tr:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Page Break Divider for Editor View */
+.article-content-force-white .page-break {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px dashed rgba(255, 255, 255, 0.3) !important;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  height: 40px !important;
+  margin: 24px -24px !important;
+  position: relative;
+  user-select: none;
+}
+
+.article-content-force-white .page-break::before {
+  content: 'PAGE BREAK — NEW PAGE STARTS BELOW';
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
 
 
 
