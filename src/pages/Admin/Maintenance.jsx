@@ -104,14 +104,21 @@ const Maintenance = () => {
                         </span>
                     </div>
 
-                    {/* Back Button */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                         className="w-full pt-4"
                     >
-                        <AdminDashboardLink />
+                        {isAdmin ? (
+                            <AdminDashboardLink />
+                        ) : (
+                            <Link to="/">
+                                <Button className="w-full h-12 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2">
+                                    <ArrowLeft size={14} /> Back to Home
+                                </Button>
+                            </Link>
+                        )}
                     </motion.div>
                 </div>
             </Card>

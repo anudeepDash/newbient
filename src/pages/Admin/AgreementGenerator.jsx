@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Minus from 'lucide-react/dist/esm/icons/minus';
+import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
+import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Save from 'lucide-react/dist/esm/icons/save';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
@@ -133,6 +135,7 @@ const ContractGenerator = () => {
     const [activeTab, setActiveTab] = useState('ai');
     const [previewScale, setPreviewScale] = useState(0.5);
     const [userZoom, setUserZoom] = useState(1);
+    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -213,6 +216,7 @@ const ContractGenerator = () => {
     };
 
     const chatEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     const [generationStage, setGenerationStage] = useState(0);
     const [generationProgress, setGenerationProgress] = useState(0);
@@ -257,8 +261,11 @@ const ContractGenerator = () => {
     }, [isGenerating, STAGE_MESSAGES]);
 
     useEffect(() => {
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }, [messages]);
 
@@ -320,16 +327,19 @@ const ContractGenerator = () => {
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth;
+                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
+                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
                 const scaleWidth = containerWidth / 794;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)) * userZoom);
+                const scaleHeight = containerHeight / 1123;
+                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
             }
         };
 
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom]);
+    }, [userZoom, isExpandedPreview]);
 
 
 
@@ -512,11 +522,11 @@ const ContractGenerator = () => {
 
     const tabs = [
         { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Document Orchestrator' },
-        { id: '1', label: 'Entities', icon: Users, desc: 'Legal Parties' },
-        { id: '2', label: 'Scope', icon: Target, desc: 'Project Framework', visibilityKey: 'mission' },
-        { id: '3', label: 'Commercials', icon: CreditCard, desc: 'Financial Terms', visibilityKey: 'commercials' },
-        { id: '4', label: 'Clauses', icon: Gavel, desc: 'Legal Framework', visibilityKey: 'clauses' },
-        { id: '7', label: 'Execution', icon: Shield, desc: 'Finalization' }
+        { id: '1', label: 'Parties', icon: Users, desc: 'Contracting Entities' },
+        { id: '2', label: 'Purpose & Scope', icon: Target, desc: 'Mission & Framework', visibilityKey: 'mission' },
+        { id: '3', label: 'Financial Terms', icon: CreditCard, desc: 'Commercial Agreements', visibilityKey: 'commercials' },
+        { id: '4', label: 'Legal Clauses', icon: Gavel, desc: 'Terms & Conditions', visibilityKey: 'clauses' },
+        { id: '7', label: 'Signatures & Seal', icon: Shield, desc: 'Execution & Signatures' }
     ];
 
     const currentTab = tabs.find(t => t.id === activeTab);
@@ -538,7 +548,7 @@ const ContractGenerator = () => {
     };
 
     return (
-        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-x-clip">
+        <div className="h-screen bg-[#020202] text-white flex flex-col font-['Outfit'] overflow-hidden">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -553,9 +563,9 @@ const ContractGenerator = () => {
             <nav className="h-16 md:h-20 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-black/40 backdrop-blur-3xl sticky top-0 z-[60]">
                 <div className="flex items-center gap-2 md:gap-6 min-w-0">
                     <Link to="/admin/agreements" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shrink-0"><ArrowLeft size={16} /></Link>
-                    <div className="min-w-0">
-                        <p className="text-[7px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none mb-1 truncate">Contract Operating System</p>
-                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate">Contract <span className="text-[#A855F7]">Vault.</span></h1>
+                    <div className="min-w-0 flex flex-col justify-center">
+                        <h1 className="text-sm md:text-xl font-black uppercase tracking-tighter italic truncate mb-1">Contract <span className="text-[#A855F7]">Vault.</span></h1>
+                        <p className="text-[7px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] leading-none truncate">Contract Operating System</p>
                     </div>
                 </div>
 
@@ -578,13 +588,16 @@ const ContractGenerator = () => {
                 </div>
             </nav>
 
-            <div className="flex-1 flex overflow-x-clip">
+            <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar - Desktop Only */}
-                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                <aside className={cn(
+                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    isExpandedPreview && "lg:hidden"
+                )}>
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-[0_0_20px_rgba(168,85,247,0.2)]" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
                                 <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-[#A855F7]/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
@@ -607,49 +620,55 @@ const ContractGenerator = () => {
                 </div>
 
                 {/* Editor */}
-                <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
-                    <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
+                <main className={cn(
+                    "flex-grow scrollbar-hide bg-[#050505]",
+                    activeTab === 'ai' ? "h-full overflow-hidden p-4 md:p-6 pb-4 flex flex-col" : "px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    isExpandedPreview && "hidden"
+                )}>
+                    <div className={cn("max-w-[1600px] mx-auto w-full", activeTab === 'ai' ? "h-full flex-grow flex flex-col min-h-0" : "space-y-10 md:space-y-12")}>
                         
                         {/* Minimalist Section Header */}
-                        <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-[2px] bg-[#A855F7]/40" />
-                                    <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em] opacity-80">
-                                        Step {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
-                                    </p>
-                                </div>
-                                <div className="space-y-2">
-                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none">
-                                        {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
-                                    </h2>
-                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
-                                        {tabs.find(t => t.id === activeTab)?.desc}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-end gap-4 w-full md:w-auto">
-                                {/* Compact Progress Line */}
-                                <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-[#A855F7] transition-all duration-700 shadow-[0_0_10px_rgba(168,85,247,0.8)]" 
-                                        style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
-                                    />
-                                </div>
-
-                                {currentTab?.visibilityKey && (
-                                    <div className="flex items-center gap-2 translate-y-1">
-                                        <VisibilityToggle field={currentTab.visibilityKey} />
+                        {activeTab !== 'ai' && (
+                            <div className="flex flex-col md:flex-row items-end justify-between mb-16 pb-8 border-b border-white/5 relative">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-[2px] bg-[#A855F7]/40" />
+                                        <p className="text-[10px] font-black text-[#A855F7] uppercase tracking-[0.4em] opacity-80">
+                                            Step {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                        </p>
                                     </div>
-                                )}
+                                    <div className="space-y-2">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none">
+                                            {tabs.find(t => t.id === activeTab)?.label}<span className="text-[#A855F7]">.</span>
+                                        </h2>
+                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1">
+                                            {tabs.find(t => t.id === activeTab)?.desc}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+                                    {/* Compact Progress Line */}
+                                    <div className="w-48 h-0.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-[#A855F7] transition-all duration-700 shadow-[0_0_10px_rgba(168,85,247,0.8)]" 
+                                            style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
+                                        />
+                                    </div>
+
+                                    {currentTab?.visibilityKey && (
+                                        <div className="flex items-center gap-2 translate-y-1">
+                                            <VisibilityToggle field={currentTab.visibilityKey} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "flex-grow flex flex-col min-h-0 h-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col h-[78vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                    <div className="flex flex-col flex-grow flex-1 min-h-0 h-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
                                         {/* Orbital Glow in Background */}
                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#A855F7]/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -700,36 +719,36 @@ const ContractGenerator = () => {
                                         </div>
 
                                         {/* Message Stream */}
-                                         <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
+                                         <div ref={chatContainerRef} className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
                                              {/* Welcome card if only initial message */}
                                              {messages.length === 1 && (
-                                                 <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                 <div className="my-auto py-2 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-3">
                                                      <div className="relative">
                                                          <div className="absolute -inset-1 bg-gradient-to-r from-[#A855F7] via-purple-500 to-indigo-500 rounded-full blur opacity-30 animate-pulse" />
-                                                         <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                             <Sparkles size={24} className="text-[#A855F7]" />
+                                                         <div className="relative w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                             <Sparkles size={16} className="text-[#A855F7]" />
                                                          </div>
                                                      </div>
-                                                     <div className="space-y-2">
-                                                         <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
-                                                         <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                                             Describe your requirements below to draft a complete legally-binding agreement in seconds. Use follow-up prompts to customize the terms.
+                                                     <div className="space-y-1">
+                                                         <h4 className="text-sm font-black uppercase tracking-tight italic text-white">AI Agreement Orchestrator</h4>
+                                                         <p className="text-[10px] text-gray-400 leading-normal font-medium">
+                                                             Describe your requirements below to draft a complete legally-binding agreement in seconds.
                                                          </p>
                                                      </div>
 
                                                      {/* Suggestions Grid */}
-                                                     <div className="w-full space-y-2.5 pt-4">
+                                                     <div className="w-full space-y-2 pt-1">
                                                          <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Templates</span>
-                                                         <div className="grid grid-cols-1 gap-2">
+                                                         <div className="grid grid-cols-1 gap-1.5">
                                                              {suggestions.map((s, idx) => (
                                                                  <button
                                                                      type="button"
                                                                      key={idx}
                                                                      onClick={() => setPromptText(s)}
-                                                                     className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                     className="w-full text-left py-2 px-3.5 bg-white/[0.02] border border-white/5 hover:border-[#A855F7]/20 hover:bg-[#A855F7]/5 rounded-2xl text-[10px] font-bold text-gray-400 hover:text-white transition-all duration-300 leading-normal group"
                                                                  >
-                                                                     <div className="flex items-start gap-3">
-                                                                         <span className="text-[#A855F7] mt-0.5 text-[10px]">✦</span>
+                                                                     <div className="flex items-start gap-2">
+                                                                         <span className="text-[#A855F7] mt-0.5 text-[8px]">✦</span>
                                                                          <span className="flex-1">{s}</span>
                                                                      </div>
                                                                  </button>
@@ -1166,47 +1185,56 @@ const ContractGenerator = () => {
 
 
                         {/* Section Navigation Footer */}
-                        <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-10">
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx > 0) setActiveTab(tabs[idx - 1].id);
-                                }}
-                                disabled={activeTab === tabs[0].id}
-                                className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none font-black uppercase tracking-widest text-[11px]"
-                            >
-                                <ChevronLeft size={18} /> Previous
-                            </button>
+                        {activeTab !== 'ai' && (
+                            <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-10">
+                                <button 
+                                    onClick={() => {
+                                        const idx = tabs.findIndex(t => t.id === activeTab);
+                                        if (idx > 0) handleTabClick(tabs[idx - 1].id);
+                                    }}
+                                    disabled={activeTab === tabs[0].id}
+                                    className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none font-black uppercase tracking-widest text-[11px]"
+                                >
+                                    <ChevronLeft size={18} /> Previous
+                                </button>
 
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1].id);
-                                }}
-                                className={cn(
-                                    "flex items-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all shadow-xl",
-                                    activeTab === tabs[tabs.length - 1].id 
-                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
-                                        : "bg-[#A855F7] text-black hover:scale-105 hover:shadow-[#A855F7]/20"
-                                )}
-                            >
-                                <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
-                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={18} />}
-                            </button>
-                        </div>
+                                <button 
+                                    onClick={() => {
+                                        const idx = tabs.findIndex(t => t.id === activeTab);
+                                        if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-3 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all shadow-xl",
+                                        activeTab === tabs[tabs.length - 1].id 
+                                            ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                            : "bg-[#A855F7] text-black hover:scale-105 hover:shadow-[#A855F7]/20"
+                                    )}
+                                >
+                                    <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
+                                    {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={18} />}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </main>
 
-                {/* Preview Panel - Optimized width for better doc visibility */}
                 <aside className={cn(
                     "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20 shrink-0">
                         <div className="flex items-center gap-3">
                             <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5 mr-2">
                                 <ArrowLeft size={18} />
+                            </button>
+                            <button 
+                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
+                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
+                            >
+                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
                             </button>
                             <Eye size={16} className="text-neon-purple" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Preview</span>

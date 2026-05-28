@@ -412,7 +412,7 @@ const Dashboard = () => {
                                 <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest truncate max-w-[150px]">{user.email}</p>
                             </div>
                             <button onClick={logout} className="ml-1 md:ml-2 p-2.5 md:p-3.5 bg-red-500/5 hover:bg-red-500 text-gray-500 hover:text-white border border-red-500/10 rounded-xl md:rounded-2xl transition-all flex items-center justify-center group">
-                                <LogOut size={16} md={18} className="group-hover:rotate-12 transition-transform" />
+                                <LogOut size={16} className="group-hover:rotate-12 transition-transform" />
                             </button>
                         </div>
                     </motion.div>

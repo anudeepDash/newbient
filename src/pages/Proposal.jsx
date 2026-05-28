@@ -975,7 +975,7 @@ const Proposal = () => {
                 <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-6 no-print">
                     <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                         <div className="flex items-center gap-3 sm:gap-6">
-                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><ArrowLeft size={16} sm={18} /></Link>
+                            <Link to={isAdmin ? "/admin/proposals" : "/"} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><ArrowLeft size={16} /></Link>
                             <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
                                 <p className="text-[9px] sm:text-[10px] font-black text-neon-green uppercase tracking-widest leading-none mb-1 truncate">
                                     {displayProposal.clientName ? `${displayProposal.clientName} (${displayProposal.proposalNumber || displayProposal.id})` : 'Strategic Quote'}
@@ -987,10 +987,10 @@ const Proposal = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4">
-                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} sm={18} /></button>
+                            <button onClick={handleShare} className="p-2.5 sm:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 text-gray-400 hover:text-neon-blue transition-all"><Share2 size={16} /></button>
                             <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 hidden sm:block"><Printer size={18} /></button>
                             <Button onClick={handleDownloadPDF} className="bg-neon-green text-black font-black uppercase tracking-widest text-[9px] sm:text-[10px] h-10 sm:h-12 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-[0_10px_30px_rgba(57,255,20,0.3)]">
-                                <Download size={14} sm={16} className="sm:mr-2" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
+                                <Download size={14} className="sm:mr-2" /> <span className="hidden sm:inline">Export PDF</span><span className="sm:hidden">Export</span>
                             </Button>
                         </div>
                     </div>

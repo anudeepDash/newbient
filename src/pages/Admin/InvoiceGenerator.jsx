@@ -40,6 +40,9 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import Minus from 'lucide-react/dist/esm/icons/minus';
+import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
+import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import AdminDashboardLink from '../../components/admin/AdminDashboardLink';
 import StudioRichEditor from '../../components/ui/StudioRichEditor';
@@ -61,6 +64,8 @@ const InvoiceGenerator = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+    const [userZoom, setUserZoom] = useState(1);
+    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
 
     const logoOptions = [
         { id: 'entertainment', label: 'Newbi Entertainment', path: '/logo_document.png', color: '#39FF14' },
@@ -236,16 +241,18 @@ const InvoiceGenerator = () => {
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth;
-                // Aggressive Width-Fit
+                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
+                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
                 const scaleWidth = containerWidth / 794;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)));
+                const scaleHeight = containerHeight / 1123;
+                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
             }
         };
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [userZoom, isExpandedPreview]);
 
     const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
     const gstAmount = formData.showGst ? (subtotal * formData.gstPercentage) / 100 : 0;
@@ -413,18 +420,27 @@ const InvoiceGenerator = () => {
     const paginatedPages = getPaginatedPages();
 
     const tabs = [
-        { id: '1', label: 'Identity', icon: Building2, desc: 'Branding & Entity Info' },
-        { id: '2', label: 'Inventory', icon: FileSpreadsheet, desc: 'Service Line Items' },
-        { id: '3', label: 'Settlements', icon: CreditCard, desc: 'Bank, Taxes & Gateway' },
-        { id: '4', label: 'Authentication', icon: ShieldCheck, desc: 'Digital Signature' }
+        { id: '1', label: 'Branding & Info', icon: Building2, desc: 'Identity & Entity Info' },
+        { id: '2', label: 'Line Items', icon: FileSpreadsheet, desc: 'Service & Products Inventory' },
+        { id: '3', label: 'Payment & Taxes', icon: CreditCard, desc: 'Bank, Gateway & Taxes' },
+        { id: '4', label: 'Signatures', icon: ShieldCheck, desc: 'Digital Verification & Seal' }
     ];
 
     const currentTab = tabs.find(t => t.id === activeTab);
     const currentLogo = logoOptions.find(l => l.id === formData.selectedLogo) || logoOptions[0];
     const brandColor = currentLogo.color;
 
+    const handleTabClick = (tabId) => {
+        setActiveTab(tabId);
+        if (tabId === '1' || tabId === '2') {
+            setCurrentPreviewPage(0);
+        } else if (tabId === '3' || tabId === '4') {
+            setCurrentPreviewPage(Math.max(0, paginatedPages.length - 1));
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] overflow-x-clip flex flex-col">
+        <div className="h-full overflow-hidden bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -440,7 +456,7 @@ const InvoiceGenerator = () => {
             <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5"><ArrowLeft size={16} md={18} /></Link>
+                        <Link to="/admin/invoices" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Invoice <span className="text-neon-blue">Engine.</span></h1>
@@ -469,11 +485,14 @@ const InvoiceGenerator = () => {
 
             <main className="flex-1 flex overflow-x-clip">
                 {/* Sidebar */}
-                <aside className="hidden lg:flex w-72 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                <aside className={cn(
+                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    isExpandedPreview && "lg:hidden"
+                )}>
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
                                 <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
@@ -487,7 +506,7 @@ const InvoiceGenerator = () => {
                 {/* Mobile Bottom Navigation */}
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-3xl border-t border-white/10 z-[100] px-4 flex items-center justify-around no-scrollbar">
                     {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
+                        <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("flex flex-col items-center justify-center min-w-[64px] h-full transition-all gap-1", activeTab === tab.id ? "text-neon-blue" : "text-gray-500")}>
                             <tab.icon size={20} />
                             <span className="text-[7px] font-black uppercase tracking-widest">{tab.label.split(' ')[0]}</span>
                             {activeTab === tab.id && <div className="w-1 h-1 rounded-full bg-neon-blue mt-1 shadow-[0_0_8px_#00D1FF]" />}
@@ -496,7 +515,7 @@ const InvoiceGenerator = () => {
                 </div>
 
                 {/* Editor */}
-                <section className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32">
+                <section className={cn("flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide bg-[#050505] pb-32", isExpandedPreview && "hidden")}>
                     <div className="max-w-7xl mx-auto">
                         
                         <AIPromptBox onGenerate={handleGenerateInvoice} isGenerating={isGenerating} type="invoice" forceClear={promptBoxClear} />
@@ -895,18 +914,33 @@ const InvoiceGenerator = () => {
                 {/* Doc Preview */}
                 <section className={cn(
                     "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
                     <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5"><ArrowLeft size={18} /></button>
+                            <button 
+                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
+                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
+                            >
+                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
+                            </button>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
-                            <span className="text-[10px] font-black text-neon-blue">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                            <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                                <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
+                                <span className="text-[10px] font-black text-neon-blue">{currentPreviewPage + 1} / {paginatedPages.length}</span>
+                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                            </div>
                         </div>
                     </div>
 

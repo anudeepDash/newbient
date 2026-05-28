@@ -416,8 +416,8 @@ const CreatorManager = () => {
     return (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'CREATORS',
-                subtitle: 'COMMAND CENTER',
+                title: 'CREATOR',
+                subtitle: 'PORTAL',
                 icon: Users,
                 accentClass: 'text-neon-pink'
             }}

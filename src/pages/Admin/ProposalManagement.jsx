@@ -209,7 +209,7 @@ const ProposalManagement = () => {
                 {/* Combined Search & Filters Bar - Matching Invoice Style */}
                 <div className="bg-zinc-900/40 border border-white/5 rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 mb-8 md:mb-12 backdrop-blur-3xl flex flex-col xl:flex-row items-center gap-2 md:gap-4">
                     <div className="relative flex-1 w-full group">
-                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} md={20} />
+                        <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-neon-green transition-colors" size={18} />
                         <input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -246,7 +246,7 @@ const ProposalManagement = () => {
                                     viewMode === 'grid' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <LayoutGrid size={16} md={18} />
+                                <LayoutGrid size={16} />
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
@@ -255,7 +255,7 @@ const ProposalManagement = () => {
                                     viewMode === 'table' ? "bg-neon-green text-black shadow-[0_10px_25px_rgba(57,255,20,0.4)]" : "text-gray-500 hover:text-white"
                                 )}
                             >
-                                <FileText size={16} md={18} />
+                                <FileText size={16} />
                             </button>
                         </div>
                     </div>
@@ -464,13 +464,13 @@ const ProposalManagement = () => {
                                         <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Strategic Analytics.</h3>
                                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.clientName}</p>
                                     </div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full transition-colors"><X size={18} md={20} /></button>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full transition-colors"><X size={18} /></button>
                                 </div>
                                 <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
                                     {selectedAnalytics.status === 'Accepted' && selectedAnalytics.approvalMetadata && (
                                         <div className="space-y-3 md:space-y-4">
                                             <div className="p-4 md:p-6 bg-neon-green/5 border border-neon-green/20 rounded-2xl flex items-start gap-3 md:gap-4">
-                                                <ShieldCheck className="text-neon-green shrink-0" size={20} md={24} />
+                                                <ShieldCheck className="text-neon-green shrink-0" size={20} />
                                                 <div>
                                                     <p className="text-[9px] md:text-[10px] font-black text-neon-green uppercase tracking-widest mb-1">Authorization Details</p>
                                                     <p className="text-[11px] md:text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>

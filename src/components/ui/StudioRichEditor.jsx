@@ -29,6 +29,100 @@ const StudioRichEditor = ({
     const [selectedImage, setSelectedImage] = useState(null);
     const [imageTooltipPos, setImageTooltipPos] = useState({ top: 0, left: 0 });
 
+    // States for editor active formatting status
+    const [activeFormats, setActiveFormats] = useState({
+        bold: false,
+        italic: false,
+        list: false,
+        orderedList: false,
+        alignLeft: true,
+        alignCenter: false,
+        alignRight: false,
+        blockType: 'p'
+    });
+    const [showStyleDropdown, setShowStyleDropdown] = useState(false);
+
+    const updateActiveFormats = () => {
+        if (!editorRef.current) return;
+        
+        try {
+            const bold = document.queryCommandState('bold');
+            const italic = document.queryCommandState('italic');
+            const list = document.queryCommandState('insertUnorderedList');
+            const orderedList = document.queryCommandState('insertOrderedList');
+            
+            const alignLeft = document.queryCommandState('justifyLeft');
+            const alignCenter = document.queryCommandState('justifyCenter');
+            const alignRight = document.queryCommandState('justifyRight');
+            
+            let blockType = 'p';
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                let parent = selection.getRangeAt(0).startContainer.parentNode;
+                while (parent && parent !== editorRef.current) {
+                    if (parent.tagName) {
+                        const tagName = parent.tagName.toLowerCase();
+                        if (tagName === 'h1' || tagName === 'h2') {
+                            blockType = tagName;
+                            break;
+                        }
+                    }
+                    parent = parent.parentNode;
+                }
+            }
+
+            setActiveFormats({
+                bold,
+                italic,
+                list,
+                orderedList,
+                alignLeft: alignLeft || (!alignCenter && !alignRight),
+                alignCenter,
+                alignRight,
+                blockType
+            });
+        } catch (e) {
+            // Ignore error if selection is out of focus
+        }
+    };
+
+    // Listen for selection changes inside the document to update formats in real time
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            if (document.activeElement === editorRef.current) {
+                updateActiveFormats();
+            }
+        };
+        document.addEventListener('selectionchange', handleSelectionChange);
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+        };
+    }, []);
+
+    // Dismiss Style Dropdown on click outside
+    useEffect(() => {
+        if (!showStyleDropdown) return;
+        const handleStyleOutsideClick = (e) => {
+            if (!e.target.closest('.style-dropdown-container')) {
+                setShowStyleDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleStyleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleStyleOutsideClick);
+    }, [showStyleDropdown]);
+
+    // Dismiss Table Selector on click outside
+    useEffect(() => {
+        if (!showTableSelector) return;
+        const handleTableOutsideClick = (e) => {
+            if (!e.target.closest('.table-selector-container')) {
+                setShowTableSelector(false);
+            }
+        };
+        document.addEventListener('mousedown', handleTableOutsideClick);
+        return () => document.removeEventListener('mousedown', handleTableOutsideClick);
+    }, [showTableSelector]);
+
     const handleEditorClick = (e) => {
         if (e.target.tagName === 'IMG') {
             if (selectedImage && selectedImage !== e.target) {
@@ -222,6 +316,7 @@ const StudioRichEditor = ({
         document.execCommand(command, false, argument);
         if (editorRef.current) {
             updateValue(editorRef.current.innerHTML);
+            updateActiveFormats();
         }
     };
 
@@ -303,10 +398,10 @@ const StudioRichEditor = ({
     };
 
     const activeBtnClass = {
-        'neon-blue': 'bg-neon-blue/20 text-neon-blue shadow-[0_0_10px_rgba(0,240,255,0.2)]',
-        'neon-green': 'bg-neon-green/20 text-neon-green shadow-[0_0_10px_rgba(57,255,20,0.2)]',
-        'neon-purple': 'bg-neon-purple/20 text-neon-purple shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-    }[accentColor] || 'bg-neon-blue/20 text-neon-blue shadow-[0_0_10px_rgba(0,240,255,0.2)]';
+        'neon-blue': 'bg-neon-blue/15 text-neon-blue border-neon-blue/30 shadow-[0_0_10px_rgba(0,240,255,0.15)]',
+        'neon-green': 'bg-neon-green/15 text-neon-green border-neon-green/30 shadow-[0_0_10px_rgba(57,255,20,0.15)]',
+        'neon-purple': 'bg-neon-purple/15 text-neon-purple border-neon-purple/30 shadow-[0_0_10px_rgba(168,85,247,0.15)]'
+    }[accentColor] || 'bg-neon-blue/15 text-neon-blue border-neon-blue/30 shadow-[0_0_10px_rgba(0,240,255,0.15)]';
 
     const focusBorderClass = {
         'neon-blue': 'border-neon-blue/50 shadow-[0_0_30px_rgba(0,240,255,0.1)]',
@@ -326,6 +421,18 @@ const StudioRichEditor = ({
         'neon-purple': 'text-neon-purple'
     }[accentColor] || 'text-neon-blue';
 
+    const activeTextClass = {
+        'neon-blue': 'text-neon-blue',
+        'neon-green': 'text-neon-green',
+        'neon-purple': 'text-neon-purple'
+    }[accentColor] || 'text-neon-blue';
+
+    const activeBorderClass = {
+        'neon-blue': 'border-neon-blue/40 shadow-[0_0_10px_rgba(0,240,255,0.1)]',
+        'neon-green': 'border-neon-green/40 shadow-[0_0_10px_rgba(57,255,20,0.1)]',
+        'neon-purple': 'border-neon-purple/40 shadow-[0_0_10px_rgba(168,85,247,0.1)]'
+    }[accentColor] || 'border-neon-blue/40 shadow-[0_0_10px_rgba(0,240,255,0.15)]';
+
     const ToolbarButton = ({ icon: Icon, onClick, active, disabled, title }) => (
         <button
             type="button"
@@ -333,7 +440,7 @@ const StudioRichEditor = ({
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                "p-2 rounded-lg transition-all duration-200 flex items-center justify-center",
+                "p-2 rounded-lg transition-all duration-200 flex items-center justify-center border border-transparent",
                 active 
                     ? activeBtnClass
                     : "text-gray-500 hover:text-white hover:bg-white/5",
@@ -359,119 +466,204 @@ const StudioRichEditor = ({
             )}>
                 {/* Toolbar */}
                 <div className={cn(
-                    "flex items-center flex-wrap gap-1 p-3 border-b border-white/5 bg-zinc-900/30 backdrop-blur-xl rounded-t-[2rem]",
-                    showTableSelector ? "relative z-30" : "relative z-10"
+                    "flex items-center flex-wrap gap-2.5 p-2.5 border-b border-white/5 bg-zinc-900/40 backdrop-blur-xl rounded-t-[2rem] justify-between",
+                    (showTableSelector || showStyleDropdown) ? "relative z-30" : "relative z-10"
                 )}>
-                    <div className="flex items-center gap-1 pr-2 border-r border-white/10">
-                        <ToolbarButton icon={Undo2} onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
-                        <ToolbarButton icon={Redo2} onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" />
-                    </div>
-                    
-                    <div className="flex items-center gap-1 px-2 border-r border-white/10">
-                        <ToolbarButton icon={Heading1} onClick={() => {
-                            const selection = window.getSelection();
-                            if (selection.rangeCount > 0) {
-                                const parent = selection.getRangeAt(0).startContainer.parentNode;
-                                const isH1 = parent.closest('h1');
-                                execCommand('formatBlock', isH1 ? 'p' : 'h1');
-                            } else {
-                                execCommand('formatBlock', 'h1');
-                            }
-                        }} title="Heading 1 (Large Underline Heading)" />
-                        <ToolbarButton icon={Heading2} onClick={() => {
-                            const selection = window.getSelection();
-                            if (selection.rangeCount > 0) {
-                                const parent = selection.getRangeAt(0).startContainer.parentNode;
-                                const isH2 = parent.closest('h2');
-                                execCommand('formatBlock', isH2 ? 'p' : 'h2');
-                            } else {
-                                execCommand('formatBlock', 'h2');
-                            }
-                        }} title="Heading 2 (Medium Underline Heading)" />
-                        <ToolbarButton icon={Type} onClick={() => {
-                            execCommand('formatBlock', 'p');
-                            execCommand('removeFormat');
-                        }} title="Normal Text / Clear Formatting" />
-                        <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} title="Bold" />
-                        <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} title="Italic" />
-                    </div>
+                    <div className="flex items-center flex-wrap gap-2.5">
+                        {/* History Group */}
+                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                            <ToolbarButton icon={Undo2} onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton icon={Redo2} onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" />
+                        </div>
 
-                    <div className="flex items-center gap-1 px-2 border-r border-white/10">
-                        <ToolbarButton icon={List} onClick={() => execCommand('insertUnorderedList')} title="Bullet List" />
-                        <ToolbarButton icon={ListOrdered} onClick={() => execCommand('insertOrderedList')} title="Numbered List" />
-                    </div>
+                        {/* Divider */}
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
 
-                    <div className="flex items-center gap-1 px-2 border-r border-white/10">
-                        <ToolbarButton icon={AlignLeft} onClick={() => execCommand('justifyLeft')} title="Align Left" />
-                        <ToolbarButton icon={AlignCenter} onClick={() => execCommand('justifyCenter')} title="Align Center" />
-                        <ToolbarButton icon={AlignRight} onClick={() => execCommand('justifyRight')} title="Align Right" />
-                    </div>
-
-                    <div className="flex items-center gap-1 pl-2 relative">
-                        <ToolbarButton icon={LinkIcon} onClick={() => {
-                            const url = prompt("Enter link URL:");
-                            if (url) execCommand('createLink', url);
-                        }} title="Insert Link" />
-                        <ToolbarButton 
-                            icon={ImageIcon} 
-                            onClick={() => {
-                                if (fileInputRef.current) {
-                                    fileInputRef.current.value = '';
-                                    fileInputRef.current.click();
-                                }
-                            }} 
-                            title="Add Image (Upload)" 
-                        />
-                        
-                        <div className="relative flex items-center justify-center">
-                            <ToolbarButton 
-                                icon={Table} 
-                                onClick={() => setShowTableSelector(!showTableSelector)} 
-                                active={showTableSelector}
-                                title="Insert Table" 
-                            />
-                            {showTableSelector && (
-                                <div 
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    className="absolute top-full mt-2 right-0 bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2"
-                                    onMouseLeave={() => setHoveredGrid({ rows: 0, cols: 0 })}
-                                >
-                                    <div className="text-[9px] font-black uppercase tracking-wider text-neon-green text-center">
-                                        {hoveredGrid.rows > 0 && hoveredGrid.cols > 0 
-                                            ? `${hoveredGrid.rows} x ${hoveredGrid.cols} Table` 
-                                            : "Select Table Size"}
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        {Array.from({ length: 6 }).map((_, rIdx) => (
-                                            <div key={rIdx} className="flex gap-1">
-                                                {Array.from({ length: 6 }).map((_, cIdx) => {
-                                                    const row = rIdx + 1;
-                                                    const col = cIdx + 1;
-                                                    const isHighlighted = row <= hoveredGrid.rows && col <= hoveredGrid.cols;
-                                                    return (
-                                                        <button
-                                                            key={cIdx}
-                                                            type="button"
-                                                            onMouseDown={(e) => e.preventDefault()}
-                                                            onMouseEnter={() => setHoveredGrid({ rows: row, cols: col })}
-                                                            onClick={() => handleInsertTable(row, col)}
-                                                            className={cn(
-                                                                "w-5 h-5 rounded transition-all border",
-                                                                isHighlighted 
-                                                                    ? "bg-neon-green/30 border-neon-green shadow-[0_0_5px_rgba(57,255,20,0.3)]" 
-                                                                    : "bg-white/5 border-white/10 hover:border-white/20"
-                                                            )}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
-                                        ))}
-                                    </div>
+                        {/* Custom Style Dropdown */}
+                        <div className="relative style-dropdown-container">
+                            <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setShowStyleDropdown(!showStyleDropdown)}
+                                className={cn(
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-zinc-900/50 hover:bg-zinc-800/50 text-gray-300 hover:text-white transition-all text-[11px] font-bold min-w-[125px] justify-between",
+                                    showStyleDropdown && activeBorderClass
+                                )}
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    {activeFormats.blockType === 'h1' && <Heading1 size={13} className={activeTextClass} />}
+                                    {activeFormats.blockType === 'h2' && <Heading2 size={13} className={activeTextClass} />}
+                                    {activeFormats.blockType === 'p' && <Type size={13} />}
+                                    <span>
+                                        {activeFormats.blockType === 'h1' && 'Heading 1'}
+                                        {activeFormats.blockType === 'h2' && 'Heading 2'}
+                                        {activeFormats.blockType === 'p' && 'Normal Text'}
+                                    </span>
+                                </span>
+                                <svg className={cn("w-3 h-3 text-gray-500 transition-transform duration-200", showStyleDropdown && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            
+                            {showStyleDropdown && (
+                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-zinc-950/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                                    <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            execCommand('formatBlock', 'p');
+                                            execCommand('removeFormat');
+                                            setShowStyleDropdown(false);
+                                        }}
+                                        className={cn(
+                                            "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
+                                            activeFormats.blockType === 'p' 
+                                                ? activeBtnClass
+                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Type size={14} />
+                                        <span>Normal Text</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            execCommand('formatBlock', 'h1');
+                                            setShowStyleDropdown(false);
+                                        }}
+                                        className={cn(
+                                            "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
+                                            activeFormats.blockType === 'h1' 
+                                                ? activeBtnClass
+                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Heading1 size={14} />
+                                        <span>Heading 1</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            execCommand('formatBlock', 'h2');
+                                            setShowStyleDropdown(false);
+                                        }}
+                                        className={cn(
+                                            "w-full text-left px-3 py-2 rounded-xl text-[11px] transition-all flex items-center gap-2 font-bold border border-transparent",
+                                            activeFormats.blockType === 'h2' 
+                                                ? activeBtnClass
+                                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        )}
+                                    >
+                                        <Heading2 size={14} />
+                                        <span>Heading 2</span>
+                                    </button>
                                 </div>
                             )}
                         </div>
-                    </div>
 
+                        {/* Formatting Group */}
+                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                            <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} active={activeFormats.bold} title="Bold" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} active={activeFormats.italic} title="Italic" />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+
+                        {/* Lists Group */}
+                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                            <ToolbarButton icon={List} onClick={() => execCommand('insertUnorderedList')} active={activeFormats.list} title="Bullet List" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton icon={ListOrdered} onClick={() => execCommand('insertOrderedList')} active={activeFormats.orderedList} title="Numbered List" />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+
+                        {/* Alignment Group */}
+                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5">
+                            <ToolbarButton icon={AlignLeft} onClick={() => execCommand('justifyLeft')} active={activeFormats.alignLeft} title="Align Left" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton icon={AlignCenter} onClick={() => execCommand('justifyCenter')} active={activeFormats.alignCenter} title="Align Center" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton icon={AlignRight} onClick={() => execCommand('justifyRight')} active={activeFormats.alignRight} title="Align Right" />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-[1px] h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent self-center hidden sm:block" />
+
+                        {/* Inserts Group */}
+                        <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl p-0.5 table-selector-container">
+                            <ToolbarButton icon={LinkIcon} onClick={() => {
+                                const url = prompt("Enter link URL:");
+                                if (url) execCommand('createLink', url);
+                            }} title="Insert Link" />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            <ToolbarButton 
+                                icon={ImageIcon} 
+                                onClick={() => {
+                                    if (fileInputRef.current) {
+                                        fileInputRef.current.value = '';
+                                        fileInputRef.current.click();
+                                    }
+                                }} 
+                                title="Add Image (Upload)" 
+                            />
+                            <div className="w-[1px] h-4 bg-white/5" />
+                            
+                            <div className="relative flex items-center justify-center">
+                                <ToolbarButton 
+                                    icon={Table} 
+                                    onClick={() => setShowTableSelector(!showTableSelector)} 
+                                    active={showTableSelector}
+                                    title="Insert Table" 
+                                />
+                                {showTableSelector && (
+                                    <div 
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        className="absolute top-full mt-2.5 right-0 bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl z-[90] space-y-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                                        onMouseLeave={() => setHoveredGrid({ rows: 0, cols: 0 })}
+                                    >
+                                        <div className="text-[9px] font-black uppercase tracking-wider text-neon-green text-center">
+                                            {hoveredGrid.rows > 0 && hoveredGrid.cols > 0 
+                                                ? `${hoveredGrid.rows} x ${hoveredGrid.cols} Table` 
+                                                : "Select Table Size"}
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            {Array.from({ length: 6 }).map((_, rIdx) => (
+                                                <div key={rIdx} className="flex gap-1">
+                                                    {Array.from({ length: 6 }).map((_, cIdx) => {
+                                                        const row = rIdx + 1;
+                                                        const col = cIdx + 1;
+                                                        const isHighlighted = row <= hoveredGrid.rows && col <= hoveredGrid.cols;
+                                                        return (
+                                                            <button
+                                                                key={cIdx}
+                                                                type="button"
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                onMouseEnter={() => setHoveredGrid({ rows: row, cols: col })}
+                                                                onClick={() => handleInsertTable(row, col)}
+                                                                className={cn(
+                                                                    "w-5 h-5 rounded transition-all border",
+                                                                    isHighlighted 
+                                                                        ? "bg-neon-green/30 border-neon-green shadow-[0_0_5px_rgba(57,255,20,0.3)]" 
+                                                                        : "bg-white/5 border-white/10 hover:border-white/20"
+                                                                )}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Editor Surface & Placeholder Container */}

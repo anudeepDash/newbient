@@ -271,7 +271,7 @@ const Agreement = () => {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-3xl border-b border-white/5 h-20 flex items-center px-4 md:px-6 no-print">
                 <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 md:gap-6">
-                        <Link to="/" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={16} md={18} /></Link>
+                        <Link to={isAdmin ? "/admin/agreements" : "/"} className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 transition-all"><ArrowLeft size={16} /></Link>
                         <div className="min-w-0 max-w-[120px] xs:max-w-[180px] sm:max-w-none">
                             <p className="text-[9px] md:text-[10px] font-black text-[#A855F7] uppercase tracking-widest leading-none mb-1 truncate">
                                 {displayAgreement.parties?.secondParty?.name ? `${displayAgreement.parties.secondParty.name} (${displayAgreement.agreementNumber || displayAgreement.id})` : 'Legal Instrument'}

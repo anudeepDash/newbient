@@ -22,13 +22,24 @@ const Layout = () => {
         location.pathname.includes('/admin/edit-') ||
         location.pathname.includes('/admin/agreements/');
 
+    const isHeightLockedPage = 
+        location.pathname.includes('/admin/create-') || 
+        location.pathname.includes('/admin/edit-') ||
+        location.pathname.includes('/admin/agreements/new') ||
+        location.pathname.includes('/admin/agreements/edit/') ||
+        location.pathname.includes('/admin/ai-studio');
+
     return (
-        <div className="flex flex-col min-h-screen bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden">
+        <div className={cn(
+            "flex flex-col bg-black text-white selection:bg-neon-pink selection:text-white w-full max-w-[100vw] overflow-x-hidden",
+            isHeightLockedPage ? "h-screen overflow-hidden" : "min-h-screen"
+        )}>
             {!isSpecialPage && <Navbar />}
             <NotificationToast />
             <main className={cn(
                 "flex-grow transition-all duration-300", 
-                isSpecialPage ? "pb-0" : "pb-24 md:pb-12"
+                isSpecialPage ? "pb-0" : "pb-24 md:pb-12",
+                isHeightLockedPage && "h-full overflow-hidden flex flex-col"
             )}>
                 <Outlet />
             </main>

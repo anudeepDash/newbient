@@ -284,7 +284,7 @@ const ContractManagement = () => {
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowDeleteModal(null)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-10 text-center space-y-6 md:space-y-8">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} md={32} /></div>
+                                <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20"><Trash2 size={24} /></div>
                                 <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Purge Contract?</h3><p className="text-gray-500 text-[11px] md:text-sm mt-2 md:mt-4">This action permanently removes this contract from the vault. This is irreversible.</p></div>
                                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                     <button onClick={() => setShowDeleteModal(null)} className="flex-1 h-12 md:h-14 bg-white/5 hover:bg-white/10 text-gray-400 font-black uppercase tracking-widest text-[10px] md:text-xs rounded-xl">Cancel</button>
@@ -303,18 +303,18 @@ const ContractManagement = () => {
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden max-h-[90vh] flex flex-col">
                                 <div className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center shrink-0">
                                     <div><h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic">Contract Analytics.</h3><p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{selectedAnalytics.agreementNumber}</p></div>
-                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full"><X size={18} md={20} /></button>
+                                    <button onClick={() => setSelectedAnalytics(null)} className="p-2 md:p-3 hover:bg-white/5 rounded-full"><X size={18} /></button>
                                 </div>
                                 <div className="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-hide">
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                                         {[{ l: 'Status', v: selectedAnalytics.status, icon: ShieldCheck }, { l: 'Risk', v: selectedAnalytics.risk || 'N/A', icon: AlertCircle }, { l: 'Type', v: selectedAnalytics.template || selectedAnalytics.type || 'Service', icon: FileText }].map((s, i) => (
-                                            <div key={i} className="p-4 md:p-5 bg-black/40 border border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} md={16} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
+                                            <div key={i} className="p-4 md:p-5 bg-black/40 border border-white/5 rounded-2xl"><s.icon className="text-neon-purple mb-2 md:mb-3" size={14} /><p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">{s.l}</p><p className="text-[11px] md:text-sm font-black uppercase">{s.v}</p></div>
                                         ))}
                                     </div>
                                     {selectedAnalytics.status === 'Executed' && selectedAnalytics.approvalMetadata && (
                                         <>
                                             <div className="p-4 md:p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-start gap-3 md:gap-4">
-                                                <ShieldCheck className="text-emerald-500 shrink-0" size={20} md={24} />
+                                                <ShieldCheck className="text-emerald-500 shrink-0" size={20} />
                                                 <div>
                                                     <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Authorization Details</p>
                                                     <p className="text-[11px] md:text-sm font-bold text-white mb-2">Signed by {selectedAnalytics.approvalMetadata.signedBy}</p>
