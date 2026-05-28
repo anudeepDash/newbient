@@ -40,6 +40,9 @@ import GripVertical from 'lucide-react/dist/esm/icons/grip-vertical';
 import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import Check from 'lucide-react/dist/esm/icons/check';
+import Minus from 'lucide-react/dist/esm/icons/minus';
+import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
+import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
 
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
@@ -532,6 +535,8 @@ const ProposalGenerator = () => {
     const [generatingSection, setGeneratingSection] = useState(null); // 'all', 'strategy', 'scope', 'deliverables', etc.
     const [promptBoxClear, setPromptBoxClear] = useState(false);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+    const [userZoom, setUserZoom] = useState(1);
+    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [isSignaturesCollapsed, setIsSignaturesCollapsed] = useState(true);
     const [bulkRawText, setBulkRawText] = useState('');
@@ -569,6 +574,7 @@ const ProposalGenerator = () => {
         }
     ]);
     const chatEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     const [generationStage, setGenerationStage] = useState(0);
     const [generationProgress, setGenerationProgress] = useState(0);
@@ -613,8 +619,11 @@ const ProposalGenerator = () => {
     }, [isGenerating, isBulkGenerating, STAGE_MESSAGES]);
 
     useEffect(() => {
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }, [messages]);
 
@@ -759,16 +768,18 @@ const ProposalGenerator = () => {
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth;
-                // Aggressive Width-Fit
+                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
+                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
                 const scaleWidth = containerWidth / 794;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)));
+                const scaleHeight = containerHeight / 1123;
+                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
             }
         };
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [userZoom, isExpandedPreview]);
 
     const totalSrcCol = formData.totalSourceColumn || 'price';
     const subtotal = items.reduce((sum, item) => {
@@ -1084,7 +1095,16 @@ const ProposalGenerator = () => {
     const handleTabClick = (tabId) => {
         setActiveTab(tabId);
         const pages = getPaginatedPages();
-        const mapping = { '1': 'cover', '2': 'strategy', '3': 'scope', '4': 'proposal', '5': 'table', '6': 'commercials' };
+        const mapping = { 
+            'ai': 'cover', 
+            '1': 'cover', 
+            '2': 'strategy', 
+            '3': 'scope', 
+            '4': 'proposal', 
+            '5': 'table', 
+            '6': 'commercials',
+            '7': 'custom'
+        };
         const targetType = mapping[tabId];
         const pageIndex = pages.findIndex(p => p.type === targetType);
         if (pageIndex !== -1) setCurrentPreviewPage(pageIndex);
@@ -1518,12 +1538,12 @@ const ProposalGenerator = () => {
 
     const tabs = [
         { id: 'ai', label: 'AI Studio', icon: Sparkles, desc: 'AI Generator & Chat' },
-        { id: '1', label: 'Identity', icon: FileText, desc: 'Basic Information', visibilityKey: 'cover' },
-        { id: '2', label: 'Architecture', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
-        { id: '3', label: 'Scope', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
+        { id: '1', label: 'Cover Page', icon: FileText, desc: 'Identity & Title', visibilityKey: 'cover' },
+        { id: '2', label: 'Strategy', icon: Target, desc: 'Strategic Framework', visibilityKey: 'strategy' },
+        { id: '3', label: 'Scope of Work', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
         { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
-        { id: '5', label: 'Commercials', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
-        { id: '6', label: 'Settlement', icon: CreditCard, desc: 'Payment Terms', visibilityKey: 'commercials' },
+        { id: '5', label: 'Pricing Breakdown', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
+        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'commercials' },
         { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' }
     ];
 
@@ -1533,7 +1553,7 @@ const ProposalGenerator = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] overflow-x-clip flex flex-col">
+        <div className="h-screen overflow-hidden bg-[#020202] text-white selection:bg-neon-green selection:text-black font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1547,7 +1567,7 @@ const ProposalGenerator = () => {
             <header className="h-16 md:h-20 border-b border-white/5 bg-black/50 backdrop-blur-3xl flex items-center justify-between px-4 md:px-8 shrink-0 relative z-50">
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={16} md={18} /></Link>
+                        <Link to="/admin/proposals" className="p-2.5 md:p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 group"><ArrowLeft size={16} /></Link>
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
                         <h1 className="text-sm md:text-xl font-black tracking-tighter uppercase italic text-white truncate leading-none">Quotation <span className="text-neon-green">Engine.</span></h1>
@@ -1574,13 +1594,16 @@ const ProposalGenerator = () => {
                 </div>
             </header>
 
-            <main className="flex-1 flex overflow-x-clip">
+            <main className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar - Desktop */}
-                <aside className="hidden lg:flex w-64 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide">
+                <aside className={cn(
+                    "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",
+                    isExpandedPreview && "lg:hidden"
+                )}>
                     <div className="space-y-2">
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-4">Navigation</p>
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
+                            <button key={tab.id} onClick={() => handleTabClick(tab.id)} className={cn("w-full p-4 rounded-2xl flex items-center gap-4 transition-all text-left group", activeTab === tab.id ? "bg-white text-black shadow-xl" : "hover:bg-white/5 text-gray-500 hover:text-white")}>
                                 <div className={cn("p-2.5 rounded-xl transition-all", activeTab === tab.id ? "bg-black/20" : "bg-white/5 group-hover:bg-white/10")}><tab.icon size={18} /></div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{tab.label}</p>
@@ -1604,48 +1627,54 @@ const ProposalGenerator = () => {
 
 
                 {/* Editor Area */}
-                <main className="flex-1 overflow-y-auto px-4 md:px-12 py-10 md:py-16 scrollbar-hide bg-[#050505] pb-32">
-                    <div className="max-w-[1600px] mx-auto space-y-10 md:space-y-12">
+                <main className={cn(
+                    "flex-grow scrollbar-hide bg-[#050505]",
+                    activeTab === 'ai' ? "h-full overflow-hidden p-4 md:p-6 pb-4 flex flex-col" : "px-4 md:px-12 py-10 md:py-16 overflow-y-auto pb-32",
+                    isExpandedPreview && "hidden"
+                )}>
+                    <div className={cn("max-w-[1600px] mx-auto w-full", activeTab === 'ai' ? "h-full flex-grow flex flex-col min-h-0" : "space-y-10 md:space-y-12")}>
 
-                                <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
-                            <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-[2px] bg-neon-green/40" />
-                                    <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 truncate">
-                                        Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
-                                    </p>
-                                </div>
-                                <div className="space-y-2 min-w-0">
-                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
-                                        {currentTab?.label}<span className="text-neon-green">.</span>
-                                    </h2>
-                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
-                                        {currentTab?.desc}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-start 2xl:items-end gap-4 w-full 2xl:w-auto shrink-0 pt-2 2xl:pt-0">
-                                {/* Compact Progress Line */}
-                                <div className="w-full sm:w-48 h-0.5 bg-white/5 rounded-full overflow-hidden shrink-0">
-                                    <div 
-                                        className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
-                                        style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
-                                    />
-                                </div>
-
-                                {currentTab?.visibilityKey && (
-                                    <div className="flex flex-wrap items-center gap-2 translate-y-1">
-                                        <VisibilityToggle field={currentTab.visibilityKey} />
+                        {activeTab !== 'ai' && (
+                            <div className="flex flex-col 2xl:flex-row items-start 2xl:items-end justify-between gap-6 mb-16 pb-8 border-b border-white/5 relative overflow-hidden">
+                                <div className="space-y-4 min-w-0 w-full 2xl:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-[2px] bg-neon-green/40" />
+                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-[0.4em] opacity-80 truncate">
+                                            Phase {tabs.findIndex(t => t.id === activeTab) + 1} of {tabs.length}
+                                        </p>
                                     </div>
-                                )}
+                                    <div className="space-y-2 min-w-0">
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-white leading-none truncate">
+                                            {currentTab?.label}<span className="text-neon-green">.</span>
+                                        </h2>
+                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-[0.3em] pl-1 truncate">
+                                            {currentTab?.desc}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-start 2xl:items-end gap-4 w-full 2xl:w-auto shrink-0 pt-2 2xl:pt-0">
+                                    {/* Compact Progress Line */}
+                                    <div className="w-full sm:w-48 h-0.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                                        <div 
+                                            className="h-full bg-neon-green transition-all duration-700 shadow-[0_0_10px_rgba(57,255,20,0.8)]" 
+                                            style={{ width: `${(tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length * 100}%` }} 
+                                        />
+                                    </div>
+
+                                    {currentTab?.visibilityKey && (
+                                        <div className="flex flex-wrap items-center gap-2 translate-y-1">
+                                            <VisibilityToggle field={currentTab.visibilityKey} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="space-y-16">
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className={cn(activeTab === 'ai' ? "flex-grow flex flex-col min-h-0 h-full" : "space-y-16")}>
                                 {activeTab === 'ai' && (
-                                    <div className="flex flex-col h-[78vh] bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
+                                    <div className="flex flex-col flex-grow flex-1 min-h-0 h-full bg-zinc-950/20 border border-white/5 rounded-[2.5rem] p-6 relative overflow-hidden">
                                         {/* Orbital Glow in Background */}
                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -1890,33 +1919,33 @@ const ProposalGenerator = () => {
                                         ) : (
                                             <>
                                                 {/* Message Stream */}
-                                                <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
+                                                <div ref={chatContainerRef} className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10 flex flex-col min-h-0">
                                                     {/* Welcome card if only initial message */}
                                                     {messages.length === 1 && (
-                                                        <div className="my-auto py-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-6">
+                                                        <div className="my-auto py-2 flex flex-col items-center justify-center text-center max-w-xl mx-auto space-y-3">
                                                             <div className="relative">
                                                                 <div className="absolute -inset-1 bg-gradient-to-r from-neon-green via-neon-blue to-purple-500 rounded-full blur opacity-30 animate-pulse" />
-                                                                <div className="relative w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center">
-                                                                    <Sparkles size={24} className="text-neon-green" />
+                                                                <div className="relative w-10 h-10 rounded-full bg-black border border-white/10 flex items-center justify-center">
+                                                                    <Sparkles size={16} className="text-neon-green" />
                                                                 </div>
                                                             </div>
-                                                            <div className="space-y-2">
-                                                                <h4 className="text-lg font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
-                                                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                                                    Describe your requirements below to draft a complete proposal in seconds. You can toggle between standard single draft generation and AI batch automation.
+                                                            <div className="space-y-1">
+                                                                <h4 className="text-sm font-black uppercase tracking-tight italic text-white">AI Document Orchestrator</h4>
+                                                                <p className="text-[10px] text-gray-400 leading-normal font-medium">
+                                                                    Describe your requirements below to draft a complete proposal in seconds.
                                                                 </p>
                                                             </div>
 
                                                             {/* Suggestions Grid */}
-                                                            <div className="w-full space-y-2.5 pt-4">
+                                                            <div className="w-full space-y-2 pt-1">
                                                                 <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest block">Suggested Blueprints</span>
-                                                                <div className="grid grid-cols-1 gap-2">
+                                                                <div className="grid grid-cols-1 gap-1.5">
                                                                     {suggestions.map((s, idx) => (
                                                                         <button
                                                                             type="button"
                                                                             key={idx}
                                                                             onClick={() => setPromptText(s)}
-                                                                            className="w-full text-left p-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-xs font-bold text-gray-400 hover:text-white transition-all duration-300 leading-relaxed group"
+                                                                            className="w-full text-left py-2 px-3.5 bg-white/[0.02] border border-white/5 hover:border-neon-green/20 hover:bg-neon-green/5 rounded-2xl text-[10px] font-bold text-gray-400 hover:text-white transition-all duration-300 leading-normal group"
                                                                         >
                                                                             <span className="text-neon-green group-hover:translate-x-1 inline-block transition-transform mr-1.5">→</span>
                                                                             {s}
@@ -3283,35 +3312,37 @@ const ProposalGenerator = () => {
                          </AnimatePresence>
 
                         {/* Section Navigation Footer */}
-                        <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx > 0) handleTabClick(tabs[idx - 1].id);
-                                }}
-                                disabled={activeTab === tabs[0].id}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
-                            >
-                                <ChevronLeft size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
-                            </button>
+                        {activeTab !== 'ai' && (
+                            <div className="mt-20 pt-8 border-t border-white/5 flex items-center justify-between pb-12">
+                                <button 
+                                    onClick={() => {
+                                        const idx = tabs.findIndex(t => t.id === activeTab);
+                                        if (idx > 0) handleTabClick(tabs[idx - 1].id);
+                                    }}
+                                    disabled={activeTab === tabs[0].id}
+                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-0 disabled:pointer-events-none"
+                                >
+                                    <ChevronLeft size={16} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Previous</span>
+                                </button>
 
-                            <button 
-                                onClick={() => {
-                                    const idx = tabs.findIndex(t => t.id === activeTab);
-                                    if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
-                                }}
-                                className={cn(
-                                    "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
-                                    activeTab === tabs[tabs.length - 1].id 
-                                        ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
-                                        : "bg-neon-green text-black hover:scale-105 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
-                                )}
-                            >
-                                <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
-                                {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
-                            </button>
-                        </div>
+                                <button 
+                                    onClick={() => {
+                                        const idx = tabs.findIndex(t => t.id === activeTab);
+                                        if (idx < tabs.length - 1) handleTabClick(tabs[idx + 1].id);
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+                                        activeTab === tabs[tabs.length - 1].id 
+                                            ? "bg-white/5 text-gray-500 cursor-not-allowed opacity-50" 
+                                            : "bg-neon-green text-black hover:scale-105 shadow-[0_0_20px_rgba(57,255,20,0.2)]"
+                                    )}
+                                >
+                                    <span>{activeTab === tabs[tabs.length - 1].id ? 'Final Step' : 'Next Section'}</span>
+                                    {activeTab !== tabs[tabs.length - 1].id && <ChevronRight size={16} />}
+                                </button>
+                            </div>
+                        )}
 
 
                     </div>
@@ -3320,18 +3351,33 @@ const ProposalGenerator = () => {
                 {/* Doc Preview */}
                 <section className={cn(
                     "lg:static lg:flex fixed inset-0 z-[60] lg:z-0 bg-[#050505] lg:bg-zinc-900/10 flex-col overflow-hidden shrink-0 transition-transform duration-500 lg:translate-x-0",
-                    "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
+                    isExpandedPreview ? "w-full lg:w-full border-l-0" : "w-full lg:w-[400px] 2xl:w-[600px] border-l border-white/5",
                     showPreviewMobile ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}>
                     <div className="h-20 lg:h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/20 shrink-0">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setShowPreviewMobile(false)} className="lg:hidden p-3 bg-white/5 rounded-xl border border-white/5"><ArrowLeft size={18} /></button>
+                            <button 
+                                onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
+                                className="hidden lg:flex p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all items-center gap-2 text-[9px] font-black uppercase tracking-wider h-10 px-3"
+                                title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
+                            >
+                                {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                                <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
+                            </button>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document Live View</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
-                            <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
-                            <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5">
+                                <button onClick={() => setUserZoom(Math.max(0.5, userZoom - 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Minus size={12} /></button>
+                                <span className="text-[10px] font-black text-gray-500 px-2 min-w-[40px] text-center">{Math.round(userZoom * 100)}%</span>
+                                <button onClick={() => setUserZoom(Math.min(2, userZoom + 0.1))} className="p-1.5 hover:bg-white/5 rounded text-gray-400 transition-colors"><Plus size={12} /></button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setCurrentPreviewPage(Math.max(0, currentPreviewPage - 1))} disabled={currentPreviewPage === 0} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronLeft size={16} /></button>
+                                <span className="text-[10px] font-black text-neon-green">{currentPreviewPage + 1} / {paginatedPages.length}</span>
+                                <button onClick={() => setCurrentPreviewPage(Math.min(paginatedPages.length - 1, currentPreviewPage + 1))} disabled={currentPreviewPage === paginatedPages.length - 1} className="p-2.5 bg-white/5 rounded-xl disabled:opacity-20 hover:bg-white/10 transition-all"><ChevronRight size={16} /></button>
+                            </div>
                         </div>
                     </div>
 

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Minus from 'lucide-react/dist/esm/icons/minus';
+import Maximize2 from 'lucide-react/dist/esm/icons/maximize-2';
+import Minimize2 from 'lucide-react/dist/esm/icons/minimize-2';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Save from 'lucide-react/dist/esm/icons/save';
 import Download from 'lucide-react/dist/esm/icons/download';
@@ -587,6 +589,7 @@ const AIStudio = () => {
     // UI Visual Zoom/Scale states
     const [previewScale, setPreviewScale] = useState(0.55);
     const [userZoom, setUserZoom] = useState(1);
+    const [isExpandedPreview, setIsExpandedPreview] = useState(false);
     const [currentPreviewPage, setCurrentPreviewPage] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -1025,6 +1028,7 @@ const AIStudio = () => {
     ]);
 
     const chatEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     const [generationStage, setGenerationStage] = useState(0);
     const [generationProgress, setGenerationProgress] = useState(0);
@@ -1069,8 +1073,11 @@ const AIStudio = () => {
     }, [isGenerating, STAGE_MESSAGES]);
 
     useEffect(() => {
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }, [messages]);
 
@@ -1384,19 +1391,21 @@ const AIStudio = () => {
         }
     };
 
-    // Responsive scaling resize effect
     useEffect(() => {
         const handleResize = () => {
             if (previewContainerRef.current) {
-                const containerWidth = previewContainerRef.current.clientWidth;
+                const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
+                const containerHeight = previewContainerRef.current.clientHeight - 48; // padding
                 const scaleWidth = containerWidth / 794;
-                setPreviewScale(Math.max(0.1, Math.min(2.0, scaleWidth)) * userZoom);
+                const scaleHeight = containerHeight / 1123;
+                const autoScale = isExpandedPreview ? Math.min(scaleWidth, scaleHeight) : scaleWidth;
+                setPreviewScale(Math.max(0.1, Math.min(2.0, autoScale)) * userZoom);
             }
         };
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [userZoom, activeEngine, activeProposalData, agreementFormData]);
+    }, [userZoom, activeEngine, activeProposalData, agreementFormData, isExpandedPreview]);
 
     // ────────────────────────────────────────────────────────────────────────
     // PREVIEW RENDERING UTILITIES
@@ -1429,7 +1438,7 @@ const AIStudio = () => {
     const paginatedPages = activeEngine === 'proposal' ? proposalPaginatedPages : agreementPaginatedPages;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white font-['Outfit'] flex flex-col overflow-x-hidden">
+        <div className="h-screen overflow-hidden bg-[#020202] text-white font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
@@ -1510,7 +1519,10 @@ const AIStudio = () => {
             <div className="flex-1 flex min-h-0 relative overflow-hidden">
                 
                 {/* LEFT CONTROL PANEL (AI, CHAT, FORMS) */}
-                <div className="w-full lg:w-[52%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden">
+                <div className={cn(
+                    "w-full lg:w-[52%] border-r border-white/5 bg-[#050505] flex flex-col min-h-0 overflow-hidden",
+                    isExpandedPreview && "hidden"
+                )}>
                     
                     {/* TOP BRANDING PANEL: GEMINI 3.5 FLASH ACTIVE */}
                     <div className="p-6 border-b border-white/5 relative overflow-hidden shrink-0">
@@ -1683,7 +1695,7 @@ const AIStudio = () => {
                     <div className="p-6 border-b border-white/5 bg-[#080808] flex flex-col gap-4 flex-1 min-h-0 overflow-hidden">
                         <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Interactive refinement stream</span>
                         
-                        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
+                        <div ref={chatContainerRef} className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-2">
                             {messages.map((m) => (
                                 <div
                                     key={m.id}
@@ -2090,6 +2102,14 @@ const AIStudio = () => {
                     
                     {/* Floating Zoom & Page indicators */}
                     <div className="absolute top-4 right-4 z-40 bg-black/60 backdrop-blur-md p-2 rounded-2xl border border-white/5 flex items-center gap-3">
+                        <button 
+                            onClick={() => setIsExpandedPreview(!isExpandedPreview)} 
+                            className="hidden lg:flex p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 h-8"
+                            title={isExpandedPreview ? "Exit Fullscreen Preview" : "Fullscreen Preview"}
+                        >
+                            {isExpandedPreview ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                            <span>{isExpandedPreview ? "Collapse" : "Expand"}</span>
+                        </button>
                         <div className="flex items-center gap-1.5 border-r border-white/10 pr-3">
                             <button onClick={() => setUserZoom(z => Math.max(0.5, z - 0.05))} className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white"><Minus size={12} /></button>
                             <span className="text-[10px] font-black uppercase tracking-wider text-zinc-300 font-mono">{Math.round(userZoom * 100)}%</span>

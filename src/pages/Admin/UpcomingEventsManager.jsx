@@ -237,7 +237,7 @@ const UpcomingEventsManager = () => {
         <AdminCommunityHubLayout
             studioHeader={{
                 title: 'EVENT',
-                subtitle: 'MANAGEMENT',
+                subtitle: 'MANAGER',
                 accentClass: 'text-neon-green',
                 icon: Calendar
             }}

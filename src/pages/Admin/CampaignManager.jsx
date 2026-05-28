@@ -1105,8 +1105,8 @@ const CampaignManager = () => {
     const content = (isCreating || expandedCampaignId) ? renderContent() : (
         <AdminCommunityHubLayout
             studioHeader={{
-                title: 'Personnel',
-                subtitle: 'Hub',
+                title: 'CAMPAIGN',
+                subtitle: 'PORTAL',
                 icon: Users,
                 accentClass: 'text-neon-blue'
             }}
