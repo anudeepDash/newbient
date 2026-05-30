@@ -72,7 +72,7 @@ const InvoiceManagement = () => {
 
     const filteredInvoices = invoices
         .filter(inv => {
-            if (user?.role === 'editor') {
+            if (user?.role === 'editor' || user?.role === 'content_admin') {
                 return inv.createdBy === user?.uid;
             }
             return true;
@@ -112,7 +112,7 @@ const InvoiceManagement = () => {
     const handleDelete = (id, inv) => {
         // Permission Check: Editor cannot delete anything. Super Admin can delete anything except developer docs? 
         // User said: "editors cannot delete anything... they can create new document which can be deleted by super admin and developer"
-        if (user?.role === 'editor') {
+        if (user?.role === 'editor' || user?.role === 'content_admin') {
             useStore.getState().addToast("Only admins can delete invoices.", 'error');
             return;
         }
@@ -358,7 +358,7 @@ const InvoiceManagement = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleDuplicate(inv)} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl transition-all border border-white/5"><CopyPlus size={14} /></button>
-                                                    {user?.role !== 'editor' && (
+                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                         <>
                                                             <button onClick={() => setSelectedAnalytics(inv)} className="p-2.5 bg-white/5 hover:bg-neon-blue/20 hover:text-neon-blue text-gray-500 rounded-xl transition-all border border-white/5"><Activity size={14} /></button>
                                                             <button onClick={() => handleDelete(inv.id, inv)} className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl transition-all border border-white/5"><Trash2 size={14} /></button>
@@ -475,7 +475,7 @@ const InvoiceManagement = () => {
                                                 <td className="p-6 md:p-8">
                                                     <div className="flex justify-end gap-2">
                                                         <Link to={`/invoice/${invoice.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
-                                                        {user?.role !== 'editor' && (
+                                                        {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                             <>
                                                                 <button onClick={() => setSelectedAnalytics(invoice)} className="p-2 text-gray-500 hover:text-neon-blue transition-colors"><Activity size={18} /></button>
                                                                 <button onClick={() => handleDelete(invoice.id, invoice)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>

@@ -268,28 +268,6 @@ export const generateInvoiceEmailHTML = (data) => {
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
                 .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
-                
-                @media (prefers-color-scheme: dark) {
-                    ${!isDark ? `
-                        .logo-light { display: none !important; }
-                        .logo-dark { display: block !important; }
-                    ` : ''}
-                }
-
-                @media (prefers-color-scheme: light) {
-                    ${isDark ? `
-                        .logo-light { display: block !important; }
-                        .logo-dark { display: none !important; }
-                    ` : ''}
-                }
-
-                ${isDark ? `
-                    [data-ogsc] .logo-light { display: block !important; }
-                    [data-ogsc] .logo-dark { display: none !important; }
-                ` : `
-                    [data-ogsc] .logo-light { display: none !important; }
-                    [data-ogsc] .logo-dark { display: block !important; }
-                `}
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -522,28 +500,6 @@ export const generateOfficialHTML = (data) => {
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
                 .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
-                
-                @media (prefers-color-scheme: dark) {
-                    ${!isDark ? `
-                        .logo-light { display: none !important; }
-                        .logo-dark { display: block !important; }
-                    ` : ''}
-                }
-
-                @media (prefers-color-scheme: light) {
-                    ${isDark ? `
-                        .logo-light { display: block !important; }
-                        .logo-dark { display: none !important; }
-                    ` : ''}
-                }
-
-                ${isDark ? `
-                    [data-ogsc] .logo-light { display: block !important; }
-                    [data-ogsc] .logo-dark { display: none !important; }
-                ` : `
-                    [data-ogsc] .logo-light { display: none !important; }
-                    [data-ogsc] .logo-dark { display: block !important; }
-                `}
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -780,81 +736,7 @@ export const generateWeeklyHTML = (data) => {
                     .mobile-w-full { width: 100% !important; max-width: 100% !important; margin-bottom: 15px !important; }
                 }
 
-                /* Responsive Light/Dark Mode Overrides */
-                @media (prefers-color-scheme: dark) {
-                    ${!isDark ? `
-                        body { background-color: #000000 !important; color: #f8fafc !important; }
-                        .container { background-color: #080808 !important; border-color: #1e293b !important; }
-                        .footer { background-color: #040404 !important; border-color: #1e293b !important; }
-                        .footer-text { color: #475569 !important; }
-                        .unsubscribe-link { color: #00f2ff !important; }
-                        .story-card { background: #111111 !important; border-color: #1e293b !important; }
-                        .date-badge {
-                            background: rgba(0,242,255,0.1) !important;
-                            border-color: rgba(0,242,255,0.2) !important;
-                            color: #00f2ff !important;
-                        }
-                        .content a { color: #00f2ff !important; }
-                        details { background: #0e0e0e !important; border-color: #1e293b !important; }
-                        .logo-light { display: none !important; }
-                        .logo-dark { display: inline-block !important; }
-                    ` : ''}
-                }
 
-                @media (prefers-color-scheme: light) {
-                    ${isDark ? `
-                        body { background-color: #ffffff !important; color: #111111 !important; }
-                        .container { background-color: #fafafa !important; border-color: #e5e7eb !important; }
-                        .footer { background-color: #f3f4f6 !important; border-color: #e5e7eb !important; }
-                        .footer-text { color: #9ca3af !important; }
-                        .unsubscribe-link { color: #008899 !important; }
-                        .story-card { background: #ffffff !important; border-color: #e5e7eb !important; }
-                        .date-badge {
-                            background: rgba(0,136,153,0.1) !important;
-                            border-color: rgba(0,136,153,0.2) !important;
-                            color: #008899 !important;
-                        }
-                        .content a { color: #008899 !important; }
-                        details { background: #f9fafb !important; border-color: #e5e7eb !important; }
-                        .logo-light { display: inline-block !important; }
-                        .logo-dark { display: none !important; }
-                    ` : ''}
-                }
-
-                /* Outlook/Windows Web App Specific Dark Mode Overrides */
-                ${isDark ? `
-                    [data-ogsc] body { background-color: #ffffff !important; color: #111111 !important; }
-                    [data-ogsc] .container { background-color: #fafafa !important; border-color: #e5e7eb !important; }
-                    [data-ogsc] .footer { background-color: #f3f4f6 !important; border-color: #e5e7eb !important; }
-                    [data-ogsc] .footer-text { color: #9ca3af !important; }
-                    [data-ogsc] .unsubscribe-link { color: #008899 !important; }
-                    [data-ogsc] .story-card { background: #ffffff !important; border-color: #e5e7eb !important; }
-                    [data-ogsc] .date-badge {
-                        background: rgba(0,136,153,0.1) !important;
-                        border-color: rgba(0,136,153,0.2) !important;
-                        color: #008899 !important;
-                    }
-                    [data-ogsc] .content a { color: #008899 !important; }
-                    [data-ogsc] details { background: #f9fafb !important; border-color: #e5e7eb !important; }
-                    [data-ogsc] .logo-light { display: inline-block !important; }
-                    [data-ogsc] .logo-dark { display: none !important; }
-                ` : `
-                    [data-ogsc] body { background-color: #000000 !important; color: #f8fafc !important; }
-                    [data-ogsc] .container { background-color: #080808 !important; border-color: #1e293b !important; }
-                    [data-ogsc] .footer { background-color: #040404 !important; border-color: #1e293b !important; }
-                    [data-ogsc] .footer-text { color: #475569 !important; }
-                    [data-ogsc] .unsubscribe-link { color: #00f2ff !important; }
-                    [data-ogsc] .story-card { background: #111111 !important; border-color: #1e293b !important; }
-                    [data-ogsc] .date-badge {
-                        background: rgba(0,242,255,0.1) !important;
-                        border-color: rgba(0,242,255,0.2) !important;
-                        color: #00f2ff !important;
-                    }
-                    [data-ogsc] .content a { color: #00f2ff !important; }
-                    [data-ogsc] details { background: #0e0e0e !important; border-color: #1e293b !important; }
-                    [data-ogsc] .logo-light { display: none !important; }
-                    [data-ogsc] .logo-dark { display: inline-block !important; }
-                `}
             </style>
         </head>
         <body>
@@ -1045,28 +927,6 @@ export const generateProposalEmailHTML = (data) => {
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
                 .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
-                
-                @media (prefers-color-scheme: dark) {
-                    ${!isDark ? `
-                        .logo-light { display: none !important; }
-                        .logo-dark { display: block !important; }
-                    ` : ''}
-                }
-
-                @media (prefers-color-scheme: light) {
-                    ${isDark ? `
-                        .logo-light { display: block !important; }
-                        .logo-dark { display: none !important; }
-                    ` : ''}
-                }
-
-                ${isDark ? `
-                    [data-ogsc] .logo-light { display: block !important; }
-                    [data-ogsc] .logo-dark { display: none !important; }
-                ` : `
-                    [data-ogsc] .logo-light { display: none !important; }
-                    [data-ogsc] .logo-dark { display: block !important; }
-                `}
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1240,28 +1100,6 @@ export const generateAgreementEmailHTML = (data) => {
                 .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
                 .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
                 .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
-                
-                @media (prefers-color-scheme: dark) {
-                    ${!isDark ? `
-                        .logo-light { display: none !important; }
-                        .logo-dark { display: block !important; }
-                    ` : ''}
-                }
-
-                @media (prefers-color-scheme: light) {
-                    ${isDark ? `
-                        .logo-light { display: block !important; }
-                        .logo-dark { display: none !important; }
-                    ` : ''}
-                }
-
-                ${isDark ? `
-                    [data-ogsc] .logo-light { display: block !important; }
-                    [data-ogsc] .logo-dark { display: none !important; }
-                ` : `
-                    [data-ogsc] .logo-light { display: none !important; }
-                    [data-ogsc] .logo-dark { display: block !important; }
-                `}
 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1378,3 +1216,217 @@ export const generateAgreementEmailHTML = (data) => {
         </html>
     `;
 };
+
+/**
+ * Generates the HTML for a payment receipt email.
+ * Premium theme, compatible with light and dark mode templates.
+ */
+export const generateReceiptEmailHTML = (data) => {
+    const {
+        headerText = "Disbursement Voucher Approved",
+        messageBody = "",
+        reference = "N/A",
+        receiverName = "Payee",
+        amount = "0",
+        date = "",
+        paymentMode = "UPI",
+        verifyUrl = "#",
+        theme = "dark"
+    } = data;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#000000' : '#fcfcfc';
+    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : '#111111';
+    const subTextColor = isDark ? '#888888' : '#444444';
+    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+    const cardBg = isDark ? '#111111' : '#f8f9fa';
+    const cardBorder = isDark ? '#1e1e1e' : '#e5e7eb';
+    const baseUrl = getBaseUrl();
+    
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
+                .content { padding: 50px; text-align: left; }
+                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                
+                /* Receipt Attachment Card */
+                .attachment-card { background: ${cardBg}; border: 1px solid ${cardBorder}; border-top: none; border-bottom: none; border-radius: 0; overflow: visible; margin: 30px 0; }
+                .attachment-header { padding: 16px 20px; border-bottom: 1px solid ${cardBorder}; }
+                .attachment-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px; }
+                .attachment-filename { font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0; }
+                .attachment-filetype { font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0; }
+                .attachment-body { padding: 20px 20px 10px 20px; }
+                .attachment-row { padding: 10px 0; }
+                .attachment-label { font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; }
+                .attachment-value { font-size: 13px; font-weight: 700; color: ${textColor}; }
+                .attachment-total { background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px; }
+                .attachment-total-label { font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; }
+                .attachment-total-value { font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; }
+                
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase; }
+                .download-row { padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center; }
+                .download-link { font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; }
+                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">Payout Receipt ${reference} to ${receiverName} — ₹${amount}</span>
+            <div class="container">
+                <div class="header">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                </div>
+                <div class="content">
+                    <div class="category-badge">PAYOUT RECEIPT</div>
+                    <h1 class="title">${headerText}</h1>
+                    <div class="body-text">${messageBody}</div>
+
+                    <!-- Attachment-Style Receipt Card -->
+                    <table class="attachment-card" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; background: ${cardBg}; border: 1px solid ${cardBorder}; border-top: none; border-bottom: none; border-radius: 0; margin: 30px 0; overflow: visible;">
+                        <tr>
+                            <td style="background: ${containerBg}; padding: 0; margin: 0; line-height: 0; font-size: 0; vertical-align: top;">
+                                <div style="width: 100%; height: 14px; overflow: hidden; margin: 0; padding: 0; line-height: 0; font-size: 0;">
+                                    <svg viewBox="0 0 300 14" preserveAspectRatio="none" style="width: 100%; height: 14px; display: block; margin: 0; padding: 0;">
+                                        <path d="M 300 14 L 0 14 L 0 0 L 5 9 L 10 0 L 15 9 L 20 0 L 25 9 L 30 0 L 35 9 L 40 0 L 45 9 L 50 0 L 55 9 L 60 0 L 65 9 L 70 0 L 75 9 L 80 0 L 85 9 L 90 0 L 95 9 L 100 0 L 105 9 L 110 0 L 115 9 L 120 0 L 125 9 L 130 0 L 135 9 L 140 0 L 145 9 L 150 0 L 155 9 L 160 0 L 165 9 L 170 0 L 175 9 L 180 0 L 185 9 L 190 0 L 195 9 L 200 0 L 205 9 L 210 0 L 215 9 L 220 0 L 225 9 L 230 0 L 235 9 L 240 0 L 245 9 L 250 0 L 255 9 L 260 0 L 265 9 L 270 0 L 275 9 L 280 0 L 285 9 L 290 0 L 295 9 L 300 0 Z" fill="${cardBg}" />
+                                        <path d="M 0 0 L 5 9 L 10 0 L 15 9 L 20 0 L 25 9 L 30 0 L 35 9 L 40 0 L 45 9 L 50 0 L 55 9 L 60 0 L 65 9 L 70 0 L 75 9 L 80 0 L 85 9 L 90 0 L 95 9 L 100 0 L 105 9 L 110 0 L 115 9 L 120 0 L 125 9 L 130 0 L 135 9 L 140 0 L 145 9 L 150 0 L 155 9 L 160 0 L 165 9 L 170 0 L 175 9 L 180 0 L 185 9 L 190 0 L 195 9 L 200 0 L 205 9 L 210 0 L 215 9 L 220 0 L 225 9 L 230 0 L 235 9 L 240 0 L 245 9 L 250 0 L 255 9 L 260 0 L 265 9 L 270 0 L 275 9 L 280 0 L 285 9 L 290 0 L 295 9 L 300 0" fill="none" stroke="${cardBorder}" stroke-width="1.5" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-header" style="padding: 16px 20px; border-bottom: 1px solid ${cardBorder};">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td width="44" valign="middle" style="width: 44px; padding-right: 14px;">
+                                            <div class="attachment-icon" style="width: 44px; height: 44px; background: linear-gradient(135deg, #10b981, #047857); border-radius: 10px; text-align: center; line-height: 44px; color: white; font-weight: 900; font-size: 11px; letter-spacing: 1px;">REC</div>
+                                        </td>
+                                        <td valign="middle">
+                                            <p class="attachment-filename" style="font-size: 13px; font-weight: 800; color: ${textColor}; letter-spacing: -0.3px; margin: 0;">Receipt-${reference}.png</p>
+                                            <p class="attachment-filetype" style="font-size: 9px; font-weight: 700; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px; margin: 3px 0 0;">Transaction Receipt • Newbi Entertainment</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-body" style="padding: 20px 20px 10px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Reference Number</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${reference}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Payee</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${receiverName}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: 1px dashed ${cardBorder};">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Payment Date</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${date}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="attachment-row" style="padding: 10px 0; border-bottom: none;">
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                                <tr>
+                                                    <td align="left" class="attachment-label" style="font-size: 10px; font-weight: 800; color: ${subTextColor}; text-transform: uppercase; letter-spacing: 1.5px;">Payment Mode</td>
+                                                    <td align="right" class="attachment-value" style="font-size: 13px; font-weight: 700; color: ${textColor};">${paymentMode}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="attachment-total" style="background: ${isDark ? '#0d1f0d' : '#f0fdf4'}; border-top: 2px solid ${NEWBI_GREEN}; padding: 16px 20px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                    <tr>
+                                        <td align="left" class="attachment-total-label" style="font-size: 10px; font-weight: 900; color: ${NEWBI_GREEN}; text-transform: uppercase; letter-spacing: 2px; valign: middle;">Total Paid</td>
+                                        <td align="right" class="attachment-total-value" style="font-size: 22px; font-weight: 900; color: ${textColor}; letter-spacing: -1px; valign: middle;">₹${amount}</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="download-row" style="padding: 14px 20px; background: ${isDark ? '#0a0a0a' : '#fafafa'}; border-top: 1px solid ${cardBorder}; text-align: center;">
+                                <a href="${verifyUrl}" class="download-link" style="font-size: 11px; font-weight: 800; color: ${NEWBI_GREEN}; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; display: block;">↓ Verify Payout Receipt</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="background: ${containerBg}; padding: 0; margin: 0; line-height: 0; font-size: 0; vertical-align: top;">
+                                <div style="width: 100%; height: 14px; overflow: hidden; margin: 0; padding: 0; line-height: 0; font-size: 0;">
+                                    <svg viewBox="0 0 300 14" preserveAspectRatio="none" style="width: 100%; height: 14px; display: block; margin: 0; padding: 0;">
+                                        <path d="M 0 0 L 300 0 L 300 14 L 295 5 L 290 14 L 285 5 L 280 14 L 275 5 L 270 14 L 265 5 L 260 14 L 255 5 L 250 14 L 245 5 L 240 14 L 235 5 L 230 14 L 225 5 L 220 14 L 215 5 L 210 14 L 205 5 L 200 14 L 195 5 L 190 14 L 185 5 L 180 14 L 175 5 L 170 14 L 165 5 L 160 14 L 155 5 L 150 14 L 145 5 L 140 14 L 135 5 L 130 14 L 125 5 L 120 14 L 115 5 L 110 14 L 105 5 L 100 14 L 95 5 L 90 14 L 85 5 L 80 14 L 75 5 L 70 14 L 65 5 L 60 14 L 55 5 L 50 14 L 45 5 L 40 14 L 35 5 L 30 14 L 25 5 L 20 14 L 15 5 L 10 14 L 5 5 L 0 14 Z" fill="${isDark ? '#0a0a0a' : '#fafafa'}" />
+                                        <path d="M 300 14 L 295 5 L 290 14 L 285 5 L 280 14 L 275 5 L 270 14 L 265 5 L 260 14 L 255 5 L 250 14 L 245 5 L 240 14 L 235 5 L 230 14 L 225 5 L 220 14 L 215 5 L 210 14 L 205 5 L 200 14 L 195 5 L 190 14 L 185 5 L 180 14 L 175 5 L 170 14 L 165 5 L 160 14 L 155 5 L 150 14 L 145 5 L 140 14 L 135 5 L 130 14 L 125 5 L 120 14 L 115 5 L 110 14 L 105 5 L 100 14 L 95 5 L 90 14 L 85 5 L 80 14 L 75 5 L 70 14 L 65 5 L 60 14 L 55 5 L 50 14 L 45 5 L 40 14 L 35 5 L 30 14 L 25 5 L 20 14 L 15 5 L 10 14 L 5 5 L 0 14" fill="none" stroke="${cardBorder}" stroke-width="1.5" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="text-align: center; margin-top: 35px;">
+                        <a href="${verifyUrl}" class="cta-button">Verify Payout</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+

@@ -874,6 +874,25 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                     <h3 className="text-3xl md:text-5xl font-black font-heading italic uppercase text-white tracking-tighter">Payment</h3>
                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scan the QR or use the UPI app to pay, then enter Transaction ID.</p>
                                 </div>
+                                {event?.gatewayUrl && (
+                                    <div className="w-full mb-8 shrink-0">
+                                        <a 
+                                            href={event.gatewayUrl} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="w-full h-16 rounded-2xl bg-gradient-to-r from-neon-blue to-neon-green text-black font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(46,191,255,0.3)]"
+                                        >
+                                            <CreditCard size={14} />
+                                            PROCEED TO SECURE CHECKOUT
+                                        </a>
+                                        <div className="relative flex py-4 items-center w-full">
+                                            <div className="flex-grow border-t border-white/10"></div>
+                                            <span className="flex-shrink mx-4 text-gray-500 text-[9px] font-black uppercase tracking-widest">Or Pay Manually via UPI</span>
+                                            <div className="flex-grow border-t border-white/10"></div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
                                     <div className="bg-white rounded-[2rem] p-8 flex flex-col items-center gap-4 shadow-2xl">
                                         <img 

@@ -125,12 +125,12 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md overflow-y-auto pt-20 md:pt-4 pb-20">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md overflow-y-auto">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh] md:max-h-[90vh] shrink-0"
+                    className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] shrink-0"
                 >
                     {/* Progress Bar */}
                     <div className="h-1 bg-white/5 w-full flex">
@@ -284,12 +284,30 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                         {step === 3 && (
                             <div className="flex flex-col h-full">
                                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                                    {event?.gatewayUrl && (
+                                        <div className="mb-6 space-y-3">
+                                            <a 
+                                                href={event.gatewayUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="w-full h-16 rounded-2xl bg-gradient-to-r from-neon-blue to-neon-green text-black font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(46,191,255,0.2)]"
+                                            >
+                                                Proceed to Secure Checkout
+                                            </a>
+                                            <div className="relative flex py-2 items-center w-full">
+                                                <div className="flex-grow border-t border-white/10"></div>
+                                                <span className="flex-shrink mx-4 text-gray-500 text-[9px] font-black uppercase tracking-widest">Or Pay Manually via UPI</span>
+                                                <div className="flex-grow border-t border-white/10"></div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="bg-white rounded-2xl p-6 text-center mb-6 border border-gray-200 shadow-xl">
                                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Scan & Pay ₹{totalAmount}</p>
-                                        {paymentDetails?.upiId ? (
+                                        {(event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId) ? (
                                             <div className="inline-block p-4 bg-white rounded-xl border border-gray-200">
                                                 <img
-                                                    src={`/api/qr?size=250&text=${encodeURIComponent(`upi://pay?pa=${paymentDetails.upiId}&pn=NewBi Entertainment&am=${totalAmount}&cu=INR`)}`}
+                                                    src={`/api/qr?size=250&text=${encodeURIComponent(`upi://pay?pa=${event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId}&pn=NewBi Entertainment&am=${totalAmount}&cu=INR`)}`}
                                                     alt="Payment QR"
                                                     className="w-48 h-48 object-contain mx-auto mix-blend-multiply"
                                                 />
@@ -299,8 +317,17 @@ const BuyTicketModal = ({ event, isOpen, onClose }) => {
                                         )}
                                         <div className="mt-4">
                                             <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">UPI ID</p>
-                                            <p className="font-mono text-sm font-bold text-gray-800 select-all bg-gray-100 py-2 rounded-lg border border-gray-200">{paymentDetails?.upiId}</p>
+                                            <p className="font-mono text-xs font-bold text-gray-800 select-all bg-gray-100 py-2 rounded-lg border border-gray-200">{event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId || 'newbi@upi'}</p>
                                         </div>
+                                        
+                                        {(event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId) && (
+                                            <a 
+                                                href={`upi://pay?pa=${event?.upiId || event?.paymentDetails?.upiId || paymentDetails?.upiId}&pn=NewBi Entertainment&am=${totalAmount}&cu=INR`}
+                                                className="w-full h-12 mt-4 rounded-xl bg-neon-blue text-black font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all md:hidden"
+                                            >
+                                                Pay via UPI App
+                                            </a>
+                                        )}
                                     </div>
 
                                     <div className="space-y-4">

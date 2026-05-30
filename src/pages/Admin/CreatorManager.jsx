@@ -46,6 +46,41 @@ import 'jspdf-autotable';
 import StudioSelect from '../../components/ui/StudioSelect';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
+const getPageNumbers = (currentPage, totalPages) => {
+    const pages = [];
+    const delta = 2;
+    
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+    } else {
+        const left = currentPage - delta;
+        const right = currentPage + delta;
+        const range = [];
+        let l;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                range.push(i);
+            }
+        }
+
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    pages.push(l + 1);
+                } else if (i - l > 2) {
+                    pages.push('...');
+                }
+            }
+            pages.push(i);
+            l = i;
+        }
+    }
+    return pages;
+};
+
 const CreatorManager = () => {
     const { creators, updateCreator, deleteCreator } = useStore();
     const navigate = useNavigate();
@@ -371,34 +406,46 @@ const CreatorManager = () => {
 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-4 mt-16 pb-12">
+                                    <div className="flex items-center justify-center gap-3 mt-16 pb-12">
                                         <button 
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronLeft size={20} />
                                         </button>
                                         <div className="flex items-center gap-2">
-                                            {[...Array(totalPages)].map((_, i) => (
-                                                <button
-                                                    key={i}
-                                                    onClick={() => setCurrentPage(i + 1)}
-                                                    className={cn(
-                                                        "w-12 h-12 rounded-2xl font-black transition-all border",
-                                                        currentPage === i + 1 
-                                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                                                            : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
-                                                    )}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            ))}
+                                            {getPageNumbers(currentPage, totalPages).map((page, i) => {
+                                                if (page === '...') {
+                                                    return (
+                                                        <span 
+                                                            key={`dots-${i}`} 
+                                                            className="w-12 h-12 flex items-center justify-center text-gray-500 font-black text-sm select-none"
+                                                        >
+                                                            ...
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => setCurrentPage(page)}
+                                                        className={cn(
+                                                            "w-12 h-12 rounded-full font-black text-xs transition-all border flex items-center justify-center",
+                                                            currentPage === page 
+                                                                ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
+                                                                : "bg-white/5 text-gray-500 border-white/10 hover:border-white/30"
+                                                        )}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                         <button 
                                             disabled={currentPage === totalPages}
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
+                                            className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white disabled:opacity-20 hover:bg-white hover:text-black transition-all"
                                         >
                                             <ChevronRight size={20} />
                                         </button>

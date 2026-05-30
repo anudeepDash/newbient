@@ -39,6 +39,20 @@ const UpcomingEventsManager = () => {
     const [selectedHubBanner, setSelectedHubBanner] = useState(null);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const [activeEditorTab, setActiveEditorTab] = useState('basics');
+    const [eventFilter, setEventFilter] = useState('upcoming'); // 'upcoming' | 'past' | 'all'
+
+    const isPastEvent = (event) => {
+        if (!event.date) return false;
+        let eventDate;
+        if (event.date.seconds) {
+            eventDate = new Date(event.date.seconds * 1000);
+        } else {
+            eventDate = new Date(event.date);
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return eventDate < today;
+    };
 
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -232,6 +246,15 @@ const UpcomingEventsManager = () => {
             setUploading(false);
         }
     };
+
+    const filteredEvents = upcomingEvents.filter(event => {
+        if (eventFilter === 'upcoming') {
+            return !isPastEvent(event);
+        } else if (eventFilter === 'past') {
+            return isPastEvent(event);
+        }
+        return true;
+    });
 
     return (
         <AdminCommunityHubLayout
@@ -1058,9 +1081,37 @@ const UpcomingEventsManager = () => {
                                 </div>
                             </div>
 
+                            {/* Event Filter Tabs */}
+                            <div className="flex flex-wrap items-center gap-2 border-b border-white/5 pb-6 mb-8">
+                                {[
+                                    { id: 'upcoming', label: 'Active / Upcoming', count: upcomingEvents.filter(e => !isPastEvent(e)).length, color: 'border-neon-blue text-neon-blue bg-neon-blue/5' },
+                                    { id: 'past', label: 'Past Events', count: upcomingEvents.filter(e => isPastEvent(e)).length, color: 'border-neon-pink text-neon-pink bg-neon-pink/5' },
+                                    { id: 'all', label: 'All Events', count: upcomingEvents.length, color: 'border-white/20 text-white bg-white/5' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setEventFilter(tab.id)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-2xl border text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2",
+                                            eventFilter === tab.id
+                                                ? tab.color
+                                                : "border-transparent text-gray-500 hover:text-white bg-transparent"
+                                        )}
+                                    >
+                                        <span>{tab.label}</span>
+                                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8px] text-gray-400 font-mono">
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
                             <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
                                 <AnimatePresence mode="popLayout">
-                                {upcomingEvents.map((item, index) => (
+                                {filteredEvents.map((item, index) => {
+                                    const originalIndex = upcomingEvents.findIndex(e => e.id === item.id);
+                                    return (
                                     <motion.div
                                         key={item.id}
                                         layout
@@ -1096,16 +1147,18 @@ const UpcomingEventsManager = () => {
 
                                         {/* Top toolbar — floats over content/image */}
                                         <div className="absolute top-8 left-8 right-8 z-30 flex justify-between items-start opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-400">
-                                            <div className="flex gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); moveItem(index, 'up'); }} disabled={index === 0}
-                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
-                                                    <ChevronUp size={16} />
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); moveItem(index, 'down'); }} disabled={index === upcomingEvents.length - 1}
-                                                    className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
-                                                    <ChevronDown size={16} />
-                                                </button>
-                                            </div>
+                                            {eventFilter === 'upcoming' && (
+                                                <div className="flex gap-2">
+                                                    <button onClick={(e) => { e.stopPropagation(); moveItem(originalIndex, 'up'); }} disabled={originalIndex === 0}
+                                                        className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
+                                                        <ChevronUp size={16} />
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); moveItem(originalIndex, 'down'); }} disabled={originalIndex === upcomingEvents.length - 1}
+                                                        className="w-9 h-9 rounded-xl bg-black/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-neon-blue hover:text-black transition-all disabled:opacity-0">
+                                                        <ChevronDown size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={(e) => {
@@ -1215,10 +1268,11 @@ const UpcomingEventsManager = () => {
                                             </div>
                                         </div>
                                     </motion.div>
-                                ))}
+                                );
+                            })}
                                 </AnimatePresence>
 
-                                {upcomingEvents.length === 0 && (
+                                {filteredEvents.length === 0 && (
                                     <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
                                         <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
                                             <Calendar size={28} />
