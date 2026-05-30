@@ -257,10 +257,11 @@ const TicketingManagement = () => {
         e.preventDefault();
         const upiId = e.target.upiId.value;
         const qrCodeUrl = e.target.qrCodeUrl.value;
+        const gatewayUrl = e.target.gatewayUrl.value;
         
         try {
             const { updateUpcomingEvent } = useStore.getState();
-            await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl });
+            await updateUpcomingEvent(selectedEventId, { upiId, qrCodeUrl, gatewayUrl });
             useStore.getState().addToast("Payment settings saved!", 'success');
         } catch (err) {
             console.error(err);
@@ -813,19 +814,23 @@ const TicketingManagement = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl">
                                     <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Event Payment Config</h3>
-                                    <form onSubmit={handleUpdateEventPayment} className="space-y-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Event UPI ID</label>
-                                            <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-black/40 border-white/5 rounded-2xl" />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Direct QR Link (Optional)</label>
-                                            <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
-                                        </div>
-                                        <Button type="submit" className="w-full h-14 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-2xl">
-                                            Update Configuration
-                                        </Button>
-                                    </form>
+                                        <form onSubmit={handleUpdateEventPayment} className="space-y-8">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Event UPI ID</label>
+                                                <Input name="upiId" defaultValue={event?.upiId || ''} placeholder="merchant@upi" className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Direct QR Link (Optional)</label>
+                                                <Input name="qrCodeUrl" defaultValue={event?.qrCodeUrl || ''} placeholder="https://..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Payment Gateway / Checkout URL (Optional)</label>
+                                                <Input name="gatewayUrl" defaultValue={event?.gatewayUrl || ''} placeholder="https://checkout.payulink.in/..." className="h-14 bg-black/40 border-white/5 rounded-2xl" />
+                                            </div>
+                                            <Button type="submit" className="w-full h-14 bg-neon-green text-black font-black uppercase text-xs tracking-widest rounded-2xl">
+                                                Update Configuration
+                                            </Button>
+                                        </form>
                                 </Card>
 
                                 <Card className="p-10 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-2xl flex flex-col items-center justify-center text-center group">

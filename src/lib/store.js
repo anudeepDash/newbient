@@ -136,6 +136,21 @@ export const useStore = create((set, get) => ({
     // Centralized Cloudinary Upload Utility
     uploadToCloudinary: async (file) => {
         if (!file) return null;
+
+        // Try Firebase Storage first for PDF files to render inline correctly without Cloudinary security blocks
+        if (file.type === "application/pdf") {
+            try {
+                const uniqueId = Math.random().toString(36).substring(2, 9);
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const storagePath = `uploads/pdf_${uniqueId}_${cleanName}`;
+                const storageRef = ref(storage, storagePath);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
+            } catch (firebaseError) {
+                console.warn("Firebase Storage PDF upload failed, falling back to Cloudinary raw upload:", firebaseError);
+            }
+        }
+
         const data = new FormData();
         data.append("file", file);
         data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
@@ -144,7 +159,8 @@ export const useStore = create((set, get) => ({
         // Auto-detect resource type from file MIME
         let resourceType = "image";
         if (file.type?.startsWith("video/")) resourceType = "video";
-        else if (file.type === "application/pdf" || file.type?.startsWith("application/")) resourceType = "raw";
+        else if (file.type === "application/pdf") resourceType = "raw"; // Fallback to raw resource type for PDFs to avoid Cloudinary security blocking
+        else if (file.type?.startsWith("application/")) resourceType = "raw";
 
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
 
@@ -175,6 +191,9 @@ export const useStore = create((set, get) => ({
     concerts: [],
     portfolio: [],
     invoices: [],
+    spends: [],
+    otherIncomes: [],
+    financePayees: [], // Registered Payees
     forms: [], // Forms config
     upcomingEvents: [],
     ticketOrders: [], // Ticket Purchases and Offline Reconciliations
@@ -252,7 +271,7 @@ export const useStore = create((set, get) => ({
                 }
 
                 // Sort invoices by createdAt (descending) - Newest First
-                if (colName === 'invoices') {
+                if (colName === 'invoices' || colName === 'spends' || colName === 'other_incomes' || colName === 'finance_payees') {
                     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
                 }
 
@@ -289,6 +308,9 @@ export const useStore = create((set, get) => ({
         const unsub2 = sub('concerts', 'concerts');
         const unsub3 = sub('portfolio', 'portfolio');
         const unsub4 = sub('invoices', 'invoices');
+        const unsubSpends = sub('spends', 'spends');
+        const unsubOtherIncomes = sub('other_incomes', 'otherIncomes');
+        const unsubFinancePayees = sub('finance_payees', 'financePayees');
         const unsub5 = sub('forms', 'forms');
 
         const unsub7 = sub('volunteer_gigs', 'volunteerGigs');
@@ -389,6 +411,7 @@ export const useStore = create((set, get) => ({
             unsubClientRequests(); unsubTicketOrders();
             unsubCoupons();
             unsubAI();
+            unsubSpends(); unsubOtherIncomes(); unsubFinancePayees();
         };
     },
 
@@ -869,6 +892,126 @@ export const useStore = create((set, get) => ({
     },
     deleteInvoice: async (id) => {
         await deleteDoc(doc(db, 'invoices', id));
+    },
+
+    // Spends
+    addSpend: async (spend) => {
+        const user = get().user;
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ 
+            ...spend, 
+            createdBy: user?.uid || null, 
+            createdByEmail: user?.email || null,
+            createdAt: spend.createdAt || new Date().toISOString()
+        });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'spends'), cleaned);
+    },
+    updateSpend: async (id, updates) => {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'spends', id), cleaned);
+    },
+    deleteSpend: async (id) => {
+        await deleteDoc(doc(db, 'spends', id));
+    },
+
+    // Other Incomes
+    addOtherIncome: async (income) => {
+        const user = get().user;
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ 
+            ...income, 
+            createdBy: user?.uid || null, 
+            createdByEmail: user?.email || null,
+            createdAt: income.createdAt || new Date().toISOString()
+        });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'other_incomes'), cleaned);
+    },
+    updateOtherIncome: async (id, updates) => {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'other_incomes', id), cleaned);
+    },
+    deleteOtherIncome: async (id) => {
+        await deleteDoc(doc(db, 'other_incomes', id));
+    },
+
+    // Finance Payees
+    addFinancePayee: async (payee) => {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({
+            ...payee,
+            createdAt: payee.createdAt || new Date().toISOString()
+        });
+        delete cleaned.id;
+        return await addDoc(collection(db, 'finance_payees'), cleaned);
+    },
+    updateFinancePayee: async (id, updates) => {
+        const deepClean = (obj) => {
+            if (Array.isArray(obj)) return obj.map(deepClean);
+            if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+                return Object.entries(obj).reduce((acc, [k, v]) => {
+                    if (v !== undefined) acc[k] = deepClean(v);
+                    return acc;
+                }, {});
+            }
+            return obj;
+        };
+        const cleaned = deepClean({ ...updates });
+        delete cleaned.id;
+        await updateDoc(doc(db, 'finance_payees', id), cleaned);
+    },
+    deleteFinancePayee: async (id) => {
+        await deleteDoc(doc(db, 'finance_payees', id));
     },
 
     // Proposals

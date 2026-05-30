@@ -75,7 +75,15 @@ const AdminGuard = ({ children }) => {
 
 
 
-    if (!user || (user.role !== 'super_admin' && user.role !== 'developer' && user.role !== 'editor' && user.role !== 'scanner')) {
+    if (!user || (
+        user.role !== 'super_admin' && 
+        user.role !== 'developer' && 
+        user.role !== 'editor' && 
+        user.role !== 'scanner' && 
+        user.role !== 'content_admin' && 
+        user.role !== 'gate_manager' && 
+        user.role !== 'blog_writer'
+    )) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center p-6">
                 <motion.div 

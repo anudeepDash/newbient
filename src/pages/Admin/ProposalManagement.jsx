@@ -62,7 +62,7 @@ const ProposalManagement = () => {
 
     const filteredProposals = proposals
         .filter(p => {
-            if (user?.role === 'editor') {
+            if (user?.role === 'editor' || user?.role === 'content_admin') {
                 return p.createdBy === user?.uid;
             }
             return true;
@@ -81,7 +81,7 @@ const ProposalManagement = () => {
     };
 
     const handleDelete = (id) => {
-        if (user?.role === 'editor') {
+        if (user?.role === 'editor' || user?.role === 'content_admin') {
             useStore.getState().addToast("Only admins can delete documents.", 'error');
             return;
         }
@@ -306,7 +306,7 @@ const ProposalManagement = () => {
                                                     >
                                                         <History size={14} />
                                                     </button>
-                                                    {user?.role !== 'editor' && (
+                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                         <>
                                                             <button 
                                                                 onClick={() => setSelectedAnalytics(proposal)}
@@ -427,7 +427,7 @@ const ProposalManagement = () => {
                                                      <div className="flex justify-end gap-2">
                                                          <Link to={`/proposal/${proposal.id}`} className="p-2 text-gray-500 hover:text-white transition-colors"><Eye size={18} /></Link>
                                                          <button onClick={() => setEmailModalProposal(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors" title="Email Proposal"><Mail size={18} /></button>
-                                                         {user?.role !== 'editor' && (
+                                                         {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                              <>
                                                                  <button onClick={() => setSelectedAnalytics(proposal)} className="p-2 text-gray-500 hover:text-neon-green transition-colors"><Activity size={18} /></button>
                                                                  <button onClick={() => handleDelete(proposal.id)} className="p-2 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>

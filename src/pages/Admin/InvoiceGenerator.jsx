@@ -440,7 +440,7 @@ const InvoiceGenerator = () => {
     };
 
     return (
-        <div className="h-full overflow-hidden bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col">
+        <div className="h-screen overflow-hidden bg-[#020202] text-white selection:bg-neon-blue selection:text-black font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
                 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -483,7 +483,7 @@ const InvoiceGenerator = () => {
                 </div>
             </header>
 
-            <main className="flex-1 flex overflow-x-clip">
+            <main className="flex-1 flex overflow-hidden min-h-0">
                 {/* Sidebar */}
                 <aside className={cn(
                     "hidden lg:flex w-64 shrink-0 border-r border-white/5 bg-zinc-900/20 flex-col p-6 gap-6 overflow-y-auto scrollbar-hide",

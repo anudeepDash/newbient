@@ -10,7 +10,8 @@ const StudioSelect = ({
     placeholder = "SELECT OPTION", 
     className,
     multi = false,
-    accentColor = "neon-blue" 
+    accentColor = "neon-blue",
+    disabled = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
@@ -83,9 +84,10 @@ const StudioSelect = ({
     return (
         <div className={cn("relative w-full", className)} ref={containerRef}>
             <div 
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center justify-between h-full bg-black/60 border border-white/10 rounded-xl px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner",
+                    "flex items-center justify-between h-full bg-black/60 border border-white/10 rounded-xl px-4 transition-all group shadow-inner",
+                    disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-white/20",
                     isOpen && "border-white/20"
                 )}
             >

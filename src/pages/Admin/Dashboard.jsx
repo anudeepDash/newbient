@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Plus from 'lucide-react/dist/esm/icons/plus';
@@ -242,7 +242,7 @@ const BootstrapAlert = ({ onClaim }) => (
 
 const Dashboard = () => {
     const { 
-        invoices, proposals, agreements, concerts, portfolio, announcements, user, 
+        invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
         artists, clientRequests, upcomingEvents, ticketOrders,
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
@@ -320,9 +320,9 @@ const Dashboard = () => {
             icon: Ticket, color: 'neon-pink', detail: `${ticketOrders?.filter(o => o.status === 'pending').length || 0} Pending Verifications`, link: '/admin/ticketing' 
         },
         { 
-            label: 'Settlements', 
-            value: invoices.length, 
-            icon: DollarSign, color: 'neon-green', detail: `Total Revenue Pipeline`, link: '/admin/invoices' 
+            label: 'Finance Board', 
+            value: 'Active', 
+            icon: IndianRupee, color: 'neon-green', detail: `Spends & Cash Flow Ledgers`, link: '/admin/finance' 
         },
         { 
             label: 'Active Briefs', 
@@ -478,15 +478,16 @@ const Dashboard = () => {
 
             {/* Operational Modules */}
             <div className="space-y-32">
-                    {user?.role !== 'scanner' && (
+                    {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
                         <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
+                            <ControlCard title="Finance Board" desc="Cashflow, spends, invoices and income tracking." icon={TrendingUp} color="neon-green" link="/admin/finance" isNew isHidden={cards.invoices} />
                             <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
                             <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
                         </DashboardSection>
                     )}
 
-                    {user?.role !== 'scanner' && (
+                    {user?.role !== 'scanner' && user?.role !== 'gate_manager' && (
                         <DashboardSection title="Core Content Infrastructure" gradient="from-neon-pink via-purple-500 to-white" icon={<LayoutDashboard size={20} />}>
                             <ControlCard title="Upcoming" desc="Primary event queue for the live system." icon={Calendar} color="neon-green" link="/admin/upcoming-events" isHidden={cards.upcoming_events} />
                             <ControlCard title="Announcements" desc="System broadcasts and site-wide news." icon={Radio} color="neon-pink" link="/admin/announcements" isHidden={cards.blog_announcements} />
@@ -500,14 +501,14 @@ const Dashboard = () => {
                         <ControlCard title="QR Scanner" desc="Gate entry validation system." icon={Zap} color="yellow-400" link="/admin/scanner" isNew isHidden={cards.ticketing} />
                     </DashboardSection>
 
-                    {user?.role !== 'scanner' && (
+                    {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
                         <DashboardSection title="Personnel & Community Ops" gradient="from-neon-blue via-neon-green to-white" icon={<Users size={20} />}>
                             <ControlCard title="Community Hub" desc="Volunteer coordination and gig ops." icon={Users} color="neon-green" link="/admin/volunteer-gigs" isHidden={cards.community} />
                             <ControlCard title="Creator Studio" desc="Influencer validation and mission management." icon={Star} color="neon-blue" link="/admin/creators" isHidden={cards.influencer} />
                             <ControlCard title="Giveaways" desc="Viral engagement and reward distribution." icon={Gift} color="purple-500" link="/admin/giveaways" isNew isHidden={cards.giveaways} />
                             <ControlCard title="Artistant" desc="Artist roster and client onboarding hub." logo={artistantLogo} color="neon-blue" link="/admin/artistant" isNew isHidden={cards.artists} />
                             <ControlCard title="Mailing" desc="Mass communication and broadcast logs." icon={Megaphone} color="neon-blue" link="/admin/mailing" isNew isHidden={cards.mailing} />
-                            {user.role !== 'editor' && (
+                            {user.role !== 'editor' && user.role !== 'content_admin' && user.role !== 'blog_writer' && (
                                 <ControlCard title="Members" desc="Security clearance and administrative roles." icon={Shield} color="neon-blue" link="/admin/manage-admins" isHidden={cards.admins} />
                             )}
                             <ControlCard title="Inbox" desc="External queries and mission requests." icon={Mail} color="white" link="/admin/messages" count={unreadCount} isHidden={cards.messages} />

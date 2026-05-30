@@ -19,6 +19,7 @@ import Send from 'lucide-react/dist/esm/icons/send';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import History from 'lucide-react/dist/esm/icons/history';
 import Share2 from 'lucide-react/dist/esm/icons/share-2';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import Edit from 'lucide-react/dist/esm/icons/edit';
@@ -67,7 +68,7 @@ const ContractManagement = () => {
 
     const filtered = useMemo(() => agreements
         .filter(a => {
-            if (user?.role === 'editor') {
+            if (user?.role === 'editor' || user?.role === 'content_admin') {
                 return a.createdBy === user?.uid;
             }
             return true;
@@ -79,8 +80,8 @@ const ContractManagement = () => {
         }), [agreements, searchQuery, statusFilter, user]);
 
     const handleDelete = async (id) => { 
-        if (user?.role === 'editor') {
-            useStore.getState().addToast("Permission Denied: Editors cannot delete documents.", 'error');
+        if (user?.role === 'editor' || user?.role === 'content_admin') {
+            useStore.getState().addToast("Permission Denied: Editors and Content Admins cannot delete documents.", 'error');
             return;
         }
         try { await deleteAgreement(id); setShowDeleteModal(null); } catch (e) { useStore.getState().addToast("Error: " + e.message, 'error'); } 
@@ -207,7 +208,7 @@ const ContractManagement = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2.5 bg-white/5 hover:bg-white/10 text-gray-500 rounded-xl border border-white/5" title="Duplicate"><History size={14} /></button>
-                                                    {user?.role !== 'editor' && (
+                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                         <>
                                                             <button onClick={() => setSelectedAnalytics(a)} className="p-2.5 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-gray-500 rounded-xl border border-white/5" title="Analytics"><Activity size={14} /></button>
                                                             <button onClick={() => setShowDeleteModal(a.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-gray-500 rounded-xl border border-white/5" title="Delete"><Trash2 size={14} /></button>
@@ -261,7 +262,7 @@ const ContractManagement = () => {
                                                     <button onClick={() => handleNativeShare(a)} className="p-2 text-gray-500 hover:text-neon-purple"><Share2 size={18} /></button>
                                                     <button onClick={() => handleDuplicate(a.id)} className="p-2 text-gray-500 hover:text-white"><History size={18} /></button>
                                                     <Link to={`/admin/agreements/edit/${a.id}`} className="p-2 text-gray-500 hover:text-white"><Edit size={18} /></Link>
-                                                    {user?.role !== 'editor' && (
+                                                    {user?.role !== 'editor' && user?.role !== 'content_admin' && (
                                                         <>
                                                             <button onClick={() => setSelectedAnalytics(a)} className="p-2 text-gray-500 hover:text-neon-purple transition-colors"><Activity size={18} /></button>
                                                             <button onClick={() => setShowDeleteModal(a.id)} className="p-2 text-gray-500 hover:text-red-500"><Trash2 size={18} /></button>
