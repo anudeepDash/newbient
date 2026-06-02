@@ -162,6 +162,32 @@ export default async function handler(req, res) {
             console.error('[AI PROXY] Airforce path failed:', e.message);
         }
 
+        // 4. TRY POLLINATIONS (FREE KEYLESS PROXY)
+        try {
+            console.log('[AI PROXY] Path: Pollinations');
+            const pollRes = await fetch('https://text.pollinations.ai/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    model: 'openai',
+                    jsonMode: true
+                })
+            });
+            if (pollRes.ok) {
+                const text = await pollRes.text();
+                return res.status(200).json({ 
+                    content: text, 
+                    provider: 'pollinations' 
+                });
+            }
+        } catch (e) {
+            console.error('[AI PROXY] Pollinations path failed:', e.message);
+        }
+
         // If all paths fail
         res.status(503).json({ error: 'All neural paths failed. Please try again later.' });
 
