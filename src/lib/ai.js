@@ -74,12 +74,39 @@ const executeAIPulse = async (systemPrompt, userPrompt) => {
         console.warn('[NEWBI AI] ✗ Proxy connection failed:', e.message);
     }
 
+    // Try keyless direct Pollinations path from client side as a highly capable fallback
+    try {
+        console.log('[NEWBI AI] → Requesting keyless direct AI path (Pollinations)...');
+        const pollResponse = await fetch('https://text.pollinations.ai/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                model: 'openai',
+                jsonMode: true
+            })
+        });
+
+        if (pollResponse.ok) {
+            const text = await pollResponse.text();
+            console.log('[NEWBI AI] ✨ Success: Keyless Direct AI Path (Pollinations)');
+            return text;
+        }
+        console.warn('[NEWBI AI] ✗ Pollinations direct path response not OK');
+    } catch (pe) {
+        console.warn('[NEWBI AI] ✗ Pollinations direct path failed:', pe.message);
+    }
+
     // FINAL FAILPROOF FALLBACK
     console.error('[NEWBI AI] ✗ ✗ ✗ ALL AI PATHS COLLAPSED. Activating Absolute Failproof Mock.');
     
     const type = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
                  systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
-                 systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 'invoice';
+                 systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 
+                 systemPrompt.toLowerCase().includes('invoice') ? 'invoice' : 'proposal';
                  
     return JSON.stringify(getAbsoluteFailproofMock(type, userPrompt));
 };
@@ -122,6 +149,20 @@ const getAbsoluteFailproofMock = (type, userPrompt) => {
                 { description: "Brand Marketing Support", qty: 1, unit: "Campaign", price: 45000 }
             ],
             terms: "1. 50% Advance Fee required for activation.\n2. Balance due within 7 days of completion.\n3. All prices exclude GST.\n4. Proposal valid for 14 calendar days."
+        };
+    }
+
+    if (type === 'invoice') {
+        return {
+            clientName: clientName,
+            clientAddress: "Corporate Office, Business District, India",
+            clientGst: "Unregistered",
+            invoiceDate: new Date().toISOString().split('T')[0],
+            dueDate: new Date(Date.now() + 15*24*60*60*1000).toISOString().split('T')[0],
+            note: "Thank you for your business. Please process payment within 15 days.",
+            items: [
+                { name: "Professional Services", description: "Strategic Consultation & Operational Execution", qty: 1, price: 75000 }
+            ]
         };
     }
     
@@ -499,10 +540,7 @@ CRITICAL: Every field must have specific, relevant content based on the request.
 
     } catch (error) {
         console.warn('[NEWBI AI] ⚠️ AI Orchestration hit a limit or timed out. Activating Failproof Mock.', error.message);
-        const typeKey = systemPrompt.toLowerCase().includes('proposal') ? 'proposal' : 
-                        systemPrompt.toLowerCase().includes('contract') ? 'contract' : 
-                        systemPrompt.toLowerCase().includes('agreement') ? 'agreement' : 'invoice';
-        return getAbsoluteFailproofMock(typeKey, prompt);
+        return getAbsoluteFailproofMock(type, prompt);
     }
 };
 

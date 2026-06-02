@@ -111,6 +111,31 @@ export default defineConfig(({ mode }) => {
                     console.warn('[LOCAL AI DEV PROXY] Airforce failed:', e.message);
                   }
 
+                  // Try Pollinations proxy
+                  try {
+                    console.log('[LOCAL AI DEV PROXY] Trying Pollinations...');
+                    const pollRes = await fetch('https://text.pollinations.ai/', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        messages: [
+                          { role: 'system', content: systemPrompt },
+                          { role: 'user', content: userPrompt }
+                        ],
+                        model: 'openai',
+                        jsonMode: true
+                      })
+                    });
+                    if (pollRes.ok) {
+                      const text = await pollRes.text();
+                      res.statusCode = 200;
+                      res.end(JSON.stringify({ content: text, provider: 'pollinations' }));
+                      return;
+                    }
+                  } catch (e) {
+                    console.warn('[LOCAL AI DEV PROXY] Pollinations failed:', e.message);
+                  }
+
                   res.statusCode = 503;
                   res.end(JSON.stringify({ error: 'All dev AI paths failed.' }));
                 } catch (err) {
