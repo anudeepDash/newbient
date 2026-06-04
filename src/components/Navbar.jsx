@@ -24,7 +24,7 @@ const Navbar = () => {
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
 
-    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer';
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'developer' || user?.role === 'founder';
 
     const mobilePrimaryLinks = [
         { name: 'HOME', path: '/', icon: Home },
@@ -168,13 +168,13 @@ const Navbar = () => {
                 <div className="rounded-full px-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hidden md:block absolute right-6">
                     <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-2xl rounded-full border border-white/10 -z-10" />
                     <div className="flex items-center h-14 gap-4 relative z-10">
-                        {user && ['developer', 'super_admin'].includes(user.role) && (
+                        {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
                             <Link to="/admin/system-command" className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-all">
                                 <Settings size={14} />
                             </Link>
                         )}
                         {user && <div className="h-4 w-px bg-white/10" />}
-                        {user && ['developer', 'super_admin'].includes(user.role) && (
+                        {user && ['developer', 'super_admin', 'founder'].includes(user.role) && (
                             <Link 
                                 to="/admin" 
                                 className="p-2 rounded-xl bg-neon-blue/10 border border-neon-blue/20 text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
@@ -202,6 +202,7 @@ const Navbar = () => {
                                         <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
                                             {(() => {
                                                 if (user.role === 'developer') return 'DEV';
+                                                if (user.role === 'founder') return 'FOUNDER';
                                                 if (user.role === 'super_admin') return 'ADMIN';
                                                 const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
                                                 const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
@@ -363,6 +364,7 @@ const Navbar = () => {
                                                 <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate">
                                                     {(() => {
                                                         if (user.role === 'developer') return 'DEV';
+                                                        if (user.role === 'founder') return 'FOUNDER';
                                                         if (user.role === 'super_admin') return 'ADMIN';
                                                         const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
                                                         const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
@@ -381,7 +383,7 @@ const Navbar = () => {
                                         </button>
                                     </div>
 
-                                    {['developer', 'super_admin'].includes(user.role) && (
+                                    {['developer', 'super_admin', 'founder'].includes(user.role) && (
                                         <Link 
                                             to="/admin" 
                                             onClick={() => setIsOpen(false)}

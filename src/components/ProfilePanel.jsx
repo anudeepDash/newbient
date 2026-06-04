@@ -223,6 +223,11 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     DEVELOPER
                                                 </span>
                                             )}
+                                            {user.role === 'founder' && (
+                                                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-[#FFD700]/10 text-[#FFD700] border-[#FFD700]/20 animate-pulse">
+                                                    FOUNDER
+                                                </span>
+                                            )}
                                             {user.role === 'super_admin' && (
                                                 <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-neon-blue/10 text-neon-blue border-neon-blue/20">
                                                     SYSTEM ADMIN
@@ -243,7 +248,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                     TRIBE MEMBER
                                                 </span>
                                             )}
-                                            {(!isApprovedCreator && !isApprovedArtist && !user.hasJoinedTribe && user.role !== 'developer' && user.role !== 'super_admin') && (
+                                            {(!isApprovedCreator && !isApprovedArtist && !user.hasJoinedTribe && user.role !== 'developer' && user.role !== 'founder' && user.role !== 'super_admin') && (
                                                 <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border bg-white/5 text-gray-500 border-white/5">
                                                     MEMBER
                                                 </span>

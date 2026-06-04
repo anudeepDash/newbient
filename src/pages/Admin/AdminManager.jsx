@@ -70,7 +70,10 @@ const getAdminRoleOptions = (currentRole, canManageDevelopers) => {
         { value: 'gate_manager', label: 'Gate Manager' },
         { value: 'blog_writer', label: 'Blog Writer' },
         { value: 'super_admin', label: 'Super Admin' },
-        ...(canManageDevelopers ? [{ value: 'developer', label: 'Developer' }] : [])
+        ...(canManageDevelopers ? [
+            { value: 'founder', label: 'Founder' },
+            { value: 'developer', label: 'Developer' }
+        ] : [])
     ];
     // Include legacy fallback options in list if they are currently active in DB
     if (currentRole === 'editor' && !opts.some(o => o.value === 'editor')) {
@@ -83,7 +86,7 @@ const getAdminRoleOptions = (currentRole, canManageDevelopers) => {
 };
 
 const getSelectAccentColor = (role) => {
-    if (role === 'super_admin' || role === 'developer') return 'neon-pink';
+    if (role === 'founder' || role === 'super_admin' || role === 'developer') return 'neon-pink';
     if (role === 'content_admin' || role === 'editor') return 'neon-green';
     return 'neon-blue';
 };
@@ -237,18 +240,18 @@ const AdminManager = () => {
 
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-    const canManageDevelopers = user?.role === 'developer';
+    const canManageDevelopers = user?.role === 'developer' || user?.role === 'founder';
     const displayAdmins = canManageDevelopers
         ? admins
-        : admins.filter(a => a.role !== 'developer');
+        : admins.filter(a => a.role !== 'developer' && a.role !== 'founder');
 
     const canEditRoles = (targetRole) => {
-        if (user.role === 'developer') return true;
+        if (user.role === 'developer' || user.role === 'founder') return true;
         if (user.role === 'super_admin' && (targetRole === 'editor' || targetRole === 'pending' || targetRole === 'scanner' || targetRole === 'content_admin' || targetRole === 'gate_manager' || targetRole === 'blog_writer')) return true;
         return false;
     };
 
-    if (user?.role !== 'super_admin' && user?.role !== 'developer') {
+    if (user?.role !== 'super_admin' && user?.role !== 'developer' && user?.role !== 'founder') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#020202]">
                 <div className="text-center p-12 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] max-w-md mx-auto">
@@ -1022,6 +1025,7 @@ const AdminManager = () => {
                                             const isSelf = admin.email === user.email;
                                             const roleColors = {
                                                 developer: { text: 'text-white', border: 'border-white/20', bg: 'bg-white/5', name: 'Developer', glow: 'from-white/30 to-zinc-500/30' },
+                                                founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder', glow: 'from-[#FFD700]/30 to-amber-500/30' },
                                                 super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin', glow: 'from-neon-pink/30 to-purple-500/30' },
                                                 content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin', glow: 'from-neon-green/30 to-teal-500/30' },
                                                 gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager', glow: 'from-yellow-500/30 to-orange-500/30' },
@@ -1166,6 +1170,7 @@ const AdminManager = () => {
                                                         const isSelf = admin.email === user.email;
                                                         const roleColors = {
                                                             developer: { text: 'text-white', border: 'border-white/20', bg: 'bg-white/5', name: 'Developer' },
+                                                            founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder' },
                                                             super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin' },
                                                             content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin' },
                                                             gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager' },
