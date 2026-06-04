@@ -257,7 +257,7 @@ const Dashboard = () => {
     const [isResetting, setIsResetting] = useState(false);
 
     useEffect(() => {
-        if (user && (user.role === 'super_admin' || user.role === 'developer')) {
+        if (user && (user.role === 'super_admin' || user.role === 'developer' || user.role === 'founder')) {
             archivePastEvents();
         }
     }, [user, archivePastEvents]);
@@ -319,11 +319,11 @@ const Dashboard = () => {
             value: upcomingEvents?.filter(e => e.isTicketed).length || 0, 
             icon: Ticket, color: 'neon-pink', detail: `${ticketOrders?.filter(o => o.status === 'pending').length || 0} Pending Verifications`, link: '/admin/ticketing' 
         },
-        { 
+        ...(['developer', 'founder'].includes(user?.role) ? [{ 
             label: 'Finance Board', 
             value: 'Active', 
             icon: IndianRupee, color: 'neon-green', detail: `Spends & Cash Flow Ledgers`, link: '/admin/finance' 
-        },
+        }] : []),
         { 
             label: 'Active Briefs', 
             value: (proposals?.length || 0) + (agreements?.length || 0), 
@@ -480,8 +480,12 @@ const Dashboard = () => {
             <div className="space-y-32">
                     {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
                         <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
-                            <ControlCard title="Finance Board" desc="Cashflow, spends, invoices and income tracking." icon={TrendingUp} color="neon-green" link="/admin/finance" isNew isHidden={cards.invoices} />
-                            <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
+                            {['developer', 'founder'].includes(user?.role) && (
+                                <>
+                                    <ControlCard title="Finance Board" desc="Cashflow, spends, invoices and income tracking." icon={TrendingUp} color="neon-green" link="/admin/finance" isNew isHidden={cards.invoices} />
+                                    <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
+                                </>
+                            )}
                             <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
                         </DashboardSection>

@@ -59,7 +59,7 @@ const ContractManagement = () => {
     };
 
     const vaultTabs = [
-        { name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' },
+        ...(['developer', 'founder'].includes(user?.role) ? [{ name: 'Invoices', path: '/admin/invoices', icon: FileText, color: 'text-neon-blue' }] : []),
         { name: 'Proposals', path: '/admin/proposals', icon: FileSpreadsheet, color: 'text-neon-green' },
         { name: 'Contracts', path: '/admin/agreements', icon: ShieldCheck, color: 'text-neon-purple' },
     ];

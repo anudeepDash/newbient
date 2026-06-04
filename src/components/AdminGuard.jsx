@@ -76,6 +76,7 @@ const AdminGuard = ({ children }) => {
 
 
     if (!user || (
+        user.role !== 'founder' &&
         user.role !== 'super_admin' && 
         user.role !== 'developer' && 
         user.role !== 'editor' && 

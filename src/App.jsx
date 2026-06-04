@@ -75,6 +75,7 @@ const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
 // Guards & Components
 import AuthOverlay from './components/auth/AuthOverlay';
 import AdminGuard from './components/AdminGuard';
+import FinanceGuard from './components/FinanceGuard';
 import MaintenanceGuard from './components/MaintenanceGuard';
 import NewbiToast from './components/ui/NewbiToast';
 
@@ -150,13 +151,13 @@ function AppContent() {
             <Route path="admin" element={<AdminGuard><Dashboard /></AdminGuard>} />
             <Route path="admin/system-command" element={<AdminGuard><DevSettings /></AdminGuard>} />
             <Route path="admin/manage-admins" element={<AdminGuard><MaintenanceGuard featureId="admins"><AdminManager /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/finance" element={<AdminGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/spends" element={<AdminGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/other-income" element={<AdminGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/payees" element={<AdminGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/invoices" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/create-invoice" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></AdminGuard>} />
-            <Route path="admin/edit-invoice/:id" element={<AdminGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/finance" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><FinanceDashboard /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/spends" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><SpendsManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/other-income" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><OtherIncomeManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/payees" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><PayeeRegistry /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/invoices" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceManagement /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/create-invoice" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
+            <Route path="admin/edit-invoice/:id" element={<AdminGuard><FinanceGuard><MaintenanceGuard featureId="invoices"><InvoiceGenerator /></MaintenanceGuard></FinanceGuard></AdminGuard>} />
             <Route path="admin/announcements" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><AnnouncementsManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/concertzone" element={<AdminGuard><MaintenanceGuard featureId="concerts"><ConcertManager /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/messages" element={<AdminGuard><MaintenanceGuard featureId="messages"><MessageManager /></MaintenanceGuard></AdminGuard>} />
