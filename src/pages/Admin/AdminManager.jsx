@@ -807,7 +807,7 @@ const AdminManager = () => {
                                             className="group relative flex flex-col h-full"
                                         >
                                             <div className="absolute inset-0 rounded-[2.5rem] bg-yellow-500/5 opacity-100 blur-xl pointer-events-none duration-500" />
-                                            <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 border-yellow-500/10 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[340px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                            <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 border-yellow-500/10 hover:border-yellow-500/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[340px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                 
                                                 <div>
@@ -860,7 +860,7 @@ const AdminManager = () => {
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                    <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                    <Card className="min-w-[800px] min-h-[450px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                         <table className="w-full text-left">
                                             <thead>
                                                 <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -905,7 +905,6 @@ const AdminManager = () => {
                                                                         placeholder="DISPATCH"
                                                                         accentColor="neon-green"
                                                                         className="h-9"
-                                                                        position="top"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -1008,7 +1007,6 @@ const AdminManager = () => {
                                                         placeholder="DISPATCH"
                                                         accentColor="neon-green"
                                                         className="h-10"
-                                                        position="top"
                                                     />
                                                 </div>
                                             </div>
@@ -1058,7 +1056,7 @@ const AdminManager = () => {
                                                         "absolute inset-0 rounded-[2.5rem] opacity-0 group-hover:opacity-10 transition-opacity blur-2xl duration-700 pointer-events-none bg-gradient-to-br",
                                                         roleStyle.glow
                                                     )} />
-                                                    <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 hover:border-white/10 border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] overflow-hidden border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
+                                                    <Card className="relative p-6 sm:p-8 bg-zinc-950/60 group-hover:bg-zinc-900/40 hover:border-white/10 border-white/5 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-500 shadow-xl flex flex-col justify-between h-full min-h-[380px] border hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] gap-6">
                                                         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-100 pointer-events-none" />
                                                         
                                                         <div>
@@ -1165,7 +1163,7 @@ const AdminManager = () => {
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 pb-36 -mb-36">
-                                        <Card className="min-w-[800px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
+                                        <Card className="min-w-[800px] min-h-[450px] bg-zinc-900/40 backdrop-blur-3xl border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-0 border">
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -1220,7 +1218,6 @@ const AdminManager = () => {
                                                                                 disabled={isSelf}
                                                                                 accentColor={getSelectAccentColor(admin.role)}
                                                                                 className="h-10"
-                                                                                position="top"
                                                                             />
                                                                         </div>
                                                                     ) : (

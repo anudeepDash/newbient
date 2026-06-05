@@ -120,7 +120,7 @@ const StudioSelect = ({
                             position === "top" ? "bottom-full mb-3" : "top-full mt-3"
                         )}
                     >
-                        <div className="max-h-[240px] overflow-y-auto py-2 custom-scrollbar">
+                        <div className="max-h-[320px] overflow-y-auto py-2 custom-scrollbar">
                             {options.map((option) => {
                                 const active = isSelected(option.value);
                                 return (
