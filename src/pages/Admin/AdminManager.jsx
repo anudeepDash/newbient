@@ -64,17 +64,19 @@ const getPageNumbers = (currentPage, totalPages) => {
     return pages;
 };
 
-const getAdminRoleOptions = (currentRole, canManageDevelopers) => {
+const getAdminRoleOptions = (currentRole, canManageDevelopers, canManageFounders) => {
     const opts = [
         { value: 'content_admin', label: 'Content Admin' },
         { value: 'gate_manager', label: 'Gate Manager' },
         { value: 'blog_writer', label: 'Blog Writer' },
-        { value: 'super_admin', label: 'Super Admin' },
-        ...(canManageDevelopers ? [
-            { value: 'founder', label: 'Founder' },
-            { value: 'developer', label: 'Developer' }
-        ] : [])
+        { value: 'super_admin', label: 'Super Admin' }
     ];
+    if (canManageFounders) {
+        opts.push({ value: 'founder', label: 'Founder' });
+    }
+    if (canManageDevelopers) {
+        opts.push({ value: 'developer', label: 'Developer' });
+    }
     // Include legacy fallback options in list if they are currently active in DB
     if (currentRole === 'editor' && !opts.some(o => o.value === 'editor')) {
         opts.push({ value: 'editor', label: 'Content Admin (Legacy)' });
@@ -241,13 +243,18 @@ const AdminManager = () => {
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
     const canManageDevelopers = user?.role === 'developer' || user?.role === 'founder';
-    const displayAdmins = canManageDevelopers
+    const canManageFounders = user?.role === 'developer' || user?.role === 'founder' || user?.role === 'super_admin';
+    const displayAdmins = user?.role === 'developer' || user?.role === 'founder'
         ? admins
-        : admins.filter(a => a.role !== 'developer' && a.role !== 'founder');
+        : user?.role === 'super_admin'
+            ? admins.filter(a => a.role !== 'developer')
+            : admins.filter(a => a.role !== 'developer' && a.role !== 'founder');
 
     const canEditRoles = (targetRole) => {
-        if (user.role === 'developer' || user.role === 'founder') return true;
-        if (user.role === 'super_admin' && (targetRole === 'editor' || targetRole === 'pending' || targetRole === 'scanner' || targetRole === 'content_admin' || targetRole === 'gate_manager' || targetRole === 'blog_writer')) return true;
+        if (user?.role === 'developer' || user?.role === 'founder') return true;
+        if (user?.role === 'super_admin') {
+            return targetRole !== 'developer';
+        }
         return false;
     };
 
@@ -499,7 +506,8 @@ const AdminManager = () => {
                                     { id: 'gate_manager', label: 'Gate Manager' },
                                     { id: 'blog_writer', label: 'Blog Writer' },
                                     { id: 'super_admin', label: 'Super Admin' },
-                                    { id: 'developer', label: 'Developer' }
+                                    ...(canManageFounders ? [{ id: 'founder', label: 'Founder' }] : []),
+                                    ...(canManageDevelopers ? [{ id: 'developer', label: 'Developer' }] : [])
                                 ].map((filter) => (
                                     <button
                                         key={filter.id}
@@ -839,7 +847,7 @@ const AdminManager = () => {
                                                         <StudioSelect
                                                             value=""
                                                             onChange={(val) => handleApprove(admin.id, val)}
-                                                            options={getAdminRoleOptions('', canManageDevelopers)}
+                                                            options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
                                                             placeholder="DISPATCH CLEARANCE"
                                                             accentColor="neon-green"
                                                             className="h-12"
@@ -893,7 +901,7 @@ const AdminManager = () => {
                                                                     <StudioSelect
                                                                         value=""
                                                                         onChange={(val) => handleApprove(admin.id, val)}
-                                                                        options={getAdminRoleOptions('', canManageDevelopers)}
+                                                                        options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
                                                                         placeholder="DISPATCH"
                                                                         accentColor="neon-green"
                                                                         className="h-9"
@@ -956,7 +964,7 @@ const AdminManager = () => {
                                                     <StudioSelect
                                                         value={newAdminRole}
                                                         onChange={(val) => setNewAdminRole(val)}
-                                                        options={getAdminRoleOptions('', canManageDevelopers)}
+                                                        options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
                                                         accentColor="neon-green"
                                                         className="h-14"
                                                     />
@@ -995,7 +1003,7 @@ const AdminManager = () => {
                                                     <StudioSelect
                                                         value=""
                                                         onChange={(val) => handleApprove(admin.id, val)}
-                                                        options={getAdminRoleOptions('', canManageDevelopers)}
+                                                        options={getAdminRoleOptions('', canManageDevelopers, canManageFounders)}
                                                         placeholder="DISPATCH"
                                                         accentColor="neon-green"
                                                         className="h-10"
@@ -1081,11 +1089,11 @@ const AdminManager = () => {
 
                                                         <div className="flex flex-col gap-2 relative z-30">
                                                             <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest leading-none">RANK / CLEARANCE</p>
-                                                            {canManageDevelopers ? (
+                                                            {canEditRoles(admin.role) ? (
                                                                 <StudioSelect
                                                                     value={admin.role}
                                                                     onChange={(val) => handleUpdateRole(admin.id, val)}
-                                                                    options={getAdminRoleOptions(admin.role, canManageDevelopers)}
+                                                                    options={getAdminRoleOptions(admin.role, canManageDevelopers, canManageFounders)}
                                                                     disabled={isSelf}
                                                                     accentColor={getSelectAccentColor(admin.role)}
                                                                     className="h-12"
@@ -1201,12 +1209,12 @@ const AdminManager = () => {
                                                                     </div>
                                                                 </td>
                                                                 <td className="p-6 md:p-8">
-                                                                    {canManageDevelopers ? (
+                                                                    {canEditRoles(admin.role) ? (
                                                                         <div className="relative w-44 z-30">
                                                                             <StudioSelect
                                                                                 value={admin.role}
                                                                                 onChange={(val) => handleUpdateRole(admin.id, val)}
-                                                                                options={getAdminRoleOptions(admin.role, canManageDevelopers)}
+                                                                                options={getAdminRoleOptions(admin.role, canManageDevelopers, canManageFounders)}
                                                                                 disabled={isSelf}
                                                                                 accentColor={getSelectAccentColor(admin.role)}
                                                                                 className="h-10"
