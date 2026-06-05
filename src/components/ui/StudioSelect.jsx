@@ -108,7 +108,6 @@ const StudioSelect = ({
                 />
             </div>
 
-
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -117,7 +116,10 @@ const StudioSelect = ({
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         className="absolute z-[100] top-full mt-3 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden"
                     >
-                        <div className="max-h-[300px] overflow-y-auto py-2 custom-scrollbar">
+                        <div className={cn(
+                            "py-2 custom-scrollbar",
+                            options.length > 7 ? "max-h-[300px] overflow-y-auto" : "overflow-y-visible"
+                        )}>
                             {options.map((option) => {
                                 const active = isSelected(option.value);
                                 return (
