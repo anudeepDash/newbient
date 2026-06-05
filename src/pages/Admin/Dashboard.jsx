@@ -481,10 +481,10 @@ const Dashboard = () => {
                     {user?.role !== 'scanner' && user?.role !== 'gate_manager' && user?.role !== 'blog_writer' && (
                         <DashboardSection title="Finance & Strategic Assets" gradient="from-neon-green via-neon-blue to-white" icon={<TrendingUp size={20} />}>
                             {['developer', 'founder'].includes(user?.role) && (
-                                <>
-                                    <ControlCard title="Finance Board" desc="Cashflow, spends, invoices and income tracking." icon={TrendingUp} color="neon-green" link="/admin/finance" isNew isHidden={cards.invoices} />
-                                    <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
-                                </>
+                                <ControlCard title="Finance Board" desc="Cashflow, spends, invoices and income tracking." icon={TrendingUp} color="neon-green" link="/admin/finance" isNew isHidden={cards.invoices} />
+                            )}
+                            {['developer', 'founder'].includes(user?.role) && (
+                                <ControlCard title="Invoices" desc="Financial tracking and settlement logs." icon={FileText} color="neon-blue" link="/admin/invoices" count={invoices.length} isHidden={cards.invoices} />
                             )}
                             <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
