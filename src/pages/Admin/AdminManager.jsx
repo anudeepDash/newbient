@@ -1210,7 +1210,7 @@ const AdminManager = () => {
                                                                 </td>
                                                                 <td className="p-6 md:p-8">
                                                                     {canEditRoles(admin.role) ? (
-                                                                        <div className="relative w-44 z-30">
+                                                                        <div className="relative w-44">
                                                                             <StudioSelect
                                                                                 value={admin.role}
                                                                                 onChange={(val) => handleUpdateRole(admin.id, val)}

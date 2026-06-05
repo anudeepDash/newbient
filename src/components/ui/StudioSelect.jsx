@@ -83,7 +83,7 @@ const StudioSelect = ({
     };
 
     return (
-        <div className={cn("relative w-full", className)} ref={containerRef}>
+        <div className={cn("relative w-full", isOpen ? "z-[60]" : "z-10", className)} ref={containerRef}>
             <div 
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={cn(
