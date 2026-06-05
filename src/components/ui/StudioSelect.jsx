@@ -11,7 +11,8 @@ const StudioSelect = ({
     className,
     multi = false,
     accentColor = "neon-blue",
-    disabled = false
+    disabled = false,
+    position = "bottom"
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
@@ -111,15 +112,15 @@ const StudioSelect = ({
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: position === "top" ? -10 : 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-[100] top-full mt-3 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden"
+                        exit={{ opacity: 0, y: position === "top" ? -10 : 10, scale: 0.95 }}
+                        className={cn(
+                            "absolute z-[100] left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden",
+                            position === "top" ? "bottom-full mb-3" : "top-full mt-3"
+                        )}
                     >
-                        <div className={cn(
-                            "py-2 custom-scrollbar",
-                            options.length > 7 ? "max-h-[300px] overflow-y-auto" : "overflow-y-visible"
-                        )}>
+                        <div className="max-h-[240px] overflow-y-auto py-2 custom-scrollbar">
                             {options.map((option) => {
                                 const active = isSelected(option.value);
                                 return (

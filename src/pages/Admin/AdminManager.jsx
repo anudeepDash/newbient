@@ -905,6 +905,7 @@ const AdminManager = () => {
                                                                         placeholder="DISPATCH"
                                                                         accentColor="neon-green"
                                                                         className="h-9"
+                                                                        position="top"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -1007,6 +1008,7 @@ const AdminManager = () => {
                                                         placeholder="DISPATCH"
                                                         accentColor="neon-green"
                                                         className="h-10"
+                                                        position="top"
                                                     />
                                                 </div>
                                             </div>
@@ -1218,6 +1220,7 @@ const AdminManager = () => {
                                                                                 disabled={isSelf}
                                                                                 accentColor={getSelectAccentColor(admin.role)}
                                                                                 className="h-10"
+                                                                                position="top"
                                                                             />
                                                                         </div>
                                                                     ) : (
