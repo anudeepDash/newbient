@@ -156,6 +156,11 @@ const AdminManager = () => {
 
     const handleAddAdmin = async (e) => {
         e.preventDefault();
+        const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
+        if (!canAuthorizeStaff) {
+            useStore.getState().addToast("You don't have permission to authorize new staff.", 'error');
+            return;
+        }
         try {
             const q = query(collection(db, "admins"), where("email", "==", newAdminEmail));
             const existing = await getDocs(q);
@@ -181,6 +186,11 @@ const AdminManager = () => {
     };
 
     const handleApprove = async (id, role) => {
+        const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
+        if (!canAuthorizeStaff) {
+            useStore.getState().addToast("You don't have permission to authorize new staff.", 'error');
+            return;
+        }
         try {
             await updateDoc(doc(db, "admins", id), { role: role });
             fetchAdmins();
@@ -192,6 +202,10 @@ const AdminManager = () => {
     };
 
     const handleUpdateRole = async (id, newRole) => {
+        if (!canEditRoles(newRole)) {
+            useStore.getState().addToast("You don't have permission to change this person's role.", 'error');
+            return;
+        }
         try {
             await updateDoc(doc(db, "admins", id), { role: newRole });
             fetchAdmins();
@@ -242,8 +256,9 @@ const AdminManager = () => {
 
     const [isInviteOpen, setIsInviteOpen] = useState(false);
 
+    const canAuthorizeStaff = user?.role === 'developer' || user?.role === 'founder';
     const canManageDevelopers = user?.role === 'developer' || user?.role === 'founder';
-    const canManageFounders = user?.role === 'developer' || user?.role === 'founder' || user?.role === 'super_admin';
+    const canManageFounders = user?.role === 'developer' || user?.role === 'founder';
     const displayAdmins = user?.role === 'developer' || user?.role === 'founder'
         ? admins
         : user?.role === 'super_admin'
@@ -252,9 +267,6 @@ const AdminManager = () => {
 
     const canEditRoles = (targetRole) => {
         if (user?.role === 'developer' || user?.role === 'founder') return true;
-        if (user?.role === 'super_admin') {
-            return targetRole !== 'developer';
-        }
         return false;
     };
 
@@ -354,7 +366,7 @@ const AdminManager = () => {
             accentColor="neon-green"
             hideTabs={true}
             action={
-                activeTab === 'admins' && (
+                activeTab === 'admins' && canAuthorizeStaff && (
                     <button
                         onClick={() => setIsInviteOpen(!isInviteOpen)}
                         className={cn(
@@ -447,7 +459,7 @@ const AdminManager = () => {
                     {[
                         { id: 'members', label: 'Personnel Registry', count: members.length, icon: Users },
                         { id: 'admins', label: 'Command Staff', count: admins.filter(a => a.role !== 'pending').length, icon: Shield },
-                        { id: 'requests', label: 'Clearance Queries', count: pendingRequests.length, icon: Clock }
+                        ...(canAuthorizeStaff ? [{ id: 'requests', label: 'Clearance Queries', count: pendingRequests.length, icon: Clock }] : [])
                     ].map(tab => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -821,7 +833,7 @@ const AdminManager = () => {
                             </>
                         )}
                     </motion.div>
-                ) : activeTab === 'requests' ? (
+                ) : (activeTab === 'requests' && canAuthorizeStaff) ? (
                     <motion.div
                         key="requests"
                         initial={{ opacity: 0, y: 15 }}
@@ -1021,7 +1033,7 @@ const AdminManager = () => {
                         </AnimatePresence>
 
                         {/* Inline Pending Invitations Block inside Command Staff tab */}
-                        {admins.filter(a => a.role === 'pending').length > 0 && (
+                        {canAuthorizeStaff && admins.filter(a => a.role === 'pending').length > 0 && (
                             <section className="space-y-6">
                                 <h2 className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.35em] flex items-center gap-2 font-heading italic">
                                     <Clock size={14} className="animate-pulse" /> PENDING CREDENTIAL DISPATCHES
