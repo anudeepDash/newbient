@@ -26,7 +26,7 @@ import { cn } from '../lib/utils';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const NICHES = [
@@ -436,7 +436,8 @@ const CreatorJoin = () => {
                 return;
             }
 
-            await confirmationResult.confirm(fullCode);
+            const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, fullCode);
+            await linkWithCredential(auth.currentUser, credential);
             setPhoneVerified(true);
             useStore.getState().addToast("Phone verified successfully!", 'success');
             // Auto advance
@@ -445,7 +446,11 @@ const CreatorJoin = () => {
             }, 1200);
         } catch (err) {
             console.error("OTP Verification Error:", err);
-            useStore.getState().addToast("Invalid code. Please try again.", 'error');
+            if (err.code === 'auth/credential-already-in-use') {
+                useStore.getState().addToast("This phone number is already linked to another account.", 'error');
+            } else {
+                useStore.getState().addToast("Invalid code. Please try again.", 'error');
+            }
         } finally {
             setIsVerifyingOtp(false);
         }
