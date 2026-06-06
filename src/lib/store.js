@@ -180,11 +180,17 @@ export const useStore = create((set, get) => ({
         data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
         data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n");
 
-        // Auto-detect resource type from file MIME
+        // Auto-detect resource type from file MIME & extension
+        const extension = file.name?.split('.').pop()?.toLowerCase();
+        const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
+
         let resourceType = "image";
-        if (file.type?.startsWith("video/")) resourceType = "video";
-        else if (file.type === "application/pdf") resourceType = "raw"; // Fallback to raw resource type for PDFs to avoid Cloudinary security blocking
-        else if (file.type?.startsWith("application/")) resourceType = "raw";
+        if (file.type?.startsWith("video/") || videoExtensions.includes(extension)) {
+            resourceType = "video";
+        } else if (file.type === "application/pdf" || file.type?.startsWith("application/") || (extension && !imageExtensions.includes(extension))) {
+            resourceType = "raw";
+        }
 
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
 
@@ -204,11 +210,68 @@ export const useStore = create((set, get) => ({
             return uploadedFile.secure_url;
         } catch (error) {
             console.error("Cloudinary Upload Error Details:", error);
-            // Re-throw with more context if it's not already a descriptive error
-            const message = error.message.includes("Upload failed") 
+            // Re-throw with more context if it's a generic connection/unknown error
+            const message = (!error.message || error.message.includes("failed") || error.message.includes("Failed"))
                 ? "Couldn't upload your file. Please check your internet connection or try a smaller file." 
-                : `Upload didn't go through — please try again.`;
+                : error.message;
             throw new Error(message);
+        }
+    },
+
+    // Centralized Document Upload Utility (tries Firebase Storage first, falls back to Cloudinary raw upload)
+    uploadDocumentFile: async (file) => {
+        if (!file) return null;
+        
+        const uniqueId = Math.random().toString(36).substring(2, 9);
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const storagePath = `documents/${uniqueId}_${cleanName}`;
+        
+        // Try Firebase Storage first
+        try {
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+            return { url, storagePath };
+        } catch (firebaseError) {
+            console.warn("Firebase Storage upload failed, falling back to Cloudinary raw upload:", firebaseError);
+            
+            // Cloudinary fallback
+            const data = new FormData();
+            data.append("file", file);
+            data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "maw1e4ud");
+            data.append("cloud_name", import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n");
+
+            // Auto-detect resource type from extension/MIME
+            const extension = file.name?.split('.').pop()?.toLowerCase();
+            const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'];
+            
+            let resourceType = "raw";
+            if (file.type?.startsWith("video/") || videoExtensions.includes(extension)) {
+                resourceType = "video";
+            } else if (file.type?.startsWith("image/") || imageExtensions.includes(extension)) {
+                resourceType = "image";
+            }
+
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dgtalrz4n";
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { 
+                    method: "POST", 
+                    body: data 
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error?.message || "Upload failed");
+                }
+                
+                const uploadedFile = await res.json();
+                return { url: uploadedFile.secure_url, storagePath: "" };
+            } catch (cloudinaryError) {
+                console.error("Cloudinary fallback upload failed:", cloudinaryError);
+                throw new Error(cloudinaryError.message || "Upload failed. Please check your network or file size.");
+            }
         }
     },
     announcements: [],
@@ -241,6 +304,7 @@ export const useStore = create((set, get) => ({
     fcmToken: null,
     paymentDetails: { upiId: '', qrCodeUrl: '' }, // New state
     coupons: [], // Coupon Code System
+    documents: [], // Document Hub
     portfolioCategories: [], // Dynamic categories
     toasts: [], // Ephemeral UI notifications
     aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
@@ -356,6 +420,7 @@ export const useStore = create((set, get) => ({
         const unsubClientRequests = sub('client_requests', 'clientRequests');
         const unsubTicketOrders = sub('ticket_orders', 'ticketOrders');
         const unsubCoupons = sub('coupons', 'coupons');
+        const unsubDocuments = sub('documents', 'documents');
 
         // Site Settings Subscription (Single Doc)
         const unsub9 = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
@@ -433,7 +498,7 @@ export const useStore = create((set, get) => ({
             unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsubCategory(); unsubGuestlist(); unsubMessages(); unsubCreators(); unsubCampaigns(); unsubProposals(); unsubGiveaways(); unsubGiveawayEntries();
             unsubPosts(); unsubSubscribers(); unsubAllUsers(); unsubAdmins(); unsubArtists(); unsubAgreements();
             unsubClientRequests(); unsubTicketOrders();
-            unsubCoupons();
+            unsubCoupons(); unsubDocuments();
             unsubAI();
             unsubSpends(); unsubOtherIncomes(); unsubFinancePayees();
         };
@@ -2521,5 +2586,35 @@ export const useStore = create((set, get) => ({
         } catch (err) {
             console.error("Failed to clear access logs:", err);
         }
+    },
+
+    // ========== Document Hub ==========
+    addDocument: async (docData) => {
+        const cleanData = { ...docData };
+        delete cleanData.id;
+        cleanData.createdAt = new Date().toISOString();
+        cleanData.updatedAt = new Date().toISOString();
+        const docRef = await addDoc(collection(db, 'documents'), cleanData);
+        return docRef.id;
+    },
+    updateDocument: async (id, updates) => {
+        const cleanUpdates = { ...updates };
+        delete cleanUpdates.id;
+        cleanUpdates.updatedAt = new Date().toISOString();
+        await updateDoc(doc(db, 'documents', id), cleanUpdates);
+    },
+    deleteDocument: async (id) => {
+        // Check if document has a storage file to clean up
+        const document = get().documents.find(d => d.id === id);
+        if (document?.storagePath) {
+            try {
+                const storageRef = ref(storage, document.storagePath);
+                const { deleteObject } = await import('firebase/storage');
+                await deleteObject(storageRef);
+            } catch (e) {
+                console.warn('Failed to delete storage file:', e);
+            }
+        }
+        await deleteDoc(doc(db, 'documents', id));
     },
 }));

@@ -70,6 +70,8 @@ const DigitalTicket = lazy(() => import('./pages/DigitalTicket'));
 const NewsletterStudio = lazy(() => import('./pages/Admin/NewsletterStudio'));
 const PayeeRegistration = lazy(() => import('./pages/PayeeRegistration'));
 const VerifyPayout = lazy(() => import('./pages/VerifyPayout'));
+const DocumentHub = lazy(() => import('./pages/Admin/DocumentHub'));
+const DocumentViewer = lazy(() => import('./pages/DocumentViewer'));
 
 
 // Guards & Components
@@ -194,8 +196,10 @@ function AppContent() {
             <Route path="admin/newsletter/studio" element={<AdminGuard><MaintenanceGuard featureId="blog_announcements"><NewsletterStudio /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/scanner" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><EventScanner /></MaintenanceGuard></AdminGuard>} />
             <Route path="admin/ticketing" element={<AdminGuard><MaintenanceGuard featureId="ticketing"><TicketingManagement /></MaintenanceGuard></AdminGuard>} />
+            <Route path="admin/documents" element={<AdminGuard><DocumentHub /></AdminGuard>} />
 
             <Route path="campaign/:id" element={<CampaignPublicView />} />
+            <Route path="doc/:id" element={<DocumentViewer />} />
             <Route path="auth/action" element={<ActionHandler />} />
           </Route>
         </Routes>

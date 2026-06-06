@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, ListChecks, Sparkles, LayoutGrid } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, Sparkles, LayoutGrid, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import AdminDashboardLink from './AdminDashboardLink';
@@ -12,6 +12,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
         { name: 'GIGS', path: '/admin/volunteer-gigs', icon: Users, color: 'text-neon-green' },
         { name: 'GUESTLISTS', path: '/admin/guestlists', icon: ListChecks, color: 'text-neon-blue' },
         { name: 'FORMS', path: '/admin/forms', icon: ClipboardList, color: 'text-neon-pink' },
+        { name: 'DOCUMENTS', path: '/admin/documents', icon: FolderOpen, color: 'text-neon-blue' },
     ];
 
     const tabs = customTabs || defaultTabs;
