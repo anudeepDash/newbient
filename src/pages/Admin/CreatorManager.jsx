@@ -175,7 +175,7 @@ const CreatorManager = () => {
 
             try {
                 const { addCreator } = useStore.getState();
-                await Promise.all(creatorsToImport.map(c => addCreator(c)));
+                await Promise.all(creatorsToImport.map(c => addCreator(c, false)));
                 useStore.getState().addToast(`Imported ${creatorsToImport.length} creators successfully!`, 'success');
             } catch (err) {
                 console.error("CSV Import error:", err);
@@ -1096,6 +1096,7 @@ const NICHES = [
 const AddCreatorModal = ({ onClose }) => {
     const { addCreator } = useStore();
     const [isSaving, setIsSaving] = useState(false);
+    const [sendWelcomeMail, setSendWelcomeMail] = useState(false);
     const [form, setForm] = useState({
         name: '',
         phone: '',
@@ -1118,6 +1119,11 @@ const AddCreatorModal = ({ onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        if (sendWelcomeMail && !form.email?.trim()) {
+            useStore.getState().addToast("Please provide an email address to send the welcome email.", 'error');
+            return;
+        }
+
         if (form.city === 'Others' && !form.customCity?.trim()) {
             useStore.getState().addToast("Please specify custom city.", 'error');
             return;
@@ -1143,26 +1149,26 @@ const AddCreatorModal = ({ onClose }) => {
             const finalCity = form.city === 'Others' ? form.customCity : form.city;
             const finalNiche = form.specializations === 'Others' ? form.customNiche : form.specializations;
             const generatedUid = `manual_${Math.random().toString(36).substring(2, 15)}`;
-            const cleanInstagram = form.instagram.trim().replace(/^@/, '');
+            const cleanInstagram = form.instagram ? form.instagram.trim().replace(/^@/, '') : '';
 
             await addCreator({
                 uid: generatedUid,
                 name: form.name,
-                phone: form.phone,
-                email: form.email,
-                city: finalCity,
-                categories: finalNiche,
-                specializations: [finalNiche],
+                phone: form.phone || '',
+                email: form.email || '',
+                city: finalCity || '',
+                categories: finalNiche || '',
+                specializations: finalNiche ? [finalNiche] : [],
                 collegeName: showCollege ? form.collegeName : '',
-                bio: form.bio,
+                bio: form.bio || '',
                 instagram: cleanInstagram,
                 instagramFollowers: form.instagramFollowers || '0',
-                youtube: form.youtube,
-                twitter: form.twitter,
-                profilePicture: form.profilePicture,
+                youtube: form.youtube || '',
+                twitter: form.twitter || '',
+                profilePicture: form.profilePicture || '',
                 profileStatus: 'approved',
                 isPhoneVerified: true
-            });
+            }, sendWelcomeMail);
             useStore.getState().addToast("Creator profile added successfully!", 'success');
             onClose();
         } catch (err) {
@@ -1197,22 +1203,22 @@ const AddCreatorModal = ({ onClose }) => {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                            <input required name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Contact Number (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
-                            <input required name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="email@example.com (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
                             <select
-                                required name="city" value={form.city} onChange={handleChange}
+                                name="city" value={form.city} onChange={handleChange}
                                 className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
-                                <option value="" disabled>Select City</option>
+                                <option value="">Select City (Optional)</option>
                                 {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-950">{c.toUpperCase()}</option>)}
                             </select>
                         </div>
@@ -1221,7 +1227,7 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.city === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
-                            <input required name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customCity" value={form.customCity} onChange={handleChange} placeholder="City Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
@@ -1229,17 +1235,17 @@ const AddCreatorModal = ({ onClose }) => {
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
                             <select
-                                required name="specializations" value={form.specializations} onChange={handleChange}
+                                name="specializations" value={form.specializations} onChange={handleChange}
                                 className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all appearance-none cursor-pointer"
                             >
-                                <option value="" disabled>Select Niche</option>
+                                <option value="">Select Niche (Optional)</option>
                                 {NICHES.map(n => <option key={n} value={n} className="bg-zinc-950">{n.toUpperCase()}</option>)}
                             </select>
                         </div>
                         {showCollegeField && (
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">College Name</label>
-                                <input required name="collegeName" value={form.collegeName} onChange={handleChange} placeholder="College/University Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                                <input name="collegeName" value={form.collegeName} onChange={handleChange} placeholder="College/University Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                             </div>
                         )}
                     </div>
@@ -1247,7 +1253,7 @@ const AddCreatorModal = ({ onClose }) => {
                     {form.specializations === 'Others' && (
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
-                            <input required name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="customNiche" value={form.customNiche} onChange={handleChange} placeholder="Niche Description" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     )}
 
@@ -1258,7 +1264,7 @@ const AddCreatorModal = ({ onClose }) => {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Instagram Followers</label>
-                            <input required name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                            <input name="instagramFollowers" type="number" value={form.instagramFollowers} onChange={handleChange} placeholder="e.g. 5000 (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
                         </div>
                     </div>
 
@@ -1270,6 +1276,20 @@ const AddCreatorModal = ({ onClose }) => {
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
                         <textarea name="bio" value={form.bio} onChange={handleChange} placeholder="Bio description..." className="w-full h-24 bg-black border border-white/10 rounded-xl p-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all resize-none animate-none" />
+                    </div>
+
+                    <div className="flex items-center gap-3 py-3 bg-white/5 border border-white/10 rounded-2xl px-4">
+                        <input
+                            type="checkbox"
+                            id="sendWelcomeMail"
+                            checked={sendWelcomeMail}
+                            onChange={(e) => setSendWelcomeMail(e.target.checked)}
+                            disabled={!form.email?.trim()}
+                            className="w-5 h-5 rounded border-white/10 bg-black text-neon-blue focus:ring-0 focus:ring-offset-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        />
+                        <label htmlFor="sendWelcomeMail" className={`text-xs font-black uppercase tracking-wider cursor-pointer ${!form.email?.trim() ? 'text-gray-600' : 'text-gray-300 hover:text-white'}`}>
+                            Send Welcome Email {!form.email?.trim() && "(Requires Email)"}
+                        </label>
                     </div>
 
                     <button type="submit" disabled={isSaving} className="w-full h-14 bg-white hover:bg-neon-blue text-black font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2">
