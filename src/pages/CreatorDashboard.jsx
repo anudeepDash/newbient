@@ -356,7 +356,7 @@ const CreatorSettingsView = ({ profile }) => {
                 city: finalCity,
                 specializations: [finalNiche],
                 categories: finalNiche,
-                collegeName: showCollege ? form.collegeName : '',
+                collegeName: form.collegeName || '',
                 bio: form.bio,
                 profilePicture: form.profilePicture,
                 isPhoneVerified: isPhoneVerified
@@ -561,12 +561,22 @@ const CreatorSettingsView = ({ profile }) => {
                                             {NICHES.map(n => <option key={n} value={n} className="bg-zinc-900">{n.toUpperCase()}</option>)}
                                         </select>
                                     </div>
-                                    {showCollegeField && (
-                                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">College / University Name</label>
-                                            <input required name="collegeName" value={form.collegeName} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
-                                        </motion.div>
-                                    )}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                            College / University Name {showCollegeField ? '' : '(Optional)'}
+                                        </label>
+                                        <input 
+                                            required={showCollegeField} 
+                                            name="collegeName" 
+                                            value={form.collegeName} 
+                                            onChange={handleChange} 
+                                            placeholder={showCollegeField ? 'e.g. Delhi University, IIT' : 'e.g. Delhi University, IIT (Optional)'}
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all text-white" 
+                                        />
+                                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-1 leading-normal">
+                                            Why fill this? Matching your college helps us connect you with exclusive regional/campus campaigns and college events.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {form.specializations === 'Others' && (
