@@ -4,6 +4,7 @@ import { useStore } from '../lib/store';
 import Hero from '../components/home/Hero';
 import About from '../components/home/About';
 import Services from '../components/home/Services';
+import CreatorsSection from '../components/home/CreatorsSection';
 import Portfolio from '../components/home/Portfolio';
 import PastClients from '../components/home/PastClients';
 import WhyChooseUs from '../components/home/WhyChooseUs';
@@ -28,6 +29,9 @@ const Home = () => {
                 <About />
             </MaintenanceGuard>
             <Services />
+            <MaintenanceGuard isSection featureId="home_creators">
+                <CreatorsSection />
+            </MaintenanceGuard>
             <MaintenanceGuard isSection featureId="home_upcoming">
                 <UpcomingEvents />
             </MaintenanceGuard>

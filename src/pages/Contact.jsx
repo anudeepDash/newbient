@@ -73,7 +73,7 @@ const Contact = () => {
 
             <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between mb-32 gap-12">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-12 md:mb-32 gap-12">
                     <div className="max-w-2xl text-center md:text-left">
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
@@ -112,7 +112,7 @@ const Contact = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-stretch">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-stretch">
                     {/* Left: Interactive Info */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
@@ -157,7 +157,7 @@ const Contact = () => {
                         </div>
 
                         {/* Interactive Element: Live Status Indicator */}
-                        <div className="p-8 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-3xl relative overflow-hidden group transition-all hover:bg-white/10">
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-3xl relative overflow-hidden group transition-all hover:bg-white/10">
                            <div className="flex items-center gap-6 relative z-10">
                                 <div className="relative flex h-3 w-3">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
@@ -179,9 +179,9 @@ const Contact = () => {
                         className="relative"
                     >
                         {/* Glassmorphic Form Container */}
-                        <div className="p-6 sm:p-12 md:p-16 bg-zinc-900/60 border border-white/10 rounded-[2.5rem] md:rounded-[4rem] backdrop-blur-[100px] shadow-2xl relative overflow-hidden">
+                        <div className="p-5 sm:p-12 md:p-16 bg-zinc-900/60 border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] md:rounded-[4rem] backdrop-blur-[100px] shadow-2xl relative overflow-hidden">
                             <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Full Name</label>
                                         <input
@@ -220,7 +220,7 @@ const Contact = () => {
                                 <button
                                     type="submit"
                                     disabled={sending}
-                                    className="w-full h-24 bg-white text-black rounded-[2.2rem] flex items-center justify-center gap-4 font-black font-heading tracking-[0.3em] uppercase text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50"
+                                    className="w-full h-16 sm:h-24 bg-white text-black rounded-2xl sm:rounded-[2.2rem] flex items-center justify-center gap-4 font-black font-heading tracking-[0.3em] uppercase text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] disabled:opacity-50"
                                 >
                                     {sending ? 'SENDING...' : (
                                         <>

@@ -81,7 +81,7 @@ const CreatorLanding = () => {
             </div>
 
             {/* Header Navigation */}
-            <header className="fixed top-0 left-0 right-0 h-20 bg-black/40 backdrop-blur-3xl border-b border-white/10 z-50 px-6 md:px-12 flex items-center justify-between shadow-2xl">
+            <header className="fixed top-0 left-0 right-0 h-20 bg-black/40 backdrop-blur-3xl border-b border-white/10 z-50 px-4 sm:px-6 md:px-12 flex items-center justify-between shadow-2xl">
                 <div className="flex items-center gap-3">
                     <Link to="/creator" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-black text-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] group-hover:scale-105 transition-transform">
@@ -99,10 +99,10 @@ const CreatorLanding = () => {
                     <a href="#faqs" className="hover:text-white transition-colors">FAQs</a>
                 </nav>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
                     <Link 
                         to="/"
-                        className="h-10 px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 group shadow-lg"
+                        className="h-10 px-2.5 sm:px-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 group shadow-lg"
                     >
                         <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform text-neon-pink" />
                         <span className="hidden sm:inline">newbi.live</span>
@@ -111,7 +111,7 @@ const CreatorLanding = () => {
                     {creatorProfile ? (
                         <Button 
                             onClick={() => navigate('/creator-dashboard')}
-                            className="h-10 px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
+                            className="h-10 px-2.5 sm:px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
                         >
                             <LayoutDashboard size={14} />
                             <span>Dashboard</span>
@@ -120,14 +120,14 @@ const CreatorLanding = () => {
                     ) : (
                         <Button 
                             onClick={() => navigate('/creator/join')}
-                            className="h-10 px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
+                            className="h-10 px-2.5 sm:px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
                         >
                             <span>Apply Now</span>
                             <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform hidden sm:inline" />
                         </Button>
                     )}
                     
-                    {user && <div className="h-4 w-px bg-white/10 mx-1" />}
+                    {user && <div className="h-4 w-px bg-white/10 mx-0.5 sm:mx-1" />}
                     
                     <NotificationBell />
                     
@@ -174,7 +174,7 @@ const CreatorLanding = () => {
 
             <main className="relative z-10 max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 md:pt-40 space-y-32 md:space-y-40">
                 {/* CINEMATIC HERO SECTION */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center pt-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center pt-8">
                     <motion.div 
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -186,7 +186,7 @@ const CreatorLanding = () => {
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">{creatorProfile ? `Welcome back, ${creatorProfile.name?.split(' ')[0] || 'Creator'}` : 'Creator Workspace'}</span>
                         </div>
 
-                        <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter uppercase italic leading-[0.85] text-white pr-4">
+                        <h1 className="text-4xl sm:text-7xl md:text-8xl font-black tracking-tighter uppercase italic leading-[0.85] text-white pr-4">
                             COLLABORATE <br />WITH <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-pink to-purple-500">BRANDS.</span>
                         </h1>
 
@@ -199,7 +199,7 @@ const CreatorLanding = () => {
                                 <>
                                     <Button 
                                         onClick={() => navigate('/creator-dashboard')}
-                                        className="h-16 md:h-20 px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-[0_0_50px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all group flex items-center justify-center gap-3"
+                                        className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-[0_0_50px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all group flex items-center justify-center gap-3"
                                     >
                                         <LayoutDashboard size={20} />
                                         <span>Enter Dashboard</span> 
@@ -207,7 +207,7 @@ const CreatorLanding = () => {
                                     </Button>
                                     <Button 
                                         onClick={() => navigate('/campaigns')}
-                                        className="h-16 md:h-20 px-10 md:px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs md:text-sm hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl shadow-2xl flex items-center justify-center gap-3"
+                                        className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs md:text-sm hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl shadow-2xl flex items-center justify-center gap-3"
                                     >
                                         <Globe size={20} className="text-neon-blue" />
                                         <span>Browse Campaigns</span>
@@ -217,14 +217,14 @@ const CreatorLanding = () => {
                                 <>
                                     <Button 
                                         onClick={() => navigate('/creator/join')}
-                                        className="h-16 md:h-20 px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-[0_0_50px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all group flex items-center justify-center gap-3"
+                                        className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs md:text-sm shadow-[0_0_50px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_50px_rgba(46,191,255,0.4)] transition-all group flex items-center justify-center gap-3"
                                     >
                                         <span>Join as a Creator</span> 
                                         <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
                                     </Button>
                                     <Button 
                                         onClick={() => navigate('/contact')}
-                                        className="h-16 md:h-20 px-10 md:px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs md:text-sm hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl shadow-2xl flex items-center justify-center gap-3"
+                                        className="h-14 sm:h-16 md:h-20 px-6 sm:px-10 md:px-12 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs md:text-sm hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl shadow-2xl flex items-center justify-center gap-3"
                                     >
                                         <Mail size={20} className="text-neon-pink" />
                                         <span>Partner as a Brand</span>
@@ -245,7 +245,7 @@ const CreatorLanding = () => {
 
                         {creatorProfile ? (
                             /* LOGGED-IN CREATOR: Live Profile Preview */
-                            <div className="w-full max-w-lg bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 md:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative z-10 space-y-6 group hover:border-neon-blue/30 transition-all duration-500">
+                            <div className="w-full max-w-lg bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2rem] sm:rounded-[3rem] p-5 sm:p-8 md:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative z-10 space-y-6 group hover:border-neon-blue/30 transition-all duration-500">
                                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Your Profile</span>
                                     <span className="w-3.5 h-3.5 rounded-full bg-neon-green shadow-[0_0_10px_#39FF14] animate-pulse" />
@@ -285,7 +285,7 @@ const CreatorLanding = () => {
                                 </div>
 
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-3 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                <div className="grid grid-cols-3 gap-2 sm:gap-4 p-4 sm:p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
                                     <div className="text-center">
                                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Campaigns</p>
                                         <p className="text-xl font-black text-white">{joinedCampaignsCount}</p>
@@ -321,7 +321,7 @@ const CreatorLanding = () => {
                             </div>
                         ) : (
                             /* LOGGED-OUT / NEW USER: Workflow Preview */
-                            <div className="w-full max-w-lg bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 md:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative z-10 space-y-6 group hover:border-neon-blue/30 transition-all duration-500">
+                            <div className="w-full max-w-lg bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2rem] sm:rounded-[3rem] p-5 sm:p-8 md:p-10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative z-10 space-y-6 group hover:border-neon-blue/30 transition-all duration-500">
                                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Creator Pipeline</span>
                                     <span className="w-3.5 h-3.5 rounded-full bg-neon-blue shadow-[0_0_10px_#38b6ff] animate-pulse" />
@@ -378,7 +378,7 @@ const CreatorLanding = () => {
                             { title: 'Upload Deliverables', desc: 'When you complete a task, submit the live link or screenshot directly within your creator workspace.', step: '03' },
                             { title: 'Monitor Verification', desc: 'Track your submission state as it transitions from Submitted to Approved in real-time on your dashboard.', step: '04' }
                         ].map((item, idx) => (
-                            <div key={idx} className="bg-black/60 backdrop-blur-3xl border border-white/10 hover:border-white/30 rounded-[3rem] p-10 space-y-8 transition-all duration-500 hover:-translate-y-2 shadow-2xl group flex flex-col justify-between">
+                            <div key={idx} className="bg-black/60 backdrop-blur-3xl border border-white/10 hover:border-white/30 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8 transition-all duration-500 hover:-translate-y-2 shadow-2xl group flex flex-col justify-between">
                                 <div className="space-y-6">
                                     <span className="text-4xl font-black font-mono text-neon-blue/30 group-hover:text-neon-blue transition-colors">{item.step}</span>
                                     <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white pr-2">{item.title}</h3>
@@ -503,7 +503,7 @@ const CreatorLanding = () => {
                 </motion.section>
 
                 {/* BOTTOM CTA BANNER */}
-                <motion.section className="relative bg-gradient-to-r from-neon-blue/20 via-neon-pink/20 to-purple-500/20 backdrop-blur-3xl border border-white/20 rounded-[4rem] p-12 md:p-24 text-center overflow-hidden shadow-[0_0_100px_rgba(46,191,255,0.2)] mt-12">
+                <motion.section className="relative bg-gradient-to-r from-neon-blue/20 via-neon-pink/20 to-purple-500/20 backdrop-blur-3xl border border-white/20 rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] p-8 sm:p-12 md:p-24 text-center overflow-hidden shadow-[0_0_100px_rgba(46,191,255,0.2)] mt-12">
                     <div className="absolute -top-40 -right-40 w-96 h-96 bg-neon-blue/30 rounded-full blur-[150px] pointer-events-none animate-pulse" />
                     <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-neon-pink/30 rounded-full blur-[150px] pointer-events-none animate-pulse delay-700" />
 
@@ -521,7 +521,7 @@ const CreatorLanding = () => {
                             {creatorProfile ? (
                                 <Button 
                                     onClick={() => navigate('/creator-dashboard')}
-                                    className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
+                                    className="w-full sm:w-auto h-16 sm:h-20 px-10 sm:px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs sm:text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
                                 >
                                     <LayoutDashboard size={20} />
                                     <span>Open Dashboard</span> 
@@ -530,7 +530,7 @@ const CreatorLanding = () => {
                             ) : (
                                 <Button 
                                     onClick={() => navigate('/creator/join')}
-                                    className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
+                                    className="w-full sm:w-auto h-16 sm:h-20 px-10 sm:px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs sm:text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
                                 
                                 >
                                     <span>Register Profile</span> 

@@ -92,24 +92,24 @@ const LiveCampaigns = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto shrink-0">
                         <Button 
                             onClick={() => navigate('/creator')}
-                            className="h-16 px-8 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-white hover:text-black transition-all backdrop-blur-xl shadow-2xl"
+                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-white hover:text-black transition-all backdrop-blur-xl shadow-2xl"
                         >
                             Creator Network Home
                         </Button>
                         <Button 
                             onClick={() => navigate('/creator/join')}
-                            className="h-16 px-8 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                            className="h-14 sm:h-16 px-6 sm:px-8 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-neon-blue hover:text-black transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                         >
-                            Register Profile <ArrowRight size={16} className="ml-2" />
+                            Register Profile <ArrowRight size={16} className="ml-2 inline" />
                         </Button>
                     </div>
                 </div>
 
                 {/* SEARCH & FILTER BENCH */}
-                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl space-y-8 relative z-30">
+                <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl space-y-8 relative z-30">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                         {/* Search Input */}
                         <div className="lg:col-span-6 relative">
@@ -209,7 +209,7 @@ const LiveCampaigns = () => {
                                             </div>
                                         </div>
 
-                                        <div className="p-8 flex-1 flex flex-col justify-between space-y-8 bg-gradient-to-b from-transparent to-black/60">
+                                        <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6 sm:space-y-8 bg-gradient-to-b from-transparent to-black/60">
                                             <div className="space-y-4">
                                                 <h3 className="text-2xl font-black uppercase italic tracking-tight text-white group-hover:text-neon-blue transition-colors line-clamp-2 pr-2">{camp.title}</h3>
                                                 <p className="text-gray-400 text-xs font-medium leading-relaxed line-clamp-3">{camp.description || 'Exclusive brand mission requiring verified creator fulfillment and professional engagement deliverables.'}</p>
@@ -221,7 +221,7 @@ const LiveCampaigns = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-auto shrink-0">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-white/5 mt-auto shrink-0">
                                                 <div>
                                                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Reward Payout</p>
                                                     <p className="text-base font-black text-neon-green uppercase truncate max-w-[160px]">{camp.reward}</p>
@@ -229,7 +229,7 @@ const LiveCampaigns = () => {
                                                 <Button 
                                                     onClick={() => navigate(`/campaign/${camp.id}`)}
                                                     className={cn(
-                                                        "h-14 px-8 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-xl",
+                                                        "w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-xl",
                                                         (!camp.status || camp.status.toLowerCase() === 'open')
                                                             ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black"
                                                             : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"

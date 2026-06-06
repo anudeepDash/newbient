@@ -404,7 +404,7 @@ const CommunityJoin = () => {
                                             target="_blank" 
                                             rel="noreferrer"
                                             onClick={() => setClickedWhatsApp(true)}
-                                            className="w-full md:w-auto px-12 h-20 bg-white text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-base hover:scale-105 transition-all relative z-10 shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
+                                            className="w-full md:w-auto px-8 sm:px-12 h-16 md:h-20 bg-white text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-sm md:text-base hover:scale-105 transition-all relative z-10 shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
                                         >
                                             WhatsApp Connection
                                         </a>
@@ -413,7 +413,7 @@ const CommunityJoin = () => {
                                             <button 
                                                 onClick={handleWhatsappJoined}
                                                 disabled={verifyingWhatsapp}
-                                                className="w-full md:w-auto px-12 h-20 bg-neon-blue text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-base hover:scale-[1.02] transition-all shadow-[0_15px_40px_rgba(0,255,255,0.2)] disabled:opacity-50"
+                                                className="w-full md:w-auto px-8 sm:px-12 h-16 md:h-20 bg-neon-blue text-black rounded-2xl flex items-center justify-center font-black font-heading tracking-widest uppercase text-sm md:text-base hover:scale-[1.02] transition-all shadow-[0_15px_40px_rgba(0,255,255,0.2)] disabled:opacity-50"
                                             >
                                                 {verifyingWhatsapp ? <Loader2 className="animate-spin" size={24} /> : "I'VE JOINED THE HUB"}
                                             </button>
@@ -447,7 +447,7 @@ const CommunityJoin = () => {
                                                     Exclusive rewarding for the Tribe. Participate, refer, and win.
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-4 px-10 h-20 bg-purple-600 text-white rounded-2xl font-black font-heading tracking-widest uppercase text-sm shadow-2xl group-hover:gap-8 transition-all">
+                                            <div className="w-full md:w-auto h-16 md:h-20 flex justify-center items-center gap-4 px-6 md:px-10 bg-purple-600 text-white rounded-xl md:rounded-2xl font-black font-heading tracking-widest uppercase text-xs md:text-sm shadow-2xl group-hover:gap-8 transition-all shrink-0">
                                                 PARTICIPATE NOW <ArrowRight size={20} />
                                             </div>
                                         </Link>

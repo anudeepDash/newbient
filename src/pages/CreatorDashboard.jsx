@@ -416,7 +416,7 @@ const CreatorSettingsView = ({ profile }) => {
                     {/* Left Column: Identity & Bio */}
                     <div className="lg:col-span-7 space-y-8">
                         <form onSubmit={handleSave} className="space-y-8">
-                            <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                            <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 space-y-8 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
                                 
                                 <div className="flex items-center gap-6 mb-4">
@@ -486,7 +486,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
                                                             Enter the 6-digit verification code sent to {countryCode} {form.phone}
                                                         </p>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-1.5 sm:gap-2">
                                                             {otpValues.map((digit, idx) => (
                                                                 <input
                                                                     key={idx}
@@ -498,7 +498,7 @@ const CreatorSettingsView = ({ profile }) => {
                                                                     onChange={e => handleOtpChange(e.target.value, idx)}
                                                                     onKeyDown={e => handleOtpKeyDown(e, idx)}
                                                                     onPaste={handleOtpPaste}
-                                                                    className="w-10 h-12 bg-black/60 border border-white/10 rounded-xl text-center text-lg font-black text-white focus:border-neon-blue focus:outline-none transition-all"
+                                                                    className="w-8 h-10 sm:w-10 sm:h-12 bg-black/60 border border-white/10 rounded-xl text-center text-sm sm:text-lg font-black text-white focus:border-neon-blue focus:outline-none transition-all"
                                                                 />
                                                             ))}
                                                         </div>
@@ -600,7 +600,7 @@ const CreatorSettingsView = ({ profile }) => {
 
                     {/* Right Column: Identity Assets & Danger Zone */}
                     <div className="lg:col-span-5 space-y-8">
-                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 space-y-8 relative overflow-hidden">
                              <div className="flex items-center gap-6">
                                 <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white">
                                     <ImageIcon size={24} />
@@ -634,7 +634,7 @@ const CreatorSettingsView = ({ profile }) => {
                             </div>
                         </div>
 
-                        <div className="bg-red-950/20 border border-red-500/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-[3rem] p-10 space-y-6">
+                        <div className="bg-red-950/20 border border-red-500/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 space-y-6">
                             <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-4 text-center">DANGER ZONE</h4>
                             <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full h-16 rounded-2xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3">
                                 <AlertCircle size={16} /> Deactivate Creator Profile
@@ -825,7 +825,7 @@ const CreatorDashboard = () => {
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-5"
                     >
-                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] p-2 flex items-center overflow-hidden group">
+                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] sm:rounded-[2.5rem] p-1.5 sm:p-2 flex items-center overflow-hidden group">
                             <div className="flex-1 grid grid-cols-3 divide-x divide-white/5 py-4">
                                 <div className="flex flex-col items-center justify-center px-4">
                                     <span className="text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
@@ -842,9 +842,9 @@ const CreatorDashboard = () => {
                             </div>
                             <button 
                                 onClick={() => navigate('/creator-dashboard/settings')}
-                                className="w-16 h-16 bg-white/5 hover:bg-white hover:text-black rounded-2xl flex items-center justify-center transition-all m-1 group/btn border border-white/5 shadow-inner"
+                                className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 hover:bg-white hover:text-black rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-all m-0.5 sm:m-1 group/btn border border-white/5 shadow-inner"
                             >
-                                <Settings size={20} className="group-hover/btn:rotate-90 transition-transform duration-500" />
+                                <Settings size={16} className="sm:w-5 sm:h-5 group-hover/btn:rotate-90 transition-transform duration-500" />
                             </button>
                         </div>
                     </motion.div>

@@ -315,7 +315,7 @@ const CampaignPublicView = () => {
             )}
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
                     {/* Left Column: Campaign Content & Tasks (7 Cols) */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-7 space-y-12">
                         {/* Title & Core Metadata */}
@@ -346,7 +346,7 @@ const CampaignPublicView = () => {
                         </div>
 
                         {/* Campaign Description */}
-                        <div className="space-y-4 p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl relative overflow-hidden">
+                        <div className="space-y-4 p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1.5 h-full bg-neon-blue" />
                             <h3 className="text-[10px] font-black text-neon-blue uppercase tracking-[0.4em] flex items-center gap-2">
                                 <FileText size={14} /> Campaign Briefing
@@ -381,7 +381,7 @@ const CampaignPublicView = () => {
                                                 transition={{ delay: idx * 0.08 }}
                                                 onClick={() => isJoined && setSelectedTask(task)}
                                                 className={cn(
-                                                    "p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] flex items-start gap-5 group transition-all duration-300 backdrop-blur-xl relative overflow-hidden",
+                                                    "p-5 sm:p-6 bg-white/[0.03] border border-white/5 rounded-[1.5rem] sm:rounded-[2.0rem] flex items-start gap-3 sm:gap-5 group transition-all duration-300 backdrop-blur-xl relative overflow-hidden",
                                                     isJoined ? "cursor-pointer hover:border-neon-blue/40 hover:bg-white/[0.05] hover:shadow-[0_0_30px_rgba(46,191,255,0.15)]" : "hover:border-white/10"
                                                 )}
                                             >
@@ -441,7 +441,7 @@ const CampaignPublicView = () => {
 
                     {/* Right Column: Interactive Form & Progress Workbench (5 Cols) */}
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-5 lg:sticky lg:top-28">
-                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                        <div className="bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-neon-blue/5 rounded-full blur-3xl pointer-events-none" />
                             
                             {isJoined ? (

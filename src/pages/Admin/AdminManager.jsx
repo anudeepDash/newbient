@@ -373,10 +373,46 @@ const AdminManager = () => {
             {/* Quick Metrics KPI Bar */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
                 {[
-                    { label: 'Personnel Registry', count: members.length, detail: `${members.filter(m => !m.isBlocked).length} Active`, color: 'text-neon-blue', bgGlow: 'rgba(0,240,255,0.15)' },
-                    { label: 'Command Staff', count: admins.filter(a => a.role !== 'pending').length, detail: 'System Operatives', color: 'text-neon-green', bgGlow: 'rgba(57,255,20,0.15)' },
-                    { label: 'Tribe & Creators', count: members.filter(m => m.hasJoinedTribe || creators?.some(c => c.uid === m.id) || artists?.some(a => a.uid === m.id && a.profileStatus === 'approved')).length, detail: 'Verified Badges', color: 'text-neon-pink', bgGlow: 'rgba(255,79,139,0.15)' },
-                    { label: 'Pending Requests', count: pendingRequests.length, detail: 'Awaiting Auth', color: 'text-yellow-500', bgGlow: 'rgba(234,179,8,0.15)' }
+                    { 
+                        label: 'Personnel Registry', 
+                        count: members.length, 
+                        detail: `${members.filter(m => !m.isBlocked).length} Active`, 
+                        color: 'text-neon-blue', 
+                        bgGlow: 'rgba(0,240,255,0.15)',
+                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(0,240,255,0.08)]',
+                        hoverBorder: 'hover:border-neon-blue/30',
+                        topGradient: 'from-neon-blue to-blue-500'
+                    },
+                    { 
+                        label: 'Command Staff', 
+                        count: admins.filter(a => a.role !== 'pending').length, 
+                        detail: 'System Operatives', 
+                        color: 'text-neon-green', 
+                        bgGlow: 'rgba(57,255,20,0.15)',
+                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(57,255,20,0.08)]',
+                        hoverBorder: 'hover:border-neon-green/30',
+                        topGradient: 'from-neon-green to-emerald-500'
+                    },
+                    { 
+                        label: 'Tribe & Creators', 
+                        count: members.filter(m => m.hasJoinedTribe || creators?.some(c => c.uid === m.id) || artists?.some(a => a.uid === m.id && a.profileStatus === 'approved')).length, 
+                        detail: 'Verified Badges', 
+                        color: 'text-neon-pink', 
+                        bgGlow: 'rgba(255,79,139,0.15)',
+                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(255,79,139,0.08)]',
+                        hoverBorder: 'hover:border-neon-pink/30',
+                        topGradient: 'from-neon-pink to-purple-500'
+                    },
+                    { 
+                        label: 'Pending Requests', 
+                        count: pendingRequests.length, 
+                        detail: 'Awaiting Auth', 
+                        color: 'text-yellow-500', 
+                        bgGlow: 'rgba(234,179,8,0.15)',
+                        hoverShadow: 'hover:shadow-[0_15px_30px_rgba(234,179,8,0.08)]',
+                        hoverBorder: 'hover:border-yellow-500/30',
+                        topGradient: 'from-yellow-500 to-amber-500'
+                    }
                 ].map((stat, i) => (
                     <motion.div
                         key={stat.label}
@@ -386,12 +422,17 @@ const AdminManager = () => {
                         className="group relative"
                     >
                         <div 
-                            className="absolute -inset-px rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity blur-xl duration-500 pointer-events-none"
+                            className="absolute -inset-px rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity blur-xl duration-500 pointer-events-none"
                             style={{ background: `radial-gradient(circle at center, ${stat.bgGlow} 0%, transparent 70%)` }}
                         />
-                        <Card className="relative p-6 md:p-8 bg-zinc-950/60 hover:bg-zinc-900/40 border border-white/10 hover:border-neon-green/30 backdrop-blur-3xl rounded-[2.5rem] transition-all duration-300 shadow-2xl overflow-hidden group">
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 leading-none">{stat.label}</p>
-                            <div className="flex items-baseline gap-2.5">
+                        <Card className={cn(
+                            "relative p-6 md:p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] transition-all duration-300 overflow-hidden group flex flex-col justify-between hover:bg-white/[0.06]",
+                            stat.hoverBorder,
+                            stat.hoverShadow
+                        )}>
+                            <div className={cn("absolute top-0 left-0 w-full h-[2.5px] bg-gradient-to-r", stat.topGradient)} />
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 leading-none relative z-10">{stat.label}</p>
+                            <div className="flex items-baseline gap-2.5 relative z-10">
                                 <span className={cn("text-3xl md:text-4xl font-black font-heading italic leading-none", stat.color)}>{stat.count}</span>
                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate">{stat.detail}</span>
                             </div>
