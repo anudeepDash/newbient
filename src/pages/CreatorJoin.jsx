@@ -311,6 +311,11 @@ const CreatorJoin = () => {
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+    const isPhoneVerifiedRef = useRef(false);
+    const setPhoneVerified = (val) => {
+        setIsPhoneVerified(val);
+        isPhoneVerifiedRef.current = val;
+    };
     const [confirmationResult, setConfirmationResult] = useState(null);
     const recaptchaVerifier = useRef(null);
     const otpRefs = useRef([]);
@@ -422,7 +427,7 @@ const CreatorJoin = () => {
             // Bypass OTP for localhost/local testing
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocal) {
-                setIsPhoneVerified(true);
+                setPhoneVerified(true);
                 useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
                 setTimeout(() => {
                     handleNext();
@@ -432,7 +437,7 @@ const CreatorJoin = () => {
             }
 
             await confirmationResult.confirm(fullCode);
-            setIsPhoneVerified(true);
+            setPhoneVerified(true);
             useStore.getState().addToast("Phone verified successfully!", 'success');
             // Auto advance
             setTimeout(() => {
@@ -518,7 +523,7 @@ const CreatorJoin = () => {
         const val = formData[q.field];
 
         if (q.required) {
-            if (q.type === 'phone' && !isPhoneVerified) {
+            if (q.type === 'phone' && !isPhoneVerifiedRef.current) {
                 return "Please verify your contact number via OTP first.";
             }
             if (q.type === 'city') {
@@ -575,7 +580,7 @@ const CreatorJoin = () => {
             if (activeType === 'textarea' || activeType === 'image') return; // Don't trigger on textareas/file uploads
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (activeType === 'phone' && !isPhoneVerified) {
+                if (activeType === 'phone' && !isPhoneVerifiedRef.current) {
                     if (otpSent) {
                         handleVerifyOTP();
                     } else {
