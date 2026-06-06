@@ -744,7 +744,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'text' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -766,7 +766,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'number' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -789,7 +789,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'email' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -813,7 +813,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'phone' && (
-                                            <div className="space-y-6 max-w-2xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -930,7 +930,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'city' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -969,7 +969,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'niche' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -1008,7 +1008,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'college' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -1042,7 +1042,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'textarea' && (
-                                            <div className="space-y-6 max-w-2xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
@@ -1064,7 +1064,7 @@ const CreatorJoin = () => {
                                         )}
 
                                         {currentQuestion.type === 'image' && (
-                                            <div className="space-y-6 max-w-xl">
+                                            <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
                                                     <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
