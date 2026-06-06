@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { sendBookingConfirmation } from './email';
+import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail } from './email';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -126,6 +126,30 @@ const processAndUploadBase64Fields = async (obj, pathPrefix) => {
     }
 
     return obj;
+};
+
+const notifyMatchingCreatorsOfCampaign = async (campaignData, creatorsList) => {
+    try {
+        let allCreators = creatorsList || [];
+        if (allCreators.length === 0) {
+            const snapshot = await getDocs(collection(db, 'creators'));
+            allCreators = snapshot.docs.map(d => ({ ...d.data(), uid: d.id }));
+        }
+
+        const targetCity = (campaignData.targetCity || 'Any').trim().toLowerCase();
+        const matchingCreators = allCreators.filter(creator => {
+            if (!creator.email) return false;
+            if (targetCity === 'any' || targetCity === 'all' || targetCity === 'universal') return true;
+            return (creator.city || '').trim().toLowerCase() === targetCity;
+        });
+
+        if (matchingCreators.length > 0) {
+            const emails = matchingCreators.map(c => c.email);
+            await sendNewCampaignNotificationEmail(emails, campaignData);
+        }
+    } catch (err) {
+        console.error("Error notifying creators of campaign:", err);
+    }
 };
 
 const initialUser = getCachedSession();
@@ -1434,8 +1458,12 @@ export const useStore = create((set, get) => ({
     },
 
     // Creators / Influencers
-    addCreator: async (creator) => {
+    addCreator: async (creator, sendWelcome = true) => {
         await setDoc(doc(db, 'creators', creator.uid), { ...creator, createdAt: new Date().toISOString() });
+        if (sendWelcome && creator.email) {
+            sendCreatorWelcomeEmail(creator.email, creator.displayName || creator.name || 'Creator')
+                .catch(err => console.error("Error sending welcome email to creator:", err));
+        }
     },
     updateCreator: async (uid, updates) => {
         await updateDoc(doc(db, 'creators', uid), updates);
@@ -1518,16 +1546,42 @@ export const useStore = create((set, get) => ({
 
     // Campaigns / Gigs
     addCampaign: async (campaign) => {
-        await addDoc(collection(db, 'campaigns'), {
+        const docRef = await addDoc(collection(db, 'campaigns'), {
             ...campaign,
             minInstagramFollowers: campaign.minInstagramFollowers || 0,
             thumbnail: campaign.thumbnail || '',
             tasks: campaign.tasks || [], // Store tasks directly in campaign structure for now
             createdAt: new Date().toISOString()
         });
+
+        if (campaign.status === 'Open') {
+            notifyMatchingCreatorsOfCampaign({ ...campaign, id: docRef.id }, get().creators);
+        }
+        return docRef.id;
     },
     updateCampaign: async (id, updates) => {
+        let prevStatus = null;
+        try {
+            const docSnap = await getDoc(doc(db, 'campaigns', id));
+            if (docSnap.exists()) {
+                prevStatus = docSnap.data().status;
+            }
+        } catch (err) {
+            console.error("Error fetching previous campaign status:", err);
+        }
+
         await updateDoc(doc(db, 'campaigns', id), updates);
+
+        if (updates.status === 'Open' && prevStatus !== 'Open') {
+            try {
+                const campaignDoc = await getDoc(doc(db, 'campaigns', id));
+                if (campaignDoc.exists()) {
+                    notifyMatchingCreatorsOfCampaign({ ...campaignDoc.data(), id }, get().creators);
+                }
+            } catch (err) {
+                console.error("Error fetching campaign doc for notifications:", err);
+            }
+        }
     },
     deleteCampaign: async (id) => {
         await deleteDoc(doc(db, 'campaigns', id));
