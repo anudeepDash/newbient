@@ -207,19 +207,19 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
         : placeholder;
 
     return (
-        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-36" : "w-full")}>
+        <div ref={containerRef} className={cn("relative", isCountryCode ? "w-24 sm:w-36" : "w-full")}>
             <button
                 type="button"
                 onClick={handleToggle}
                 className={cn(
-                    "w-full h-20 bg-white/[0.02] border border-white/10 rounded-2xl text-lg font-bold text-left focus:border-neon-blue focus:outline-none transition-all flex items-center justify-between group",
-                    isCountryCode ? "px-4" : "pl-16 pr-12",
+                    "w-full h-16 sm:h-20 bg-white/[0.02] border border-white/10 rounded-2xl text-base sm:text-lg font-bold text-left focus:border-neon-blue focus:outline-none transition-all flex items-center justify-between group",
+                    isCountryCode ? "px-3" : "pl-12 sm:pl-16 pr-10 sm:pr-12",
                     isOpen && "border-neon-blue/50 ring-1 ring-neon-blue/50",
                     className
                 )}
             >
                 {!isCountryCode && Icon && (
-                    <Icon className={cn("absolute left-6 top-1/2 -translate-y-1/2 transition-colors", isOpen ? "text-neon-blue" : "text-gray-500")} size={24} />
+                    <Icon className={cn("absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 transition-colors", isOpen ? "text-neon-blue" : "text-gray-500")} size={20} sm:size={24} />
                 )}
                 
                 <span className={value ? "text-white" : "text-white/20"}>
@@ -231,7 +231,7 @@ const CustomSelect = ({ value, onChange, options, name, placeholder, icon: Icon,
                     transition={{ duration: 0.2 }}
                     className="text-gray-500 group-hover:text-white"
                 >
-                    <ChevronDown size={isCountryCode ? 16 : 20} />
+                    <ChevronDown size={isCountryCode ? 14 : 18} />
                 </motion.div>
             </button>
 
@@ -695,7 +695,7 @@ const CreatorJoin = () => {
                 ) : (
                     <div className="w-full">
                         {/* Typeform Frame */}
-                        <div className="bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] rounded-[3.5rem] p-8 md:p-16 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_50px_100px_rgba(0,0,0,0.8)] relative min-h-[500px] flex flex-col justify-between">
+                        <div className="bg-zinc-950/45 backdrop-blur-3xl border border-white/[0.08] rounded-3xl md:rounded-[3.5rem] p-5 md:p-16 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_50px_100px_rgba(0,0,0,0.8)] relative min-h-[450px] sm:min-h-[500px] flex flex-col justify-between">
                             {/* Top decorative elements */}
                             <div className="absolute top-0 right-0 w-80 h-80 bg-neon-blue/10 blur-[130px] -mr-40 -mt-40 pointer-events-none" />
                             
@@ -762,7 +762,7 @@ const CreatorJoin = () => {
                                                         value={formData[currentQuestion.field]} 
                                                         onChange={handleChange} 
                                                         placeholder={currentQuestion.placeholder} 
-                                                        className="h-20 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold px-8 focus:border-neon-blue" 
+                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
                                                         autoFocus
                                                     />
                                                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
@@ -785,7 +785,7 @@ const CreatorJoin = () => {
                                                         value={formData[currentQuestion.field]} 
                                                         onChange={handleChange} 
                                                         placeholder={currentQuestion.placeholder} 
-                                                        className="h-20 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold px-8 focus:border-neon-blue" 
+                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
                                                         autoFocus
                                                     />
                                                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
@@ -802,14 +802,14 @@ const CreatorJoin = () => {
                                                     </h3>
                                                 </div>
                                                 <div className="relative">
-                                                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={24} />
+                                                    <Mail className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-gray-500" size={20} sm:size={24} />
                                                     <Input 
                                                         type="email"
                                                         name={currentQuestion.field} 
                                                         value={formData[currentQuestion.field]} 
                                                         onChange={handleChange} 
                                                         placeholder={currentQuestion.placeholder} 
-                                                        className="h-20 pl-16 pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold focus:border-neon-blue" 
+                                                        className="h-16 sm:h-20 pl-12 sm:pl-16 pr-6 sm:pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold focus:border-neon-blue" 
                                                         autoFocus
                                                     />
                                                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
@@ -838,7 +838,7 @@ const CreatorJoin = () => {
                                                                 isCountryCode
                                                             />
                                                             <div className="relative flex-1">
-                                                                <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500" size={24} />
+                                                                <Phone className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-gray-500" size={20} sm:size={24} />
                                                                 <Input 
                                                                     type="tel"
                                                                     name={currentQuestion.field} 
@@ -846,7 +846,7 @@ const CreatorJoin = () => {
                                                                     onChange={handleChange} 
                                                                     disabled={isPhoneVerified}
                                                                     placeholder="99999 99999" 
-                                                                    className="h-20 pl-16 pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold focus:border-neon-blue" 
+                                                                    className="h-16 sm:h-20 pl-12 sm:pl-16 pr-6 sm:pr-8 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold focus:border-neon-blue" 
                                                                     autoFocus
                                                                 />
                                                             </div>
@@ -880,7 +880,7 @@ const CreatorJoin = () => {
                                                             <OTPVerificationSuccess />
                                                         ) : (
                                                             <div className="flex flex-col gap-6">
-                                                                <div className="relative flex gap-3 p-1">
+                                                                <div className="relative flex gap-1.5 sm:gap-3 p-1">
                                                                     {/* Scanning laser beam */}
                                                                     {isVerifyingOtp && (
                                                                         <motion.div 
@@ -902,7 +902,7 @@ const CreatorJoin = () => {
                                                                             onKeyDown={e => handleOtpKeyDown(e, idx)}
                                                                             onPaste={handleOtpPaste}
                                                                             className={cn(
-                                                                                "w-14 h-16 md:w-16 md:h-20 bg-white/[0.02] border-2 rounded-2xl text-center text-2xl font-black text-white focus:border-neon-blue focus:shadow-[0_0_25px_rgba(0,240,255,0.2)] focus:outline-none transition-all",
+                                                                                "w-9 h-12 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-white/[0.02] border-2 rounded-xl sm:rounded-2xl text-center text-lg sm:text-2xl font-black text-white focus:border-neon-blue focus:shadow-[0_0_25px_rgba(0,240,255,0.2)] focus:outline-none transition-all",
                                                                                 isVerifyingOtp ? "border-neon-pink/40 animate-pulse" : "border-white/10"
                                                                             )}
                                                                             autoFocus={idx === 0}
@@ -1038,7 +1038,7 @@ const CreatorJoin = () => {
                                                                 ? 'e.g. Delhi University, IIT (Optional)'
                                                                 : 'e.g. Delhi University, IIT'
                                                         } 
-                                                        className="h-20 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold px-8 focus:border-neon-blue" 
+                                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
                                                         autoFocus
                                                     />
                                                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>

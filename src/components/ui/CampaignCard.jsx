@@ -131,38 +131,38 @@ const CampaignCard = ({ campaign, profile, type, onOpenMission }) => {
                 </div>
                 
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] mb-6 backdrop-blur-md">
-                    <div className="flex flex-col items-center justify-center text-center border-r border-white/5 pr-2">
-                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <Award size={10} className="text-neon-green" /> REWARD
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] mb-6 backdrop-blur-md">
+                    <div className="flex flex-col items-center justify-center text-center border-r border-white/5 pr-1 sm:pr-2">
+                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
+                            <Award size={9} className="text-neon-green sm:w-2.5 sm:h-2.5" /> REWARD
                         </span>
-                        <span className="text-neon-green text-xs font-black italic truncate w-full">{campaign.reward || 'Barter'}</span>
+                        <span className="text-neon-green text-[10px] sm:text-xs font-black italic truncate w-full">{campaign.reward || 'Barter'}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center text-center border-r border-white/5 px-2">
-                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <FileText size={10} className="text-neon-blue" /> TASKS
+                    <div className="flex flex-col items-center justify-center text-center border-r border-white/5 px-1 sm:px-2">
+                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
+                            <FileText size={9} className="text-neon-blue sm:w-2.5 sm:h-2.5" /> TASKS
                         </span>
-                        <span className="text-white text-xs font-black">
+                        <span className="text-white text-[10px] sm:text-xs font-black">
                             {isJoined && isShortlisted ? `${approvedTotal}/${campaignTasks.length}` : `${campaignTasks.length} Tasks`}
                         </span>
                     </div>
-                    <div className="flex flex-col items-center justify-center text-center pl-2">
-                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <Zap size={10} className="text-neon-pink" /> STATUS
+                    <div className="flex flex-col items-center justify-center text-center pl-1 sm:pl-2">
+                        <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-0.5 sm:gap-1">
+                            <Zap size={9} className="text-neon-pink sm:w-2.5 sm:h-2.5" /> STATUS
                         </span>
-                        <span className={cn("text-xs font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
+                        <span className={cn("text-[10px] sm:text-xs font-black", isFullyComplete ? 'text-neon-green' : 'text-neon-blue')}>
                             {isJoined && isShortlisted ? `${Math.round(progress)}%` : 'Open'}
                         </span>
                     </div>
                 </div>
 
                 {/* Interactive Footer Button */}
-                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between px-4 py-3 rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:bg-neon-blue group-hover:text-black transition-all duration-300 shadow-lg">
-                    <div className="text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 group-hover:text-black text-gray-400 transition-colors">
-                        <FileText size={12} /> 
+                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-zinc-950/40 border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:bg-neon-blue group-hover:text-black transition-all duration-300 shadow-lg">
+                    <div className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 group-hover:text-black text-gray-400 transition-colors">
+                        <FileText size={10} className="sm:w-3 sm:h-3" /> 
                         {isJoined && isShortlisted ? 'Open Campaign Page' : 'View Opportunity'}
                     </div>
-                    <ArrowRight className="text-gray-600 group-hover:text-black group-hover:translate-x-1 transition-all" size={16} />
+                    <ArrowRight className="text-gray-600 group-hover:text-black group-hover:translate-x-1 transition-all" size={14} sm:size={16} />
                 </div>
             </div>
         </motion.div>
