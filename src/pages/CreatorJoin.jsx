@@ -30,12 +30,12 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const NICHES = [
+    'Student Creator/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
     'Beauty & Fitness',
     'Food & Beverage',
-    'Student Creator/ Campus Creator',
     'College Pages',
     'Others'
 ];

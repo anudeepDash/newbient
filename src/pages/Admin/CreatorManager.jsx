@@ -1083,12 +1083,12 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 };
 
 const NICHES = [
+    'Student Creator/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
     'Beauty & Fitness',
     'Food & Beverage',
-    'Student Creator/ Campus Creator',
     'College Pages',
     'Others'
 ];
