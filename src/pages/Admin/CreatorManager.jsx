@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../lib/store';
 import { PREDEFINED_CITIES } from '../../lib/constants';
@@ -94,7 +94,22 @@ const CreatorManager = () => {
 
     const [filterCity, setFilterCity] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
-    const [filterFollowers, setFilterFollowers] = useState('All');
+    const [filterNiche, setFilterNiche] = useState('All');
+    const [minFollowers, setMinFollowers] = useState('');
+    const [maxFollowers, setMaxFollowers] = useState('');
+    const [isFollowersOpen, setIsFollowersOpen] = useState(false);
+    const followersRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (followersRef.current && !followersRef.current.contains(event.target)) {
+                setIsFollowersOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const [selectedCreator, setSelectedCreator] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -213,17 +228,35 @@ const CreatorManager = () => {
             const matchesStatus = filterStatus === 'All' || 
                 (filterStatus === 'pending' && (!c.profileStatus || c.profileStatus === 'pending')) ||
                 c.profileStatus === filterStatus;
+            
+            const matchesNiche = filterNiche === 'All' || specs.some(n => {
+                const normalizedNiche = n === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : n;
+                return normalizedNiche === filterNiche;
+            });
                 
             const followers = Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0));
-            let matchesFollowers = true;
-            if (filterFollowers === '10k+') matchesFollowers = followers >= 10000;
-            else if (filterFollowers === '50k+') matchesFollowers = followers >= 50000;
-            else if (filterFollowers === '100k+') matchesFollowers = followers >= 100000;
-            else if (filterFollowers === '500k+') matchesFollowers = followers >= 500000;
+            const matchesMin = !minFollowers || followers >= Number(minFollowers);
+            const matchesMax = !maxFollowers || followers <= Number(maxFollowers);
+            const matchesFollowers = matchesMin && matchesMax;
 
-            return matchesSearch && matchesCity && matchesStatus && matchesFollowers;
+            return matchesSearch && matchesCity && matchesStatus && matchesNiche && matchesFollowers;
         });
-    }, [creators, searchTerm, filterCity, filterStatus, filterFollowers]);
+    }, [creators, searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers]);
+
+    const getFollowersLabel = () => {
+        if (!minFollowers && !maxFollowers) return 'FOLLOWERS (ANY)';
+        
+        const formatNum = (num) => {
+            const n = Number(num);
+            if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+            if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+            return n.toLocaleString();
+        };
+
+        if (minFollowers && !maxFollowers) return `${formatNum(minFollowers)}+`;
+        if (!minFollowers && maxFollowers) return `< ${formatNum(maxFollowers)}`;
+        return `${formatNum(minFollowers)} - ${formatNum(maxFollowers)}`;
+    };
 
     const totalPages = Math.ceil(filteredCreators.length / itemsPerPage);
     const paginatedCreators = useMemo(() => {
@@ -233,7 +266,7 @@ const CreatorManager = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterCity, filterStatus, filterFollowers]);
+    }, [searchTerm, filterCity, filterStatus, filterNiche, minFollowers, maxFollowers]);
 
     const stats = useMemo(() => {
         const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
@@ -324,22 +357,132 @@ const CreatorManager = () => {
 
                     {/* Filter Cluster */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap 2xl:flex-wrap items-center gap-2 shrink-0 w-full 2xl:w-auto pr-0 md:pr-2">
+                        {/* Custom Followers Range Popover Selector */}
+                        <div className="relative w-full lg:w-[160px]" ref={followersRef}>
+                            <div 
+                                onClick={() => setIsFollowersOpen(!isFollowersOpen)}
+                                className={cn(
+                                    "flex items-center justify-between h-12 md:h-14 bg-black/60 border border-white/10 rounded-xl md:rounded-full px-4 cursor-pointer hover:border-white/20 transition-all group shadow-inner select-none",
+                                    isFollowersOpen && "border-white/20"
+                                )}
+                            >
+                                <span className={cn(
+                                    "text-[10px] font-black uppercase tracking-[0.12em] truncate leading-none",
+                                    (!minFollowers && !maxFollowers) ? "text-white/30" : "text-white italic"
+                                )}>
+                                    {getFollowersLabel()}
+                                </span>
+                                <ChevronDown 
+                                    size={14} 
+                                    className={cn(
+                                        "transition-all duration-300 shrink-0 ml-2 text-white/30 group-hover:text-white/50",
+                                        isFollowersOpen && "rotate-180 text-neon-pink"
+                                    )} 
+                                />
+                            </div>
+
+                            <AnimatePresence>
+                                {isFollowersOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute z-[100] left-0 mt-3 w-[260px] bg-[#0a0a0a]/95 backdrop-blur-[64px] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-6 space-y-4"
+                                    >
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-1">FOLLOWER RANGE</p>
+                                        </div>
+                                        <div className="flex gap-2 items-center">
+                                            <div className="space-y-1 flex-1">
+                                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">MIN</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={minFollowers} 
+                                                    onChange={(e) => setMinFollowers(e.target.value)}
+                                                    placeholder="0" 
+                                                    className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                />
+                                            </div>
+                                            <span className="text-gray-600 text-xs font-bold pt-4">-</span>
+                                            <div className="space-y-1 flex-1">
+                                                <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">MAX</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={maxFollowers} 
+                                                    onChange={(e) => setMaxFollowers(e.target.value)}
+                                                    placeholder="Any" 
+                                                    className="w-full h-10 bg-black/40 border border-white/10 rounded-lg px-2 text-xs font-bold text-white focus:border-neon-pink outline-none transition-all"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-white/5" />
+
+                                        {/* Preset quick ranges */}
+                                        <div className="space-y-2">
+                                            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest pl-1">PRESETS</p>
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                                {[
+                                                    { label: '0 - 10K', min: '0', max: '10000' },
+                                                    { label: '10K - 50K', min: '10000', max: '50000' },
+                                                    { label: '50K - 100K', min: '50000', max: '100000' },
+                                                    { label: '100K - 500K', min: '100000', max: '500000' },
+                                                    { label: '500K - 1M', min: '500000', max: '1000000' },
+                                                    { label: '1M+', min: '1000000', max: '' },
+                                                ].map((p, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMinFollowers(p.min);
+                                                            setMaxFollowers(p.max);
+                                                        }}
+                                                        className="px-3 py-2 bg-white/5 border border-white/5 hover:border-neon-pink/20 hover:bg-neon-pink/5 hover:text-neon-pink rounded-lg text-[9px] font-black uppercase tracking-wider text-gray-400 transition-all text-center"
+                                                    >
+                                                        {p.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 pt-2 select-none">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setMinFollowers('');
+                                                    setMaxFollowers('');
+                                                    setIsFollowersOpen(false);
+                                                }}
+                                                className="flex-1 py-2 rounded-lg border border-white/5 hover:bg-white/5 text-[9px] font-black uppercase tracking-wider text-gray-500 hover:text-white transition-all text-center"
+                                            >
+                                                RESET
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsFollowersOpen(false)}
+                                                className="flex-1 py-2 rounded-lg bg-neon-pink text-black text-[9px] font-black uppercase tracking-wider transition-all text-center hover:scale-[1.02] active:scale-95"
+                                            >
+                                                APPLY
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Niche Filter */}
                         <div className="w-full lg:w-[150px]">
                             <StudioSelect 
-                                value={filterFollowers} 
-                                options={[
-                                    { value: 'All', label: 'FOLLOWERS (%)' },
-                                    { value: '10k+', label: '10K+ FOLLOWERS' },
-                                    { value: '50k+', label: '50K+ FOLLOWERS' },
-                                    { value: '100k+', label: '100K+ FOLLOWERS' },
-                                    { value: '500k+', label: '500K+ FOLLOWERS' }
-                                ]} 
-                                onChange={setFilterFollowers} 
+                                value={filterNiche} 
+                                options={['All', ...NICHES].map(n => ({ value: n, label: n === 'All' ? 'NICHE' : n.toUpperCase() }))} 
+                                onChange={setFilterNiche} 
                                 className="h-12 md:h-14 rounded-xl md:rounded-full border-white/10 bg-black/60" 
                                 accentColor="neon-pink" 
                                 classNamePrefix="studio-select"
                             />
                         </div>
+
+                        {/* Location Filter */}
                         <div className="w-full lg:w-[150px]">
                             <StudioSelect 
                                 value={filterCity} 
@@ -350,6 +493,8 @@ const CreatorManager = () => {
                                 classNamePrefix="studio-select"
                             />
                         </div>
+
+                        {/* Status Filter */}
                         <div className="w-full lg:w-[150px] col-span-2 sm:col-span-1">
                             <StudioSelect 
                                 value={filterStatus} 
@@ -1159,7 +1304,7 @@ const AddCreatorModal = ({ onClose }) => {
                 city: finalCity || '',
                 categories: finalNiche || '',
                 specializations: finalNiche ? [finalNiche] : [],
-                collegeName: showCollege ? form.collegeName : '',
+                collegeName: form.collegeName || '',
                 bio: form.bio || '',
                 instagram: cleanInstagram,
                 instagramFollowers: form.instagramFollowers || '0',
@@ -1242,12 +1387,21 @@ const AddCreatorModal = ({ onClose }) => {
                                 {NICHES.map(n => <option key={n} value={n} className="bg-zinc-950">{n.toUpperCase()}</option>)}
                             </select>
                         </div>
-                        {showCollegeField && (
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">College Name</label>
-                                <input name="collegeName" value={form.collegeName} onChange={handleChange} placeholder="College/University Name" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
-                            </div>
-                        )}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                College Name {showCollegeField ? '' : '(Optional)'}
+                            </label>
+                            <input 
+                                name="collegeName" 
+                                value={form.collegeName} 
+                                onChange={handleChange} 
+                                placeholder={showCollegeField ? 'College/University Name' : 'College/University Name (Optional)'} 
+                                className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" 
+                            />
+                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider pl-1 mt-0.5 leading-normal">
+                                Matching college helps connect creators with regional campaigns and events.
+                            </p>
+                        </div>
                     </div>
 
                     {form.specializations === 'Others' && (

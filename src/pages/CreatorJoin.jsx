@@ -502,7 +502,7 @@ const CreatorJoin = () => {
         { id: 'email', label: 'Email Address', type: 'email', field: 'email', placeholder: 'email@example.com', description: 'What is your email address?', required: true },
         { id: 'city', label: 'Operating City', type: 'city', field: 'city', description: 'Which city are you from?', required: true },
         { id: 'categories', label: 'Content Niche', type: 'niche', field: 'categories', description: 'What is your content niche?', required: true },
-        { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: true, conditional: (data) => data.categories === 'Student/ Campus Creator' || data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
+        { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: (data) => data.categories === 'Student/ Campus Creator' || data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
         { id: 'instagram', label: 'Instagram Handle', type: 'text', field: 'instagram', placeholder: '@yourhandle', description: 'What is your Instagram handle?', required: true },
         { id: 'instagramFollowers', label: 'Instagram Followers', type: 'number', field: 'instagramFollowers', placeholder: 'e.g. 5000', description: 'How many Instagram followers do you have?', required: true },
         { id: 'youtube', label: 'YouTube URL', type: 'text', field: 'youtube', placeholder: 'Channel URL (Optional)', description: 'What is your YouTube channel link? (Optional)', required: false },
@@ -522,7 +522,9 @@ const CreatorJoin = () => {
 
         const val = formData[q.field];
 
-        if (q.required) {
+        const isRequired = typeof q.required === 'function' ? q.required(formData) : q.required;
+
+        if (isRequired) {
             if (q.type === 'phone' && !isPhoneVerifiedRef.current) {
                 return "Please verify your contact number via OTP first.";
             }
@@ -1012,13 +1014,25 @@ const CreatorJoin = () => {
                                                     <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
                                                         {currentQuestion.description}
                                                     </h3>
+                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-2">
+                                                        {!(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') ? (
+                                                            <span className="text-neon-blue">[OPTIONAL]</span>
+                                                        ) : (
+                                                            <span className="text-red-500">[REQUIRED]</span>
+                                                        )}{" "}
+                                                        Why fill this? Matching your college helps us connect you with exclusive regional/campus campaigns and college events.
+                                                    </p>
                                                 </div>
                                                 <div className="relative">
                                                     <Input 
                                                         name={currentQuestion.field} 
                                                         value={formData[currentQuestion.field]} 
                                                         onChange={handleChange} 
-                                                        placeholder={currentQuestion.placeholder} 
+                                                        placeholder={
+                                                            !(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages')
+                                                                ? 'e.g. Delhi University, IIT (Optional)'
+                                                                : 'e.g. Delhi University, IIT'
+                                                        } 
                                                         className="h-20 bg-white/[0.02] border-white/10 rounded-2xl text-xl font-bold px-8 focus:border-neon-blue" 
                                                         autoFocus
                                                     />
@@ -1118,7 +1132,7 @@ const CreatorJoin = () => {
                                                             {formData.categories === 'Others' ? formData.customNiche : formData.categories}
                                                         </p>
                                                     </div>
-                                                    {(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') && (
+                                                    {formData.collegeName && (
                                                         <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
                                                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">College Name</p>
                                                             <p className="font-bold text-white text-base truncate">{formData.collegeName}</p>
