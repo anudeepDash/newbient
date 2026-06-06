@@ -181,11 +181,17 @@ const CampaignBadgeCard = ({ campaign, onSelect, onEdit, onDelete, updateCampaig
                 </h3>
             </div>
 
-            <div className="space-y-3 mb-8">
+            <div className="flex flex-wrap gap-3 mb-8">
                 <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] bg-white/[0.03] px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner w-fit">
                     <MapPin size={12} className="text-neon-pink animate-pulse" />
                     <span>{campaign.targetCity || 'GLOBAL'}</span>
                 </div>
+                {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
+                    <div className="flex items-center gap-3 text-neon-blue text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 px-4 py-2.5 rounded-2xl border border-neon-blue/10 shadow-inner w-fit">
+                        <Layers size={12} />
+                        <span>{campaign.targetCollege}</span>
+                    </div>
+                )}
                 <div className="flex items-center gap-3 text-yellow-500/80 text-[10px] font-black uppercase tracking-[0.2em] bg-yellow-500/5 px-4 py-2.5 rounded-2xl border border-yellow-500/10 shadow-inner w-fit">
                     <Zap size={12} className="text-yellow-500" />
                     <span>{campaign.tasks?.length || 0} TASKS</span>
@@ -292,10 +298,18 @@ const CampaignListItem = ({ campaign, idx, onSelect, onEdit, onDelete, updateCam
         
         <div className="flex-1 w-full sm:w-auto">
             <h4 className="text-lg font-black text-white uppercase italic tracking-tight group-hover:text-neon-blue transition-colors truncate mb-1">{campaign.title}</h4>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
                 <p className="text-[9px] text-gray-600 font-black tracking-[0.2em] flex items-center gap-1.5 uppercase">
                     <MapPin size={10} className="text-neon-pink" /> {campaign.targetCity}
                 </p>
+                {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
+                    <>
+                        <div className="w-1 h-1 rounded-full bg-white/10" />
+                        <p className="text-[9px] text-neon-blue font-black tracking-[0.2em] flex items-center gap-1.5 uppercase">
+                            <Layers size={10} /> {campaign.targetCollege}
+                        </p>
+                    </>
+                )}
                 <div className="w-1 h-1 rounded-full bg-white/10" />
                 <p className="text-[9px] text-neon-pink font-black uppercase tracking-widest">{campaign.reward}</p>
             </div>
@@ -517,6 +531,7 @@ const CampaignManager = () => {
             if (campaign) {
                 setFormData({ 
                     ...campaign, 
+                    targetCollege: campaign.targetCollege || 'Any',
                     tasks: (campaign.tasks || []).map((t, i) => ({
                         ...t,
                         taskType: t.taskType || 'custom',
@@ -542,6 +557,7 @@ const CampaignManager = () => {
             title: '', 
             description: '', 
             targetCity: 'Any', 
+            targetCollege: 'Any',
             reward: '', 
             requirements: '', 
             status: 'Open', 
@@ -796,7 +812,7 @@ const CampaignManager = () => {
             <div className={cn("pt-0", !(isCreating || expandedCampaignId) ? "px-4 md:px-12" : "")}>
                 {/* Control Panel */}
                 {!isCreating && !expandedCampaignId && (
-                    <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
+                    <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
                         
                         {/* Search Engine */}
                         <div className="relative flex-1 min-w-[280px] group">
@@ -899,6 +915,11 @@ const CampaignManager = () => {
                                                         accentColor="neon-blue"
                                                     />
                                                 </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Target College / University</label>
+                                                <Input value={formData.targetCollege} onChange={e => setFormData({ ...formData, targetCollege: e.target.value })} placeholder="e.g. Delhi University, IIT (or 'Any' for all colleges)" className="h-14 bg-black/50 border-white/10 rounded-2xl" />
                                             </div>
 
                                             <div className="space-y-2">
@@ -1331,6 +1352,11 @@ const CampaignDetailView = ({ campaignId, onClose, onEdit, onToggleShortlist, on
                                 <span className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-300 shadow-inner">
                                     <MapPin size={14} className="text-neon-pink" /> {campaign.targetCity || 'GLOBAL'}
                                 </span>
+                                {campaign.targetCollege && campaign.targetCollege !== 'Any' && (
+                                    <span className="flex items-center gap-2 bg-neon-blue/10 border border-neon-blue/20 px-4 py-2 rounded-xl text-neon-blue shadow-inner">
+                                        <Layers size={14} /> {campaign.targetCollege}
+                                    </span>
+                                )}
                                 <span className="flex items-center gap-2 bg-neon-green/10 border border-neon-green/20 px-4 py-2 rounded-xl text-neon-green shadow-inner">
                                     <IndianRupee size={14} /> {campaign.reward}
                                 </span>

@@ -39,17 +39,17 @@ const LiveCampaigns = () => {
     const [selectedPlatform, setSelectedPlatform] = useState('all');
     const [selectedCity, setSelectedCity] = useState('All');
 
-    // Filter active campaigns
+    // Filter active and past campaigns (exclude only Draft)
     const filteredCampaigns = useMemo(() => {
-        const live = campaigns.filter(c => c.status === 'Open');
+        const visible = campaigns.filter(c => c.status && c.status !== 'Draft');
         
-        // If store is empty or has no open campaigns, provide premium fallback mockups
-        const baseList = live.length > 0 ? live : [
-            { id: '1', title: 'Luxury Lifestyle Summer Collab', description: 'Partner with a world-renowned luxury resort chain for their upcoming summer destination campaign.', targetCity: 'Mumbai', reward: '₹25,000 + Stay', minInstagramFollowers: 25000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800' },
-            { id: '2', title: 'Tech Flagship Smartphone Launch', description: 'Create unboxing and review content for the newest flagship smartphone release.', targetCity: 'Bangalore', reward: '₹40,000 + Device', minInstagramFollowers: 50000, platform: 'youtube', thumbnail: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=800' },
-            { id: '3', title: 'Premium Streetwear Drop Vol. 4', description: 'Showcase urban streetwear aesthetics in high-energy reels and story sequences.', targetCity: 'Delhi', reward: '₹15,000 + Wardrobe', minInstagramFollowers: 10000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800' },
-            { id: '4', title: 'Gourmet Culinary Experience Invite', description: 'Attend an exclusive multi-course tasting menu event at a Michelin-starred restaurant.', targetCity: 'Mumbai', reward: '₹20,000 + Experience', minInstagramFollowers: 30000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800' },
-            { id: '5', title: 'Fintech Gen-Z Investment Masterclass', description: 'Educate young investors on smart SIPs and stock market fundamentals through engaging threads.', targetCity: 'Any', reward: '₹35,000', minInstagramFollowers: 40000, platform: 'twitter', thumbnail: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800' }
+        // If store is empty or has no non-draft campaigns, provide premium fallback mockups
+        const baseList = visible.length > 0 ? visible : [
+            { id: '1', title: 'Luxury Lifestyle Summer Collab', description: 'Partner with a world-renowned luxury resort chain for their upcoming summer destination campaign.', targetCity: 'Mumbai', reward: '₹25,000 + Stay', minInstagramFollowers: 25000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=800', status: 'Open' },
+            { id: '2', title: 'Tech Flagship Smartphone Launch', description: 'Create unboxing and review content for the newest flagship smartphone release.', targetCity: 'Bangalore', reward: '₹40,000 + Device', minInstagramFollowers: 50000, platform: 'youtube', thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=800', status: 'Open' },
+            { id: '3', title: 'Premium Streetwear Drop Vol. 4', description: 'Showcase urban streetwear aesthetics in high-energy reels and story sequences.', targetCity: 'Delhi', reward: '₹15,000 + Wardrobe', minInstagramFollowers: 10000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800', status: 'Open' },
+            { id: '4', title: 'Gourmet Culinary Experience Invite', description: 'Attend an exclusive multi-course tasting menu event at a Michelin-starred restaurant.', targetCity: 'Mumbai', reward: '₹20,000 + Experience', minInstagramFollowers: 30000, platform: 'instagram', thumbnail: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800', status: 'Open' },
+            { id: '5', title: 'Fintech Gen-Z Investment Masterclass', description: 'Educate young investors on smart SIPs and stock market fundamentals through engaging threads.', targetCity: 'Any', reward: '₹35,000', minInstagramFollowers: 40000, platform: 'twitter', thumbnail: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=800', status: 'Open' }
         ];
 
         return baseList.filter(camp => {
@@ -191,8 +191,20 @@ const LiveCampaigns = () => {
                                                 <span className="px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-neon-pink flex items-center gap-1.5 shadow-xl">
                                                     <MapPin size={12} /> {camp.targetCity || 'Universal'}
                                                 </span>
-                                                <div className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shadow-xl">
-                                                    <PlatIcon size={18} />
+                                                <div className="flex items-center gap-2">
+                                                    {camp.status && camp.status.toLowerCase() !== 'open' && (
+                                                        <span className={cn(
+                                                            "px-3 py-1.5 rounded-full backdrop-blur-md text-[9px] font-black uppercase tracking-widest border shadow-xl",
+                                                            camp.status.toLowerCase() === 'closed' 
+                                                                ? "bg-red-500/20 text-red-500 border-red-500/30" 
+                                                                : "bg-neon-green/20 text-neon-green border-neon-green/30"
+                                                        )}>
+                                                            {camp.status}
+                                                        </span>
+                                                    )}
+                                                    <div className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white shadow-xl">
+                                                        <PlatIcon size={18} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -216,9 +228,18 @@ const LiveCampaigns = () => {
                                                 </div>
                                                 <Button 
                                                     onClick={() => navigate(`/campaign/${camp.id}`)}
-                                                    className="h-14 px-8 rounded-xl bg-white text-black font-black uppercase tracking-widest text-xs group-hover:bg-neon-blue group-hover:text-black transition-all shadow-xl"
+                                                    className={cn(
+                                                        "h-14 px-8 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-xl",
+                                                        (!camp.status || camp.status.toLowerCase() === 'open')
+                                                            ? "bg-white text-black group-hover:bg-neon-blue group-hover:text-black"
+                                                            : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                                                    )}
                                                 >
-                                                    View Brief & Apply <ArrowRight size={16} className="ml-2" />
+                                                    {(!camp.status || camp.status.toLowerCase() === 'open') ? (
+                                                        <>View Brief & Apply <ArrowRight size={16} className="ml-2 inline" /></>
+                                                    ) : (
+                                                        <>View Brief <ArrowRight size={16} className="ml-2 inline" /></>
+                                                    )}
                                                 </Button>
                                             </div>
                                         </div>

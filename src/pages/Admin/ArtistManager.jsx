@@ -245,7 +245,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
             <div className={isEmbedded ? "px-4 md:px-12 pt-12" : ""}>
                 {/* Futuristic Control Panel */}
-                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-4 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:items-center gap-2 md:gap-3">
+                <div className="relative z-50 bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2.5 md:pr-6 mb-8 md:mb-16 shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex flex-col xl:flex-row xl:flex-wrap xl:items-center gap-2 md:gap-3">
 
 
                     {/* Search Engine */}
@@ -263,7 +263,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* Filter Cluster */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex items-center gap-2 shrink-0 w-full xl:w-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex xl:flex-wrap items-center gap-2 shrink-0 w-full xl:w-auto">
                         <div className="w-full xl:w-[135px]">
                             <StudioSelect 
                                 value={filterCategory} 
@@ -299,7 +299,7 @@ const ArtistManager = ({ isEmbedded = false }) => {
 
                         <div className="w-px h-8 bg-white/5 mx-1 hidden xl:block" />
 
-                        <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0">
+                        <div className="hidden md:flex bg-black/60 p-1 rounded-full border border-white/10 shrink-0 h-14 items-center">
                             <button 
                                 onClick={() => setViewMode('grid')} 
                                 className={cn(
