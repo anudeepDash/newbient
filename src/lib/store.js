@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db, storage } from './firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, getDocs, where, setDoc, getDoc, increment, arrayUnion, collectionGroup, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail } from './email';
+import { sendBookingConfirmation, sendCreatorWelcomeEmail, sendNewCampaignNotificationEmail, sendCreatorApprovedEmail } from './email';
 
 const AUTH_CACHE_KEY = 'nb_auth_session';
 const getCachedSession = () => {
@@ -1466,7 +1466,28 @@ export const useStore = create((set, get) => ({
         }
     },
     updateCreator: async (uid, updates) => {
-        await updateDoc(doc(db, 'creators', uid), updates);
+        const creatorRef = doc(db, 'creators', uid);
+        let prevStatus = null;
+        let email = null;
+        let name = null;
+        try {
+            const snap = await getDoc(creatorRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                prevStatus = data.profileStatus;
+                email = data.email;
+                name = data.displayName || data.name || 'Creator';
+            }
+        } catch (e) {
+            console.error("Error fetching creator for status update check:", e);
+        }
+
+        await updateDoc(creatorRef, updates);
+
+        if (updates.profileStatus === 'approved' && prevStatus !== 'approved' && email) {
+            sendCreatorApprovedEmail(email, name)
+                .catch(err => console.error("Error sending creator approval email:", err));
+        }
     },
     deleteCreator: async (uid) => {
         await deleteDoc(doc(db, 'creators', uid));
