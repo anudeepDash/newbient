@@ -1083,7 +1083,7 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
 };
 
 const NICHES = [
-    'Student Creator/ Campus Creator',
+    'Student/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
@@ -1133,7 +1133,7 @@ const AddCreatorModal = ({ onClose }) => {
             return;
         }
 
-        const showCollege = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
+        const showCollege = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
         if (showCollege && !form.collegeName?.trim()) {
             useStore.getState().addToast("Please enter college name.", 'error');
             return;
@@ -1179,7 +1179,7 @@ const AddCreatorModal = ({ onClose }) => {
         }
     };
 
-    const showCollegeField = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
+    const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-md overflow-y-auto">
