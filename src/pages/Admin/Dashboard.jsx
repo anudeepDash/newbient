@@ -29,6 +29,7 @@ import Gift from 'lucide-react/dist/esm/icons/gift';
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list';
 import ListChecks from 'lucide-react/dist/esm/icons/list-checks';
 import Scale from 'lucide-react/dist/esm/icons/scale';
+import FolderOpen from 'lucide-react/dist/esm/icons/folder-open';
 import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
@@ -243,7 +244,7 @@ const BootstrapAlert = ({ onClaim }) => (
 const Dashboard = () => {
     const { 
         invoices, spends, otherIncomes, proposals, agreements, concerts, portfolio, announcements, user, 
-        artists, clientRequests, upcomingEvents, ticketOrders,
+        artists, clientRequests, upcomingEvents, ticketOrders, documents,
         checkUserRole, logout, maintenanceState, archivePastEvents 
     } = useStore();
     const cards = maintenanceState?.features || {};
@@ -488,6 +489,7 @@ const Dashboard = () => {
                             )}
                             <ControlCard title="Proposal Vault" desc="Strategic quotations and client dossiers." icon={FileSpreadsheet} color="neon-green" link="/admin/proposals" count={proposals?.length || 0} isHidden={cards.docs} />
                             <ControlCard title="Contracts" desc="Legal MOU and contract generator." icon={Scale} color="neon-purple" link="/admin/agreements" count={agreements?.length || 0} isHidden={cards.docs} />
+                            <ControlCard title="Document Hub" desc="Host Google Docs, Sheets, Drive files and PDFs." icon={FolderOpen} color="neon-blue" link="/admin/documents" count={documents?.length || 0} isNew />
                         </DashboardSection>
                     )}
 
