@@ -4,7 +4,6 @@ import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import Users from 'lucide-react/dist/esm/icons/users';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';

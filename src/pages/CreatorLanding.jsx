@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 import { 
-    Sparkles, ArrowRight, ArrowLeft, Instagram, Youtube, Users, Target, 
+    Zap, ArrowRight, ArrowLeft, Instagram, Youtube, Users, Target, 
     ShieldCheck, CheckCircle2, ChevronDown, MapPin, 
     Briefcase, HelpCircle, Check, Globe, Mail, LayoutDashboard
 } from 'lucide-react';
@@ -182,7 +182,7 @@ const CreatorLanding = () => {
                         className="lg:col-span-7 space-y-8"
                     >
                         <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
-                            <Sparkles size={16} className="text-neon-blue animate-spin-slow" />
+                            <Zap size={16} className="text-neon-blue animate-spin-slow" />
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">{creatorProfile ? `Welcome back, ${creatorProfile.name?.split(' ')[0] || 'Creator'}` : 'Creator Workspace'}</span>
                         </div>
 
@@ -509,7 +509,7 @@ const CreatorLanding = () => {
 
                     <div className="relative z-10 max-w-3xl mx-auto space-y-10">
                         <div className="w-20 h-20 bg-white text-black rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl">
-                            <Sparkles size={36} className="text-black animate-spin-slow" />
+                            <Zap size={36} className="text-black animate-spin-slow" />
                         </div>
                         <h2 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-[0.9]">
                             {creatorProfile ? 'YOUR' : 'READY TO JOIN'} <span className="text-white">{creatorProfile ? 'CREATOR HUB.' : 'NEWBI CREATOR?'}</span>

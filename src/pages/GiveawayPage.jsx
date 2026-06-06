@@ -10,7 +10,6 @@ import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import Send from 'lucide-react/dist/esm/icons/send';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
@@ -182,7 +181,7 @@ const GiveawayPage = () => {
         snapchat: Ghost,
         spotify: Music,
         website: Globe,
-        custom: Sparkles,
+        custom: Star,
     };
 
     return (
@@ -258,9 +257,9 @@ const GiveawayPage = () => {
                             {winner.name}
                         </h1>
                         <div className="flex items-center justify-center gap-2 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                            <Sparkles size={12} className="text-yellow-500" />
+                            <Star size={12} className="text-yellow-500" />
                             CONGRATULATIONS
-                            <Sparkles size={12} className="text-yellow-500" />
+                            <Star size={12} className="text-yellow-500" />
                         </div>
                     </motion.div>
                 </div>
@@ -284,7 +283,7 @@ const GiveawayPage = () => {
                             {/* Header accent */}
                             <div className="px-8 md:px-12 pt-8 md:pt-10 pb-6 border-b border-white/5 flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
-                                    <Sparkles size={14} className="text-purple-400" />
+                                    <Star size={14} className="text-purple-400" />
                                 </div>
                                 <span className="text-[9px] font-black uppercase tracking-[0.4em] text-purple-400">Campaign Details</span>
                             </div>
@@ -436,7 +435,7 @@ const GiveawayPage = () => {
                                 {giveaway.tasks?.map((task) => {
                                     const done = userEntry.completedTasks?.[task.id];
                                     const verifying = verifyingTasks[task.id];
-                                    const TaskIcon = taskIcons[task.type] || Sparkles;
+                                    const TaskIcon = taskIcons[task.type] || Star;
 
                                     return (
                                         <motion.div

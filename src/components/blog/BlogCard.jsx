@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, User, ArrowUpRight, Calendar, Sparkles, Star, Eye } from 'lucide-react';
+import { Clock, User, ArrowUpRight, Calendar, Star, Eye } from 'lucide-react';
 
 const CATEGORY_COLORS = {
     'Live Events': '#00ffff', // neon-blue

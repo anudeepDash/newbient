@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, User, Shield, Briefcase, Ticket, LogOut, ExternalLink, Settings, 
-    Sparkles, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
+    Calendar, Zap, AlertCircle, ArrowRight, Key, RefreshCw, Mail, Check, 
     Edit2, Loader2, Info, Instagram, ShieldCheck, 
     LayoutDashboard, CreditCard, History, ChevronRight, Image as ImageIcon,
     Mic
@@ -254,7 +254,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 </span>
                                             )}
                                         <div className="flex items-center gap-1.5 text-[8px] text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                                            <Sparkles size={8} className="text-yellow-500" />
+                                            <Calendar size={8} className="text-yellow-500" />
                                             Joined {new Date(user.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                                         </div>
                                     </div>
@@ -384,7 +384,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-neon-blue group-hover:bg-neon-blue/10 transition-all">
-                                                            <Sparkles size={24} />
+                                                            <Zap size={24} />
                                                         </div>
                                                         <div className="text-left">
                                                             <p className="text-sm font-black text-white uppercase tracking-widest italic">Become a Creator</p>

@@ -19,7 +19,6 @@ import Terminal from 'lucide-react/dist/esm/icons/terminal';
 import Award from 'lucide-react/dist/esm/icons/award';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
 import Clock from 'lucide-react/dist/esm/icons/clock';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
 import User from 'lucide-react/dist/esm/icons/user';
@@ -897,7 +896,7 @@ const ArtistAnt = () => {
 
                                 <div className="space-y-8">
                                     <h3 className="text-sm font-black uppercase tracking-[0.3em] text-[#7B61FF] flex items-center gap-3">
-                                        <Sparkles size={18} /> Social & Work
+                                        <Globe size={18} /> Social & Work
                                     </h3>
                                     <div className="space-y-4">
                                         <FormField label="Instagram" value={artistProfile.instagram} onChange={(e) => setArtistProfile({...artistProfile, instagram: e.target.value})} />

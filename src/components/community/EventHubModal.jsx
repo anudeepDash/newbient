@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Calendar, MapPin, Users, ArrowRight, Share2, 
-    Ticket, Sparkles, ExternalLink, Megaphone, ClipboardList, Info, 
+    Ticket, ExternalLink, Megaphone, ClipboardList, Info, 
     ChevronRight, Zap, Star, Play
 } from 'lucide-react';
 import { cn } from '../../lib/utils';

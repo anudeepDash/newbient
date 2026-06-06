@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import X from 'lucide-react/dist/esm/icons/x';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import { cn } from '../../lib/utils';
 
 const overlayVariants = {
@@ -259,7 +258,7 @@ export default function MarkAsPaidModal({ isOpen, onClose, invoice, onSubmit }) 
                   {/* Header */}
                   <div className="mb-8">
                     <div className="flex items-center gap-2 mb-3">
-                      <Sparkles size={16} className="text-[#39FF14]" />
+                      <CheckCircle size={16} className="text-[#39FF14]" />
                       <span className="text-[10px] font-black text-[#39FF14] uppercase tracking-widest">
                         Payment Confirmation
                       </span>

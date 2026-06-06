@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sparkles, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2 } from 'lucide-react';
+import { Menu, X, Zap, Star, Users, LogOut, Settings, Home, Music, Image as ImageIcon, User as UserIcon, PlusCircle, LayoutGrid, Mic2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import NotificationBell from './NotificationBell';
@@ -19,7 +19,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'CONCERT ZONE', path: '/concertzone', featureId: 'concerts', icon: Music },
         { name: 'CONTACT', path: '/contact', featureId: 'contact', icon: LayoutGrid },
     ];
@@ -30,7 +30,7 @@ const Navbar = () => {
         { name: 'HOME', path: '/', icon: Home },
         { name: 'ARTISTANT', path: '/artistant', icon: Mic2 },
         { name: 'COMMUNITY', path: '/community', featureId: 'community', icon: Users },
-        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Sparkles },
+        { name: 'CREATOR', path: '/creator', matchPaths: ['/creator-dashboard', '/creator'], featureId: 'influencer', icon: Zap },
         { name: 'MORE', action: () => setIsOpen(true), icon: Menu },
     ];
 
@@ -71,7 +71,7 @@ const Navbar = () => {
                         const destination = pinnedAnnouncement.link || (pinnedAnnouncement.linkedEventId ? `/?event=${pinnedAnnouncement.linkedEventId}` : null);
                         const content = (
                             <div className="flex items-center justify-center gap-3">
-                                <Sparkles size={12} className="text-neon-pink animate-pulse" />
+                                <Star size={12} className="text-neon-pink animate-pulse" />
                                 <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white/90">
                                     <span className="text-neon-pink mr-2">{pinnedAnnouncement.title}</span>
                                     <span className="opacity-60">{pinnedAnnouncement.content}</span>
