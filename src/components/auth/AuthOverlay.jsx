@@ -54,6 +54,35 @@ const AuthOverlay = () => {
         }
     }, [isAuthOpen]);
 
+    useEffect(() => {
+        if (mode === 'phone' && isAuthOpen && !recaptchaVerifier.current) {
+            const timer = setTimeout(() => {
+                const container = document.getElementById('recaptcha-auth-container');
+                if (container && !recaptchaVerifier.current) {
+                    try {
+                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-auth-container', {
+                            size: 'invisible',
+                            callback: () => {},
+                            'expired-callback': () => {
+                                setError("reCAPTCHA expired. Please try again.");
+                                if (recaptchaVerifier.current) {
+                                    recaptchaVerifier.current.clear();
+                                    recaptchaVerifier.current = null;
+                                }
+                            }
+                        });
+                        recaptchaVerifier.current.render().catch(err => {
+                            console.error("Error pre-rendering auth recaptcha:", err);
+                        });
+                    } catch (e) {
+                        console.error("Error creating auth RecaptchaVerifier:", e);
+                    }
+                }
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [mode, isAuthOpen]);
+
     if (!isAuthOpen) return null;
 
     const onClose = () => setAuthModal(false);
