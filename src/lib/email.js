@@ -1468,17 +1468,17 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
                 .header { padding: 40px; border-bottom: 1px solid #1a1a1a; text-align: left; background-color: #0a0a0a; }
                 .content { padding: 50px; text-align: left; }
-                .welcome-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(90deg, #FF4F8B, #39FF14); color: #000000; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
+                .welcome-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
                 .title { font-size: 32px; font-weight: 900; line-height: 1.2; letter-spacing: -1px; margin-bottom: 24px; color: #ffffff; text-transform: uppercase; font-style: italic; }
                 .pink-text { color: #FF4F8B; }
-                .green-text { color: #39FF14; }
+                .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
                 
                 .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
-                .studio-card h3 { font-size: 18px; font-weight: 800; color: #39FF14; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .studio-card h3 { font-size: 18px; font-weight: 800; color: #00f2ff; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .studio-card p { font-size: 14px; color: #888888; line-height: 1.5; margin: 0; }
                 
-                .cta-button { display: inline-block; padding: 18px 36px; background-color: #39FF14; color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(57,255,20,0.3); }
+                .cta-button { display: inline-block; padding: 18px 36px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(0,242,255,0.3); }
                 .footer { padding: 40px 50px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center; }
                 .footer-text { font-size: 10px; font-weight: 800; color: #555555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; }
                 .social-links { margin-bottom: 20px; }
@@ -1503,7 +1503,7 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 </div>
                 <div class="content">
                     <div class="welcome-badge">CREATOR WORKSPACE</div>
-                    <h1 class="title">Welcome to <span class="green-text">Newbi</span> <span class="pink-text">Creators</span></h1>
+                    <h1 class="title">Welcome to <span class="blue-text">Newbi</span> <span class="pink-text">Creators</span></h1>
                     <p class="body-text">Hi <strong>${creatorName}</strong>,</p>
                     <p class="body-text">Your profile has been successfully submitted and is currently being reviewed by our partnerships team. We're excited to have you on board as we connect elite creators with top-tier brands.</p>
                     
@@ -1576,19 +1576,19 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
                 .header { padding: 40px; border-bottom: 1px solid #1a1a1a; text-align: left; background-color: #0a0a0a; }
                 .content { padding: 50px; text-align: left; }
-                .campaign-badge { display: inline-block; padding: 6px 12px; background: #FF4F8B; color: #ffffff; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
+                .campaign-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
                 .title { font-size: 32px; font-weight: 900; line-height: 1.2; letter-spacing: -1px; margin-bottom: 24px; color: #ffffff; text-transform: uppercase; font-style: italic; }
                 .pink-text { color: #FF4F8B; }
-                .green-text { color: #39FF14; }
+                .blue-text { color: #00f2ff; }
                 .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
                 
                 .campaign-card { width: 100%; border-collapse: collapse; background: #121212; border: 1px solid #222222; border-radius: 16px; margin: 30px 0; overflow: hidden; }
                 .card-row { border-bottom: 1px dashed #222222; }
                 .card-label { padding: 16px 20px; font-size: 10px; font-weight: 800; color: #666666; text-transform: uppercase; letter-spacing: 1.5px; width: 35%; }
                 .card-value { padding: 16px 20px; font-size: 14px; font-weight: 700; color: #ffffff; text-align: right; }
-                .card-value-highlight { color: #39FF14; }
+                .card-value-highlight { color: #00f2ff; }
                 
-                .cta-button { display: inline-block; padding: 18px 36px; background-color: #39FF14; color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(57,255,20,0.3); }
+                .cta-button { display: inline-block; padding: 18px 36px; background: linear-gradient(90deg, #00f2ff, #FF4F8B); color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(0,242,255,0.3); }
                 .footer { padding: 40px 50px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center; }
                 .footer-text { font-size: 10px; font-weight: 800; color: #555555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; }
                 .social-links { margin-bottom: 20px; }
@@ -1613,7 +1613,7 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 </div>
                 <div class="content">
                     <div class="campaign-badge">NEW OPPORTUNITY</div>
-                    <h1 class="title font-heading">New Campaign <span class="green-text">Active</span></h1>
+                    <h1 class="title font-heading"><span class="blue-text">New Campaign</span> <span class="pink-text">Active</span></h1>
                     <p class="body-text">A new campaign matching your location profile has just gone live on the platform. Review the details below and apply today!</p>
                     
                     <table class="campaign-card">
