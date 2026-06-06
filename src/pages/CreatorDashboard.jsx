@@ -48,7 +48,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CampaignCard from '../components/ui/CampaignCard';
 import TaskSubmissionModal from '../components/ui/TaskSubmissionModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const TASK_TYPES = {
@@ -177,12 +177,19 @@ const CreatorSettingsView = ({ profile }) => {
                         }
                     }
                 });
+                await recaptchaVerifier.current.render();
             }
             
             const cleanPhone = form.phone.replace(/\D/g, '');
             const formattedPhone = `${countryCode}${cleanPhone}`;
-            const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier.current);
-            setConfirmationResult(result);
+            
+            const phoneProvider = new PhoneAuthProvider(auth);
+            const verificationId = await phoneProvider.verifyPhoneNumber(
+                formattedPhone,
+                recaptchaVerifier.current
+            );
+            
+            setConfirmationResult(verificationId);
             setOtpSent(true);
             useStore.getState().addToast("Verification code sent to your phone!", 'success');
         } catch (err) {
@@ -215,13 +222,19 @@ const CreatorSettingsView = ({ profile }) => {
                 return;
             }
 
-            await confirmationResult.confirm(fullCode);
+            const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
+            await linkWithCredential(auth.currentUser, credential);
+
             setIsPhoneVerified(true);
             await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
             useStore.getState().addToast("Phone verified successfully!", 'success');
         } catch (err) {
             console.error("OTP Verification Error:", err);
-            useStore.getState().addToast("Invalid code. Please try again.", 'error');
+            if (err.code === 'auth/credential-already-in-use') {
+                useStore.getState().addToast("This phone number is already linked to another account.", 'error');
+            } else {
+                useStore.getState().addToast("Invalid code or verification expired. Please try again.", 'error');
+            }
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -625,6 +638,35 @@ const CreatorDashboard = () => {
             navigate('/creator/join');
         }
     }, [user, authInitialized, loading, creators, navigate]);
+
+    useEffect(() => {
+        if (activeDashboardTab === 'settings' && !isPhoneVerified && !recaptchaVerifier.current) {
+            const timer = setTimeout(() => {
+                const container = document.getElementById('recaptcha-settings-container');
+                if (container && !recaptchaVerifier.current) {
+                    try {
+                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
+                            size: 'invisible',
+                            callback: () => {},
+                            'expired-callback': () => {
+                                useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
+                                if (recaptchaVerifier.current) {
+                                    recaptchaVerifier.current.clear();
+                                    recaptchaVerifier.current = null;
+                                }
+                            }
+                        });
+                        recaptchaVerifier.current.render().catch(err => {
+                            console.error("Error pre-rendering recaptcha:", err);
+                        });
+                    } catch (e) {
+                        console.error("Error creating RecaptchaVerifier:", e);
+                    }
+                }
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [activeDashboardTab, isPhoneVerified]);
 
 
     if (!profile) return <GlobalLoader color="#38b6ff" />;

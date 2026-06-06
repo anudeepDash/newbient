@@ -1440,8 +1440,8 @@ export const sendCreatorWelcomeEmail = async (toEmail, creatorName) => {
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Welcome to Newbi Creators! 🚀`,
-            fromName: 'Newbi Partnerships',
-            fromEmail: 'partnership@newbi.live',
+            fromName: 'Newbii Creators',
+            fromEmail: 'creators@newbi.live',
             html
         });
         return result.success ? { success: true } : { success: false, error: result.error };
@@ -1544,8 +1544,8 @@ export const sendNewCampaignNotificationEmail = async (bccEmails, campaign) => {
             html,
             'official',
             null,
-            'Newbi Partnerships',
-            'partnership@newbi.live'
+            'Newbii Creators',
+            'creators@newbi.live'
         );
         return result;
     } catch (error) {
