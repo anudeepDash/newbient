@@ -14,7 +14,7 @@ import Tag from 'lucide-react/dist/esm/icons/tag';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
 import Heart from 'lucide-react/dist/esm/icons/heart';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
+import Star from 'lucide-react/dist/esm/icons/star';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import ArrowUpRight from 'lucide-react/dist/esm/icons/arrow-up-right';
 import Home from 'lucide-react/dist/esm/icons/home';
@@ -432,7 +432,7 @@ const BlogPostDetail = () => {
                     {post.sponsorName && (
                         <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-8 sticky top-48">
                             <div className="flex items-center gap-3">
-                                <Sparkles size={16} className="text-neon-blue" />
+                                <Star size={16} className="text-neon-blue" />
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">SUPPORTED BY</h4>
                             </div>
                             

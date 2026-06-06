@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import MessageCircle from 'lucide-react/dist/esm/icons/message-circle';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import Target from 'lucide-react/dist/esm/icons/target';
@@ -968,7 +967,7 @@ const CreatorDashboard = () => {
                         {(activeTab === 'opportunities' ? availableCampaigns : joinedCampaignsList).length === 0 && (
                             <div className="py-32 text-center">
                                 <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-8 text-gray-700">
-                                    <Sparkles size={40} />
+                                    <Zap size={40} />
                                 </div>
                                 <h4 className="text-2xl font-black font-heading uppercase italic tracking-tighter text-gray-600 pr-4">No campaigns yet.</h4>
                                 <p className="text-[11px] font-black text-gray-700 uppercase tracking-widest mt-2 px-10">New campaigns matching your city and niche will appear here when available.</p>

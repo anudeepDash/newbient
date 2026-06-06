@@ -9,7 +9,6 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import Target from 'lucide-react/dist/esm/icons/target';
@@ -508,7 +507,7 @@ const CampaignPublicView = () => {
                                 <div className="relative z-10 space-y-8">
                                     <div className="flex items-center gap-4 pb-6 border-b border-white/5">
                                         <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shadow-[0_0_20px_rgba(46,191,255,0.2)] shrink-0">
-                                            <Sparkles className="text-neon-blue" size={28} />
+                                            <Zap className="text-neon-blue" size={28} />
                                         </div>
                                         <div>
                                             <h2 className="text-2xl font-black font-heading text-white uppercase tracking-tighter italic">Creator Application</h2>

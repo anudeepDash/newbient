@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Zap, Target, Star } from 'lucide-react';
+import { ArrowRight, Zap, Target, Star } from 'lucide-react';
 import logo from '../../assets/logo.png';
 const Hero = () => {
     return (

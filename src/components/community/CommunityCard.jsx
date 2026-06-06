@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Calendar, MapPin, Share2, ArrowRight, Sparkles, X, Info, FileText, ExternalLink, Zap, Users, Ticket, Pin, Star, ClipboardList, Megaphone
+    Calendar, MapPin, Share2, ArrowRight, X, Info, FileText, ExternalLink, Zap, Users, Ticket, Pin, Star, ClipboardList, Megaphone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -177,7 +177,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
                                  isCampaign ? <Megaphone size={80} className="text-white/5" /> : 
                                  isGL ? <Ticket size={80} className="text-white/5" /> : 
                                  isEvent ? <Calendar size={80} className="text-white/5" /> :
-                                 <Sparkles size={80} className="text-white/5" />}
+                                 <Star size={80} className="text-white/5" />}
                             </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
@@ -382,7 +382,7 @@ const CommunityCard = ({ item, type, handleShare, onAction }) => {
 
                     <div className="relative z-10 pt-8 mt-auto flex items-center justify-between border-t border-white/10">
                         <div className="flex items-center gap-3">
-                            <Sparkles size={12} style={{ color: highlightColor }} />
+                            <Star size={12} style={{ color: highlightColor }} />
                             <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.6em] italic">NEWBI ENTERTAINMENT</span>
                         </div>
                         <div className="flex gap-2">

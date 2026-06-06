@@ -9,7 +9,6 @@ import Phone from 'lucide-react/dist/esm/icons/phone';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Zap from 'lucide-react/dist/esm/icons/zap';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';

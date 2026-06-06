@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { 
     Bold, Italic, List, ListOrdered, Undo2, Redo2, 
     Type, AlignLeft, AlignCenter, AlignRight, 
-    Link as LinkIcon, Image as ImageIcon, Sparkles,
+    Link as LinkIcon, Image as ImageIcon,
     Loader2, Heading1, Heading2, Table, Split
 } from 'lucide-react';
 import { cn } from '../../lib/utils';

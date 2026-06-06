@@ -24,7 +24,6 @@ import X from 'lucide-react/dist/esm/icons/x';
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Cpu from 'lucide-react/dist/esm/icons/cpu';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Eye from 'lucide-react/dist/esm/icons/eye';
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
 import { motion, AnimatePresence } from 'framer-motion';
