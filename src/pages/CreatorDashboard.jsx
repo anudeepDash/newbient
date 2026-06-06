@@ -104,7 +104,7 @@ const CompletionTick = ({ visible }) => (
 
 // --- Creator Settings Panel (Embedded) ---
 const NICHES = [
-    'Student Creator/ Campus Creator',
+    'Student/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
@@ -121,7 +121,8 @@ const CreatorSettingsView = ({ profile }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    const initialSpecialization = (profile.specializations || profile.niches || [])[0] || '';
+    const rawSpecialization = (profile.specializations || profile.niches || [])[0] || '';
+    const initialSpecialization = rawSpecialization === 'Student Creator/ Campus Creator' ? 'Student/ Campus Creator' : rawSpecialization;
     const isPredefinedNiche = NICHES.includes(initialSpecialization);
     const isPredefinedCity = PREDEFINED_CITIES.includes(profile.city || '');
 
@@ -337,7 +338,7 @@ const CreatorSettingsView = ({ profile }) => {
             return;
         }
 
-        const showCollege = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
+        const showCollege = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
         if (showCollege && !form.collegeName?.trim()) {
             useStore.getState().addToast("Please enter your college name.", 'error');
             return;
@@ -381,7 +382,7 @@ const CreatorSettingsView = ({ profile }) => {
         }
     };
 
-    const showCollegeField = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
+    const showCollegeField = form.specializations === 'Student/ Campus Creator' || form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return (
         <div className="max-w-4xl mx-auto">

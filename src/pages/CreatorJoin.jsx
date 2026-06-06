@@ -30,7 +30,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const NICHES = [
-    'Student Creator/ Campus Creator',
+    'Student/ Campus Creator',
     'Fashion & Luxury',
     'Tech & Gaming',
     'Travel & Lifestyle',
@@ -497,7 +497,7 @@ const CreatorJoin = () => {
         { id: 'email', label: 'Email Address', type: 'email', field: 'email', placeholder: 'email@example.com', description: 'What is your email address?', required: true },
         { id: 'city', label: 'Operating City', type: 'city', field: 'city', description: 'Which city are you from?', required: true },
         { id: 'categories', label: 'Content Niche', type: 'niche', field: 'categories', description: 'What is your content niche?', required: true },
-        { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: true, conditional: (data) => data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
+        { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: true, conditional: (data) => data.categories === 'Student/ Campus Creator' || data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
         { id: 'instagram', label: 'Instagram Handle', type: 'text', field: 'instagram', placeholder: '@yourhandle', description: 'What is your Instagram handle?', required: true },
         { id: 'instagramFollowers', label: 'Instagram Followers', type: 'number', field: 'instagramFollowers', placeholder: 'e.g. 5000', description: 'How many Instagram followers do you have?', required: true },
         { id: 'youtube', label: 'YouTube URL', type: 'text', field: 'youtube', placeholder: 'Channel URL (Optional)', description: 'What is your YouTube channel link? (Optional)', required: false },
@@ -1113,7 +1113,7 @@ const CreatorJoin = () => {
                                                             {formData.categories === 'Others' ? formData.customNiche : formData.categories}
                                                         </p>
                                                     </div>
-                                                    {(formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') && (
+                                                    {(formData.categories === 'Student/ Campus Creator' || formData.categories === 'Student Creator/ Campus Creator' || formData.categories === 'College Pages') && (
                                                         <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
                                                             <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">College Name</p>
                                                             <p className="font-bold text-white text-base truncate">{formData.collegeName}</p>
