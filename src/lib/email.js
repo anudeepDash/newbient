@@ -234,6 +234,8 @@ export const generateInvoiceEmailHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -276,6 +278,42 @@ export const generateInvoiceEmailHTML = (data) => {
                     .footer { padding: 30px 20px !important; }
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+                    .attachment-label { color: #888888 !important; }
+                    .attachment-value { color: #ffffff !important; }
+                    .attachment-total { background: #0d1f0d !important; }
+                    .attachment-total-value { color: #ffffff !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .attachment-label { color: #444444 !important; }
+                    .attachment-value { color: #111111 !important; }
+                    .attachment-total { background: #f0fdf4 !important; }
+                    .attachment-total-value { color: #111111 !important; }
                 }
             </style>
         </head>
@@ -483,6 +521,8 @@ export const generateOfficialHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -508,6 +548,32 @@ export const generateOfficialHTML = (data) => {
                     .footer { padding: 30px 20px !important; }
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
                 }
             </style>
         </head>
@@ -896,6 +962,8 @@ export const generateProposalEmailHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -935,6 +1003,38 @@ export const generateProposalEmailHTML = (data) => {
                     .footer { padding: 30px 20px !important; }
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+                    .attachment-label { color: #888888 !important; }
+                    .attachment-value { color: #ffffff !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .attachment-label { color: #444444 !important; }
+                    .attachment-value { color: #111111 !important; }
                 }
             </style>
         </head>
@@ -1069,6 +1169,8 @@ export const generateAgreementEmailHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -1108,6 +1210,38 @@ export const generateAgreementEmailHTML = (data) => {
                     .footer { padding: 30px 20px !important; }
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEON_PURPLE} !important; }
+                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+                    .attachment-label { color: #888888 !important; }
+                    .attachment-value { color: #ffffff !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEON_PURPLE} !important; }
+                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .attachment-label { color: #444444 !important; }
+                    .attachment-value { color: #111111 !important; }
                 }
             </style>
         </head>
@@ -1253,6 +1387,8 @@ export const generateReceiptEmailHTML = (data) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
@@ -1295,6 +1431,42 @@ export const generateReceiptEmailHTML = (data) => {
                     .footer { padding: 30px 20px !important; }
                     .title { font-size: 24px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #111111 !important; border-color: #1e1e1e !important; }
+                    .attachment-label { color: #888888 !important; }
+                    .attachment-value { color: #ffffff !important; }
+                    .attachment-total { background: #0d1f0d !important; }
+                    .attachment-total-value { color: #ffffff !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                    .attachment-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .attachment-label { color: #444444 !important; }
+                    .attachment-value { color: #111111 !important; }
+                    .attachment-total { background: #f0fdf4 !important; }
+                    .attachment-total-value { color: #111111 !important; }
                 }
             </style>
         </head>
@@ -1462,6 +1634,8 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
@@ -1484,6 +1658,8 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
+                .logo-light { display: none; }
+                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1493,13 +1669,34 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                     .title { font-size: 26px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; }
                 }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #ffffff !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    .welcome-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .studio-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .studio-card h3 { color: #0099aa !important; }
+                    .studio-card p { color: #555555 !important; }
+                    .cta-button { box-shadow: 0 0 20px rgba(0,153,170,0.2) !important; }
+                    .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                    .footer-text { color: #999999 !important; }
+                    .social-img { filter: none !important; opacity: 0.5 !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                }
             </style>
         </head>
         <body>
             <span class="preheader">Your creator application is received. Welcome to Newbi!</span>
             <div class="container">
                 <div class="header">
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="welcome-badge">CREATOR WORKSPACE</div>
@@ -1570,6 +1767,8 @@ export const generateCampaignNotificationHTML = (campaign) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
@@ -1594,6 +1793,8 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
+                .logo-light { display: none; }
+                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1603,13 +1804,38 @@ export const generateCampaignNotificationHTML = (campaign) => {
                     .title { font-size: 26px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; }
                 }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #ffffff !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    .campaign-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
+                    .title { color: #111111 !important; }
+                    .blue-text { color: #0099aa !important; }
+                    .pink-text { color: #cc3366 !important; }
+                    .body-text { color: #444444 !important; }
+                    .campaign-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .card-row { border-color: #e5e7eb !important; }
+                    .card-label { color: #888888 !important; }
+                    .card-value { color: #111111 !important; }
+                    .card-value-highlight { color: #0099aa !important; }
+                    .cta-button { box-shadow: 0 0 20px rgba(0,153,170,0.2) !important; }
+                    .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                    .footer-text { color: #999999 !important; }
+                    .social-img { filter: none !important; opacity: 0.5 !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                }
             </style>
         </head>
         <body>
             <span class="preheader">New Campaign: ${campaign.title} is now active in ${cityText}.</span>
             <div class="container">
                 <div class="header">
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="campaign-badge">NEW OPPORTUNITY</div>
@@ -1685,6 +1911,8 @@ export const generateCreatorApprovedHTML = (creatorName) => {
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
             <style>
                 .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
@@ -1707,6 +1935,8 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                 .social-links { margin-bottom: 20px; }
                 .social-icon { display: inline-block; margin: 0 12px; }
                 .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
+                .logo-light { display: none; }
+                .logo-dark { display: block; }
                 
                 @media screen and (max-width: 600px) {
                     .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
@@ -1716,13 +1946,35 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                     .title { font-size: 26px !important; margin-bottom: 18px !important; }
                     .body-text { font-size: 14px !important; }
                 }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #ffffff !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    .verified-badge { background: linear-gradient(90deg, #0099aa, #cc3366) !important; }
+                    .title { color: #111111 !important; }
+                    .blue-text { color: #0099aa !important; }
+                    .body-text { color: #444444 !important; }
+                    .studio-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .studio-card h3 { color: #0099aa !important; }
+                    .studio-card p { color: #555555 !important; }
+                    .cta-button { box-shadow: 0 0 20px rgba(0,153,170,0.2) !important; }
+                    .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                    .footer-text { color: #999999 !important; }
+                    .social-img { filter: none !important; opacity: 0.5 !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                }
             </style>
         </head>
         <body>
             <span class="preheader">Congratulations! Your Newbi Creators profile has been verified.</span>
             <div class="container">
                 <div class="header">
-                    <img src="${baseUrl}/logo_full.png" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
                 </div>
                 <div class="content">
                     <div class="verified-badge">PROFILE VERIFIED</div>
