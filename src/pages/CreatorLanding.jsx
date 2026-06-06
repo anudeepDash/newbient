@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import ProfilePanel from '../components/ProfilePanel';
+import NotificationBell from '../components/NotificationBell';
 
 const CreatorLanding = () => {
     useDynamicMeta({
@@ -19,7 +21,8 @@ const CreatorLanding = () => {
     });
 
     const navigate = useNavigate();
-    const { campaigns, user, creators } = useStore();
+    const { campaigns, user, creators, artists } = useStore();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     // Determine if the logged-in user is an existing creator
     const creatorProfile = useMemo(() => {
@@ -105,30 +108,66 @@ const CreatorLanding = () => {
                         <span className="hidden sm:inline">newbi.live</span>
                         <span className="sm:hidden">Back</span>
                     </Link>
-                    <Button 
-                        onClick={() => navigate('/campaigns')}
-                        className="h-10 px-5 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all hidden md:flex items-center gap-2"
-                    >
-                        <Globe size={14} className="text-neon-blue" />
-                        <span>Directory</span>
-                    </Button>
                     {creatorProfile ? (
                         <Button 
                             onClick={() => navigate('/creator-dashboard')}
-                            className="h-10 md:h-12 px-6 md:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(46,191,255,0.4)] transition-all flex items-center gap-2 group"
+                            className="h-10 px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
                         >
                             <LayoutDashboard size={14} />
-                            <span>Open Dashboard</span>
-                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            <span>Dashboard</span>
+                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform hidden sm:inline" />
                         </Button>
                     ) : (
                         <Button 
                             onClick={() => navigate('/creator/join')}
-                            className="h-10 md:h-12 px-6 md:px-8 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-neon-blue hover:text-black hover:shadow-[0_0_30px_rgba(46,191,255,0.4)] transition-all flex items-center gap-2 group"
+                            className="h-10 px-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-neon-blue hover:text-black transition-all flex items-center gap-2 group"
                         >
                             <span>Apply Now</span>
-                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform hidden sm:inline" />
                         </Button>
+                    )}
+                    
+                    {user && <div className="h-4 w-px bg-white/10 mx-1" />}
+                    
+                    <NotificationBell />
+                    
+                    {user ? (
+                        <div 
+                            className="flex items-center gap-3 cursor-pointer select-none"
+                            onClick={() => setIsProfileOpen(true)}
+                        >
+                            <div className="flex items-center gap-2 group">
+                                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-neon-blue transition-all">
+                                    <span className="text-white font-black text-[11px] uppercase group-hover:text-neon-blue">
+                                        {user.displayName ? user.displayName.charAt(0) : 'U'}
+                                    </span>
+                                </div>
+                                <div className="text-left flex flex-col justify-center hidden md:flex">
+                                    <span className="text-[11px] font-bold text-white leading-none capitalize tracking-tight group-hover:text-neon-blue transition-colors">
+                                        {user.displayName?.split(' ')[0] || 'Member'}
+                                    </span>
+                                    <span className="text-[8px] text-neon-blue uppercase tracking-[0.2em] font-black mt-1">
+                                        {(() => {
+                                            if (user.role === 'developer') return 'DEV';
+                                            if (user.role === 'founder') return 'FOUNDER';
+                                            if (user.role === 'super_admin') return 'ADMIN';
+                                            const isApprovedArtist = artists?.some(a => a.uid === user.uid && a.profileStatus === 'approved');
+                                            const isApprovedCreator = creators?.some(c => c.uid === user.uid && c.profileStatus === 'approved');
+                                            if (isApprovedArtist) return 'ARTIST';
+                                            if (isApprovedCreator) return 'CREATOR';
+                                            return 'TRIBE MEMBER';
+                                        })()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => useStore.getState().setAuthModal(true)}
+                            className="px-5 h-10 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                        >
+                            Login
+                        </button>
                     )}
                 </div>
             </header>
@@ -473,7 +512,7 @@ const CreatorLanding = () => {
                             <Sparkles size={36} className="text-black animate-spin-slow" />
                         </div>
                         <h2 className="text-5xl sm:text-7xl font-black font-heading tracking-tighter uppercase italic text-white pr-4 leading-[0.9]">
-                            {creatorProfile ? 'YOUR' : 'READY TO JOIN'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">{creatorProfile ? 'CREATOR HUB.' : 'NEWBI CREATOR?'}</span>
+                            {creatorProfile ? 'YOUR' : 'READY TO JOIN'} <span className="text-white">{creatorProfile ? 'CREATOR HUB.' : 'NEWBI CREATOR?'}</span>
                         </h2>
                         <p className="text-gray-300 text-base md:text-xl font-bold uppercase tracking-widest leading-relaxed max-w-2xl mx-auto">
                             {creatorProfile ? 'Access your dashboard to manage campaigns, submit deliverables, and track your progress.' : 'Connect your profile, explore open brand campaigns, and track all your deliverables.'}
@@ -492,6 +531,7 @@ const CreatorLanding = () => {
                                 <Button 
                                     onClick={() => navigate('/creator/join')}
                                     className="w-full sm:w-auto h-20 px-16 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-sm shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:bg-neon-blue hover:text-black transition-all hover:scale-105 flex items-center justify-center gap-3"
+                                
                                 >
                                     <span>Register Profile</span> 
                                     <ArrowRight size={20} />
@@ -501,6 +541,9 @@ const CreatorLanding = () => {
                     </div>
                 </motion.section>
             </main>
+
+            {/* Profile modal drawer */}
+            <ProfilePanel isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
         </div>
     );
 };

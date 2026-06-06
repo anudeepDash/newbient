@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../lib/store';
+import { PREDEFINED_CITIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
@@ -47,6 +48,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CampaignCard from '../components/ui/CampaignCard';
 import TaskSubmissionModal from '../components/ui/TaskSubmissionModal';
 import useDynamicMeta from '../hooks/useDynamicMeta';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 const TASK_TYPES = {
     content_post: { label: 'Content Post', icon: Camera },
@@ -101,19 +104,167 @@ const CompletionTick = ({ visible }) => (
 // Removed TaskDetailModal - Using shared TaskSubmissionModal component
 
 // --- Creator Settings Panel (Embedded) ---
+const NICHES = [
+    'Fashion & Luxury',
+    'Tech & Gaming',
+    'Travel & Lifestyle',
+    'Beauty & Fitness',
+    'Food & Beverage',
+    'Student Creator/ Campus Creator',
+    'College Pages',
+    'Others'
+];
+
+// --- Creator Settings Panel (Embedded) ---
 const CreatorSettingsView = ({ profile }) => {
     const { updateCreator, deleteCreator, logout } = useStore();
     const navigate = useNavigate();
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const initialSpecialization = (profile.specializations || profile.niches || [])[0] || '';
+    const isPredefinedNiche = NICHES.includes(initialSpecialization);
+    const isPredefinedCity = PREDEFINED_CITIES.includes(profile.city || '');
+
     const [form, setForm] = useState({
         name: profile.name || '',
         phone: profile.phone || '',
-        city: profile.city || '',
-        specializations: (profile.specializations || profile.niches || []).join(', '),
+        email: profile.email || '',
+        city: isPredefinedCity ? (profile.city || '') : (profile.city ? 'Others' : ''),
+        customCity: isPredefinedCity ? '' : (profile.city || ''),
+        specializations: isPredefinedNiche ? initialSpecialization : (initialSpecialization ? 'Others' : ''),
+        customNiche: isPredefinedNiche ? '' : initialSpecialization,
+        collegeName: profile.collegeName || '',
         bio: profile.bio || '',
         profilePicture: profile.profilePicture || ''
     });
+
+    const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [isPhoneVerified, setIsPhoneVerified] = useState(profile.isPhoneVerified || false);
+    const [confirmationResult, setConfirmationResult] = useState(null);
+    const [countryCode, setCountryCode] = useState('+91');
+    const recaptchaVerifier = useRef(null);
+    const otpRefs = useRef([]);
+
+    // Send OTP
+    const handleSendOTP = async () => {
+        if (!form.phone) {
+            useStore.getState().addToast("Please enter a contact number", 'error');
+            return;
+        }
+        setIsSendingOtp(true);
+        try {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                setOtpSent(true);
+                useStore.getState().addToast("Local mode: use any 6-digit code to verify.", 'success');
+                setIsSendingOtp(false);
+                return;
+            }
+
+            if (!recaptchaVerifier.current) {
+                recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
+                    size: 'invisible',
+                    callback: () => {},
+                    'expired-callback': () => {
+                        useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
+                        if (recaptchaVerifier.current) {
+                            recaptchaVerifier.current.clear();
+                            recaptchaVerifier.current = null;
+                        }
+                    }
+                });
+            }
+            
+            const cleanPhone = form.phone.replace(/\D/g, '');
+            const formattedPhone = `${countryCode}${cleanPhone}`;
+            const result = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier.current);
+            setConfirmationResult(result);
+            setOtpSent(true);
+            useStore.getState().addToast("Verification code sent to your phone!", 'success');
+        } catch (err) {
+            console.error("Phone verification error:", err);
+            useStore.getState().addToast(err.message || "Could not send SMS verification code. Try again.", 'error');
+            if (recaptchaVerifier.current) {
+                try { recaptchaVerifier.current.clear(); } catch(e){}
+                recaptchaVerifier.current = null;
+            }
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    // Verify OTP
+    const handleVerifyOTP = async (codeToVerify) => {
+        const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
+        if (fullCode.length !== 6) {
+            useStore.getState().addToast("Please enter the 6-digit verification code.", 'error');
+            return;
+        }
+        setIsVerifyingOtp(true);
+        try {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                setIsPhoneVerified(true);
+                await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
+                useStore.getState().addToast("Phone verified (Local Bypass)!", 'success');
+                setIsVerifyingOtp(false);
+                return;
+            }
+
+            await confirmationResult.confirm(fullCode);
+            setIsPhoneVerified(true);
+            await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
+            useStore.getState().addToast("Phone verified successfully!", 'success');
+        } catch (err) {
+            console.error("OTP Verification Error:", err);
+            useStore.getState().addToast("Invalid code. Please try again.", 'error');
+        } finally {
+            setIsVerifyingOtp(false);
+        }
+    };
+
+    const handleOtpChange = (val, idx) => {
+        if (isNaN(val)) return;
+        const newOtp = [...otpValues];
+        newOtp[idx] = val;
+        setOtpValues(newOtp);
+        if (val !== '' && idx < 5) {
+            otpRefs.current[idx + 1]?.focus();
+        }
+        if (val !== '' && newOtp.every(digit => digit !== '')) {
+            handleVerifyOTP(newOtp.join(''));
+        }
+    };
+
+    const handleOtpKeyDown = (e, idx) => {
+        if (e.key === 'Backspace') {
+            if (otpValues[idx] === '' && idx > 0) {
+                otpRefs.current[idx - 1]?.focus();
+                const newOtp = [...otpValues];
+                newOtp[idx - 1] = '';
+                setOtpValues(newOtp);
+            } else {
+                const newOtp = [...otpValues];
+                newOtp[idx] = '';
+                setOtpValues(newOtp);
+            }
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text').trim();
+        if (pasteData.length === 6 && !isNaN(pasteData)) {
+            const digits = pasteData.split('');
+            setOtpValues(digits);
+            otpRefs.current[5]?.focus();
+            handleVerifyOTP(pasteData);
+        }
+    };
 
     const handleChange = (e) => setForm({...form, [e.target.name]: e.target.value});
 
@@ -135,11 +286,38 @@ const CreatorSettingsView = ({ profile }) => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        
+        if (form.city === 'Others' && !form.customCity?.trim()) {
+            useStore.getState().addToast("Please specify your custom city.", 'error');
+            return;
+        }
+        if (form.specializations === 'Others' && !form.customNiche?.trim()) {
+            useStore.getState().addToast("Please specify your custom content niche.", 'error');
+            return;
+        }
+
+        const showCollege = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
+        if (showCollege && !form.collegeName?.trim()) {
+            useStore.getState().addToast("Please enter your college name.", 'error');
+            return;
+        }
+
         setIsSaving(true);
         try {
+            const finalCity = form.city === 'Others' ? form.customCity : form.city;
+            const finalNiche = form.specializations === 'Others' ? form.customNiche : form.specializations;
+
             await updateCreator(profile.uid, {
-                ...form,
-                specializations: form.specializations.split(',').map(s => s.trim())
+                name: form.name,
+                phone: form.phone,
+                email: form.email,
+                city: finalCity,
+                specializations: [finalNiche],
+                categories: finalNiche,
+                collegeName: showCollege ? form.collegeName : '',
+                bio: form.bio,
+                profilePicture: form.profilePicture,
+                isPhoneVerified: isPhoneVerified
             });
             useStore.getState().addToast("Profile saved successfully!", 'success');
         } catch (err) {
@@ -161,6 +339,8 @@ const CreatorSettingsView = ({ profile }) => {
             setIsSaving(false);
         }
     };
+
+    const showCollegeField = form.specializations === 'Student Creator/ Campus Creator' || form.specializations === 'College Pages';
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -194,7 +374,7 @@ const CreatorSettingsView = ({ profile }) => {
                     {/* Left Column: Identity & Bio */}
                     <div className="lg:col-span-7 space-y-8">
                         <form onSubmit={handleSave} className="space-y-8">
-                            <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                            <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
                                 
                                 <div className="flex items-center gap-6 mb-4">
@@ -214,20 +394,145 @@ const CreatorSettingsView = ({ profile }) => {
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Contact Number</label>
-                                        <input required name="phone" type="tel" value={form.phone} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <div className="flex gap-4">
+                                            {!isPhoneVerified && (
+                                                <select
+                                                    value={countryCode}
+                                                    onChange={(e) => setCountryCode(e.target.value)}
+                                                    className="h-14 bg-black/40 border border-white/10 rounded-xl px-3 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white w-24"
+                                                >
+                                                    <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
+                                                    <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
+                                                    <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
+                                                    <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
+                                                    <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
+                                                </select>
+                                            )}
+                                            <div className="relative flex-1">
+                                                <input 
+                                                    required 
+                                                    name="phone" 
+                                                    type="tel" 
+                                                    value={form.phone} 
+                                                    onChange={handleChange} 
+                                                    disabled={isPhoneVerified || otpSent}
+                                                    className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all disabled:opacity-75" 
+                                                />
+                                                {isPhoneVerified && (
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-neon-green text-[9px] font-black tracking-widest bg-neon-green/10 border border-neon-green/20 px-2.5 py-1 rounded-md">
+                                                        <ShieldCheck size={10} /> VERIFIED
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {!isPhoneVerified && (
+                                            <div className="mt-4 p-4 bg-zinc-950/60 border border-white/[0.08] rounded-2xl space-y-4">
+                                                <div id="recaptcha-settings-container" className="z-50"></div>
+                                                
+                                                {!otpSent ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSendOTP}
+                                                        disabled={isSendingOtp || !form.phone}
+                                                        className="h-12 px-6 bg-neon-blue text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                                    >
+                                                        {isSendingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Send Verification OTP'}
+                                                    </button>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">
+                                                            Enter the 6-digit verification code sent to {countryCode} {form.phone}
+                                                        </p>
+                                                        <div className="flex gap-2">
+                                                            {otpValues.map((digit, idx) => (
+                                                                <input
+                                                                    key={idx}
+                                                                    ref={el => otpRefs.current[idx] = el}
+                                                                    type="text"
+                                                                    maxLength={1}
+                                                                    value={digit}
+                                                                    disabled={isVerifyingOtp}
+                                                                    onChange={e => handleOtpChange(e.target.value, idx)}
+                                                                    onKeyDown={e => handleOtpKeyDown(e, idx)}
+                                                                    onPaste={handleOtpPaste}
+                                                                    className="w-10 h-12 bg-black/60 border border-white/10 rounded-xl text-center text-lg font-black text-white focus:border-neon-blue focus:outline-none transition-all"
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <div className="flex gap-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleVerifyOTP}
+                                                                disabled={isVerifyingOtp || otpValues.join('').length !== 6}
+                                                                className="h-10 px-5 bg-neon-pink text-black font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
+                                                            >
+                                                                {isVerifyingOtp ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
+                                                                className="text-[9px] text-gray-500 hover:text-white font-black uppercase tracking-widest self-center"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
-                                        <input required name="city" value={form.city} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
+                                        <input required name="email" type="email" value={form.email} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specializations</label>
-                                        <input required name="specializations" value={form.specializations} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Operational Hub (City)</label>
+                                        <select
+                                            required name="city" value={form.city} onChange={handleChange}
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                        >
+                                            <option value="" disabled>Select Universal Hub</option>
+                                            {PREDEFINED_CITIES.map(c => <option key={c} value={c} className="bg-zinc-900">{c.toUpperCase()}</option>)}
+                                        </select>
                                     </div>
                                 </div>
+
+                                {form.city === 'Others' && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify City Name</label>
+                                        <input required name="customCity" value={form.customCity} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </motion.div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Niche / Specialization</label>
+                                        <select
+                                            required name="specializations" value={form.specializations} onChange={handleChange}
+                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all appearance-none cursor-pointer text-white"
+                                        >
+                                            <option value="" disabled>Select Niche</option>
+                                            {NICHES.map(n => <option key={n} value={n} className="bg-zinc-900">{n.toUpperCase()}</option>)}
+                                        </select>
+                                    </div>
+                                    {showCollegeField && (
+                                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">College / University Name</label>
+                                            <input required name="collegeName" value={form.collegeName} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                {form.specializations === 'Others' && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Specify Content Niche</label>
+                                        <input required name="customNiche" value={form.customNiche} onChange={handleChange} className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-4 text-sm font-bold focus:border-neon-blue transition-all" />
+                                    </motion.div>
+                                )}
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Strategic Bio</label>
@@ -243,7 +548,7 @@ const CreatorSettingsView = ({ profile }) => {
 
                     {/* Right Column: Identity Assets & Danger Zone */}
                     <div className="lg:col-span-5 space-y-8">
-                        <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
                              <div className="flex items-center gap-6">
                                 <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-white">
                                     <ImageIcon size={24} />
@@ -277,7 +582,7 @@ const CreatorSettingsView = ({ profile }) => {
                             </div>
                         </div>
 
-                        <div className="bg-red-500/5 border border-red-500/10 rounded-[3rem] p-10 space-y-6">
+                        <div className="bg-red-950/20 border border-red-500/20 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-[3rem] p-10 space-y-6">
                             <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-4 text-center">DANGER ZONE</h4>
                             <button onClick={() => setShowDeleteConfirm(true)} type="button" className="w-full h-16 rounded-2xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3">
                                 <AlertCircle size={16} /> Deactivate Creator Profile
@@ -324,11 +629,14 @@ const CreatorDashboard = () => {
 
     if (!profile) return <GlobalLoader color="#38b6ff" />;
 
-    const availableCampaigns = campaigns.filter(c =>
-        c.status === 'Open' &&
-        (c.targetCity === 'Any' || c.targetCity.toLowerCase() === profile.city.toLowerCase()) &&
-        !(profile.joinedCampaigns || []).includes(c.id)
-    );
+    const availableCampaigns = campaigns.filter(c => {
+        const isOpen = c.status === 'Open';
+        const isNotJoined = !(profile.joinedCampaigns || []).includes(c.id);
+        const matchesCity = c.targetCity === 'Any' || c.targetCity.toLowerCase() === profile.city.toLowerCase();
+        const matchesCollege = !c.targetCollege || c.targetCollege === 'Any' || 
+            (profile.collegeName && profile.collegeName.toLowerCase().includes(c.targetCollege.toLowerCase()));
+        return isOpen && isNotJoined && matchesCity && matchesCollege;
+    });
 
     const joinedCampaignsList = campaigns.filter(c =>
         (profile.joinedCampaigns || []).includes(c.id)
@@ -465,7 +773,7 @@ const CreatorDashboard = () => {
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-5"
                     >
-                        <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-2 flex items-center shadow-2xl overflow-hidden group">
+                        <div className="bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2.5rem] p-2 flex items-center overflow-hidden group">
                             <div className="flex-1 grid grid-cols-3 divide-x divide-white/5 py-4">
                                 <div className="flex flex-col items-center justify-center px-4">
                                     <span className="text-2xl font-black text-white italic leading-none">{joinedCampaignsList.length}</span>
@@ -697,7 +1005,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                 animate={{ x: 0 }} 
                 exit={{ x: '100%' }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="relative w-full max-w-md h-full bg-[#050505] border-l border-white/10 flex flex-col shadow-[-20px_0_100px_rgba(0,0,0,0.8)]"
+                className="relative w-full max-w-md h-full bg-zinc-950/80 border-l border-white/[0.08] backdrop-blur-3xl flex flex-col shadow-[-20px_0_100px_rgba(0,0,0,0.8)]"
             >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
@@ -716,7 +1024,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
                     {/* Workspace Banner - Redesigned for Side Panel */}
-                    <div className="relative group overflow-hidden p-8 bg-white/[0.03] border border-white/5 rounded-[3rem]">
+                    <div className="relative group overflow-hidden p-8 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[3rem]">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/5 blur-3xl pointer-events-none" />
                         
                         <div className="relative z-10 flex flex-col gap-8">
@@ -730,7 +1038,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
 
                             <div className="grid grid-cols-1 gap-4">
                                 {/* Identity Status Card */}
-                                <div className={cn("p-6 rounded-[2rem] border flex items-center justify-between group/status transition-all", statusConfig.bg, "border-white/5")}>
+                                <div className={cn("p-6 rounded-[2rem] border flex items-center justify-between group/status transition-all backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]", statusConfig.bg, "border-white/[0.08]")}>
                                     <div className="flex items-center gap-4">
                                         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5", statusConfig.color, "bg-black/40")}>
                                             <statusConfig.icon size={24} />
@@ -745,7 +1053,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
 
                                 {/* Efficiency & Metrics */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-6 bg-black/60 rounded-[2rem] border border-white/5 flex flex-col gap-4">
+                                    <div className="p-6 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] flex flex-col gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-blue">
                                             <Zap size={18} />
                                         </div>
@@ -754,7 +1062,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                             <p className="text-xl font-black text-white italic">{stats.efficiency}%</p>
                                         </div>
                                     </div>
-                                    <div className="p-6 bg-black/60 rounded-[2rem] border border-white/5 flex flex-col gap-4">
+                                    <div className="p-6 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] flex flex-col gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-green">
                                             <Briefcase size={18} />
                                         </div>
@@ -766,7 +1074,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                 </div>
 
                                 {/* Deliverables Progress */}
-                                <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] space-y-4">
+                                <div className="p-6 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[2rem] space-y-4">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Submission Progress</p>
                                         <p className="text-[9px] font-black text-white uppercase tracking-widest">{stats.approvedTasks}/{stats.totalTasks}</p>
@@ -798,7 +1106,7 @@ const WorkspaceOverviewPanel = ({ profile, stats, onClose }) => {
                                 { title: 'SECURITY ALERT', date: '4/30/2026', tag: 'AUTH', icon: <AlertCircle size={16} />, color: 'text-neon-blue' },
                                 { title: 'TASK UPDATED', date: '4/17/2026', tag: 'DATA', icon: <CheckCircle2 size={16} />, color: 'text-neon-green' }
                             ].map((act, i) => (
-                                <div key={i} className="group p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4 hover:bg-white/[0.04] transition-all">
+                                <div key={i} className="group p-5 bg-zinc-950/45 border border-white/[0.08] backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-2xl flex items-center gap-4 hover:bg-white/[0.08] transition-all">
                                     <div className={cn("w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center group-hover:bg-white/5 transition-all shrink-0", act.color)}>
                                         {act.icon}
                                     </div>
