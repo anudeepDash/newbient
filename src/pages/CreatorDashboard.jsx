@@ -148,6 +148,35 @@ const CreatorSettingsView = ({ profile }) => {
     const recaptchaVerifier = useRef(null);
     const otpRefs = useRef([]);
 
+    useEffect(() => {
+        if (!isPhoneVerified && !recaptchaVerifier.current) {
+            const timer = setTimeout(() => {
+                const container = document.getElementById('recaptcha-settings-container');
+                if (container && !recaptchaVerifier.current) {
+                    try {
+                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
+                            size: 'invisible',
+                            callback: () => {},
+                            'expired-callback': () => {
+                                useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
+                                if (recaptchaVerifier.current) {
+                                    recaptchaVerifier.current.clear();
+                                    recaptchaVerifier.current = null;
+                                }
+                            }
+                        });
+                        recaptchaVerifier.current.render().catch(err => {
+                            console.error("Error pre-rendering recaptcha:", err);
+                        });
+                    } catch (e) {
+                        console.error("Error creating RecaptchaVerifier:", e);
+                    }
+                }
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [isPhoneVerified]);
+
     // Send OTP
     const handleSendOTP = async () => {
         if (!form.phone) {
@@ -637,35 +666,6 @@ const CreatorDashboard = () => {
             navigate('/creator/join');
         }
     }, [user, authInitialized, loading, creators, navigate]);
-
-    useEffect(() => {
-        if (activeDashboardTab === 'settings' && !isPhoneVerified && !recaptchaVerifier.current) {
-            const timer = setTimeout(() => {
-                const container = document.getElementById('recaptcha-settings-container');
-                if (container && !recaptchaVerifier.current) {
-                    try {
-                        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-settings-container', {
-                            size: 'invisible',
-                            callback: () => {},
-                            'expired-callback': () => {
-                                useStore.getState().addToast("reCAPTCHA expired. Please try again.", 'error');
-                                if (recaptchaVerifier.current) {
-                                    recaptchaVerifier.current.clear();
-                                    recaptchaVerifier.current = null;
-                                }
-                            }
-                        });
-                        recaptchaVerifier.current.render().catch(err => {
-                            console.error("Error pre-rendering recaptcha:", err);
-                        });
-                    } catch (e) {
-                        console.error("Error creating RecaptchaVerifier:", e);
-                    }
-                }
-            }, 200);
-            return () => clearTimeout(timer);
-        }
-    }, [activeDashboardTab, isPhoneVerified]);
 
 
     if (!profile) return <GlobalLoader color="#38b6ff" />;
