@@ -256,10 +256,11 @@ export default async function handler(req, res) {
         // 2. TRY OPENROUTER (FETCH)
         // ═══════════════════════════════════════════════════════════════
         if (OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10) {
-            // Try multiple OpenRouter models — cheapest first to conserve credits
+            // Try multiple OpenRouter models — best first, with a free fallback
             const orModels = [
+                'google/gemini-3.5-flash',
+                'google/gemini-3.1-flash-lite',
                 'google/gemini-2.5-flash',
-                'google/gemini-2.0-flash-001',
                 'meta-llama/llama-4-scout:free',
             ];
 
