@@ -2012,6 +2012,10 @@ const AIStudio = () => {
                                                     <input type="checkbox" checked={activeProposalData.hideTotalColumn} onChange={(e) => setProposalDataState({ hideTotalColumn: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Hide Totals Column
                                                 </label>
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
+                                                    <input type="checkbox" checked={activeProposalData.showPaymentDetails === false} onChange={(e) => setProposalDataState({ showPaymentDetails: !e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
+                                                    Hide Settlement Details
+                                                </label>
                                             </div>
                                         </div>
                                     )}
