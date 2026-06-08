@@ -724,7 +724,7 @@ const AIStudio = () => {
         }
     }, [id, proposals, activeEngine]);
 
-    const proposalSubtotal = activeProposalItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    const proposalSubtotal = activeProposalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
     const proposalGstAmount = activeProposalData.showGst ? (proposalSubtotal * activeProposalData.gstRate) / 100 : 0;
     const proposalTotalAmount = proposalSubtotal + proposalGstAmount;
 
@@ -2371,58 +2371,64 @@ const AIStudio = () => {
                                                         </p>
                                                     </div>
                                                     <table className="w-full text-left border-collapse border border-black">
-                                                        <thead>
-                                                            <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                                {(activeProposalData.tableColumns || [
-                                                                    { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                    { key: 'qty', label: 'Qty', type: 'number' },
-                                                                    { key: 'price', label: 'Value (INR)', type: 'number' }
-                                                                ]).map((col, cIdx, arr) => (
-                                                                    <th 
-                                                                        key={col.key} 
-                                                                        className={cn(
-                                                                            "p-4",
-                                                                            cIdx < arr.length - 1 && "border-r border-white/20",
-                                                                            col.key === 'qty' && "text-center w-24",
-                                                                            col.key === 'price' && "text-right w-48"
-                                                                        )}
-                                                                    >
-                                                                        {col.label}
-                                                                    </th>
-                                                                ))}
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-black/10">
-                                                            {paginatedPages[currentPreviewPage].items.map((item, i) => {
-                                                                const cols = activeProposalData.tableColumns || [
-                                                                    { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                                    { key: 'qty', label: 'Qty', type: 'number' },
-                                                                    { key: 'price', label: 'Value (INR)', type: 'number' }
-                                                                ];
-                                                                return (
-                                                                    <tr key={i} className="hover:bg-gray-50">
-                                                                        {cols.map((col, cIdx) => {
-                                                                            const isLast = cIdx === cols.length - 1;
-                                                                            const tdClass = cn(
-                                                                                "p-4",
-                                                                                !isLast && "border-r border-black/10"
-                                                                            );
-                                                                            if (col.key === 'description') {
-                                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                                            }
-                                                                            if (col.key === 'qty') {
-                                                                                 return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
-                                                                            }
-                                                                            if (col.key === 'price') {
-                                                                                 return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
-                                                                            }
-                                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                                        })}
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
+                                                          <thead>
+                                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                  {(activeProposalData.tableColumns || [
+                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                      { key: 'qty', label: 'Qty', type: 'number' },
+                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
+                                                                  ]).map((col, cIdx, arr) => {
+                                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                                      return (
+                                                                          <th 
+                                                                              key={col.key} 
+                                                                              className={cn(
+                                                                                  "p-4",
+                                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                                  colType === 'number' && "text-center w-24",
+                                                                                  colType === 'amount' && "text-right w-48"
+                                                                              )}
+                                                                          >
+                                                                              {col.label}
+                                                                          </th>
+                                                                      );
+                                                                  })}
+                                                              </tr>
+                                                          </thead>
+                                                          <tbody className="divide-y divide-black/10">
+                                                              {paginatedPages[currentPreviewPage].items.map((item, i) => {
+                                                                  const cols = activeProposalData.tableColumns || [
+                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                      { key: 'qty', label: 'Qty', type: 'number' },
+                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
+                                                                  ];
+                                                                  return (
+                                                                      <tr key={i} className="hover:bg-gray-50">
+                                                                          {cols.map((col, cIdx) => {
+                                                                              const isLast = cIdx === cols.length - 1;
+                                                                              const tdClass = cn(
+                                                                                  "p-4",
+                                                                                  !isLast && "border-r border-black/10"
+                                                                              );
+                                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                                              if (col.key === 'description') {
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                                              }
+                                                                              if (colType === 'number') {
+                                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
+                                                                              }
+                                                                              if (colType === 'amount') {
+                                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
+                                                                              }
+                                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                                          })}
+                                                                      </tr>
+                                                                  );
+                                                              })}
+                                                          </tbody>
+                                                      </table>
                                                 </div>
                                             )}
                                             {paginatedPages[currentPreviewPage]?.type === 'custom' && (
@@ -2725,58 +2731,64 @@ const AIStudio = () => {
                                             </p>
                                         </div>
                                         <table className="w-full text-left border-collapse border border-black">
-                                            <thead>
-                                                <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                    {(activeProposalData.tableColumns || [
-                                                        { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                        { key: 'qty', label: 'Qty', type: 'number' },
-                                                        { key: 'price', label: 'Value (INR)', type: 'number' }
-                                                    ]).map((col, cIdx, arr) => (
-                                                        <th 
-                                                            key={col.key} 
-                                                            className={cn(
-                                                                "p-4",
-                                                                cIdx < arr.length - 1 && "border-r border-white/20",
-                                                                col.key === 'qty' && "text-center w-24",
-                                                                col.key === 'price' && "text-right w-48"
-                                                            )}
-                                                        >
-                                                            {col.label}
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-black/10">
-                                                {page.items.map((item, i) => {
-                                                    const cols = activeProposalData.tableColumns || [
-                                                        { key: 'description', label: 'Resource Inventory', type: 'text' },
-                                                        { key: 'qty', label: 'Qty', type: 'number' },
-                                                        { key: 'price', label: 'Value (INR)', type: 'number' }
-                                                    ];
-                                                    return (
-                                                        <tr key={i} className="hover:bg-gray-50">
-                                                            {cols.map((col, cIdx) => {
-                                                                const isLast = cIdx === cols.length - 1;
-                                                                const tdClass = cn(
-                                                                    "p-4",
-                                                                    !isLast && "border-r border-black/10"
-                                                                );
-                                                                if (col.key === 'description') {
-                                                                    return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                                }
-                                                                if (col.key === 'qty') {
-                                                                     return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
-                                                                }
-                                                                if (col.key === 'price') {
-                                                                     return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
-                                                                }
-                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                            })}
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
+                                                          <thead>
+                                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                                  {(activeProposalData.tableColumns || [
+                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                      { key: 'qty', label: 'Qty', type: 'number' },
+                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
+                                                                  ]).map((col, cIdx, arr) => {
+                                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                                      return (
+                                                                          <th 
+                                                                              key={col.key} 
+                                                                              className={cn(
+                                                                                  "p-4",
+                                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                                  colType === 'number' && "text-center w-24",
+                                                                                  colType === 'amount' && "text-right w-48"
+                                                                              )}
+                                                                          >
+                                                                              {col.label}
+                                                                          </th>
+                                                                      );
+                                                                  })}
+                                                              </tr>
+                                                          </thead>
+                                                          <tbody className="divide-y divide-black/10">
+                                                              {page.items.map((item, i) => {
+                                                                  const cols = activeProposalData.tableColumns || [
+                                                                      { key: 'description', label: 'Resource Inventory', type: 'text' },
+                                                                      { key: 'qty', label: 'Qty', type: 'number' },
+                                                                      { key: 'price', label: 'Value (INR)', type: 'amount' }
+                                                                  ];
+                                                                  return (
+                                                                      <tr key={i} className="hover:bg-gray-50">
+                                                                          {cols.map((col, cIdx) => {
+                                                                              const isLast = cIdx === cols.length - 1;
+                                                                              const tdClass = cn(
+                                                                                  "p-4",
+                                                                                  !isLast && "border-r border-black/10"
+                                                                              );
+                                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                                              if (col.key === 'description') {
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                                              }
+                                                                              if (colType === 'number') {
+                                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
+                                                                              }
+                                                                              if (colType === 'amount') {
+                                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
+                                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
+                                                                              }
+                                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                                          })}
+                                                                      </tr>
+                                                                  );
+                                                              })}
+                                                          </tbody>
+                                                      </table>
                                     </div>
                                 )}
                                 {page.type === 'custom' && (
