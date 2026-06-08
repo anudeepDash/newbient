@@ -1498,6 +1498,12 @@ const AIStudio = () => {
     const currentLogo = logoOptions.find(l => l.id === (activeEngine === 'proposal' ? activeProposalData.selectedLogo : agreementFormData.selectedLogo)) || logoOptions[0];
     const paginatedPages = activeEngine === 'proposal' ? proposalPaginatedPages : agreementPaginatedPages;
 
+    useEffect(() => {
+        if (paginatedPages.length > 0 && currentPreviewPage >= paginatedPages.length) {
+            setCurrentPreviewPage(paginatedPages.length - 1);
+        }
+    }, [paginatedPages.length, currentPreviewPage]);
+
     return (
         <div className="h-screen overflow-hidden bg-[#020202] text-white font-['Outfit'] flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: `
@@ -2284,12 +2290,12 @@ const AIStudio = () => {
                                                             {activeProposalData.strategySub ?? 'STRATEGIC OUTLINE'}
                                                         </p>
                                                     </div>
-                                                    {paginatedPages[currentPreviewPage].overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage].overviewText)}</div>}
-                                                    {paginatedPages[currentPreviewPage].primaryGoalText && (
+                                                    {paginatedPages[currentPreviewPage]?.overviewText && <div className="text-lg font-medium leading-[1.7] text-gray-700">{renderContent(paginatedPages[currentPreviewPage]?.overviewText)}</div>}
+                                                    {paginatedPages[currentPreviewPage]?.primaryGoalText && (
                                                         <div className="pt-12">
                                                             <div className="p-12 border-2 border-black rounded-[2.5rem] space-y-6">
                                                                 <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Primary Objective</p>
-                                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage].primaryGoalText)}</div>
+                                                                <div className="text-lg font-black text-black leading-relaxed">{renderContent(paginatedPages[currentPreviewPage]?.primaryGoalText)}</div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -2322,7 +2328,7 @@ const AIStudio = () => {
                                                             {activeProposalData.proposalSub ?? 'PROJECT INVENTORY'}
                                                         </p>
                                                     </div>
-                                                    {paginatedPages[currentPreviewPage].deliverables?.length > 0 && (
+                                                    {paginatedPages[currentPreviewPage]?.deliverables?.length > 0 && (
                                                         <div className="space-y-6">
                                                             <table className="w-full text-left border-collapse border border-black">
                                                                 <thead>
@@ -2334,10 +2340,10 @@ const AIStudio = () => {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="divide-y divide-black/10">
-                                                                    {paginatedPages[currentPreviewPage].deliverables.map((d, i) => (
+                                                                    {paginatedPages[currentPreviewPage]?.deliverables?.map((d, i) => (
                                                                         <tr key={d.id || i} className="hover:bg-gray-50">
                                                                             <td className="p-4 text-center text-[11px] font-bold text-slate-500 border-r border-black/10">
-                                                                                {String((paginatedPages[currentPreviewPage].startIndex || 0) + i + 1).padStart(2, '0')}
+                                                                                {String((paginatedPages[currentPreviewPage]?.startIndex || 0) + i + 1).padStart(2, '0')}
                                                                             </td>
                                                                             <td className="p-4 text-[12px] font-bold text-black border-r border-black/10">{d.item}</td>
                                                                             <td className="p-4 text-center text-[12px] font-medium text-gray-600 border-r border-black/10">{d.qty || '—'}</td>
@@ -2348,11 +2354,11 @@ const AIStudio = () => {
                                                             </table>
                                                         </div>
                                                     )}
-                                                    {paginatedPages[currentPreviewPage].clientRequirements?.length > 0 && (
+                                                    {paginatedPages[currentPreviewPage]?.clientRequirements?.length > 0 && (
                                                         <div className="space-y-6 pt-4">
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mb-6">Requirements From Client</p>
                                                             <div className="p-8 border-2 border-gray-200 space-y-0">
-                                                                {paginatedPages[currentPreviewPage].clientRequirements.map((r, i) => (
+                                                                {paginatedPages[currentPreviewPage]?.clientRequirements?.map((r, i) => (
                                                                     <div key={r.id || i} className={cn("flex items-start gap-4 py-4", i > 0 && "border-t border-gray-100")}>
                                                                         <div className="w-8 h-8 bg-black flex items-center justify-center shrink-0 mt-0.5"><span className="text-[9px] font-black text-white">{String(i + 1).padStart(2, '0')}</span></div>
                                                                         <p className="text-[12px] font-bold text-black leading-relaxed">{r.description}</p>
@@ -2371,8 +2377,8 @@ const AIStudio = () => {
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {paginatedPages[currentPreviewPage].tablePageIdx > 1 
-                                                                ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage].tablePageIdx}` 
+                                                            {paginatedPages[currentPreviewPage]?.tablePageIdx > 1 
+                                                                ? `${activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN'} — Part ${paginatedPages[currentPreviewPage]?.tablePageIdx}` 
                                                                 : (activeProposalData.inventorySub ?? 'COMMERCIALS BREAKDOWN')}
                                                         </p>
                                                     </div>
@@ -2402,7 +2408,7 @@ const AIStudio = () => {
                                                               </tr>
                                                           </thead>
                                                           <tbody className="divide-y divide-black/10">
-                                                              {paginatedPages[currentPreviewPage].items.map((item, i) => {
+                                                              {paginatedPages[currentPreviewPage]?.items?.map((item, i) => {
                                                                   const cols = activeProposalData.tableColumns || [
                                                                       { key: 'description', label: 'Resource Inventory', type: 'text' },
                                                                       { key: 'qty', label: 'Qty', type: 'number' },
@@ -2441,15 +2447,15 @@ const AIStudio = () => {
                                                 <div className="space-y-8 py-8 h-full flex flex-col justify-start">
                                                     <div className="mb-10 space-y-3">
                                                         <h3 className="text-3xl font-black text-black tracking-tight uppercase leading-none">
-                                                            {paginatedPages[currentPreviewPage].title ? paginatedPages[currentPreviewPage].title.toUpperCase() : "CUSTOM PAGE"}
+                                                            {paginatedPages[currentPreviewPage]?.title ? paginatedPages[currentPreviewPage]?.title?.toUpperCase() : "CUSTOM PAGE"}
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">
-                                                            {(activeProposalData.customPages?.[paginatedPages[currentPreviewPage].pageIndex]?.subtitle || "Additional Specifications").toUpperCase()}
+                                                            {(activeProposalData.customPages?.[paginatedPages[currentPreviewPage]?.pageIndex || 0]?.subtitle || "Additional Specifications").toUpperCase()}
                                                         </p>
                                                     </div>
                                                     <div className="flex-1">
-                                                        {renderContent(paginatedPages[currentPreviewPage].content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
+                                                        {renderContent(paginatedPages[currentPreviewPage]?.content || '', "text-[14px] leading-[1.8] text-gray-700 space-y-3")}
                                                     </div>
                                                 </div>
                                             )}
@@ -2460,10 +2466,10 @@ const AIStudio = () => {
                                                             GENERAL TERMS.
                                                         </h3>
                                                         <div className="w-20 h-1.5 bg-neon-green" />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage].termsPageIdx}</p>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.35em] mt-3">Part {paginatedPages[currentPreviewPage]?.termsPageIdx}</p>
                                                     </div>
                                                     <div className="text-[12px] font-semibold text-gray-600 leading-relaxed space-y-3">
-                                                        {renderContent(paginatedPages[currentPreviewPage].termsText)}
+                                                        {renderContent(paginatedPages[currentPreviewPage]?.termsText)}
                                                     </div>
                                                 </div>
                                             )}
@@ -2481,16 +2487,16 @@ const AIStudio = () => {
                                                          </div>
                                                          <div className={cn("grid gap-12 items-start", activeProposalData.hideTotalColumn ? "grid-cols-1" : "grid-cols-2")}>
                                                              <div className="space-y-8">
-                                                                 {paginatedPages[currentPreviewPage].termsText && (
+                                                                 {paginatedPages[currentPreviewPage]?.termsText && (
                                                                      <div className="space-y-3">
                                                                          <h4 className="text-[10px] font-black text-black uppercase tracking-widest border-b-2 border-black pb-2">General Terms</h4>
-                                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage].termsText)}</div>
+                                                                         <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(paginatedPages[currentPreviewPage]?.termsText)}</div>
                                                                      </div>
                                                                  )}
-                                                                 {paginatedPages[currentPreviewPage].paymentDetailsText && (
+                                                                 {paginatedPages[currentPreviewPage]?.paymentDetailsText && (
                                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
                                                                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage].paymentDetailsText}</div>
+                                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{paginatedPages[currentPreviewPage]?.paymentDetailsText}</div>
                                                                      </div>
                                                                  )}
                                                              </div>
