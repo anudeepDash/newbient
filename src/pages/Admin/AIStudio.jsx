@@ -873,7 +873,7 @@ const AIStudio = () => {
 
         if (!isFieldHidden('commercials')) {
             const termsHtml = activeProposalData.terms || '';
-            const paymentDetailsHtml = (activeProposalData.showPaymentDetails !== false) ? (activeProposalData.paymentDetails || '') : '';
+            const paymentDetailsHtml = (activeProposalData.showPaymentDetails !== false && !isFieldHidden('paymentDetails')) ? (activeProposalData.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);

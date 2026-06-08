@@ -985,7 +985,7 @@ const ProposalGenerator = () => {
 
         if (!isHidden('commercials')) {
             const termsHtml = formData.terms || '';
-            const paymentDetailsHtml = formData.showPaymentDetails !== false ? (formData.paymentDetails || '') : '';
+            const paymentDetailsHtml = (formData.showPaymentDetails !== false && !isHidden('paymentDetails')) ? (formData.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);
@@ -1650,7 +1650,7 @@ const ProposalGenerator = () => {
         { id: '3', label: 'Scope of Work', icon: ClipboardList, desc: 'Project Scope', visibilityKey: 'scopeOfWork' },
         { id: '4', label: 'Deliverables', icon: Layers, desc: 'What we deliver', visibilityKey: 'proposal' },
         { id: '5', label: 'Pricing Breakdown', icon: Briefcase, desc: 'Financial Details', visibilityKey: 'inventory' },
-        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'commercials' },
+        { id: '6', label: 'Payment & Terms', icon: CreditCard, desc: 'Settlement & Terms', visibilityKey: 'paymentDetails' },
         { id: '7', label: 'Custom Pages', icon: FileText, desc: 'Additional Pages', visibilityKey: 'customPages' }
     ];
 

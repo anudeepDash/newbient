@@ -910,7 +910,7 @@ const Proposal = () => {
 
         if (!isHidden('commercials')) {
             const termsHtml = displayProposal.terms || '';
-            const paymentDetailsHtml = displayProposal.showPaymentDetails !== false ? (displayProposal.paymentDetails || '') : '';
+            const paymentDetailsHtml = (displayProposal.showPaymentDetails !== false && !isHidden('paymentDetails')) ? (displayProposal.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);
