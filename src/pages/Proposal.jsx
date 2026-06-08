@@ -910,7 +910,7 @@ const Proposal = () => {
 
         if (!isHidden('commercials')) {
             const termsHtml = displayProposal.terms || '';
-            const paymentDetailsHtml = displayProposal.paymentDetails || '';
+            const paymentDetailsHtml = displayProposal.showPaymentDetails !== false ? (displayProposal.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);
@@ -1312,11 +1312,16 @@ const Proposal = () => {
                                                             <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
                                                         </div>
                                                     )}
-                                                    {displayProposal.paymentDetails && (
+                                                    {page.paymentDetailsText && (
+
                                                         <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+
                                                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                            <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{displayProposal.paymentDetails}</div>
+
+                                                            <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
+
                                                         </div>
+
                                                     )}
                                                 </div>
                                                 {!displayProposal.hideTotalColumn && (<div className="space-y-4">
@@ -1785,11 +1790,16 @@ const Proposal = () => {
                                                          <div className="text-[11px] font-semibold text-gray-600 leading-relaxed space-y-2">{renderContent(page.termsText)}</div>
                                                      </div>
                                                  )}
-                                                 {displayProposal.paymentDetails && (
+                                                 {page.paymentDetailsText && (
+
                                                      <div className="p-6 bg-gray-50 border border-gray-150 rounded-2xl space-y-2">
+
                                                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Settlement Details</p>
-                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{displayProposal.paymentDetails}</div>
+
+                                                         <div className="text-[11px] font-mono font-bold text-black whitespace-pre-line leading-relaxed">{page.paymentDetailsText}</div>
+
                                                      </div>
+
                                                  )}
                                              </div>
                                              {!displayProposal.hideTotalColumn && (<div className="space-y-4">
