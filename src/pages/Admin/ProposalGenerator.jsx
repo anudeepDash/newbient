@@ -3088,23 +3088,53 @@ const ProposalGenerator = () => {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
+                                                  </div>
 
                                                   {/* Full Width Editor */}
-                                                 <div className="space-y-4 relative group/editor group/refine w-full">
-                                                     <div className="relative w-full">
-                                                          <StudioRichEditor 
-                                                              label="Settlement Terms"
-                                                              value={formData.terms} 
-                                                              onChange={val => setFormData({...formData, terms: val})} 
-                                                              placeholder="Payment milestones, terms of settlement..." 
-                                                              minHeight="260px"
-                                                              accentColor="neon-green"
-                                                              className={cn(isHidden('terms') && 'opacity-30')}
-                                                          />
-                                                          <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
-                                                     </div>
-                                                 </div>
+                                                  <div className="space-y-6 w-full">
+                                                      <div className="relative group/editor group/refine w-full">
+                                                          <div className="relative w-full">
+                                                              <StudioRichEditor 
+                                                                  label="Settlement Terms"
+                                                                  value={formData.terms} 
+                                                                  onChange={val => setFormData({...formData, terms: val})} 
+                                                                  placeholder="Payment milestones, terms of settlement..." 
+                                                                  minHeight="260px"
+                                                                  accentColor="neon-green"
+                                                                  className={cn(isHidden('terms') && 'opacity-30')}
+                                                              />
+                                                              <button type="button" disabled={isHidden('terms')} onClick={() => handleRefineClick('terms', 'Settlement Terms', formData.terms)} className="absolute right-4 top-12 opacity-0 group-hover/refine:opacity-100 focus:opacity-100 transition-all p-2 bg-zinc-950 border border-white/10 text-neon-green hover:text-white rounded-xl hover:scale-105 z-[70] disabled:opacity-0" title="Refine with AI"><Sparkles size={14} className="animate-pulse" /></button>
+                                                          </div>
+                                                      </div>
+                                                      
+                                                      {/* Settlement Details */}
+                                                      <div className="space-y-4 w-full">
+                                                          <div className="flex justify-between items-center px-2">
+                                                              <span className="text-[10px] font-black text-neon-green uppercase tracking-widest">Settlement Account Details</span>
+                                                              <button 
+                                                                  type="button" 
+                                                                  onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} 
+                                                                  className={cn(
+                                                                      "text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all", 
+                                                                      formData.showPaymentDetails !== false 
+                                                                          ? "bg-neon-green/10 text-neon-green border-neon-green/20" 
+                                                                          : "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                  )}
+                                                              >
+                                                                  {formData.showPaymentDetails !== false ? 'Enabled' : 'Disabled'}
+                                                              </button>
+                                                          </div>
+                                                          <div className={cn("relative w-full transition-opacity duration-300", formData.showPaymentDetails === false && "opacity-30")}>
+                                                              <textarea 
+                                                                  value={formData.paymentDetails || ''} 
+                                                                  onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
+                                                                  disabled={formData.showPaymentDetails === false}
+                                                                  className="w-full bg-black/60 border border-white/10 p-6 rounded-[2rem] font-mono font-bold text-xs text-white outline-none focus:border-neon-green/40 transition-all min-h-[120px]" 
+                                                                  placeholder="Account Name, Number, IFSC, UPI, etc..." 
+                                                              />
+                                                          </div>
+                                                      </div>
+                                                  </div>
                                              </div>
                                          </div>
                                          <div className="border border-white/5 rounded-[3rem] overflow-hidden bg-white/[0.01]">
