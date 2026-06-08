@@ -1,6 +1,73 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
+
+// ── Dynamic Model Discovery (Local Dev) ─────────────────────────────────
+// Mirrors the production api/ai.js logic so local dev never breaks on
+// model deprecations either.
+// ─────────────────────────────────────────────────────────────────────────
+
+let cachedModels = null;
+let modelCacheTimestamp = 0;
+const MODEL_CACHE_TTL = 6 * 60 * 60 * 1000;
+
+const FALLBACK_MODEL_LIST = [
+    'gemini-3.5-flash',
+    'gemini-3.1-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+];
+
+function parseModelVersion(modelName) {
+    const match = modelName.match(/gemini[- ](\d+(?:\.\d+)?)/);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+async function discoverModels(apiKey) {
+    const now = Date.now();
+    if (cachedModels && (now - modelCacheTimestamp) < MODEL_CACHE_TTL) {
+        return cachedModels;
+    }
+    if (!apiKey) return FALLBACK_MODEL_LIST;
+
+    try {
+        console.log('[LOCAL AI DEV PROXY] 🔍 Discovering available Gemini models...');
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+        );
+        if (!response.ok) throw new Error(`Models API returned ${response.status}`);
+        const data = await response.json();
+        const models = data.models || [];
+
+        const flashModels = models
+            .filter(m => {
+                const name = m.name?.replace('models/', '') || '';
+                const supportsGenerate = m.supportedGenerationMethods?.includes('generateContent');
+                const isFlash = name.includes('flash');
+                const isStable = !name.includes('exp') && !name.includes('preview');
+                return supportsGenerate && isFlash && isStable;
+            })
+            .map(m => m.name.replace('models/', ''))
+            .sort((a, b) => {
+                const vA = parseModelVersion(a);
+                const vB = parseModelVersion(b);
+                if (vB !== vA) return vB - vA;
+                return (a.includes('lite') ? 1 : 0) - (b.includes('lite') ? 1 : 0);
+            });
+
+        if (flashModels.length > 0) {
+            cachedModels = flashModels;
+            modelCacheTimestamp = now;
+            console.log(`[LOCAL AI DEV PROXY] ✅ Discovered ${flashModels.length} Flash models: [${flashModels.join(', ')}]`);
+            return flashModels;
+        }
+        return FALLBACK_MODEL_LIST;
+    } catch (err) {
+        console.error('[LOCAL AI DEV PROXY] ❌ Model discovery failed:', err.message);
+        return cachedModels || FALLBACK_MODEL_LIST;
+    }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -25,31 +92,45 @@ export default defineConfig(({ mode }) => {
                 try {
                   const { systemPrompt, userPrompt, type } = JSON.parse(body);
                   
-                  // Try Gemini SDK
+                  // ── Try Gemini with dynamic model discovery ──
                   if (GEMINI_API_KEY) {
-                    try {
-                      console.log('[LOCAL AI DEV PROXY] Trying Gemini...');
-                      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                      const model = genAI.getGenerativeModel({ 
-                        model: "gemini-2.0-flash",
-                        generationConfig: { responseMimeType: "application/json" }
-                      });
-                      const result = await model.generateContent([
-                        { text: systemPrompt + "\n\nReturn valid JSON." },
-                        { text: userPrompt }
-                      ]);
-                      const text = result.response.text();
-                      if (text && text.length > 20) {
-                        res.statusCode = 200;
-                        res.end(JSON.stringify({ content: text, provider: 'gemini-2.0' }));
-                        return;
+                    const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+                    const models = await discoverModels(GEMINI_API_KEY);
+
+                    for (const modelName of models) {
+                      try {
+                        console.log(`[LOCAL AI DEV PROXY] 🚀 Trying: ${modelName}`);
+                        const response = await genAI.models.generateContent({
+                          model: modelName,
+                          contents: [
+                            { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
+                          ],
+                          config: {
+                            responseMimeType: "application/json"
+                          }
+                        });
+                        const text = response.text;
+                        if (text && text.length > 20) {
+                          console.log(`[LOCAL AI DEV PROXY] ✨ Success: ${modelName}`);
+                          res.statusCode = 200;
+                          res.end(JSON.stringify({ content: text, provider: `gemini-${modelName}` }));
+                          return;
+                        }
+                      } catch (e) {
+                        const msg = e.message || '';
+                        if (msg.includes('not found') || msg.includes('not supported')) {
+                          console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} gone (404), trying next...`);
+                          cachedModels = null; // Invalidate cache
+                          continue;
+                        }
+                        console.warn(`[LOCAL AI DEV PROXY] ⚠️ ${modelName} failed:`, msg.substring(0, 100));
+                        continue;
                       }
-                    } catch (e) {
-                      console.warn('[LOCAL AI DEV PROXY] Gemini failed:', e.message);
                     }
+                    console.warn('[LOCAL AI DEV PROXY] All Gemini models exhausted');
                   }
 
-                  // Try OpenRouter
+                  // ── Try OpenRouter ──
                   if (OPENROUTER_API_KEY) {
                     try {
                       console.log('[LOCAL AI DEV PROXY] Trying OpenRouter...');
@@ -87,7 +168,7 @@ export default defineConfig(({ mode }) => {
                     }
                   }
 
-                  // Try Airforce proxy
+                  // ── Try Airforce proxy ──
                   try {
                     console.log('[LOCAL AI DEV PROXY] Trying Airforce...');
                     const afRes = await fetch('https://api.airforce/v1/chat/completions', {
@@ -111,7 +192,7 @@ export default defineConfig(({ mode }) => {
                     console.warn('[LOCAL AI DEV PROXY] Airforce failed:', e.message);
                   }
 
-                  // Try Pollinations proxy
+                  // ── Try Pollinations proxy ──
                   try {
                     console.log('[LOCAL AI DEV PROXY] Trying Pollinations...');
                     const pollRes = await fetch('https://text.pollinations.ai/', {
@@ -163,3 +244,4 @@ export default defineConfig(({ mode }) => {
     }
   }
 })
+
