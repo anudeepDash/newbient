@@ -794,7 +794,6 @@ const ProposalGenerator = () => {
 
     const totalSrcCol = formData.totalSourceColumn || 'price';
     const subtotal = items.reduce((sum, item) => {
-        if (totalSrcCol === 'price') return sum + (Number(item.qty) * Number(item.price));
         return sum + (Number(item[totalSrcCol]) || 0);
     }, 0);
     const hasOverride = formData.totalOverride !== null && formData.totalOverride !== undefined && formData.totalOverride !== '';
@@ -2450,7 +2449,11 @@ const ProposalGenerator = () => {
                                                                     disabled={isHidden('inventory') || isProtected}
                                                                     onClick={() => {
                                                                         const cols = [...(formData.tableColumns || defaultColumns)];
-                                                                        cols[cIdx] = { ...col, type: nextType };
+                                                                        let newLabel = col.label;
+                                                                        if (nextType === 'amount' && (col.label === 'New Column' || !col.label)) {
+                                                                            newLabel = 'Amount (INR)';
+                                                                        }
+                                                                        cols[cIdx] = { ...col, type: nextType, label: newLabel };
                                                                         setFormData({ ...formData, tableColumns: cols });
                                                                     }}
                                                                     title={`Type: ${typeInfo.label} — click to change`}
@@ -2586,7 +2589,7 @@ const ProposalGenerator = () => {
                                                                                                 value={item[col.key] || ''}
                                                                                                 onChange={e => {
                                                                                                     const newItems = [...items];
-                                                                                                    newItems[idx][col.key] = e.target.value;
+                                                                                                    newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                     setItems(newItems);
                                                                                                 }}
                                                                                                 className="w-full bg-black/40 border border-white/10 h-10 pl-7 pr-3 rounded-lg text-right text-xs font-black text-neon-green outline-none focus:border-neon-green/50"
@@ -2600,7 +2603,7 @@ const ProposalGenerator = () => {
                                                                                             value={item[col.key] || ''}
                                                                                             onChange={e => {
                                                                                                 const newItems = [...items];
-                                                                                                newItems[idx][col.key] = e.target.value;
+                                                                                                newItems[idx][col.key] = e.target.value === '' ? '' : Number(e.target.value);
                                                                                                 setItems(newItems);
                                                                                             }}
                                                                                             className="w-full bg-black/40 border border-white/10 h-10 rounded-lg text-center text-xs font-black outline-none focus:border-neon-green/50 text-white"
@@ -3659,50 +3662,56 @@ const ProposalGenerator = () => {
                                                     </p>
                                                 </div>
                                                 <table className="w-full text-left border-collapse border border-black">
-                                                    <thead>
-                                                        <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                            {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => (
-                                                                <th 
-                                                                    key={col.key} 
-                                                                    className={cn(
-                                                                        "p-4",
-                                                                        cIdx < arr.length - 1 && "border-r border-white/20",
-                                                                        col.key === 'qty' && "text-center w-24",
-                                                                        col.key === 'price' && "text-right w-48"
-                                                                    )}
-                                                                >
-                                                                    {col.label}
-                                                                </th>
-                                                            ))}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-black/10">
-                                                        {paginatedPages[currentPreviewPage].items.map((item, i) => {
-                                                            const cols = formData.tableColumns || defaultColumns;
-                                                            return (
-                                                                <tr key={i} className="hover:bg-gray-50">
-                                                                    {cols.map((col, cIdx) => {
-                                                                        const isLast = cIdx === cols.length - 1;
-                                                                        const tdClass = cn(
-                                                                            "p-4",
-                                                                            !isLast && "border-r border-black/10"
-                                                                        );
-                                                                        if (col.key === 'description') {
-                                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                                        }
-                                                                        if (col.key === 'qty') {
-                                                                            return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
-                                                                        }
-                                                                        if (col.key === 'price') {
-                                                                            return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
-                                                                        }
-                                                                        return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                                    })}
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                          <thead>
+                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                  {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
+                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                      return (
+                                                          <th 
+                                                              key={col.key} 
+                                                              className={cn(
+                                                                  "p-4",
+                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  colType === 'number' && "text-center w-24",
+                                                                  colType === 'amount' && "text-right w-48"
+                                                              )}
+                                                          >
+                                                              {col.label}
+                                                          </th>
+                                                      );
+                                                  })}
+                                              </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-black/10">
+                                              {paginatedPages[currentPreviewPage].items.map((item, i) => {
+                                                  const cols = formData.tableColumns || defaultColumns;
+                                                  return (
+                                                      <tr key={i} className="hover:bg-gray-50">
+                                                          {cols.map((col, cIdx) => {
+                                                              const isLast = cIdx === cols.length - 1;
+                                                              const tdClass = cn(
+                                                                  "p-4",
+                                                                  !isLast && "border-r border-black/10"
+                                                              );
+                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                              if (col.key === 'description') {
+                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                              }
+                                                              if (colType === 'number') {
+                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
+                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
+                                                              }
+                                                              if (colType === 'amount') {
+                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
+                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
+                                                              }
+                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                          })}
+                                                      </tr>
+                                                  );
+                                              })}
+                                          </tbody>
+                                      </table>
                                             </div>
                                         )}
                                         {paginatedPages[currentPreviewPage]?.type === 'custom' && (
@@ -4003,50 +4012,56 @@ const ProposalGenerator = () => {
                                         </p>
                                     </div>
                                     <table className="w-full text-left border-collapse border border-black">
-                                        <thead>
-                                            <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
-                                                {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => (
-                                                    <th 
-                                                        key={col.key} 
-                                                        className={cn(
-                                                            "p-4",
-                                                            cIdx < arr.length - 1 && "border-r border-white/20",
-                                                            col.key === 'qty' && "text-center w-24",
-                                                            col.key === 'price' && "text-right w-48"
-                                                        )}
-                                                    >
-                                                        {col.label}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-black/10">
-                                            {page.items.map((item, i) => {
-                                                const cols = formData.tableColumns || defaultColumns;
-                                                return (
-                                                    <tr key={i} className="hover:bg-gray-50">
-                                                        {cols.map((col, cIdx) => {
-                                                            const isLast = cIdx === cols.length - 1;
-                                                            const tdClass = cn(
-                                                                "p-4",
-                                                                !isLast && "border-r border-black/10"
-                                                            );
-                                                            if (col.key === 'description') {
-                                                                return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
-                                                            }
-                                                            if (col.key === 'qty') {
-                                                                 return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{item.qty}</td>;
-                                                            }
-                                                            if (col.key === 'price') {
-                                                                 return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{item.price.toLocaleString()}</td>;
-                                                            }
-                                                            return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
-                                                        })}
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                          <thead>
+                                              <tr className="bg-black text-[9px] font-black uppercase text-white tracking-[0.3em]">
+                                                  {(formData.tableColumns || defaultColumns).map((col, cIdx, arr) => {
+                                                      const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                      return (
+                                                          <th 
+                                                              key={col.key} 
+                                                              className={cn(
+                                                                  "p-4",
+                                                                  cIdx < arr.length - 1 && "border-r border-white/20",
+                                                                  colType === 'number' && "text-center w-24",
+                                                                  colType === 'amount' && "text-right w-48"
+                                                              )}
+                                                          >
+                                                              {col.label}
+                                                          </th>
+                                                      );
+                                                  })}
+                                              </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-black/10">
+                                              {page.items.map((item, i) => {
+                                                  const cols = formData.tableColumns || defaultColumns;
+                                                  return (
+                                                      <tr key={i} className="hover:bg-gray-50">
+                                                          {cols.map((col, cIdx) => {
+                                                              const isLast = cIdx === cols.length - 1;
+                                                              const tdClass = cn(
+                                                                  "p-4",
+                                                                  !isLast && "border-r border-black/10"
+                                                              );
+                                                              const colType = col.type || (col.key === 'price' ? 'amount' : (col.key === 'qty' ? 'number' : 'text'));
+                                                              if (col.key === 'description') {
+                                                                  return <td key={col.key} className={cn(tdClass, "text-[12px] font-bold text-black")}>{item.description || 'Asset'}</td>;
+                                                              }
+                                                              if (colType === 'number') {
+                                                                  const val = col.key === 'qty' ? item.qty : item[col.key];
+                                                                  return <td key={col.key} className={cn(tdClass, "text-center text-[12px] font-medium text-gray-600")}>{val}</td>;
+                                                              }
+                                                              if (colType === 'amount') {
+                                                                  const val = col.key === 'price' ? item.price : Number(item[col.key] || 0);
+                                                                  return <td key={col.key} className={cn(tdClass, "text-right text-[12px] font-black tracking-widest text-black font-mono")}>₹{val.toLocaleString()}</td>;
+                                                              }
+                                                              return <td key={col.key} className={cn(tdClass, "text-[12px] font-medium text-gray-600")}>{item[col.key] || ''}</td>;
+                                                          })}
+                                                      </tr>
+                                                  );
+                                              })}
+                                          </tbody>
+                                      </table>
                                 </div>
                             )}
                             {page.type === 'custom' && (
