@@ -419,6 +419,12 @@ const InvoiceGenerator = () => {
 
     const paginatedPages = getPaginatedPages();
 
+    useEffect(() => {
+        if (paginatedPages.length > 0 && currentPreviewPage >= paginatedPages.length) {
+            setCurrentPreviewPage(paginatedPages.length - 1);
+        }
+    }, [paginatedPages.length, currentPreviewPage]);
+
     const tabs = [
         { id: '1', label: 'Branding & Info', icon: Building2, desc: 'Identity & Entity Info' },
         { id: '2', label: 'Line Items', icon: FileSpreadsheet, desc: 'Service & Products Inventory' },
