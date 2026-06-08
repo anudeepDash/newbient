@@ -256,41 +256,53 @@ export default async function handler(req, res) {
         // 2. TRY OPENROUTER (FETCH)
         // ═══════════════════════════════════════════════════════════════
         if (OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10) {
-            try {
-                console.log('[AI PROXY] Path: OpenRouter');
-                const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'HTTP-Referer': 'https://newbi.ent', 
-                        'X-Title': 'Newbi Entertainment Proxy'
-                    },
-                    body: JSON.stringify({
-                        model: "google/gemini-2.5-flash",
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: userPrompt }
-                        ],
-                        response_format: { type: "json_object" }
-                    })
-                });
+            // Try multiple OpenRouter models — cheapest first to conserve credits
+            const orModels = [
+                'google/gemini-2.5-flash',
+                'google/gemini-2.0-flash-001',
+                'meta-llama/llama-4-scout:free',
+            ];
 
-                if (orRes.ok) {
-                    const data = await orRes.json();
-                    if (data.choices?.[0]?.message?.content) {
-                        console.log('[AI PROXY] ✨ Success: OpenRouter');
-                        return res.status(200).json({ 
-                            content: data.choices[0].message.content, 
-                            provider: 'openrouter' 
-                        });
+            for (const orModel of orModels) {
+                try {
+                    console.log(`[AI PROXY] Path: OpenRouter (${orModel})`);
+                    const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                            'HTTP-Referer': 'https://newbi.live', 
+                            'X-Title': 'Newbi Entertainment'
+                        },
+                        body: JSON.stringify({
+                            model: orModel,
+                            messages: [
+                                { role: "system", content: systemPrompt },
+                                { role: "user", content: userPrompt }
+                            ],
+                            max_tokens: 4096,
+                            response_format: { type: "json_object" }
+                        })
+                    });
+
+                    if (orRes.ok) {
+                        const data = await orRes.json();
+                        if (data.choices?.[0]?.message?.content) {
+                            console.log(`[AI PROXY] ✨ Success: OpenRouter (${orModel})`);
+                            return res.status(200).json({ 
+                                content: data.choices[0].message.content, 
+                                provider: `openrouter-${orModel}` 
+                            });
+                        }
+                    } else {
+                        const errText = await orRes.text();
+                        console.warn(`[AI PROXY] ⚠️ OpenRouter ${orModel} not OK:`, errText.substring(0, 120));
+                        // If it's a credits issue, try the next (cheaper/free) model
+                        if (errText.includes('credits') || errText.includes('max_tokens')) continue;
                     }
-                } else {
-                    const errText = await orRes.text();
-                    console.warn('[AI PROXY] ⚠️ OpenRouter response not OK:', errText.substring(0, 100));
+                } catch (e) {
+                    console.error(`[AI PROXY] OpenRouter ${orModel} failed:`, e.message);
                 }
-            } catch (e) {
-                console.error('[AI PROXY] OpenRouter path failed:', e.message);
             }
         }
 
