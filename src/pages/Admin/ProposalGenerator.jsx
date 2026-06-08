@@ -2877,7 +2877,7 @@ const ProposalGenerator = () => {
                                                                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Settlement</span>
                                                                      <button 
                                                                          type="button"
-                                                                         onClick={() => setFormData({...formData, showPaymentDetails: !formData.showPaymentDetails})} 
+                                                                         onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} 
                                                                          className={cn(
                                                                              "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
                                                                              formData.showPaymentDetails === false ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
