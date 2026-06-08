@@ -548,6 +548,17 @@ const ProposalGenerator = () => {
     const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
     const [selectedBulkIndex, setSelectedBulkIndex] = useState(0);
 
+    const parsedPrompts = useMemo(() => {
+        if (!bulkRawText || !bulkRawText.trim()) return [];
+        let list = [];
+        if (bulkRawText.includes('---') || bulkRawText.includes('___')) {
+            list = bulkRawText.split(/\n?[-_]{3,}\n?/).map(p => p.trim()).filter(p => p.length > 5);
+        } else {
+            list = bulkRawText.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 10);
+        }
+        return list.length > 0 ? list : [bulkRawText.trim()];
+    }, [bulkRawText]);
+
     const [refinementPrompt, setRefinementPrompt] = useState('');
     const [isRefining, setIsRefining] = useState(false);
 
@@ -1156,75 +1167,113 @@ const ProposalGenerator = () => {
             return;
         }
         setIsBulkGenerating(true);
-        const prompts = bulkRawText
-            .split(/\n[-_]{2,}\n|\n\n/)
-            .map(p => p.trim())
-            .filter(p => p.length > 10);
 
-        setBulkProgress({ current: 0, total: 1 });
-        setBulkProgress({ current: 1, total: 1 });
+        let prompts = [];
+        if (bulkRawText.includes('---') || bulkRawText.includes('___')) {
+            prompts = bulkRawText
+                .split(/\n?[-_]{3,}\n?/)
+                .map(p => p.trim())
+                .filter(p => p.length > 5);
+        } else {
+            prompts = bulkRawText
+                .split(/\n\n+/)
+                .map(p => p.trim())
+                .filter(p => p.length > 10);
+        }
+        if (prompts.length === 0) {
+            prompts = [bulkRawText.trim()];
+        }
+
+        setBulkProgress({ current: 0, total: prompts.length });
+        const generatedProposals = [];
         
         try {
-            const data = await generateFullDocument('bulk_proposal', bulkRawText, 'Premium', {});
-            
-            const finalProposal = {
-                clientName: data.clientName || 'Master Client',
-                clientAddress: data.clientAddress || 'Corporate Headquarters',
-                campaignName: bulkCampaignName.trim() || data.campaignName || 'PROPOSAL PLAN',
-                campaignDuration: data.campaignDuration || 'TBD',
-                proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                overview: '',
-                primaryGoal: '',
-                numericTargets: '',
-                audienceAge: '',
-                audienceLocation: '',
-                audienceInterests: '',
-                selectedChannels: [],
-                contentCount: { reels: 0, posts: 0, stories: 0 },
-                deliverables: [],
-                clientRequirements: [],
-                scopeOfWork: data.scopeOfWork && data.scopeOfWork.length > 10 ? data.scopeOfWork : bulkRawText,
-                terms: '',
-                paymentDetails: '',
-                gstRate: 18,
-                advanceRequested: 0,
-                showGst: false,
-                showSeal: false,
-                showSignatures: false,
-                signatureType: 'handwritten',
-                providerSignature: '',
-                clientSignature: '',
-                senderName: 'Authorized Signatory',
-                senderDesignation: 'Director of Operations',
-                status: 'Draft',
-                hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
-                selectedLogo: 'entertainment',
-                customPages: [],
-                items: [],
-                subtotal: 0,
-                gstAmount: 0,
-                totalAmount: 0,
-                hideTotalColumn: false,
-                isBulkGenerated: true,
-                strategyTitle: 'EXECUTIVE SUMMARY',
-                strategySub: 'STRATEGIC OUTLINE',
-                scopeTitle: 'SCOPE OF WORK',
-                scopeSub: 'RESOURCE DELIVERABLES',
-                proposalTitle: 'DELIVERABLES',
-                proposalSub: 'PROJECT INVENTORY',
-                inventoryTitle: 'RESOURCE INVENTORY',
-                inventorySub: 'COMMERCIALS BREAKDOWN',
-                commercialsTitle: 'COMMERCIAL TERMS',
-                commercialsSub: 'SETTLEMENT & SIGN-OFF'
-            };
+            for (let i = 0; i < prompts.length; i++) {
+                const prompt = prompts[i];
+                const data = await generateFullDocument('proposal', prompt, 'Premium', {});
+                
+                const finalProposal = {
+                    clientName: data.clientName || `Client 0${i + 1}`,
+                    clientAddress: data.clientAddress || 'Corporate Headquarters',
+                    campaignName: (bulkCampaignName && bulkCampaignName.trim() !== 'PROPOSAL PLAN') ? bulkCampaignName.trim() : (data.campaignName || 'PROPOSAL PLAN'),
+                    campaignDuration: data.campaignDuration || 'TBD',
+                    proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                    coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
+                    overview: data.overview || '',
+                    primaryGoal: data.primaryGoal || '',
+                    numericTargets: '',
+                    audienceAge: '',
+                    audienceLocation: '',
+                    audienceInterests: '',
+                    selectedChannels: [],
+                    contentCount: { reels: 0, posts: 0, stories: 0 },
+                    deliverables: data.deliverables?.length 
+                        ? data.deliverables.map((d, index) => ({ 
+                            id: Date.now() + index + Math.random(), 
+                            item: d.item || d.name || '', 
+                            qty: d.qty || '1', 
+                            timeline: d.timeline || 'TBD' 
+                        })) 
+                        : [],
+                    clientRequirements: data.clientRequirements?.length 
+                        ? data.clientRequirements.map((r, index) => ({ 
+                            id: Date.now() + 100 + index + Math.random(), 
+                            description: r.description || r.requirement || '' 
+                        })) 
+                        : [],
+                    scopeOfWork: data.scopeOfWork || prompt,
+                    terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+                    paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
+                    gstRate: 18,
+                    advanceRequested: 50,
+                    showGst: true,
+                    showSeal: false,
+                    showSignatures: true,
+                    signatureType: 'handwritten',
+                    providerSignature: '',
+                    clientSignature: '',
+                    senderName: 'Authorized Signatory',
+                    senderDesignation: 'Director of Operations',
+                    status: 'Draft',
+                    hiddenFields: [],
+                    selectedLogo: 'entertainment',
+                    customPages: [],
+                    items: data.items?.length 
+                        ? data.items.map((item, idx) => ({
+                            id: Date.now() + 200 + idx + Math.random(),
+                            description: item.description || item.name || '',
+                            qty: Number(item.qty) || 1,
+                            unit: item.unit || 'Unit',
+                            price: Number(item.price) || 0
+                        }))
+                        : [],
+                    subtotal: 0,
+                    gstAmount: 0,
+                    totalAmount: 0,
+                    hideTotalColumn: false,
+                    isBulkGenerated: true,
+                    strategyTitle: 'EXECUTIVE SUMMARY',
+                    strategySub: 'STRATEGIC OUTLINE',
+                    scopeTitle: 'SCOPE OF WORK',
+                    scopeSub: 'RESOURCE DELIVERABLES',
+                    proposalTitle: 'DELIVERABLES',
+                    proposalSub: 'PROJECT INVENTORY',
+                    inventoryTitle: 'RESOURCE INVENTORY',
+                    inventorySub: 'COMMERCIALS BREAKDOWN',
+                    commercialsTitle: 'COMMERCIAL TERMS',
+                    commercialsSub: 'SETTLEMENT & SIGN-OFF'
+                };
+                
+                generatedProposals.push(finalProposal);
+                setBulkProgress({ current: i + 1, total: prompts.length });
+            }
             
             setBulkProposals(prev => {
-                const newVault = [...prev, finalProposal];
-                setSelectedBulkIndex(newVault.length - 1);
+                const newVault = [...prev, ...generatedProposals];
+                setSelectedBulkIndex(newVault.length - generatedProposals.length);
                 return newVault;
             });
-            addToast(`Successfully arranged bulk data into a premium document!`, 'success');
+            addToast(`Successfully generated ${generatedProposals.length} premium proposals!`, 'success');
         } catch (err) {
             addToast(`Failed to process bulk data: ${err.message}`, 'error');
         }
@@ -1387,74 +1436,124 @@ const ProposalGenerator = () => {
                 addToast(`Field "${refinementContext.fieldLabel}" successfully refined!`, 'success');
             } else if (aiMode === 'bulk') {
                 setIsBulkGenerating(true);
-                setBulkProgress({ current: 0, total: 1 });
-                setBulkProgress({ current: 1, total: 1 });
+                let prompts = [];
+                if (currentPrompt.includes('---') || currentPrompt.includes('___')) {
+                    prompts = currentPrompt
+                        .split(/\n?[-_]{3,}\n?/)
+                        .map(p => p.trim())
+                        .filter(p => p.length > 5);
+                } else {
+                    prompts = currentPrompt
+                        .split(/\n\n+/)
+                        .map(p => p.trim())
+                        .filter(p => p.length > 10);
+                }
+                if (prompts.length === 0) {
+                    prompts = [currentPrompt.trim()];
+                }
                 
-                const data = await generateFullDocument('bulk_proposal', currentPrompt, 'Premium', {});
+                setBulkProgress({ current: 0, total: prompts.length });
+                const generatedProposals = [];
                 
-                const finalProposal = {
-                    clientName: data.clientName || 'Master Client',
-                    clientAddress: data.clientAddress || 'Corporate Headquarters',
-                    campaignName: data.campaignName || 'Strategic Initiative',
-                    campaignDuration: data.campaignDuration || 'TBD',
-                    proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
-                    coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
-                    overview: '',
-                    primaryGoal: '',
-                    numericTargets: '',
-                    audienceAge: '',
-                    audienceLocation: '',
-                    audienceInterests: '',
-                    selectedChannels: [],
-                    contentCount: { reels: 0, posts: 0, stories: 0 },
-                    deliverables: [],
-                    clientRequirements: [],
-                    scopeOfWork: data.scopeOfWork && data.scopeOfWork.length > 10 ? data.scopeOfWork : currentPrompt,
-                    terms: '',
-                    paymentDetails: '',
-                    gstRate: 18,
-                    advanceRequested: 0,
-                    showGst: false,
-                    showSeal: false,
-                    showSignatures: false,
-                    signatureType: 'handwritten',
-                    providerSignature: '',
-                    clientSignature: '',
-                    senderName: 'Authorized Signatory',
-                    senderDesignation: 'Director of Operations',
-                    status: 'Draft',
-                    hiddenFields: ['strategy', 'proposal', 'inventory', 'commercials', 'terms', 'paymentDetails'],
-                    selectedLogo: 'entertainment',
-                    customPages: [],
-                    items: [],
-                    subtotal: 0,
-                    gstAmount: 0,
-                    totalAmount: 0,
-                    isBulkGenerated: true,
-                    strategyTitle: 'EXECUTIVE SUMMARY',
-                    strategySub: 'STRATEGIC OUTLINE',
-                    scopeTitle: 'SCOPE OF WORK',
-                    scopeSub: 'RESOURCE DELIVERABLES',
-                    proposalTitle: 'DELIVERABLES',
-                    proposalSub: 'PROJECT INVENTORY',
-                    inventoryTitle: 'RESOURCE INVENTORY',
-                    inventorySub: 'COMMERCIALS BREAKDOWN',
-                    commercialsTitle: 'COMMERCIAL TERMS',
-                    commercialsSub: 'SETTLEMENT & SIGN-OFF'
-                };
-                
-                setBulkProposals(prev => {
-                    const newVault = [...prev, finalProposal];
-                    setSelectedBulkIndex(newVault.length - 1);
-                    return newVault;
-                });
+                try {
+                    for (let i = 0; i < prompts.length; i++) {
+                        const prompt = prompts[i];
+                        const data = await generateFullDocument('proposal', prompt, 'Premium', {});
+                        
+                        const finalProposal = {
+                            clientName: data.clientName || `Client 0${i + 1}`,
+                            clientAddress: data.clientAddress || 'Corporate Headquarters',
+                            campaignName: data.campaignName || 'Strategic Initiative',
+                            campaignDuration: data.campaignDuration || 'TBD',
+                            proposalNumber: `NBQ-${Math.floor(1000 + Math.random() * 9000)}`,
+                            coverDescription: data.coverDescription || 'This document contains the beautifully formatted and arranged synthesis of your data.',
+                            overview: data.overview || '',
+                            primaryGoal: data.primaryGoal || '',
+                            numericTargets: '',
+                            audienceAge: '',
+                            audienceLocation: '',
+                            audienceInterests: '',
+                            selectedChannels: [],
+                            contentCount: { reels: 0, posts: 0, stories: 0 },
+                            deliverables: data.deliverables?.length 
+                                ? data.deliverables.map((d, index) => ({ 
+                                    id: Date.now() + index + Math.random(), 
+                                    item: d.item || d.name || '', 
+                                    qty: d.qty || '1', 
+                                    timeline: d.timeline || 'TBD' 
+                                })) 
+                                : [],
+                            clientRequirements: data.clientRequirements?.length 
+                                ? data.clientRequirements.map((r, index) => ({ 
+                                    id: Date.now() + 100 + index + Math.random(), 
+                                    description: r.description || r.requirement || '' 
+                                })) 
+                                : [],
+                            scopeOfWork: data.scopeOfWork || prompt,
+                            terms: data.terms || '1. 50% Advance Fee required.\n2. Balance on delivery.\n3. Taxes as applicable (18% GST).\n4. Quote valid for 14 days.',
+                            paymentDetails: 'Account Name: Newbi Entertainment\nAccount Number: 0000000000\nIFSC: YOUR000000\nUPI: newbi@upi',
+                            gstRate: 18,
+                            advanceRequested: 50,
+                            showGst: true,
+                            showSeal: false,
+                            showSignatures: true,
+                            signatureType: 'handwritten',
+                            providerSignature: '',
+                            clientSignature: '',
+                            senderName: 'Authorized Signatory',
+                            senderDesignation: 'Director of Operations',
+                            status: 'Draft',
+                            hiddenFields: [],
+                            selectedLogo: 'entertainment',
+                            customPages: [],
+                            items: data.items?.length 
+                                ? data.items.map((item, idx) => ({
+                                    id: Date.now() + 200 + idx + Math.random(),
+                                    description: item.description || item.name || '',
+                                    qty: Number(item.qty) || 1,
+                                    unit: item.unit || 'Unit',
+                                    price: Number(item.price) || 0
+                                }))
+                                : [],
+                            subtotal: 0,
+                            gstAmount: 0,
+                            totalAmount: 0,
+                            isBulkGenerated: true,
+                            strategyTitle: 'EXECUTIVE SUMMARY',
+                            strategySub: 'STRATEGIC OUTLINE',
+                            scopeTitle: 'SCOPE OF WORK',
+                            scopeSub: 'RESOURCE DELIVERABLES',
+                            proposalTitle: 'DELIVERABLES',
+                            proposalSub: 'PROJECT INVENTORY',
+                            inventoryTitle: 'RESOURCE INVENTORY',
+                            inventorySub: 'COMMERCIALS BREAKDOWN',
+                            commercialsTitle: 'COMMERCIAL TERMS',
+                            commercialsSub: 'SETTLEMENT & SIGN-OFF'
+                        };
+                        generatedProposals.push(finalProposal);
+                        setBulkProgress({ current: i + 1, total: prompts.length });
+                    }
+                    
+                    setBulkProposals(prev => {
+                        const newVault = [...prev, ...generatedProposals];
+                        setSelectedBulkIndex(newVault.length - generatedProposals.length);
+                        return newVault;
+                    });
 
-                setMessages(prev => [...prev, {
-                    id: String(Date.now()) + '-ai',
-                    sender: 'ai',
-                    text: `✓ Bulk requirements successfully structured! I have configured the engine for bulk mode. Preview the compiled A4 sheet on the right, or click save to persist.`
-                }]);
-                addToast(`Successfully arranged bulk data into a premium document!`, 'success');
+                    setMessages(prev => [...prev, {
+                        id: String(Date.now()) + '-ai',
+                        sender: 'ai',
+                        text: `✓ Bulk requirements successfully structured! I have generated ${generatedProposals.length} proposals and configured the engine. Preview the compiled A4 sheet on the right, or click save to persist.`
+                    }]);
+                    addToast(`Successfully generated ${generatedProposals.length} premium proposals!`, 'success');
+                } catch (err) {
+                    setMessages(prev => [...prev, {
+                        id: String(Date.now()) + '-ai-err',
+                        sender: 'ai',
+                        text: `⚠ Failed to process bulk request: ${err.message}`
+                    }]);
+                    addToast(`Error: ${err.message}`, 'error');
+                }
             } else if (aiMode === 'generate') {
                 const data = await generateFullDocument('proposal', currentPrompt, 'Premium', {});
                 setSingleFormData(prev => ({
@@ -1738,8 +1837,8 @@ const ProposalGenerator = () => {
                                         {aiMode === 'bulk' ? (
                                             <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-hide relative z-10 pb-4">
                                                 {/* Top Intro Card */}
-                                                <div className="p-8 bg-zinc-900/40 border border-white/10 rounded-[2.5rem] relative overflow-hidden shadow-2xl space-y-6 group">
-                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 rounded-full blur-2xl group-hover:bg-neon-green/10 transition-all" />
+                                                <div className="p-8 bg-zinc-900/30 border border-white/10 rounded-[2.5rem] relative overflow-hidden shadow-2xl space-y-6 group backdrop-blur-md">
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-green/5 rounded-full blur-3xl group-hover:bg-neon-green/10 transition-all duration-700" />
                                                     <div className="flex flex-col items-start gap-2 relative z-10">
                                                         <div className="flex items-center gap-2">
                                                             <Sparkles size={14} className="text-neon-green" />
@@ -1747,7 +1846,7 @@ const ProposalGenerator = () => {
                                                         </div>
                                                         <h2 className="text-xl font-black uppercase tracking-tighter italic text-white leading-tight">AI Bulk Orchestrator<span className="text-neon-green">.</span></h2>
                                                         <p className="text-[11px] font-medium text-gray-400 leading-relaxed">
-                                                            Paste raw unstructured requirements or a list of client requests. Our AI will automatically parse, structure, and generate distinct professional proposals.
+                                                            Paste raw unstructured requirements or client requests. The generator parses each request and creates a fully formatted document complete with financials, timeline, and deliverables.
                                                         </p>
                                                     </div>
 
@@ -1759,15 +1858,15 @@ const ProposalGenerator = () => {
                                                                 value={bulkCampaignName}
                                                                 onChange={e => setBulkCampaignName(e.target.value)}
                                                                 placeholder="PROPOSAL PLAN"
-                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl px-4 h-12 text-xs font-bold text-white outline-none placeholder:text-gray-700 transition-all shadow-inner"
+                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/40 focus:shadow-[0_0_15px_rgba(57,255,20,0.1)] rounded-2xl px-4 h-12 text-xs font-bold text-white outline-none placeholder:text-gray-700 transition-all shadow-inner"
                                                             />
                                                         </div>
 
                                                         <div className="space-y-3">
                                                             <div className="flex justify-between items-center px-1">
                                                                 <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Raw Input Data / Client Prompts</label>
-                                                                <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">
-                                                                    {bulkRawText.trim() ? bulkRawText.split(/\n[-_]{2,}\n|\n\n/).filter(p => p.trim().length > 10).length || 1 : 0} Prompts Detected
+                                                                <span className="text-[8px] font-black text-neon-green bg-neon-green/10 px-2.5 py-0.5 rounded-full border border-neon-green/20">
+                                                                    {parsedPrompts.length} Prompts Detected
                                                                 </span>
                                                             </div>
                                                             <textarea 
@@ -1775,9 +1874,26 @@ const ProposalGenerator = () => {
                                                                 onChange={e => setBulkRawText(e.target.value)}
                                                                 rows={5}
                                                                 placeholder="Example:&#10;Client: Apex Events | Project: Summer Music Festival | Duration: 2 Days | Requirements: Full stage sound and lighting setup, 40k budget.&#10;---&#10;Client: Nova Tech | Project: Annual Gala | Duration: 1 Evening | Requirements: LED video walls, corporate AV, and livestreaming, 120k budget."
-                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/50 rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
+                                                                className="w-full bg-black/60 border border-white/10 focus:border-neon-green/40 focus:shadow-[0_0_15px_rgba(57,255,20,0.1)] rounded-2xl p-4 text-xs font-medium text-white outline-none resize-y placeholder:text-gray-700 leading-relaxed shadow-inner transition-all"
                                                             />
                                                         </div>
+
+                                                        {parsedPrompts.length > 0 && (
+                                                            <div className="space-y-2 relative z-10 pt-2 animate-fade-in">
+                                                                <div className="flex items-center justify-between px-1">
+                                                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Parsed Prompts Queue</label>
+                                                                    <span className="text-[7px] font-black text-neon-green/70 uppercase tracking-wider">Separate using '---' line break</span>
+                                                                </div>
+                                                                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 scrollbar-hide">
+                                                                    {parsedPrompts.map((pText, idx) => (
+                                                                        <div key={idx} className="flex items-start gap-2.5 p-3 bg-black/60 border border-white/5 rounded-2xl text-[10px] text-zinc-300 hover:border-white/10 transition-all font-mono leading-normal">
+                                                                            <span className="text-neon-green font-black select-none">{String(idx + 1).padStart(2, '0')}.</span>
+                                                                            <span className="truncate flex-1">{pText}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
 
 
@@ -1807,12 +1923,12 @@ const ProposalGenerator = () => {
                                                     </div>
 
                                                     {isBulkGenerating && (
-                                                        <div className="space-y-1 relative z-10 pt-2">
+                                                        <div className="space-y-1.5 relative z-10 pt-2">
                                                             <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-gray-400">
-                                                                <span>AI Pulse Progress</span>
+                                                                <span>AI Pulse Progress ({bulkProgress.current} of {bulkProgress.total})</span>
                                                                 <span className="text-neon-green">{Math.round((bulkProgress.current / bulkProgress.total) * 100) || 0}%</span>
                                                             </div>
-                                                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
+                                                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
                                                                 <div 
                                                                     className="h-full bg-neon-green rounded-full transition-all duration-500 shadow-[0_0_8px_#39FF14]"
                                                                     style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
