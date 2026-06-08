@@ -56,6 +56,17 @@ async function discoverModels() {
         );
 
         if (!response.ok) {
+            const errBody = await response.text().catch(() => '');
+            // 403 = key leaked/revoked/invalid — mark as dead
+            if (response.status === 403) {
+                const isKeyDead = errBody.includes('leaked') || errBody.includes('PERMISSION_DENIED') || errBody.includes('API key');
+                if (isKeyDead) {
+                    console.error('[AI PROXY] 🚨 GEMINI API KEY IS DEAD (leaked/revoked). Skipping ALL Gemini models.');
+                    cachedModels = ['__KEY_DEAD__'];
+                    modelCacheTimestamp = Date.now();
+                    return cachedModels;
+                }
+            }
             throw new Error(`Models API returned ${response.status}`);
         }
 
@@ -178,51 +189,63 @@ export default async function handler(req, res) {
         // ═══════════════════════════════════════════════════════════════
         if (ai) {
             const models = await discoverModels();
-            let geminiSucceeded = false;
 
-            for (const modelName of models) {
-                try {
-                    console.log(`[AI PROXY] 🚀 Trying Gemini model: ${modelName}`);
-                    const response = await ai.models.generateContent({
-                        model: modelName,
-                        contents: [
-                            { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
-                        ],
-                        config: {
-                            responseMimeType: "application/json"
+            // If key is dead (leaked/revoked), skip Gemini entirely
+            if (models.length === 1 && models[0] === '__KEY_DEAD__') {
+                console.warn('[AI PROXY] ⚠️ Skipping Gemini: API key is dead (leaked/revoked). Get a new key from https://aistudio.google.com/apikey');
+            } else {
+                for (const modelName of models) {
+                    try {
+                        console.log(`[AI PROXY] 🚀 Trying Gemini model: ${modelName}`);
+                        const response = await ai.models.generateContent({
+                            model: modelName,
+                            contents: [
+                                { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
+                            ],
+                            config: {
+                                responseMimeType: "application/json"
+                            }
+                        });
+
+                        const text = response.text;
+                        if (text && text.length > 20) {
+                            console.log(`[AI PROXY] ✨ Success: Gemini (${modelName})`);
+                            return res.status(200).json({ content: text, provider: `gemini-${modelName}` });
                         }
-                    });
+                        console.warn(`[AI PROXY] ⚠️ ${modelName} returned empty/short response, trying next...`);
+                    } catch (modelError) {
+                        const errMsg = modelError.message || '';
+                        const status = modelError.status || modelError.httpStatusCode || 0;
 
-                    const text = response.text;
-                    if (text && text.length > 20) {
-                        console.log(`[AI PROXY] ✨ Success: Gemini (${modelName})`);
-                        return res.status(200).json({ content: text, provider: `gemini-${modelName}` });
-                    }
-                    console.warn(`[AI PROXY] ⚠️ ${modelName} returned empty/short response, trying next...`);
-                } catch (modelError) {
-                    const errMsg = modelError.message || '';
-                    const status = modelError.status || modelError.httpStatusCode || 0;
-                    
-                    // If model is not found (404) or deprecated, invalidate cache and try next
-                    if (status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
-                        console.warn(`[AI PROXY] ⚠️ Model ${modelName} is gone (404). Trying next...`);
-                        invalidateModelCache(); // Force re-discovery on next request
+                        // KEY-LEVEL ERROR: leaked, revoked, or permission denied
+                        // Immediately break out — no point trying other models with the same dead key
+                        if (status === 403 || errMsg.includes('leaked') || errMsg.includes('PERMISSION_DENIED')) {
+                            console.error(`[AI PROXY] 🚨 API KEY ERROR (403): ${errMsg.substring(0, 150)}`);
+                            console.error('[AI PROXY] 🚨 Skipping ALL remaining Gemini models — key is dead.');
+                            // Cache the dead state so future requests don't waste time
+                            cachedModels = ['__KEY_DEAD__'];
+                            modelCacheTimestamp = Date.now();
+                            break;
+                        }
+                        
+                        // If model is not found (404) or deprecated, invalidate cache and try next
+                        if (status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
+                            console.warn(`[AI PROXY] ⚠️ Model ${modelName} is gone (404). Trying next...`);
+                            invalidateModelCache(); // Force re-discovery on next request
+                            continue;
+                        }
+                        
+                        // Rate limit / quota — try next model
+                        if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate')) {
+                            console.warn(`[AI PROXY] ⚠️ ${modelName} rate limited. Trying next...`);
+                            continue;
+                        }
+                        
+                        // Other errors — log and try next
+                        console.warn(`[AI PROXY] ⚠️ ${modelName} error: ${errMsg.substring(0, 150)}`);
                         continue;
                     }
-                    
-                    // Rate limit / quota — try next model
-                    if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate')) {
-                        console.warn(`[AI PROXY] ⚠️ ${modelName} rate limited. Trying next...`);
-                        continue;
-                    }
-                    
-                    // Other errors — log and try next
-                    console.warn(`[AI PROXY] ⚠️ ${modelName} error: ${errMsg.substring(0, 150)}`);
-                    continue;
                 }
-            }
-
-            if (!geminiSucceeded) {
                 console.warn('[AI PROXY] ⚠️ All Gemini models exhausted, falling through to backup providers...');
             }
         } else {
@@ -244,7 +267,7 @@ export default async function handler(req, res) {
                         'X-Title': 'Newbi Entertainment Proxy'
                     },
                     body: JSON.stringify({
-                        model: "google/gemini-2.0-flash-001",
+                        model: "google/gemini-2.5-flash",
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: userPrompt }
