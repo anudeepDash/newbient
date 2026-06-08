@@ -675,7 +675,12 @@ const InvoiceGenerator = () => {
                                         </div>
 
                                         <div className={cn("space-y-4", !formData.showPaymentDetails && "opacity-30")}>
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Settlement Account Details</label>
+                                            <div className="flex justify-between items-center px-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Settlement Account Details</label>
+                                                <button type="button" onClick={() => setFormData({...formData, showPaymentDetails: formData.showPaymentDetails === false ? true : false})} className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded border transition-all", formData.showPaymentDetails !== false ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
+                                                    {formData.showPaymentDetails !== false ? 'Enabled' : 'Disabled'}
+                                                </button>
+                                            </div>
                                             <textarea 
                                                 value={formData.paymentDetails} 
                                                 onChange={e => setFormData({...formData, paymentDetails: e.target.value})} 
@@ -1280,10 +1285,12 @@ const InvoiceGenerator = () => {
                             {pageIdx === paginatedPages.length - 1 && (
                                 <div className="mt-auto grid grid-cols-2 gap-x-12 items-start pt-8 border-t border-gray-200">
                                     <div className="space-y-6">
+                                        {formData.showPaymentDetails && (
                                             <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] text-[10px] font-bold text-left uppercase leading-relaxed text-gray-500 bg-white/40 shadow-sm w-full">
                                                 <p className="text-xs font-black text-black mb-3 border-b-2 pb-1.5 inline-block" style={{ borderColor: brandColor }}>PAYMENT DETAILS</p>
                                                 <div className="article-content" dangerouslySetInnerHTML={{ __html: formData.paymentDetails }} />
                                             </div>
+                                        )}
                                         {formData.showNotes && (
                                             <div className="bg-white/40 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                                 <div className="p-4">
