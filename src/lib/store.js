@@ -307,7 +307,7 @@ export const useStore = create((set, get) => ({
     documents: [], // Document Hub
     portfolioCategories: [], // Dynamic categories
     toasts: [], // Ephemeral UI notifications
-    aiConfig: { geminiKey: '', defaultModel: 'gemini-1.5-flash' }, // Global AI Config
+    aiConfig: { geminiKey: '', defaultModel: 'gemini-3.5-flash' }, // Global AI Config
     maintenanceState: {
         global: false,
         pages: {}, // e.g., gallery, concerts

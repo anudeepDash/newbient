@@ -1,17 +1,119 @@
 console.log('[BOOT] 🛰️ AI Proxy Booting...');
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { verifyToken } from './lib/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// NEWBI AI BACKEND PROXY v1.0
-// Hides API keys from the client and handles multi-path orchestration
+// NEWBI AI BACKEND PROXY v2.0
+// Self-healing model discovery — never breaks on Gemini deprecations
 // ═══════════════════════════════════════════════════════════════════════════
 
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const OPENROUTER_API_KEY = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
 const PERPLEXITY_API_KEY = process.env.VITE_PERPLEXITY_API_KEY || process.env.PERPLEXITY_API_KEY;
 
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+
+// ── Dynamic Model Discovery ────────────────────────────────────────────
+// Instead of hardcoding model names that get deprecated, we query Google's
+// API to discover which models are currently available.
+// ────────────────────────────────────────────────────────────────────────
+
+let cachedModels = null;
+let modelCacheTimestamp = 0;
+const MODEL_CACHE_TTL = 6 * 60 * 60 * 1000; // Re-discover every 6 hours
+
+// Hardcoded fallback list in case model discovery itself fails.
+// Ordered newest → oldest. Even if these go stale, discovery will override them.
+const FALLBACK_MODEL_LIST = [
+    'gemini-3.5-flash',
+    'gemini-3.1-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+];
+
+/**
+ * Discover available Gemini Flash models by calling the models.list API.
+ * Returns an ordered array of model IDs (best → worst).
+ * Results are cached for MODEL_CACHE_TTL.
+ */
+async function discoverModels() {
+    const now = Date.now();
+    if (cachedModels && (now - modelCacheTimestamp) < MODEL_CACHE_TTL) {
+        return cachedModels;
+    }
+
+    if (!GEMINI_API_KEY) {
+        console.warn('[AI PROXY] ⚠️ No Gemini API key — skipping model discovery');
+        return FALLBACK_MODEL_LIST;
+    }
+
+    try {
+        console.log('[AI PROXY] 🔍 Discovering available Gemini models...');
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Models API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        const models = data.models || [];
+
+        // Filter for Flash models that support generateContent
+        const flashModels = models
+            .filter(m => {
+                const name = m.name?.replace('models/', '') || '';
+                const supportsGenerate = m.supportedGenerationMethods?.includes('generateContent');
+                const isFlash = name.includes('flash');
+                // Exclude experimental/preview models for stability
+                const isStable = !name.includes('exp') && !name.includes('preview');
+                return supportsGenerate && isFlash && isStable;
+            })
+            .map(m => m.name.replace('models/', ''))
+            // Sort by version number descending (highest version first)
+            .sort((a, b) => {
+                const versionA = parseModelVersion(a);
+                const versionB = parseModelVersion(b);
+                // Higher version first
+                if (versionB !== versionA) return versionB - versionA;
+                // Prefer non-lite over lite
+                const aIsLite = a.includes('lite') ? 1 : 0;
+                const bIsLite = b.includes('lite') ? 1 : 0;
+                return aIsLite - bIsLite;
+            });
+
+        if (flashModels.length > 0) {
+            cachedModels = flashModels;
+            modelCacheTimestamp = now;
+            console.log(`[AI PROXY] ✅ Discovered ${flashModels.length} Flash models: [${flashModels.join(', ')}]`);
+            return flashModels;
+        }
+
+        console.warn('[AI PROXY] ⚠️ No Flash models found in API response, using fallback list');
+        return FALLBACK_MODEL_LIST;
+    } catch (err) {
+        console.error('[AI PROXY] ❌ Model discovery failed:', err.message);
+        // Use cached models if available (even if expired), otherwise fallback
+        return cachedModels || FALLBACK_MODEL_LIST;
+    }
+}
+
+/** Extract a numeric version from a model name like "gemini-3.5-flash" → 3.5 */
+function parseModelVersion(modelName) {
+    const match = modelName.match(/gemini[- ](\d+(?:\.\d+)?)/);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+/** Invalidate cache so next request re-discovers models */
+function invalidateModelCache() {
+    cachedModels = null;
+    modelCacheTimestamp = 0;
+}
+
+// ── Main Handler ────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -29,6 +131,23 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
+    }
+
+    // ── Health Check (GET) ──────────────────────────────────────────────
+    if (req.method === 'GET') {
+        try {
+            const models = await discoverModels();
+            return res.status(200).json({
+                status: 'ok',
+                version: '2.0',
+                geminiAvailable: !!ai,
+                discoveredModels: models,
+                openrouterAvailable: !!(OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10),
+                cacheAge: cachedModels ? Math.round((Date.now() - modelCacheTimestamp) / 1000) + 's' : 'none'
+            });
+        } catch (e) {
+            return res.status(200).json({ status: 'ok', version: '2.0', error: e.message });
+        }
     }
 
     console.log(`[AI PROXY] 🛰️ Neural request from origin: ${origin}`);
@@ -54,50 +173,65 @@ export default async function handler(req, res) {
     console.log(`[AI PROXY] Starting neural pulse for type: ${type}`);
 
     try {
-        // 1. TRY GEMINI (SDK)
-        if (genAI) {
-            try {
-                console.log('[AI PROXY] 🚀 Path: Gemini SDK (2.0 Flash)');
-                const model2 = genAI.getGenerativeModel({ 
-                    model: "gemini-2.0-flash",
-                    generationConfig: { responseMimeType: "application/json" }
-                });
-                
-                const result2 = await model2.generateContent([
-                    { text: systemPrompt + "\n\nReturn valid JSON." },
-                    { text: userPrompt }
-                ]);
-                
-                const text2 = result2.response.text();
-                if (text2 && text2.length > 20) {
-                    console.log('[AI PROXY] ✨ Success: Gemini 2.0 SDK');
-                    return res.status(200).json({ content: text2, provider: 'gemini-2.0' });
-                }
-            } catch (e2) {
-                console.warn('[AI PROXY] ⚠️ Gemini 2.0 Quota/Error. Stepping down to 1.5...');
+        // ═══════════════════════════════════════════════════════════════
+        // 1. TRY GEMINI (Modern SDK with Dynamic Model Discovery)
+        // ═══════════════════════════════════════════════════════════════
+        if (ai) {
+            const models = await discoverModels();
+            let geminiSucceeded = false;
+
+            for (const modelName of models) {
                 try {
-                    const model15 = genAI.getGenerativeModel({ 
-                        model: "gemini-1.5-flash",
-                        generationConfig: { responseMimeType: "application/json" }
+                    console.log(`[AI PROXY] 🚀 Trying Gemini model: ${modelName}`);
+                    const response = await ai.models.generateContent({
+                        model: modelName,
+                        contents: [
+                            { role: 'user', parts: [{ text: systemPrompt + "\n\nReturn valid JSON.\n\n" + userPrompt }] }
+                        ],
+                        config: {
+                            responseMimeType: "application/json"
+                        }
                     });
-                    const result15 = await model15.generateContent([
-                        { text: systemPrompt + "\n\nReturn valid JSON." },
-                        { text: userPrompt }
-                    ]);
-                    const text15 = result15.response.text();
-                    if (text15 && text15.length > 20) {
-                        console.log('[AI PROXY] ✨ Success: Gemini 1.5 SDK (Step-down)');
-                        return res.status(200).json({ content: text15, provider: 'gemini-1.5' });
+
+                    const text = response.text;
+                    if (text && text.length > 20) {
+                        console.log(`[AI PROXY] ✨ Success: Gemini (${modelName})`);
+                        return res.status(200).json({ content: text, provider: `gemini-${modelName}` });
                     }
-                } catch (e15) {
-                    console.error('[AI PROXY] ❌ Gemini SDK completely exhausted:', e15.message);
+                    console.warn(`[AI PROXY] ⚠️ ${modelName} returned empty/short response, trying next...`);
+                } catch (modelError) {
+                    const errMsg = modelError.message || '';
+                    const status = modelError.status || modelError.httpStatusCode || 0;
+                    
+                    // If model is not found (404) or deprecated, invalidate cache and try next
+                    if (status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
+                        console.warn(`[AI PROXY] ⚠️ Model ${modelName} is gone (404). Trying next...`);
+                        invalidateModelCache(); // Force re-discovery on next request
+                        continue;
+                    }
+                    
+                    // Rate limit / quota — try next model
+                    if (status === 429 || errMsg.includes('quota') || errMsg.includes('rate')) {
+                        console.warn(`[AI PROXY] ⚠️ ${modelName} rate limited. Trying next...`);
+                        continue;
+                    }
+                    
+                    // Other errors — log and try next
+                    console.warn(`[AI PROXY] ⚠️ ${modelName} error: ${errMsg.substring(0, 150)}`);
+                    continue;
                 }
+            }
+
+            if (!geminiSucceeded) {
+                console.warn('[AI PROXY] ⚠️ All Gemini models exhausted, falling through to backup providers...');
             }
         } else {
             console.warn('[AI PROXY] ⚠️ Skipping Gemini: GEMINI_API_KEY is not defined in environment');
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // 2. TRY OPENROUTER (FETCH)
+        // ═══════════════════════════════════════════════════════════════
         if (OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 10) {
             try {
                 console.log('[AI PROXY] Path: OpenRouter');
@@ -137,7 +271,9 @@ export default async function handler(req, res) {
             }
         }
 
-        // 3. TRY AIRFORCE (FREE PROXY - VERY FAST)
+        // ═══════════════════════════════════════════════════════════════
+        // 3. TRY AIRFORCE (FREE PROXY)
+        // ═══════════════════════════════════════════════════════════════
         try {
             console.log('[AI PROXY] Path: Airforce');
             const afRes = await fetch('https://api.airforce/v1/chat/completions', {
@@ -162,7 +298,9 @@ export default async function handler(req, res) {
             console.error('[AI PROXY] Airforce path failed:', e.message);
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // 4. TRY POLLINATIONS (FREE KEYLESS PROXY)
+        // ═══════════════════════════════════════════════════════════════
         try {
             console.log('[AI PROXY] Path: Pollinations');
             const pollRes = await fetch('https://text.pollinations.ai/', {
