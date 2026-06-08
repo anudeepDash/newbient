@@ -636,6 +636,7 @@ const AIStudio = () => {
         gstRate: 18,
         advanceRequested: 50,
         showGst: true,
+        showPaymentDetails: true,
         showSeal: false,
         showSignatures: false,
         signatureType: 'handwritten',
@@ -872,7 +873,7 @@ const AIStudio = () => {
 
         if (!isFieldHidden('commercials')) {
             const termsHtml = activeProposalData.terms || '';
-            const paymentDetailsHtml = activeProposalData.paymentDetails || '';
+            const paymentDetailsHtml = (activeProposalData.showPaymentDetails !== false) ? (activeProposalData.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);
@@ -1173,6 +1174,7 @@ const AIStudio = () => {
                             gstRate: 18,
                             advanceRequested: 50,
                             showGst: true,
+                            showPaymentDetails: true,
                             showSeal: false,
                             showSignatures: true,
                             signatureType: 'handwritten',
@@ -2001,7 +2003,7 @@ const AIStudio = () => {
                                                 <Input label="GST Rate (%)" type="number" value={activeProposalData.gstRate} onChange={(e) => setProposalDataState({ gstRate: Number(e.target.value) })} />
                                                 <Input label="Advance Requested (%)" type="number" value={activeProposalData.advanceRequested} onChange={(e) => setProposalDataState({ advanceRequested: Number(e.target.value) })} />
                                             </div>
-                                            <div className="flex items-center gap-6 mt-4">
+                                            <div className="flex flex-wrap items-center gap-6 mt-4">
                                                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-400">
                                                     <input type="checkbox" checked={activeProposalData.showGst} onChange={(e) => setProposalDataState({ showGst: e.target.checked })} className="rounded bg-zinc-900 border-white/5 text-[#39FF14] focus:ring-[#39FF14]" />
                                                     Show GST breakdown

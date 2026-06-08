@@ -682,6 +682,7 @@ const ProposalGenerator = () => {
         gstRate: 18,
         advanceRequested: 50,
         showGst: true,
+        showPaymentDetails: true,
         showSeal: false,
         showSignatures: false,
         signatureType: 'handwritten', // 'handwritten' | 'digital' | 'typed'
@@ -984,7 +985,7 @@ const ProposalGenerator = () => {
 
         if (!isHidden('commercials')) {
             const termsHtml = formData.terms || '';
-            const paymentDetailsHtml = formData.paymentDetails || '';
+            const paymentDetailsHtml = formData.showPaymentDetails !== false ? (formData.paymentDetails || '') : '';
             
             if (termsHtml) {
                 const termsPages = splitTextIntoPages(termsHtml, 800);
@@ -1068,7 +1069,7 @@ const ProposalGenerator = () => {
                 primaryGoal: data.primaryGoal || prev.primaryGoal,
                 scopeOfWork: data.scopeOfWork || prev.scopeOfWork,
                 terms: data.terms || prev.terms,
-                // NOTE: Never overwrite paymentDetails â€” user has their own bank details pre-configured
+                // NOTE: Never overwrite paymentDetails — user has their own bank details pre-configured
                 deliverables: data.deliverables?.length 
                     ? data.deliverables.map((d, i) => ({ 
                         id: Date.now() + i, 
@@ -1226,6 +1227,7 @@ const ProposalGenerator = () => {
                     gstRate: 18,
                     advanceRequested: 50,
                     showGst: true,
+                    showPaymentDetails: true,
                     showSeal: false,
                     showSignatures: true,
                     signatureType: 'handwritten',
@@ -1494,6 +1496,7 @@ const ProposalGenerator = () => {
                             gstRate: 18,
                             advanceRequested: 50,
                             showGst: true,
+                            showPaymentDetails: true,
                             showSeal: false,
                             showSignatures: true,
                             signatureType: 'handwritten',
@@ -2833,48 +2836,64 @@ const ProposalGenerator = () => {
                                                        </div>
 
                                                         {/* Visibility Card */}
-                                                        <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-56 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
-                                                            {/* Glow effect on hover */}
-                                                            <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
-                                                            
-                                                            <div className="flex items-center gap-2 z-10">
-                                                                <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
-                                                                    <EyeOff size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Visibility</p>
-                                                                        <span className={cn(
-                                                                            "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                                                                            formData.hideTotalColumn ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
-                                                                        )} />
-                                                                    </div>
-                                                                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Column Control</p>
-                                                                </div>
-                                                            </div>
+                                                         <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900/90 via-zinc-950/95 to-zinc-900/90 border border-white/10 hover:border-neon-green/20 rounded-3xl p-4 h-72 flex flex-col justify-between transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.5)] group/card">
+                                                             {/* Glow effect on hover */}
+                                                             <div className="absolute -top-12 -left-12 w-24 h-24 bg-neon-green/5 blur-2xl group-hover/card:bg-neon-green/10 transition-all rounded-full pointer-events-none" />
+                                                             
+                                                             <div className="flex items-center gap-2 z-10">
+                                                                 <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center group-hover/card:border-neon-green/20 group-hover/card:bg-neon-green/5 transition-all">
+                                                                     <EyeOff size={14} className="text-gray-400 group-hover/card:text-neon-green transition-colors" />
+                                                                 </div>
+                                                                 <div className="flex-1">
+                                                                     <div className="flex items-center gap-1.5">
+                                                                         <p className="text-[10px] font-black text-neon-green uppercase tracking-wider leading-none">Visibility</p>
+                                                                         <span className={cn(
+                                                                             "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                                                                             (formData.hideTotalColumn || formData.showPaymentDetails === false) ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39ff14]" : "bg-zinc-700"
+                                                                         )} />
+                                                                     </div>
+                                                                     <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">Commercial Layouts</p>
+                                                                 </div>
+                                                             </div>
 
-                                                            <div className="flex flex-col gap-2 z-10 w-full">
-                                                                <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
-                                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Totals</span>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => setFormData({...formData, hideTotalColumn: !formData.hideTotalColumn})} 
-                                                                        className={cn(
-                                                                            "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
-                                                                            formData.hideTotalColumn ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
-                                                                        )}
-                                                                    >
-                                                                        <div className={cn(
-                                                                            "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
-                                                                            formData.hideTotalColumn ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
-                                                                        )} />
-                                                                    </button>
-                                                                </div>
-                                                                <div className="text-[8px] text-gray-500 uppercase tracking-wide leading-relaxed px-1">
-                                                                    Hides the total estimated cost breakdown and extends general terms & payment details to full page width.
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                             <div className="flex flex-col gap-2.5 z-10 w-full">
+                                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
+                                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Totals</span>
+                                                                     <button 
+                                                                         type="button"
+                                                                         onClick={() => setFormData({...formData, hideTotalColumn: !formData.hideTotalColumn})} 
+                                                                         className={cn(
+                                                                             "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
+                                                                             formData.hideTotalColumn ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                         )}
+                                                                     >
+                                                                         <div className={cn(
+                                                                             "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
+                                                                             formData.hideTotalColumn ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
+                                                                         )} />
+                                                                     </button>
+                                                                 </div>
+                                                                 <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-3 py-1.5">
+                                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Hide Settlement</span>
+                                                                     <button 
+                                                                         type="button"
+                                                                         onClick={() => setFormData({...formData, showPaymentDetails: !formData.showPaymentDetails})} 
+                                                                         className={cn(
+                                                                             "relative w-9 h-5 rounded-full transition-all duration-300 ease-in-out flex items-center px-0.5 border shrink-0 shadow-inner",
+                                                                             formData.showPaymentDetails === false ? "bg-neon-green/20 border-neon-green/40 shadow-[0_0_8px_rgba(57,255,20,0.2)]" : "bg-zinc-950 border-white/10"
+                                                                         )}
+                                                                     >
+                                                                         <div className={cn(
+                                                                             "w-3.5 h-3.5 rounded-full shadow-lg transition-all duration-300 ease-in-out", 
+                                                                             formData.showPaymentDetails === false ? "translate-x-4 bg-neon-green shadow-[0_0_8px_#39ff14]" : "translate-x-0 bg-gray-600"
+                                                                         )} />
+                                                                     </button>
+                                                                 </div>
+                                                                 <div className="text-[7.5px] text-gray-500 uppercase tracking-wide leading-relaxed px-1">
+                                                                     Toggle visibility of cost summary columns and bank/UPI settlement details on the commercials page.
+                                                                 </div>
+                                                             </div>
+                                                         </div>
                                                   </div>
 
                                                   {/* Row 2: Live Valuation Summary */}
