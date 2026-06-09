@@ -102,9 +102,9 @@ export const generateOfficialHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">${category}</div>
@@ -114,9 +114,9 @@ export const generateOfficialHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                     <p class="footer-text" style="margin-top: 10px;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
@@ -589,9 +589,9 @@ export const generateInvoiceEmailHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">INVOICE</div>
@@ -676,9 +676,9 @@ export const generateInvoiceEmailHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -959,9 +959,9 @@ export const generateWeeklyHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${getBaseUrl()}/weekly_logo_light.png" class="logo-light" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'none' : 'inline-block'}; max-width: 320px; width: 100%; height: auto;">
+                    <img src="${getBaseUrl()}/weekly_logo_light.png" class="logo-light" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'none' : 'inline-block'}; max-width: 320px; width: 100%; height: auto; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 6px 12px; border-radius: 8px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${getBaseUrl()}/weekly_logo_dark.png" class="logo-dark" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'inline-block' : 'none'}; max-width: 320px; width: 100%; height: auto;">
+                    <img src="${getBaseUrl()}/weekly_logo_dark.png" class="logo-dark" alt="WEEKLY BY CONCERT ZONE" style="display: ${isDark ? 'inline-block' : 'none'}; max-width: 320px; width: 100%; height: auto; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 6px 12px; border-radius: 8px;">
                     <div>
                         <span class="date-badge">${dateStr}</span>
                     </div>
@@ -971,9 +971,9 @@ export const generateWeeklyHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} CONCERT ZONE. ALL RIGHTS RESERVED.<br/>A SUBSIDIARY OF NEWBI ENTERTAINMENT.</p>
                     <a href="https://newbi.live/unsubscribe" class="unsubscribe-link">UNSUBSCRIBE FROM WEEKLY BRIEFINGS</a>
@@ -1192,9 +1192,9 @@ export const generateProposalEmailHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">PROPOSAL</div>
@@ -1269,9 +1269,9 @@ export const generateProposalEmailHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -1399,9 +1399,9 @@ export const generateAgreementEmailHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">CONTRACT</div>
@@ -1488,9 +1488,9 @@ export const generateAgreementEmailHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -1624,9 +1624,9 @@ export const generateReceiptEmailHTML = (data) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="category-badge">PAYOUT RECEIPT</div>
@@ -1739,9 +1739,9 @@ export const generateReceiptEmailHTML = (data) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -1843,9 +1843,9 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="welcome-badge">CREATOR WORKSPACE</div>
@@ -1864,9 +1864,9 @@ export const generateCreatorWelcomeHTML = (creatorName) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -1982,9 +1982,9 @@ export const generateCampaignNotificationHTML = (campaign) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="campaign-badge">NEW OPPORTUNITY</div>
@@ -2016,9 +2016,9 @@ export const generateCampaignNotificationHTML = (campaign) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
@@ -2121,9 +2121,9 @@ export const generateCreatorApprovedHTML = (creatorName) => {
             <div class="container">
                 <div class="header">
                     <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
                     <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                 </div>
                 <div class="content">
                     <div class="verified-badge">PROFILE VERIFIED</div>
@@ -2142,9 +2142,9 @@ export const generateCreatorApprovedHTML = (creatorName) => {
                 </div>
                 <div class="footer">
                     <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                     </div>
                     <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                 </div>
