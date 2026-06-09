@@ -175,6 +175,39 @@ const TicketingManagement = () => {
         }
     }, [selectedEventId, event]);
 
+    const eventOrders = useMemo(() => {
+        return ticketOrders.filter(o => o.eventId === selectedEventId);
+    }, [ticketOrders, selectedEventId]);
+
+    const pendingOrders = useMemo(() => {
+        return eventOrders.filter(o => o.status === 'pending');
+    }, [eventOrders]);
+
+    const approvedOrders = useMemo(() => {
+        return eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched');
+    }, [eventOrders]);
+
+    // Calculate Stats for Ticketing Operations
+    const totalTicketPeople = useMemo(() => {
+        return approvedOrders.reduce((acc, order) => {
+            const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
+            const count = Array.isArray(order.items) 
+                ? items.reduce((a, b) => a + (b.count || 0), 0)
+                : items.reduce((a, b) => a + (b || 0), 0);
+            return acc + count;
+        }, 0);
+    }, [approvedOrders]);
+
+    const totalGuestlistPeople = useMemo(() => {
+        return guestlistEntries.reduce((acc, e) => acc + (e.guestsCount || 1), 0);
+    }, [guestlistEntries]);
+
+    const checkedInGuestlistPeople = useMemo(() => {
+        return guestlistEntries.filter(e => e.attended).reduce((acc, e) => acc + (e.guestsCount || 1), 0);
+    }, [guestlistEntries]);
+
+    const totalPeople = totalTicketPeople + totalGuestlistPeople;
+
     // If no event selected, show event cards
     if (!selectedEventId) {
         return (
@@ -332,10 +365,6 @@ const TicketingManagement = () => {
         );
     }
 
-    // (event and auto-switch useEffect are now declared above early return to satisfy Rules of Hooks)
-
-    let eventOrders = ticketOrders.filter(o => o.eventId === selectedEventId);
-    
     // Filtering logic
     let filteredOrders = eventOrders.filter(order => {
         let matchesSearch = true;
@@ -348,30 +377,6 @@ const TicketingManagement = () => {
         }
         return matchesSearch && matchesStatus;
     });
-
-    const pendingOrders = eventOrders.filter(o => o.status === 'pending');
-    const approvedOrders = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched');
-
-    // Calculate Stats for Ticketing Operations
-    const totalTicketPeople = useMemo(() => {
-        return approvedOrders.reduce((acc, order) => {
-            const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
-            const count = Array.isArray(order.items) 
-                ? items.reduce((a, b) => a + (b.count || 0), 0)
-                : items.reduce((a, b) => a + (b || 0), 0);
-            return acc + count;
-        }, 0);
-    }, [approvedOrders]);
-
-    const totalGuestlistPeople = useMemo(() => {
-        return guestlistEntries.reduce((acc, e) => acc + (e.guestsCount || 1), 0);
-    }, [guestlistEntries]);
-
-    const checkedInGuestlistPeople = useMemo(() => {
-        return guestlistEntries.filter(e => e.attended).reduce((acc, e) => acc + (e.guestsCount || 1), 0);
-    }, [guestlistEntries]);
-
-    const totalPeople = totalTicketPeople + totalGuestlistPeople;
 
     const handleApprove = async (orderId) => {
         if(window.confirm('Approve payment? User will be moved to verified queue awaiting dispatch.')) {
