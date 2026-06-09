@@ -2155,3 +2155,140 @@ export const generateCreatorApprovedHTML = (creatorName) => {
 };
 
 
+/**
+ * Sends an email notification to newly authorized staff with their role and login link.
+ */
+export const sendStaffAuthorizedEmail = async (toEmail, role) => {
+    try {
+        const html = generateStaffAuthorizedHTML(role);
+        const result = await apiFetch('/api/mail', {
+            to: toEmail,
+            subject: `Command Access Granted: New Role Assigned 🚀`,
+            fromName: 'Newbi Security',
+            fromEmail: 'security@newbi.live',
+            html
+        });
+        return result.success ? { success: true } : { success: false, error: result.error };
+    } catch (error) {
+        console.error('Failed to send staff authorized email:', error);
+        return { success: false, error };
+    }
+};
+
+/**
+ * Generates the HTML for the staff authorized email.
+ */
+export const generateStaffAuthorizedHTML = (role) => {
+    const baseUrl = getBaseUrl();
+    const roleLabels = {
+        content_admin: 'Content Admin',
+        gate_manager: 'Ticketing Admin',
+        blog_writer: 'Blog Writer',
+        super_admin: 'Super Admin',
+        founder: 'Founder',
+        developer: 'Developer'
+    };
+    const roleLabel = roleLabels[role] || role;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+                .header { padding: 40px; border-bottom: 1px solid #1a1a1a; text-align: left; background-color: #0a0a0a; }
+                .content { padding: 50px; text-align: left; }
+                .verified-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(90deg, #39FF14, #00f2ff); color: #000000; font-size: 10px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 24px; text-transform: uppercase; }
+                .title { font-size: 32px; font-weight: 900; line-height: 1.2; letter-spacing: -1px; margin-bottom: 24px; color: #ffffff; text-transform: uppercase; font-style: italic; }
+                .green-text { color: #39FF14; }
+                .blue-text { color: #00f2ff; }
+                .body-text { color: #a0a0a0; font-size: 16px; line-height: 1.6; font-weight: 400; margin-bottom: 30px; }
+                
+                .studio-card { background: #121212; border: 1px solid #222222; border-radius: 16px; padding: 24px; margin: 30px 0; }
+                .studio-card h3 { font-size: 18px; font-weight: 800; color: #39FF14; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .studio-card p { font-size: 14px; color: #888888; line-height: 1.5; margin: 0; }
+                
+                .cta-button { display: inline-block; padding: 18px 36px; background: linear-gradient(90deg, #39FF14, #00f2ff); color: #000000 !important; text-decoration: none; font-weight: 900; font-size: 13px; border-radius: 12px; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 0 20px rgba(57,255,20,0.3); }
+                .footer { padding: 40px 50px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #555555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.5; filter: invert(1); }
+                .logo-light { display: none; }
+                .logo-dark { display: block; }
+                
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                    .title { font-size: 26px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #ffffff !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important; }
+                    .header { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    .verified-badge { background: linear-gradient(90deg, #39FF14, #00f2ff) !important; }
+                    .title { color: #111111 !important; }
+                    .blue-text { color: #0099aa !important; }
+                    .body-text { color: #444444 !important; }
+                    .studio-card { background: #f8f9fa !important; border-color: #e5e7eb !important; }
+                    .studio-card h3 { color: #0099aa !important; }
+                    .studio-card p { color: #555555 !important; }
+                    .cta-button { box-shadow: 0 0 20px rgba(57,255,20,0.2) !important; }
+                    .footer { background-color: #fafafa !important; border-color: #e5e7eb !important; }
+                    .footer-text { color: #999999 !important; }
+                    .social-img { filter: none !important; opacity: 0.5 !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">Your Newbi Command Portal credentials have been authorized.</span>
+            <div class="container">
+                <div class="header">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: none; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#ffffff, #ffffff); background-color: #ffffff; padding: 4px 8px; border-radius: 6px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
+                </div>
+                <div class="content">
+                    <div class="verified-badge">STAFF AUTHORIZATION</div>
+                    <h1 class="title">Clearance <span class="green-text">Granted</span></h1>
+                    <p class="body-text">Hello,</p>
+                    <p class="body-text">We are writing to inform you that your security clearance and staff privileges have been provisioned on the Newbi Command Portal.</p>
+                    
+                    <div class="studio-card">
+                        <h3>Clearance Details</h3>
+                        <p><strong>Role Level:</strong> ${roleLabel}</p>
+                        <p style="margin-top: 10px;">With this level of clearance, you have been authorized to log in and access restricted dashboards, operations systems, tools, and content manager features.</p>
+                    </div>
+
+                    <div style="text-align: center; margin: 40px 0;">
+                        <a href="https://newbi.live/admin" class="cta-button">Access Command Portal</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+
