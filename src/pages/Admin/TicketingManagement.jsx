@@ -253,10 +253,10 @@ const TicketingManagement = () => {
 
     // Auto-switch to guestlist tab if event is not ticketed (RSVP/Guestlist only)
     useEffect(() => {
-        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled) && activeTab === 'buyers') {
+        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled)) {
             setActiveTab('guestlist');
         }
-    }, [event, activeTab]);
+    }, [selectedEventId]);
 
     let eventOrders = ticketOrders.filter(o => o.eventId === selectedEventId);
     
