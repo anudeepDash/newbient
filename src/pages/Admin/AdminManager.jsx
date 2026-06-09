@@ -28,6 +28,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCommunityHubLayout from '../../components/admin/AdminCommunityHubLayout';
 import StudioSelect from '../../components/ui/StudioSelect';
+import { sendStaffAuthorizedEmail } from '../../lib/email';
 
 const getPageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -67,7 +68,7 @@ const getPageNumbers = (currentPage, totalPages) => {
 const getAdminRoleOptions = (currentRole, canManageDevelopers, canManageFounders) => {
     const opts = [
         { value: 'content_admin', label: 'Content Admin' },
-        { value: 'gate_manager', label: 'Gate Manager' },
+        { value: 'gate_manager', label: 'Ticketing Admin' },
         { value: 'blog_writer', label: 'Blog Writer' },
         { value: 'super_admin', label: 'Super Admin' }
     ];
@@ -82,7 +83,7 @@ const getAdminRoleOptions = (currentRole, canManageDevelopers, canManageFounders
         opts.push({ value: 'editor', label: 'Content Admin (Legacy)' });
     }
     if (currentRole === 'scanner' && !opts.some(o => o.value === 'scanner')) {
-        opts.push({ value: 'scanner', label: 'Gate Manager (Legacy)' });
+        opts.push({ value: 'scanner', label: 'Ticketing Admin (Legacy)' });
     }
     return opts;
 };
@@ -176,9 +177,17 @@ const AdminManager = () => {
                 createdAt: new Date().toISOString()
             });
 
+            const emailSentTo = newAdminEmail;
+            const roleAssigned = newAdminRole;
+
             setNewAdminEmail('');
             fetchAdmins();
             useStore.getState().addToast("Admin added! They'll need to sign up to get started.", 'success');
+
+            // Send notification email asynchronously
+            sendStaffAuthorizedEmail(emailSentTo, roleAssigned).catch(err => {
+                console.error("Failed to send authorization email:", err);
+            });
         } catch (error) {
             console.error("Error adding admin:", error);
             useStore.getState().addToast("Couldn't add the admin. Please try again.", 'error');
@@ -192,9 +201,19 @@ const AdminManager = () => {
             return;
         }
         try {
+            const adminDoc = admins.find(a => a.id === id);
+            const adminEmail = adminDoc?.email;
+
             await updateDoc(doc(db, "admins", id), { role: role });
             fetchAdmins();
             useStore.getState().addToast(`Role updated to ${role}.`, 'success');
+
+            // Send notification email asynchronously
+            if (adminEmail) {
+                sendStaffAuthorizedEmail(adminEmail, role).catch(err => {
+                    console.error("Failed to send authorization email:", err);
+                });
+            }
         } catch (error) {
             console.error("Error approving admin:", error);
             useStore.getState().addToast("Couldn't update the role. Please try again.", 'error');
@@ -556,7 +575,7 @@ const AdminManager = () => {
                                 {[
                                     { id: 'all', label: 'All' },
                                     { id: 'content_admin', label: 'Content Admin' },
-                                    { id: 'gate_manager', label: 'Gate Manager' },
+                                    { id: 'gate_manager', label: 'Ticketing Admin' },
                                     { id: 'blog_writer', label: 'Blog Writer' },
                                     { id: 'super_admin', label: 'Super Admin' },
                                     ...(canManageFounders ? [{ id: 'founder', label: 'Founder' }] : []),
@@ -1089,10 +1108,10 @@ const AdminManager = () => {
                                                 founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder', glow: 'from-[#FFD700]/30 to-amber-500/30' },
                                                 super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin', glow: 'from-neon-pink/30 to-purple-500/30' },
                                                 content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin', glow: 'from-neon-green/30 to-teal-500/30' },
-                                                gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager', glow: 'from-yellow-500/30 to-orange-500/30' },
+                                                gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin', glow: 'from-yellow-500/30 to-orange-500/30' },
                                                 blog_writer: { text: 'text-neon-blue', border: 'border-neon-blue/20', bg: 'bg-neon-blue/5', name: 'Blog Writer', glow: 'from-neon-blue/30 to-indigo-500/30' },
                                                 editor: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin', glow: 'from-neon-green/30 to-teal-500/30' },
-                                                scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager', glow: 'from-yellow-500/30 to-orange-500/30' },
+                                                scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin', glow: 'from-yellow-500/30 to-orange-500/30' },
                                             };
                                             
                                             const roleStyle = roleColors[admin.role] || { text: 'text-gray-400', border: 'border-white/5', bg: 'bg-white/5', name: admin.role, glow: 'from-white/5 to-white/5' };
@@ -1234,10 +1253,10 @@ const AdminManager = () => {
                                                             founder: { text: 'text-[#FFD700]', border: 'border-[#FFD700]/20', bg: 'bg-[#FFD700]/5', name: 'Founder' },
                                                             super_admin: { text: 'text-neon-pink', border: 'border-neon-pink/20', bg: 'bg-neon-pink/5', name: 'Super Admin' },
                                                             content_admin: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin' },
-                                                            gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager' },
+                                                            gate_manager: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin' },
                                                             blog_writer: { text: 'text-neon-blue', border: 'border-neon-blue/20', bg: 'bg-neon-blue/5', name: 'Blog Writer' },
                                                             editor: { text: 'text-neon-green', border: 'border-neon-green/20', bg: 'bg-neon-green/5', name: 'Content Admin' },
-                                                            scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Gate Manager' },
+                                                            scanner: { text: 'text-yellow-500', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', name: 'Ticketing Admin' },
                                                         };
                                                         
                                                         const roleStyle = roleColors[admin.role] || { text: 'text-gray-400', border: 'border-white/5', bg: 'bg-white/5', name: admin.role };

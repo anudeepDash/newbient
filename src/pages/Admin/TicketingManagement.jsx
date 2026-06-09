@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Ticket from 'lucide-react/dist/esm/icons/ticket';
@@ -81,16 +81,28 @@ const TicketingManagement = () => {
         return unsub;
     }, [selectedEventId, targetId]);
 
-    const operationalEvents = [
-        ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
-        ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || []),
-        ...storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true })),
-        ...(useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [])
-    ].sort((a, b) => {
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(b.date) - new Date(a.date);
-    });
+    const operationalEvents = useMemo(() => {
+        const allEvents = [
+            ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
+            ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || []),
+            ...storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true })),
+            ...(useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [])
+        ];
+
+        // Deduplicate by ID — prioritize upcomingEvents (first occurrence wins, has images/full data)
+        const seen = new Map();
+        for (const ev of allEvents) {
+            if (!seen.has(ev.id)) {
+                seen.set(ev.id, ev);
+            }
+        }
+
+        return Array.from(seen.values()).sort((a, b) => {
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(b.date) - new Date(a.date);
+        });
+    }, [upcomingEvents, portfolio, storeGuestlists]);
 
     // If no event selected, show event cards
     if (!selectedEventId) {
