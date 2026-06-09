@@ -451,16 +451,21 @@ const TicketingManagement = () => {
         // Formatting timestamps helper
         const formatTime = (ts) => {
             if (!ts) return '';
-            let dateVal;
+            let d;
             if (ts.seconds) {
-                dateVal = new Date(ts.seconds * 1000);
+                d = new Date(ts.seconds * 1000);
             } else {
-                dateVal = new Date(ts);
+                d = new Date(ts);
             }
-            if (!isNaN(dateVal.getTime())) {
-                return dateVal.toLocaleString();
-            }
-            return String(ts);
+            if (isNaN(d.getTime())) return String(ts);
+            
+            const pad = (n) => String(n).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const mm = pad(d.getMonth() + 1);
+            const dd = pad(d.getDate());
+            const hh = pad(d.getHours());
+            const min = pad(d.getMinutes());
+            return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
         };
 
         if (hasTickets && !hasGuestlist) {
@@ -538,17 +543,17 @@ const TicketingManagement = () => {
 
         const getColWidth = (header) => {
             switch (header) {
-                case "Booking Ref": return "140";
+                case "Booking Ref": return "120";
                 case "Name": return "200";
-                case "Email": return "250";
-                case "Phone": return "150";
+                case "Email": return "280";
+                case "Phone": return "160";
                 case "Status":
                 case "Attendance Status":
-                case "Status / Attendance": return "150";
-                case "UTR / Payment Ref": return "180";
-                case "Amount Paid": return "120";
+                case "Status / Attendance": return "160";
+                case "UTR / Payment Ref": return "200";
+                case "Amount Paid": return "130";
                 case "Tickets Purchased":
-                case "Details": return "300";
+                case "Details": return "320";
                 case "Purchase Date":
                 case "RSVP Date":
                 case "Date": return "180";
@@ -574,79 +579,73 @@ const TicketingManagement = () => {
         </x:ExcelWorkbook>
         </xml>
         <![endif]-->
-        <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; text-align: left; height: 50px; vertical-align: middle; }
-          .subtitle-row { background-color: #0A0A0A; color: #00FF66; font-size: 10pt; font-weight: bold; text-align: left; height: 25px; vertical-align: middle; }
-          .info-row { background-color: #0A0A0A; color: #888888; font-size: 9pt; text-align: left; height: 20px; vertical-align: middle; }
-          .header-cell { background-color: #1A1A1A; color: #FFFFFF; font-size: 10pt; font-weight: bold; border: 1px solid #333333; height: 35px; text-align: left; vertical-align: middle; padding: 8px 10px; }
-          .data-cell { font-size: 10pt; border: 1px solid #E2E8F0; height: 28px; vertical-align: middle; padding: 6px 10px; color: #1A202C; }
-          .zebra-cell { background-color: #F7FAFC; }
-          .phone-cell { mso-number-format: "\\@"; text-align: left; }
-          .text-cell { mso-number-format: "\\@"; }
-          .badge-verified { background-color: #DEF7EC; color: #03543F; font-weight: bold; text-align: center; }
-          .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
-          .badge-dispatched { background-color: #E0F2FE; color: #0369A1; font-weight: bold; text-align: center; }
-          .badge-attended { background-color: #DEF7EC; color: #03543F; font-weight: bold; text-align: center; }
-          .badge-registered { background-color: #F3F4F6; color: #374151; font-weight: bold; text-align: center; }
-          .number-cell { text-align: right; }
-        </style>
         </head>
         <body>
-        <table>
+        <table style="font-family: 'Segoe UI', Arial, sans-serif; border-collapse: collapse; width: 100%;">
           <!-- Branded Banner Header -->
           <tr>
-            <td colspan="${colCount}" class="title-row" style="height: 60px; padding: 10px;">
-              <img src="https://newbi.live/logo_full.png" height="40" style="vertical-align: middle;">
+            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; height: 50px; padding: 10px 15px; vertical-align: middle;">
+              <img src="https://newbi.live/logo_full.png" height="30" style="vertical-align: middle; border: none;">
             </td>
           </tr>
           <tr>
-            <td colspan="${colCount}" class="subtitle-row">&nbsp;&nbsp;OPERATIONS REPORT: ${escapeHTML(eventTitle.toUpperCase())}</td>
+            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; color: #00FF66; font-size: 10pt; font-weight: bold; padding: 4px 15px; height: 22px; vertical-align: middle;">
+              OPERATIONS REPORT: ${escapeHTML(eventTitle.toUpperCase())}
+            </td>
           </tr>
           <tr>
-            <td colspan="${colCount}" class="info-row">&nbsp;&nbsp;Generated: ${escapeHTML(formattedDate)} | Total People: ${totalPeople}</td>
+            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; color: #888888; font-size: 8.5pt; padding: 4px 15px; height: 20px; vertical-align: middle;">
+              Generated: ${escapeHTML(formattedDate)} &nbsp;|&nbsp; Total Footprint: ${totalPeople} People
+            </td>
           </tr>
           <!-- Spacer Row -->
-          <tr style="height: 15px;">
-            <td colspan="${colCount}">&nbsp;</td>
+          <tr style="height: 10px; border: none;">
+            <td colspan="${colCount}" style="border: none; background-color: #FFFFFF; height: 10px;">&nbsp;</td>
           </tr>
           <!-- Table Headers -->
           <tr>
-            ${headers.map(h => `<th class="header-cell" width="${getColWidth(h)}">${escapeHTML(h)}</th>`).join('')}
+            ${headers.map(h => `<th style="background-color: #1F2937; color: #FFFFFF; font-size: 9.5pt; font-weight: bold; border: 1px solid #374151; padding: 8px 10px; text-align: left; vertical-align: middle; width: ${getColWidth(h)}px;" width="${getColWidth(h)}">${escapeHTML(h)}</th>`).join('')}
           </tr>
           <!-- Table Data -->
           ${rows.map((row, rIdx) => {
               const isZebra = rIdx % 2 !== 0;
+              const bgCol = isZebra ? "#F9FAFB" : "#FFFFFF";
+              
               return `<tr>
                   ${row.map((cell, cIdx) => {
-                      let cellClass = "data-cell";
-                      if (isZebra) cellClass += " zebra-cell";
-                      
                       const headerName = headers[cIdx];
                       const valStr = String(cell);
-
-                      // Style status badges
-                      if (headerName === "Status" || headerName === "Status / Attendance" || headerName === "Attendance Status") {
-                          if (valStr === "APPROVED" || valStr === "VERIFIED") cellClass += " badge-verified";
-                          else if (valStr === "PENDING") cellClass += " badge-pending";
-                          else if (valStr === "DISPATCHED") cellClass += " badge-dispatched";
-                          else if (valStr === "ATTENDED") cellClass += " badge-attended";
-                          else if (valStr === "REGISTERED") cellClass += " badge-registered";
-                      }
                       
-                      // Align currency and numbers
-                      if (headerName === "Amount Paid" || headerName === "Total Guests") {
-                          cellClass += " number-cell";
+                      // Default styles
+                      let tdStyle = `background-color: ${bgCol}; border: 1px solid #E5E7EB; padding: 6px 10px; font-size: 9pt; color: #1F2937; vertical-align: middle;`;
+                      
+                      // Text number formatting (to prevent scientific notation)
+                      if (headerName === "Phone" || headerName === "Booking Ref" || headerName === "UTR / Payment Ref") {
+                          tdStyle += " mso-number-format:'\\@'; text-align: left;";
+                      } else if (headerName === "Amount Paid" || headerName === "Total Guests") {
+                          tdStyle += " text-align: right;";
                       }
 
-                      // Handle text formatting to avoid scientific notation
-                      if (headerName === "Phone") {
-                          cellClass += " phone-cell";
-                      } else if (headerName === "Booking Ref" || headerName === "UTR / Payment Ref") {
-                          cellClass += " text-cell";
+                      // Badges formatting
+                      if (headerName === "Status" || headerName === "Status / Attendance" || headerName === "Attendance Status") {
+                          let badgeBg = "#F3F4F6";
+                          let badgeColor = "#374151";
+                          
+                          if (valStr === "APPROVED" || valStr === "VERIFIED" || valStr === "ATTENDED") {
+                              badgeBg = "#DEF7EC";
+                              badgeColor = "#03543F";
+                          } else if (valStr === "PENDING") {
+                              badgeBg = "#FEF3C7";
+                              badgeColor = "#92400E";
+                          } else if (valStr === "DISPATCHED") {
+                              badgeBg = "#E0F2FE";
+                              badgeColor = "#0369A1";
+                          }
+                          
+                          tdStyle += ` background-color: ${badgeBg}; color: ${badgeColor}; font-weight: bold; text-align: center;`;
                       }
 
-                      return `<td class="${cellClass}">${escapeHTML(cell)}</td>`;
+                      return `<td style="${tdStyle}">${escapeHTML(cell)}</td>`;
                   }).join('')}
               </tr>`;
           }).join('')}
