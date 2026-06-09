@@ -59,12 +59,99 @@ const TicketingManagement = () => {
         }
     }, [searchParams]);
 
-    // Compute targetId reactively based on storeGuestlists
-    const gl = storeGuestlists.find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
-    const targetId = gl?.id || selectedEventId;
+    const operationalEvents = useMemo(() => {
+        const upcoming = upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || [];
+        const ports = portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || [];
+        const gls = storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true }));
+        const gigs = useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [];
 
+        const consolidated = new Map();
+
+        // 1. Add all upcoming events first to preserve thumbnails and main event info
+        for (const ev of upcoming) {
+            consolidated.set(ev.id, { ...ev });
+        }
+
+        // 2. Add portfolio events
+        for (const ev of ports) {
+            if (consolidated.has(ev.id)) {
+                consolidated.set(ev.id, { ...consolidated.get(ev.id), ...ev });
+            } else {
+                consolidated.set(ev.id, { ...ev });
+            }
+        }
+
+        // 3. Add volunteer gigs
+        for (const ev of gigs) {
+            if (consolidated.has(ev.id)) {
+                consolidated.set(ev.id, { ...consolidated.get(ev.id), ...ev });
+            } else {
+                consolidated.set(ev.id, { ...ev });
+            }
+        }
+
+        // 4. Merge guestlists (matching on eventId / linkedEventId / ID)
+        for (const gl of gls) {
+            const linkedId = gl.eventId || gl.linkedEventId;
+            let matchId = null;
+
+            if (linkedId && consolidated.has(linkedId)) {
+                matchId = linkedId;
+            } else if (consolidated.has(gl.id)) {
+                matchId = gl.id;
+            } else {
+                // Look for cross-referencing
+                for (const [id, ev] of consolidated.entries()) {
+                    if (ev.eventId === gl.id || ev.linkedEventId === gl.id || ev.id === gl.eventId || ev.id === gl.linkedEventId) {
+                        matchId = id;
+                        break;
+                    }
+                }
+            }
+
+            if (matchId) {
+                const existing = consolidated.get(matchId);
+                consolidated.set(matchId, {
+                    ...gl,
+                    ...existing,
+                    currentSpots: gl.currentSpots || existing.currentSpots || 0,
+                    id: existing.id || gl.id,
+                    guestlistId: gl.id, // Store the actual guestlist document ID
+                    isGuestlistEnabled: true
+                });
+            } else {
+                // Standalone guestlist
+                consolidated.set(gl.id, {
+                    ...gl,
+                    guestlistId: gl.id
+                });
+            }
+        }
+
+        return Array.from(consolidated.values()).sort((a, b) => {
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(b.date) - new Date(a.date);
+        });
+    }, [upcomingEvents, portfolio, storeGuestlists]);
+
+    // Find the selected event
+    const event = useMemo(() => {
+        if (!selectedEventId) return null;
+        return operationalEvents.find(e => e.id === selectedEventId);
+    }, [operationalEvents, selectedEventId]);
+
+    // Compute targetId reactively based on storeGuestlists & consolidated data
+    const gl = useMemo(() => {
+        if (!selectedEventId) return null;
+        return storeGuestlists.find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
+    }, [storeGuestlists, selectedEventId]);
+
+    const targetId = event?.guestlistId || gl?.id || selectedEventId;
+
+    // Load guestlist entries reactively
     useEffect(() => {
-        if (!selectedEventId) return;
+        if (!selectedEventId || !targetId) return;
         
         setGlLoading(true);
 
@@ -81,28 +168,12 @@ const TicketingManagement = () => {
         return unsub;
     }, [selectedEventId, targetId]);
 
-    const operationalEvents = useMemo(() => {
-        const allEvents = [
-            ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
-            ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || []),
-            ...storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true })),
-            ...(useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [])
-        ];
-
-        // Deduplicate by ID — prioritize upcomingEvents (first occurrence wins, has images/full data)
-        const seen = new Map();
-        for (const ev of allEvents) {
-            if (!seen.has(ev.id)) {
-                seen.set(ev.id, ev);
-            }
+    // Auto-switch to guestlist tab if event is not ticketed (RSVP/Guestlist only)
+    useEffect(() => {
+        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled)) {
+            setActiveTab('guestlist');
         }
-
-        return Array.from(seen.values()).sort((a, b) => {
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return new Date(b.date) - new Date(a.date);
-        });
-    }, [upcomingEvents, portfolio, storeGuestlists]);
+    }, [selectedEventId, event]);
 
     // If no event selected, show event cards
     if (!selectedEventId) {
@@ -261,14 +332,7 @@ const TicketingManagement = () => {
         );
     }
 
-    const event = operationalEvents.find(e => e.id === selectedEventId);
-
-    // Auto-switch to guestlist tab if event is not ticketed (RSVP/Guestlist only)
-    useEffect(() => {
-        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled)) {
-            setActiveTab('guestlist');
-        }
-    }, [selectedEventId]);
+    // (event and auto-switch useEffect are now declared above early return to satisfy Rules of Hooks)
 
     let eventOrders = ticketOrders.filter(o => o.eventId === selectedEventId);
     
