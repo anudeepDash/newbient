@@ -116,10 +116,28 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 customFields: formData.customFields,
                 status: 'approved',
                 createdAt: new Date().toISOString(),
-                bookingRef: ref
+                bookingRef: ref,
+                guestlistMode: guestlist.guestlistMode || 'qr'
             };
 
             await addGuestlistEntry(guestlist.id, entryData);
+
+            try {
+                const { sendGuestlistConfirmation } = await import('../../lib/email');
+                await sendGuestlistConfirmation({
+                    toName: formData.name,
+                    toEmail: formData.email,
+                    eventName: guestlist.title,
+                    bookingRef: ref,
+                    guestCount: guestsCount,
+                    date: guestlist.date,
+                    location: guestlist.location,
+                    guestlistMode: guestlist.guestlistMode || 'qr'
+                });
+            } catch (mailErr) {
+                console.error("Failed to send guestlist confirmation email:", mailErr);
+            }
+
             setStep('success');
         } catch (err) {
             setError(err.message || "Registration failed.");
@@ -377,121 +395,144 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                                         </motion.div>
                                     )}
 
-                                    {step === 'success' && (
-                                        <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-10">
-                                            <div className="w-16 h-16 bg-neon-green rounded-2xl flex items-center justify-center text-black mb-1 shadow-[0_0_15px_rgba(0,230,168,0.2)]">
-                                                <CheckCircle2 size={32} />
-                                            </div>
-                                            
-                                            <div className="space-y-1">
-                                                <h3 className="text-2xl font-black font-heading text-white italic tracking-tighter uppercase leading-none">
-                                                    REGISTRATION <span className="text-neon-green">CONFIRMED.</span>
-                                                </h3>
-                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest px-4">Your entry is secured. Save your ticket below.</p>
-                                            </div>
-
-                                            <div className="relative">
-                                                <div className="bg-white p-4 rounded-2xl shadow-xl scale-90">
-                                                    <img 
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingRef)}`} 
-                                                        alt="Access QR" 
-                                                        crossOrigin="anonymous"
-                                                        className="w-24 h-24 mix-blend-multiply" 
-                                                    />
+                                    {step === 'success' && (() => {
+                                        const isRSVPOnly = guestlist?.guestlistMode === 'rsvp';
+                                        return (
+                                            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center gap-10">
+                                                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-black mb-1 shadow-lg transition-all", isRSVPOnly ? "bg-neon-pink text-white shadow-neon-pink/20 animate-[pulse_2s_infinite]" : "bg-neon-green text-black shadow-[0_0_15px_rgba(0,230,168,0.2)]")}>
+                                                    <CheckCircle2 size={32} />
                                                 </div>
-                                            </div>
-
-                                            <div className="w-full flex flex-col gap-2">
-                                                <Button 
-                                                    onClick={handleDownloadTicket} 
-                                                    className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Download size={14} /> DOWNLOAD TICKET
-                                                </Button>
                                                 
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <Button 
-                                                        onClick={() => { window.location.href = '/account'; }} 
-                                                        variant="outline"
-                                                        className="h-12 border-white/10 text-white font-black uppercase tracking-[0.2em] text-[8px] rounded-xl hover:bg-white/5 transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <ExternalLink size={14} /> ACCOUNT
-                                                    </Button>
-
-                                                    <a 
-                                                        href={`/ticket/${bookingRef}?gl=${guestlist.id}`} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
-                                                        className="h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[8px] font-black uppercase tracking-widest text-white transition-all"
-                                                    >
-                                                        <QrCode size={14} /> DIGITAL PASS
-                                                    </a>
+                                                <div className="space-y-1">
+                                                    <h3 className="text-2xl font-black font-heading text-white italic tracking-tighter uppercase leading-none">
+                                                        REGISTRATION <span className={isRSVPOnly ? "text-neon-pink" : "text-neon-green"}>CONFIRMED.</span>
+                                                    </h3>
+                                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest px-4">
+                                                        {isRSVPOnly ? "Your RSVP is confirmed. No QR pass is required." : "Your entry is secured. Save your ticket below."}
+                                                    </p>
                                                 </div>
-                                            </div>
 
-                                            {/* Hidden Ticket Surface for Download */}
-                                            <div className="fixed -left-[2000px] top-0">
-                                                <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-green/20">
-                                                    {/* Logo Header */}
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
-                                                        <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">GUESTLIST_PASS</div>
+                                                {isRSVPOnly ? (
+                                                    <div className="w-full flex flex-col gap-4">
+                                                        <div className="p-6 bg-neon-pink/5 border border-neon-pink/20 rounded-2xl max-w-sm mx-auto">
+                                                            <p className="text-[10px] font-black text-neon-pink uppercase tracking-widest leading-relaxed italic">
+                                                                Your RSVP has been registered. No QR code or pass is needed for entry. We've sent a confirmation email to your address.
+                                                            </p>
+                                                        </div>
+                                                        <Button 
+                                                            onClick={onClose} 
+                                                            className="w-full h-12 bg-white text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all"
+                                                        >
+                                                            CLOSE
+                                                        </Button>
                                                     </div>
-
-                                                    {/* Event Header */}
-                                                    <div className="space-y-4">
-                                                        <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
-                                                            {guestlist.title}
-                                                        </h1>
-                                                        <div className="flex gap-8">
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
-                                                                <p className="text-xl font-bold text-white uppercase italic">{guestlist.date || 'To Be Announced'}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
-                                                                <p className="text-xl font-bold text-white uppercase italic">{guestlist.location || 'Special Venue'}</p>
+                                                ) : (
+                                                    <>
+                                                        <div className="relative">
+                                                            <div className="bg-white p-4 rounded-2xl shadow-xl scale-90">
+                                                                <img 
+                                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingRef)}`} 
+                                                                    alt="Access QR" 
+                                                                    crossOrigin="anonymous"
+                                                                    className="w-24 h-24 mix-blend-multiply" 
+                                                                />
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    {/* QR and Code */}
-                                                    <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
-                                                        <div className="bg-white p-8 rounded-[3rem]">
-                                                            <img 
-                                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} 
-                                                                alt="QR" 
-                                                                crossOrigin="anonymous"
-                                                                className="w-48 h-48 mix-blend-multiply" 
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-6">
-                                                            <div>
-                                                                <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
-                                                                <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                                        <div className="w-full flex flex-col gap-2">
+                                                            <Button 
+                                                                onClick={handleDownloadTicket} 
+                                                                className="w-full h-12 bg-neon-green text-black font-black uppercase tracking-[0.2em] text-[9px] rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                <Download size={14} /> DOWNLOAD TICKET
+                                                            </Button>
+                                                            
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <Button 
+                                                                    onClick={() => { window.location.href = '/account'; }} 
+                                                                    variant="outline"
+                                                                    className="h-12 border-white/10 text-white font-black uppercase tracking-[0.2em] text-[8px] rounded-xl hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                                                                >
+                                                                    <ExternalLink size={14} /> ACCOUNT
+                                                                </Button>
+
+                                                                <a 
+                                                                    href={`/ticket/${bookingRef}?gl=${guestlist.id}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-[8px] font-black uppercase tracking-widest text-white transition-all"
+                                                                >
+                                                                    <QrCode size={14} /> DIGITAL PASS
+                                                                </a>
                                                             </div>
-                                                            <div className="flex gap-8">
-                                                                <div>
-                                                                    <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">GUESTS</p>
-                                                                    <p className="text-2xl font-bold text-neon-green italic">{guestsCount}</p>
+                                                        </div>
+
+                                                        {/* Hidden Ticket Surface for Download */}
+                                                        <div className="fixed -left-[2000px] top-0">
+                                                            <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-green/20">
+                                                                {/* Logo Header */}
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
+                                                                    <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">GUESTLIST_PASS</div>
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
-                                                                    <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+
+                                                                {/* Event Header */}
+                                                                <div className="space-y-4">
+                                                                    <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
+                                                                        {guestlist.title}
+                                                                    </h1>
+                                                                    <div className="flex gap-8">
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
+                                                                            <p className="text-xl font-bold text-white uppercase italic">{guestlist.date || 'To Be Announced'}</p>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
+                                                                            <p className="text-xl font-bold text-white uppercase italic">{guestlist.location || 'Special Venue'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* QR and Code */}
+                                                                <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
+                                                                    <div className="bg-white p-8 rounded-[3rem]">
+                                                                        <img 
+                                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(bookingRef)}`} 
+                                                                            alt="QR" 
+                                                                            crossOrigin="anonymous"
+                                                                            className="w-48 h-48 mix-blend-multiply" 
+                                                                        />
+                                                                    </div>
+                                                                    <div className="space-y-6">
+                                                                        <div>
+                                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
+                                                                            <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                                                        </div>
+                                                                        <div className="flex gap-8">
+                                                                            <div>
+                                                                                <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">GUESTS</p>
+                                                                                <p className="text-2xl font-bold text-neon-green italic">{guestsCount}</p>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
+                                                                                <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Footer */}
+                                                                <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                                                                    <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] italic">NEWBI ENT.</p>
+                                                                    <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">#TRIBE_ACCESS_ONLY</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-
-                                                    {/* Footer */}
-                                                    <div className="pt-8 border-t border-white/5 flex items-center justify-between">
-                                                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] italic">NEWBI ENT.</p>
-                                                        <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">#TRIBE_ACCESS_ONLY</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
+                                                    </>
+                                                )}
+                                            </motion.div>
+                                        );
+                                    })()}
                                 </AnimatePresence>
                             </div>
                         </div>

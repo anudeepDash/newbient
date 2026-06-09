@@ -292,17 +292,40 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         setLoading(true);
         try {
             const ref = `NB-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-            await addDoc(collection(db, 'guestlists'), {
-                eventId: event?.id,
+            const entryData = {
                 userId: user?.uid || null,
+                name: formData.name,
                 customerName: formData.name,
+                email: formData.email,
                 customerEmail: formData.email,
+                phone: `${countryCode}${formData.phone}`,
                 customerPhone: `${countryCode}${formData.phone}`,
-                guestCount,
+                guestsCount: guestCount,
                 bookingRef: ref,
-                createdAt: serverTimestamp(),
-                status: 'confirmed'
-            });
+                status: 'confirmed',
+                title: event?.title || 'Guestlist',
+                attended: false,
+                guestlistMode: event?.guestlistMode || 'qr'
+            };
+            
+            await useStore.getState().addGuestlistEntry(event.id, entryData);
+
+            try {
+                const { sendGuestlistConfirmation } = await import('../../lib/email');
+                await sendGuestlistConfirmation({
+                    toName: formData.name,
+                    toEmail: formData.email,
+                    eventName: event?.title || 'Event',
+                    bookingRef: ref,
+                    guestCount: guestCount,
+                    date: event?.date,
+                    location: event?.location,
+                    guestlistMode: event?.guestlistMode || 'qr'
+                });
+            } catch (mailErr) {
+                console.error("Failed to send guestlist confirmation email:", mailErr);
+            }
+
             setBookingRef(ref);
             setStep('success');
         } catch (error) {
@@ -364,6 +387,29 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 await updateDoc(doc(db, 'coupons', appliedCoupon.id), {
                     usedCount: increment(1)
                 });
+            }
+
+            if (totalAmount === 0) {
+                try {
+                    const { sendBookingConfirmation } = await import('../../lib/email');
+                    const ticketsHtml = orderData.items.map(item => `
+                        <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                            <strong>${item.name}</strong> x ${item.count}
+                        </div>
+                    `).join('');
+                    await sendBookingConfirmation({
+                        to_name: orderData.customerName,
+                        to_email: orderData.customerEmail,
+                        event_name: event?.title || 'Event',
+                        booking_ref: ref,
+                        tickets_html: ticketsHtml,
+                        total_amount: 0,
+                        payment_ref: 'FREE',
+                        items: orderData.items
+                    });
+                } catch (mailErr) {
+                    console.error("Failed to send booking confirmation email for free ticket:", mailErr);
+                }
             }
 
             setBookingRef(ref);
@@ -969,84 +1015,102 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                             </motion.div>
                         )}
 
-                        {step === 'success' && (
-                            <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-10">
-                                <div className="w-24 h-24 bg-neon-green/20 border border-neon-green/40 rounded-[2.5rem] flex items-center justify-center text-neon-green shadow-[0_0_60px_rgba(43,217,62,0.3)]">
-                                    <CheckCircle2 size={48} />
-                                </div>
-                                <div className="space-y-3">
-                                    <h3 className="text-3xl md:text-5xl font-black font-heading text-white italic uppercase tracking-tighter">Booking Successful</h3>
-                                    <div className="flex items-center justify-center gap-3">
-                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Booking Reference:</span>
-                                        <span className="text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10">{bookingRef}</span>
+                        {step === 'success' && (() => {
+                            const isRSVPOnly = activeTab === 'guestlist' && event?.guestlistMode === 'rsvp';
+                            return (
+                                <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full gap-10">
+                                    <div className={cn("w-24 h-24 border rounded-[2.5rem] flex items-center justify-center shadow-lg transition-all", isRSVPOnly ? "bg-neon-pink/20 border-neon-pink/40 text-neon-pink shadow-neon-pink/20 animate-[pulse_2s_infinite]" : "bg-neon-green/20 border-neon-green/40 text-neon-green shadow-[0_0_60px_rgba(43,217,62,0.3)]")}>
+                                        <CheckCircle2 size={48} />
                                     </div>
-                                </div>
-                                
-                                {totalAmount > 0 ? (
-                                    <div className="p-10 bg-neon-blue/10 border border-neon-blue/20 rounded-[3rem] max-w-sm relative overflow-hidden group">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
-                                        <p className="text-[12px] font-black text-neon-blue uppercase tracking-[0.2em] leading-relaxed italic">
-                                            Passes will be available after payment verification in the profile section.
-                                        </p>
+                                    <div className="space-y-3">
+                                        <h3 className="text-3xl md:text-5xl font-black font-heading text-white italic uppercase tracking-tighter">
+                                            {isRSVPOnly ? 'RSVP Confirmed' : 'Booking Successful'}
+                                        </h3>
+                                        <div className="flex items-center justify-center gap-3">
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Booking Reference:</span>
+                                            <span className="text-white font-mono text-sm font-bold tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10">{bookingRef}</span>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="w-full max-w-sm space-y-6">
-                                        <Button onClick={handleDownloadTicket} className="w-full h-16 md:h-20 bg-neon-green text-black uppercase font-black rounded-2xl md:rounded-3xl tracking-[0.2em] text-[10px] md:text-xs shadow-[0_30px_60px_rgba(43,217,62,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
-                                            DOWNLOAD PASS <ArrowRight size={20} />
-                                        </Button>
-                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest italic">Ready for offline use.</p>
-                                    </div>
-                                )}
+                                    
+                                    {isRSVPOnly ? (
+                                        <div className="w-full max-w-sm space-y-6">
+                                            <div className="p-8 bg-neon-pink/10 border border-neon-pink/20 rounded-[2.5rem] max-w-sm relative overflow-hidden group">
+                                                <p className="text-[11px] font-black text-neon-pink uppercase tracking-[0.2em] leading-relaxed italic">
+                                                    Your RSVP is confirmed. No QR code is required. We have sent a confirmation email to you.
+                                                </p>
+                                            </div>
+                                            <Button onClick={onClose} className="w-full h-16 bg-white text-black uppercase font-black rounded-2xl tracking-[0.2em] text-[10px] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                                                CLOSE
+                                            </Button>
+                                        </div>
+                                    ) : totalAmount > 0 ? (
+                                        <div className="p-10 bg-neon-blue/10 border border-neon-blue/20 rounded-[3rem] max-w-sm relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_3s_infinite] pointer-events-none" />
+                                            <p className="text-[12px] font-black text-neon-blue uppercase tracking-[0.2em] leading-relaxed italic">
+                                                Passes will be available after payment verification in the profile section.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="w-full max-w-sm space-y-6">
+                                            <Button onClick={handleDownloadTicket} className="w-full h-16 md:h-20 bg-neon-green text-black uppercase font-black rounded-2xl md:rounded-3xl tracking-[0.2em] text-[10px] md:text-xs shadow-[0_30px_60px_rgba(43,217,62,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4">
+                                                DOWNLOAD PASS <ArrowRight size={20} />
+                                            </Button>
+                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest italic">Ready for offline use.</p>
+                                        </div>
+                                    )}
 
-                                <div className="fixed -left-[9999px] top-0 pointer-events-none">
-                                    <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-blue/20">
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
-                                            <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">{activeTab === 'tickets' ? 'OFFICIAL_TICKET' : 'GUESTLIST_PASS'}</div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">{event?.title}</h1>
-                                            <div className="flex gap-8">
-                                                <div className="space-y-1">
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
-                                                    <p className="text-xl font-bold text-white uppercase italic">{event?.date ? new Date(event.date).toLocaleDateString() : 'To Be Announced'}</p>
+                                    {!isRSVPOnly && (
+                                        <div className="fixed -left-[9999px] top-0 pointer-events-none">
+                                            <div id="ticket-download-surface" className="w-[800px] bg-black p-16 flex flex-col gap-12 font-sans border-2 border-neon-blue/20">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-4xl font-black italic tracking-tighter text-white uppercase">NEWBI <span className="text-neon-blue">ENT.</span></div>
+                                                    <div className="text-xs font-black text-gray-500 uppercase tracking-[0.5em]">{activeTab === 'tickets' ? 'OFFICIAL_TICKET' : 'GUESTLIST_PASS'}</div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
-                                                    <p className="text-xl font-bold text-white uppercase italic">{event?.location || 'Special Venue'}</p>
-                                                    {event?.locationUrl && <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest truncate max-w-[200px]">{event.locationUrl.replace('https://', '').replace('www.', '')}</p>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
-                                            <div className="bg-white p-8 rounded-[3rem]">
-                                                <img src={`/api/qr?size=400&text=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
-                                            </div>
-                                            <div className="space-y-6">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
-                                                    <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
-                                                </div>
-                                                <div className="flex gap-8">
-                                                    <div>
-                                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{activeTab === 'tickets' ? 'ITEMS' : 'GUESTS'}</p>
-                                                        <p className="text-2xl font-bold text-neon-blue italic">{activeTab === 'tickets' ? cartTotalCount : guestCount}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
-                                                        <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                                <div className="space-y-4">
+                                                    <h1 className="text-7xl font-black text-white italic uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">{event?.title}</h1>
+                                                    <div className="flex gap-8">
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">DATE</p>
+                                                            <p className="text-xl font-bold text-white uppercase italic">{event?.date ? new Date(event.date).toLocaleDateString() : 'To Be Announced'}</p>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">LOCATION</p>
+                                                            <p className="text-xl font-bold text-white uppercase italic">{event?.location || 'Special Venue'}</p>
+                                                            {event?.locationUrl && <p className="text-[8px] font-black text-neon-blue uppercase tracking-widest truncate max-w-[200px]">{event.locationUrl.replace('https://', '').replace('www.', '')}</p>}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="flex items-center gap-16 p-12 bg-zinc-900/50 rounded-[4rem] border border-white/5">
+                                                    <div className="bg-white p-8 rounded-[3rem]">
+                                                        <img src={`/api/qr?size=400&text=${encodeURIComponent(bookingRef)}`} alt="QR" crossOrigin="anonymous" className="w-48 h-48 mix-blend-multiply" />
+                                                    </div>
+                                                    <div className="space-y-6">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-1">ACCESS CODE</p>
+                                                            <p className="text-6xl font-black text-white italic tracking-tighter">{bookingRef}</p>
+                                                        </div>
+                                                        <div className="flex gap-8">
+                                                            <div>
+                                                                <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{activeTab === 'tickets' ? 'ITEMS' : 'GUESTS'}</p>
+                                                                <p className="text-2xl font-bold text-neon-blue italic">{activeTab === 'tickets' ? cartTotalCount : guestCount}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest">HOLDER</p>
+                                                                <p className="text-lg font-bold text-white uppercase italic truncate max-w-[200px]">{formData.name}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-8 border-t border-white/5 flex items-center justify-between">
+                                                    <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] italic">NEWBI ENT.</p>
+                                                    <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">NEWBI.LIVE</p>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="pt-8 border-t border-white/5 flex items-center justify-between">
-                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] italic">NEWBI ENT.</p>
-                                            <p className="text-[9px] font-black text-neon-blue/50 uppercase tracking-[0.3em]">NEWBI.LIVE</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
+                                    )}
+                                </motion.div>
+                            );
+                        })()}
                     </AnimatePresence>
                 </div>
 

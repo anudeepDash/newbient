@@ -100,6 +100,10 @@ export default async function handler(req, res) {
             serviceKey = 'BILLING';
             defaultName = fromName || 'Newbi Finance';
             defaultEmail = 'partnership@newbi.live';
+        } else if (emailLower.includes('booking')) {
+            serviceKey = 'BOOKING';
+            defaultName = fromName || 'Newbi Bookings';
+            defaultEmail = 'booking@newbi.live';
         } else if (emailLower.includes('legal')) {
             serviceKey = 'LEGAL';
             defaultName = fromName || 'Newbi Legal';
