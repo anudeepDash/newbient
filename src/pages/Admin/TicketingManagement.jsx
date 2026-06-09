@@ -582,28 +582,61 @@ const TicketingManagement = () => {
         </head>
         <body>
         <table style="font-family: 'Segoe UI', Arial, sans-serif; border-collapse: collapse; width: 100%;">
-          <!-- Branded Banner Header -->
+          <!-- Branded Banner Header (Flat layout with 20px margin column to prevent Excel column misalignment) -->
+          <!-- Top Banner Spacer Row -->
           <tr>
-            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; height: 50px; padding: 10px 15px; vertical-align: middle;">
-              <img src="https://newbi.live/logo_full.png" height="30" style="vertical-align: middle; border: none;">
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
+          </tr>
+          <!-- Logo Row -->
+          <tr>
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 35px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 35px; vertical-align: middle; text-align: left;">
+              <img src="https://newbi.live/logo_full.png" height="32" style="vertical-align: middle; border: none; display: block;">
             </td>
           </tr>
+          <!-- Middle Banner Spacer Row -->
           <tr>
-            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; color: #00FF66; font-size: 10pt; font-weight: bold; padding: 4px 15px; height: 22px; vertical-align: middle;">
-              OPERATIONS REPORT: ${escapeHTML(eventTitle.toUpperCase())}
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
+          </tr>
+          <!-- Report Label Row -->
+          <tr>
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 18px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #94A3B8; font-size: 8.5pt; font-weight: bold; height: 18px; vertical-align: middle; text-transform: uppercase;">
+              OPERATIONS REPORT
             </td>
           </tr>
+          <!-- Event Title Row -->
           <tr>
-            <td colspan="${colCount}" style="background-color: #0A0A0A; border: none; color: #888888; font-size: 8.5pt; padding: 4px 15px; height: 20px; vertical-align: middle;">
-              Generated: ${escapeHTML(formattedDate)} &nbsp;|&nbsp; Total Footprint: ${totalPeople} People
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 28px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #00FF66; font-size: 14pt; font-weight: bold; height: 28px; vertical-align: middle;">
+              ${escapeHTML(eventTitle.toUpperCase())}
             </td>
+          </tr>
+          <!-- Generation Metadata Row -->
+          <tr>
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 20px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; color: #64748B; font-size: 8.5pt; height: 20px; vertical-align: middle;">
+              Generated: <span style="color: #94A3B8;">${escapeHTML(formattedDate)}</span> &nbsp;|&nbsp; Total Footprint: <span style="color: #FFFFFF; font-weight: bold;">${totalPeople} People</span>
+            </td>
+          </tr>
+          <!-- Bottom Banner Spacer Row -->
+          <tr>
+            <td style="background-color: #0B0F19; border-left: 4px solid #00FF66; border-right: none; border-top: none; border-bottom: none; height: 16px; line-height: 16px; font-size: 1px; width: 20px;" width="20">&nbsp;</td>
+            <td colspan="${colCount}" style="background-color: #0B0F19; border: none; height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
+          </tr>
+          <!-- Neon Green Divider -->
+          <tr>
+            <td colspan="${colCount + 1}" style="background-color: #00FF66; height: 3px; border: none; font-size: 1px; line-height: 3px;">&nbsp;</td>
           </tr>
           <!-- Spacer Row -->
           <tr style="height: 10px; border: none;">
-            <td colspan="${colCount}" style="border: none; background-color: #FFFFFF; height: 10px;">&nbsp;</td>
+            <td colspan="${colCount + 1}" style="border: none; background-color: #FFFFFF; height: 10px;">&nbsp;</td>
           </tr>
           <!-- Table Headers -->
           <tr>
+            <th style="background-color: #FFFFFF; border: none; width: 20px;" width="20">&nbsp;</th>
             ${headers.map(h => `<th style="background-color: #1F2937; color: #FFFFFF; font-size: 9.5pt; font-weight: bold; border: 1px solid #374151; padding: 8px 10px; text-align: left; vertical-align: middle; width: ${getColWidth(h)}px;" width="${getColWidth(h)}">${escapeHTML(h)}</th>`).join('')}
           </tr>
           <!-- Table Data -->
@@ -612,6 +645,7 @@ const TicketingManagement = () => {
               const bgCol = isZebra ? "#F9FAFB" : "#FFFFFF";
               
               return `<tr>
+                  <td style="background-color: ${bgCol}; border: none; width: 20px;">&nbsp;</td>
                   ${row.map((cell, cIdx) => {
                       const headerName = headers[cIdx];
                       const valStr = String(cell);
