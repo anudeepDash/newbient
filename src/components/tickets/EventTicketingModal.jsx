@@ -183,7 +183,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             else if (hasGuestlist) setActiveTab('guestlist');
             
             // Start with map if layout exists, otherwise selection
-            setStep(hasLayout && hasTickets ? 'map' : 'selection');
+            setStep(!user ? 'login' : (hasLayout && hasTickets ? 'map' : 'selection'));
             setCart({});
             setSelectedMapCategory(null);
             setTicketCount(1);
@@ -520,8 +520,22 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         }
     };
 
+    // Auto-transition from login to selection when user logs in
+    useEffect(() => {
+        if (user && step === 'login') {
+            setStep(hasLayout && hasTickets ? 'map' : 'selection');
+            // Auto-fill form data from user profile
+            setFormData(prev => ({
+                ...prev,
+                name: prev.name || user.displayName || '',
+                email: prev.email || user.email || ''
+            }));
+        }
+    }, [user, step]);
+
     const progressPercent = useMemo(() => {
         switch (step) {
+            case 'login': return 0;
             case 'map': return 10;
             case 'selection': return 25;
             case 'identity-name': return 45;
@@ -579,7 +593,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 status: 'confirmed',
                 title: event?.title || 'Guestlist',
                 attended: false,
-                guestlistMode: event?.guestlistMode || 'qr'
+                guestlistMode: event?.guestlistMode || 'qr',
+                eventId: event?.id || null,
+                guestlistId: event?.id || null
             };
             
             await useStore.getState().addGuestlistEntry(event.id, entryData);
@@ -734,7 +750,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     };
 
     const handleNext = () => {
-        if (!user && (step === 'selection' || step === 'map')) {
+        if (step === 'login') {
             setAuthModal(true);
             return;
         }
@@ -852,6 +868,86 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                         </div>
                     )}
                     <AnimatePresence mode="wait">
+                        {/* LOGIN GATE */}
+                        {step === 'login' && (
+                            <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col items-center justify-center text-center px-4 py-12">
+                                <div className="relative mb-10">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                                        className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-neon-blue/20 to-neon-pink/20 border border-white/10 flex items-center justify-center shadow-[0_20px_60px_rgba(46,191,255,0.2)]"
+                                    >
+                                        <Lock size={36} className="text-neon-blue" />
+                                    </motion.div>
+                                    <motion.div
+                                        initial={{ scale: 0.5, opacity: 1 }}
+                                        animate={{ scale: 2, opacity: 0 }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                                        className="absolute inset-0 w-24 h-24 rounded-[2rem] border border-neon-blue/30"
+                                    />
+                                </div>
+
+                                <motion.h3
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="text-3xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter mb-4"
+                                >
+                                    Sign In Required
+                                </motion.h3>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.35 }}
+                                    className="text-[11px] text-gray-500 uppercase tracking-[0.2em] font-bold mb-10 max-w-sm leading-relaxed"
+                                >
+                                    Create an account or sign in to {activeTab === 'guestlist' ? (event?.guestlistMode === 'rsvp' ? 'RSVP for' : 'join the guestlist for') : 'purchase tickets for'} this event.
+                                </motion.p>
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.45 }}
+                                    className="flex flex-col gap-4 w-full max-w-xs"
+                                >
+                                    <Button
+                                        onClick={() => setAuthModal(true)}
+                                        className="h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-xs rounded-[1.5rem] shadow-[0_20px_60px_rgba(46,191,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 w-full"
+                                    >
+                                        <ShieldCheck size={20} />
+                                        SIGN IN TO CONTINUE
+                                    </Button>
+                                    <p className="text-[9px] text-gray-600 uppercase tracking-[0.15em] font-bold">
+                                        Your booking will be linked to your account
+                                    </p>
+                                </motion.div>
+
+                                {/* Trust badges */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.6 }}
+                                    className="flex items-center gap-6 mt-12 text-gray-700"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck size={12} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Secure</span>
+                                    </div>
+                                    <div className="w-px h-3 bg-white/10" />
+                                    <div className="flex items-center gap-2">
+                                        <Ticket size={12} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Digital Pass</span>
+                                    </div>
+                                    <div className="w-px h-3 bg-white/10" />
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 size={12} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Verified</span>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+
                         {step === 'map' && (
                             <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
                                 <div className="flex items-center justify-between gap-4 mb-6 md:mb-10">

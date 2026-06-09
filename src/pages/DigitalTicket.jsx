@@ -29,6 +29,7 @@ const DigitalTicket = () => {
                 let snapshot = await getDocs(q);
                 
                 let fetchedData = null;
+                let parentDocId = null;
                 const urlParams = new URLSearchParams(window.location.search);
                 const eventIdParam = urlParams.get('event') || urlParams.get('gl');
 
@@ -40,6 +41,7 @@ const DigitalTicket = () => {
                     const directSnap = await getDocs(directRef);
                     if (!directSnap.empty) {
                         fetchedData = { ...directSnap.docs[0].data(), id: directSnap.docs[0].id, type: 'guestlist' };
+                        parentDocId = eventIdParam;
                     }
                 }
 
@@ -49,7 +51,13 @@ const DigitalTicket = () => {
                     const entriesSnapshot = await getDocs(entriesQuery);
                     
                     if (!entriesSnapshot.empty) {
-                        fetchedData = { ...entriesSnapshot.docs[0].data(), id: entriesSnapshot.docs[0].id, type: 'guestlist' };
+                        const entryDoc = entriesSnapshot.docs[0];
+                        fetchedData = { ...entryDoc.data(), id: entryDoc.id, type: 'guestlist' };
+                        try {
+                            parentDocId = entryDoc.ref.parent.parent.id;
+                        } catch (e) {
+                            console.error("Failed to extract parent doc ID:", e);
+                        }
                     } else {
                         setError("Ticket could not be found. Please check your reference code or contact support.");
                         setLoading(false);
@@ -58,14 +66,7 @@ const DigitalTicket = () => {
                 }
 
                 // Fetch event details
-                let eventOrGuestlistId = fetchedData.eventId || fetchedData.guestlistId;
-                if (!eventOrGuestlistId && typeof entriesSnapshot !== 'undefined' && !entriesSnapshot.empty) {
-                    try {
-                        eventOrGuestlistId = entriesSnapshot.docs[0].ref.parent.parent.id;
-                    } catch (e) {
-                        console.error("Failed to extract parent doc ID:", e);
-                    }
-                }
+                let eventOrGuestlistId = fetchedData.eventId || fetchedData.guestlistId || parentDocId;
 
                 if (eventOrGuestlistId) {
                     // 1. Try to fetch from upcoming_events

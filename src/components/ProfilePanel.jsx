@@ -32,62 +32,56 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [guestlistEntries, setGuestlistEntries] = useState([]);
     const [loadingEntries, setLoadingEntries] = useState(false);
 
-    const guestlistIdsStr = [
-        ...new Set([
-            ...(guestlists || []).map(g => g.id),
-            ...(upcomingEvents || []).filter(e => e.isGuestlistEnabled).map(e => e.id)
-        ])
-    ].sort().join(',');
-
     useEffect(() => {
         if (!isOpen || !user?.uid) return;
-        if (!guestlistIdsStr) {
-            setGuestlistEntries([]);
-            return;
-        }
         
         setLoadingEntries(true);
         const fetchEntries = async () => {
             try {
-                const { collection, query, where, getDocs } = await import('firebase/firestore');
-                const activeGuestlistIds = guestlistIdsStr.split(',').filter(Boolean);
+                const { collectionGroup, query, where, getDocs } = await import('firebase/firestore');
 
-                const fetchPromises = activeGuestlistIds.map(async (glId) => {
-                    const qUser = query(
-                        collection(db, 'guestlists', glId, 'entries'),
-                        where('userId', '==', user.uid)
-                    );
-                    const qCustEmail = user.email ? query(
-                        collection(db, 'guestlists', glId, 'entries'),
-                        where('customerEmail', '==', user.email)
-                    ) : null;
-                    const qEmail = user.email ? query(
-                        collection(db, 'guestlists', glId, 'entries'),
-                        where('email', '==', user.email)
-                    ) : null;
+                const qUser = query(
+                    collectionGroup(db, 'entries'),
+                    where('userId', '==', user.uid)
+                );
+                
+                const qCustEmail = user.email ? query(
+                    collectionGroup(db, 'entries'),
+                    where('customerEmail', '==', user.email)
+                ) : null;
 
-                    const [snapUser, snapCustEmail, snapEmail] = await Promise.all([
-                        getDocs(qUser),
-                        qCustEmail ? getDocs(qCustEmail) : Promise.resolve({ docs: [] }),
-                        qEmail ? getDocs(qEmail) : Promise.resolve({ docs: [] })
-                    ]);
+                const qEmail = user.email ? query(
+                    collectionGroup(db, 'entries'),
+                    where('email', '==', user.email)
+                ) : null;
 
-                    const docsMap = {};
-                    snapUser.docs.forEach(doc => {
-                        docsMap[doc.id] = { id: doc.id, guestlistId: glId, ...doc.data() };
+                const [snapUser, snapCustEmail, snapEmail] = await Promise.all([
+                    getDocs(qUser),
+                    qCustEmail ? getDocs(qCustEmail) : Promise.resolve({ docs: [] }),
+                    qEmail ? getDocs(qEmail) : Promise.resolve({ docs: [] })
+                ]);
+
+                const docsMap = {};
+                
+                const addDocs = (snap) => {
+                    snap.docs.forEach(docSnap => {
+                        const data = docSnap.data();
+                        const guestlistId = docSnap.ref.parent.parent?.id || data.guestlistId || data.eventId;
+                        if (guestlistId) {
+                            docsMap[docSnap.id] = { 
+                                id: docSnap.id, 
+                                guestlistId, 
+                                ...data 
+                            };
+                        }
                     });
-                    snapCustEmail.docs.forEach(doc => {
-                        docsMap[doc.id] = { id: doc.id, guestlistId: glId, ...doc.data() };
-                    });
-                    snapEmail.docs.forEach(doc => {
-                        docsMap[doc.id] = { id: doc.id, guestlistId: glId, ...doc.data() };
-                    });
+                };
 
-                    return Object.values(docsMap);
-                });
+                addDocs(snapUser);
+                addDocs(snapCustEmail);
+                addDocs(snapEmail);
 
-                const results = await Promise.all(fetchPromises);
-                const allEntries = results.flat();
+                const allEntries = Object.values(docsMap);
                 setGuestlistEntries(allEntries);
             } catch (err) {
                 console.error("Failed to fetch guestlist/RSVP entries for profile:", err);
@@ -96,7 +90,7 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             }
         };
         fetchEntries();
-    }, [isOpen, user?.uid, guestlistIdsStr]);
+    }, [isOpen, user?.uid, user?.email]);
 
     if (!user) return null;
 
