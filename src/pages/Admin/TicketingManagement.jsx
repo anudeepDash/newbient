@@ -28,10 +28,11 @@ import { cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EntryTerminal from '../../components/admin/EntryTerminal';
 import { db } from '../../lib/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 
 const TicketingManagement = () => {
     const { upcomingEvents, portfolio = [], ticketOrders = [], updateTicketOrderStatus, user } = useStore();
+    const storeGuestlists = useStore(state => state.guestlists) || [];
     const isScanner = user?.role === 'scanner';
     
     const [searchParams] = useSearchParams();
@@ -57,13 +58,14 @@ const TicketingManagement = () => {
         }
     }, [searchParams]);
 
+    // Compute targetId reactively based on storeGuestlists
+    const gl = storeGuestlists.find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
+    const targetId = gl?.id || selectedEventId;
+
     useEffect(() => {
         if (!selectedEventId) return;
         
         setGlLoading(true);
-        // Find if this is a standalone guestlist or linked to an event
-        const gl = (useStore.getState().guestlists || []).find(g => g.id === selectedEventId || g.eventId === selectedEventId || g.linkedEventId === selectedEventId);
-        const targetId = gl?.id || selectedEventId;
 
         const q = query(collection(db, 'guestlists', targetId, 'entries'), orderBy('createdAt', 'desc'));
         const unsub = onSnapshot(q, (snap) => {
@@ -76,12 +78,12 @@ const TicketingManagement = () => {
         });
 
         return unsub;
-    }, [selectedEventId]);
+    }, [selectedEventId, targetId]);
 
     const operationalEvents = [
         ...(upcomingEvents?.filter(e => e.isTicketed || e.isGuestlistEnabled || e.guestlistEnabled) || []),
         ...(portfolio?.filter(p => p.wasEvent && (p.isTicketed || p.isGuestlistEnabled || p.guestlistEnabled)) || []),
-        ...(useStore.getState().guestlists || []).map(gl => ({ ...gl, isGuestlistEnabled: true })),
+        ...storeGuestlists.map(gl => ({ ...gl, isGuestlistEnabled: true })),
         ...(useStore.getState().volunteerGigs?.filter(g => g.guestlistEnabled || g.isGuestlistEnabled) || [])
     ].sort((a, b) => {
         if (!a.date) return 1;
@@ -103,46 +105,158 @@ const TicketingManagement = () => {
                 hideTabs={true}
                 description="Select an event to manage ticketing operations."
             >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory no-scrollbar px-6 md:px-0">
                     {operationalEvents.map(event => {
                         const eventOrders = ticketOrders.filter(o => o.eventId === event.id);
                         const pendingCount = eventOrders.filter(o => o.status === 'pending').length;
                         const approvedCount = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched').length;
+                        const isCompleted = event.date && new Date(event.date) < new Date();
+                        const isRsvpOnly = !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled);
                         return (
-                            <Card key={event.id} onClick={() => setSelectedEventId(event.id)} className="cursor-pointer group p-0 bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-neon-green/30 transition-all duration-700 shadow-2xl">
-                                <div className="h-48 relative overflow-hidden bg-black/50">
-                                    {event.image ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000" /> : <div className="absolute inset-0 flex items-center justify-center"><Ticket size={48} className="opacity-20"/></div>}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                                    <div className="absolute bottom-8 left-8 right-8">
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{event.title}</h3>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{event.date ? new Date(event.date).toLocaleDateString() : 'TBA'}</p>
+                            <motion.div
+                                key={event.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.92 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.4 }}
+                                onClick={() => setSelectedEventId(event.id)}
+                                className="group relative bg-[#0A0A0A] border border-white/5 hover:border-neon-green/20 rounded-[2.5rem] p-5 flex flex-col h-auto min-h-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-500 cursor-pointer shrink-0 w-[85vw] md:w-auto snap-center"
+                            >
+                                {/* 16:9 Thumbnail Header */}
+                                <div className="relative mb-6 shrink-0 group-hover:scale-[1.01] transition-transform duration-700">
+                                    <div className="aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-white/5 relative flex items-center justify-center">
+                                        {(event.hubImage || event.image) ? (
+                                            <div
+                                                className="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-110"
+                                                style={{
+                                                    backgroundImage: `url(${event.hubImage || event.image})`,
+                                                    transform: `scale(${event.hubImage ? (event.hubImageTransform?.scale || 1) : (event.imageTransform?.scale || 1)})`,
+                                                    backgroundPosition: event.hubImage 
+                                                        ? `calc(50% + ${(event.hubImageTransform?.x || 0)}%) calc(50% + ${(event.hubImageTransform?.y || 0)}%)`
+                                                        : `calc(50% + ${(event.imageTransform?.x || 0)}%) calc(50% + ${(event.imageTransform?.y || 0)}%)`
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50">
+                                                <Ticket size={32} className="text-white/5" />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
                                     </div>
-                                    {event.date && new Date(event.date) < new Date() && (
-                                        <div className="absolute top-6 right-6 px-4 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-2">
+                                </div>
+
+                                {/* Status Badge — floats top-right */}
+                                {isCompleted && (
+                                    <div className="absolute top-8 right-8 z-30">
+                                        <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Completed</span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-white/80">Completed</span>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="p-8 grid grid-cols-2 gap-4 bg-black/40">
-                                    <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-neon-green/5 transition-colors">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Tickets Sold</p>
-                                        <p className="text-2xl font-black text-neon-green">{approvedCount}</p>
                                     </div>
-                                    <div className="p-5 rounded-2xl bg-white/5 border border-white/5 group-hover:bg-yellow-500/5 transition-colors">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Pending UPI</p>
-                                        <p className="text-2xl font-black text-yellow-500">{pendingCount}</p>
+                                )}
+
+                                {/* Content Body */}
+                                <div className="flex-1 flex flex-col px-1">
+                                    {/* Badges Row */}
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {event.isTicketed && (
+                                            <span className="px-2.5 h-5 flex items-center text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md bg-neon-green/10 border-neon-green/30 text-neon-green">
+                                                TICKETED
+                                            </span>
+                                        )}
+                                        {(event.isGuestlistEnabled || event.guestlistEnabled) && (
+                                            <span className="px-2.5 h-5 flex items-center text-[7px] font-black uppercase tracking-widest border rounded-full backdrop-blur-md bg-neon-pink/10 border-neon-pink/30 text-neon-pink">
+                                                {event.guestlistMode === 'rsvp' ? 'RSVP' : 'GUESTLIST'}
+                                            </span>
+                                        )}
+                                        <span className="px-2.5 h-5 flex items-center bg-white/5 border border-white/10 text-white/50 text-[7px] font-black uppercase tracking-widest rounded-full backdrop-blur-md">
+                                            {event.date 
+                                                ? (typeof event.date === 'string' && event.date.includes('T') 
+                                                    ? event.date.split('T')[0] 
+                                                    : (event.date?.seconds ? new Date(event.date.seconds * 1000).toLocaleDateString() : new Date(event.date).toLocaleDateString()))
+                                                : 'TBD'}
+                                        </span>
+                                    </div>
+
+                                    {/* Title */}
+                                    <h3 className="text-xl font-black font-heading tracking-tight uppercase italic text-white group-hover:text-neon-green transition-colors duration-500 leading-tight line-clamp-2 mb-4">
+                                        {event.title}
+                                    </h3>
+
+                                    {/* Stats row */}
+                                    <div className="flex gap-3 mb-4">
+                                        {event.isTicketed && (
+                                            <>
+                                                <div className="px-4 py-2.5 rounded-xl bg-neon-green/5 border border-neon-green/10 flex items-center gap-2">
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Sold</span>
+                                                    <span className="text-sm font-black text-neon-green">{approvedCount}</span>
+                                                </div>
+                                                {pendingCount > 0 && (
+                                                    <div className="px-4 py-2.5 rounded-xl bg-yellow-500/5 border border-yellow-500/10 flex items-center gap-2">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Pending</span>
+                                                        <span className="text-sm font-black text-yellow-500">{pendingCount}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {isRsvpOnly && (
+                                            <div className="px-4 py-2.5 rounded-xl bg-neon-pink/5 border border-neon-pink/10 flex items-center gap-2">
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">Entries</span>
+                                                <span className="text-sm font-black text-neon-pink">{event.currentSpots || 0}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="mt-auto pt-4 border-t border-white/[0.06] flex items-center justify-between">
+                                        <div className="flex flex-col gap-1 min-w-0 pr-4">
+                                            <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest truncate">
+                                                {event.location || 'TBD'}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {event.isTicketed && (
+                                                <div className="w-7 h-7 rounded-lg bg-neon-green/10 flex items-center justify-center text-neon-green border border-neon-green/20" title="Ticketing Enabled">
+                                                    <Ticket size={12} />
+                                                </div>
+                                            )}
+                                            {(event.isGuestlistEnabled || event.guestlistEnabled) && (
+                                                <div className="w-7 h-7 rounded-lg bg-neon-pink/10 flex items-center justify-center text-neon-pink border border-neon-pink/20" title="RSVP/Guestlist">
+                                                    <Users size={12} />
+                                                </div>
+                                            )}
+                                            <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-white/30 border border-white/10 group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green transition-all" title="Open Operations">
+                                                <ChevronRight size={14} />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </Card>
+                            </motion.div>
                         )
                     })}
+
+                    {operationalEvents.length === 0 && (
+                        <div className="col-span-full py-32 flex flex-col items-center justify-center gap-6 bg-zinc-900/20 rounded-[3rem] border-2 border-dashed border-white/5">
+                            <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center text-gray-700 animate-pulse">
+                                <Ticket size={28} />
+                            </div>
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">No ticketing events found.</p>
+                        </div>
+                    )}
                 </div>
             </AdminCommunityHubLayout>
         );
     }
 
     const event = operationalEvents.find(e => e.id === selectedEventId);
+
+    // Auto-switch to guestlist tab if event is not ticketed (RSVP/Guestlist only)
+    useEffect(() => {
+        if (event && !event.isTicketed && (event.isGuestlistEnabled || event.guestlistEnabled) && activeTab === 'buyers') {
+            setActiveTab('guestlist');
+        }
+    }, [event, activeTab]);
+
     let eventOrders = ticketOrders.filter(o => o.eventId === selectedEventId);
     
     // Filtering logic
@@ -335,7 +449,7 @@ const TicketingManagement = () => {
                                             : "text-gray-500 hover:text-white hover:bg-white/5"
                                     )}
                                 >
-                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? 'Guestlist' : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : tab === 'coupons' ? 'Coupons' : 'Sheets'}
+                                    {tab === 'buyers' ? 'Buyers' : tab === 'guestlist' ? (event?.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist') : tab === 'dispatch' ? 'Dispatch' : tab === 'attendance' ? 'Attendance' : tab === 'settings' ? 'Settings' : tab === 'coupons' ? 'Coupons' : 'Sheets'}
                                 </button>
                             );
                         })}
@@ -529,7 +643,7 @@ const TicketingManagement = () => {
                                                 <th className="p-8 font-medium">Guests</th>
                                                 <th className="p-8 font-medium">Booking Ref</th>
                                                 <th className="p-8 font-medium">Attendance</th>
-                                                <th className="p-8 font-medium text-right">Status</th>
+                                                <th className="p-8 font-medium text-right">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-sm">
@@ -563,7 +677,32 @@ const TicketingManagement = () => {
                                                         )}
                                                     </td>
                                                     <td className="p-8 text-right">
-                                                        <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                        <div className="flex items-center justify-end gap-3">
+                                                            <span className="px-3 py-1 bg-white/5 text-gray-400 border border-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Verified</span>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm(`Remove ${entry.customerName || entry.name} from the guestlist?`)) {
+                                                                        try {
+                                                                            await deleteDoc(doc(db, 'guestlists', targetId, 'entries', entry.id));
+                                                                            // Decrement the parent guestlist's currentSpots
+                                                                            try {
+                                                                                await updateDoc(doc(db, 'guestlists', targetId), {
+                                                                                    currentSpots: increment(-(entry.guestsCount || 1))
+                                                                                });
+                                                                            } catch (e) { /* parent doc may not exist */ }
+                                                                            useStore.getState().addToast('Entry removed.', 'success');
+                                                                        } catch (err) {
+                                                                            console.error(err);
+                                                                            useStore.getState().addToast("Couldn't remove the entry. Please try again.", 'error');
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                title="Remove entry"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             )) : (

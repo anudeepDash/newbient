@@ -1408,8 +1408,28 @@ export const useStore = create((set, get) => ({
         const docSnap = await getDoc(docRef);
         
         if (!docSnap.exists()) {
-            console.error(`[Store] Guestlist ${id} does not exist. Aborting entry.`);
-            throw new Error("Guestlist no longer active.");
+            // Auto-heal: check if there's a corresponding upcoming_events doc
+            const eventRef = doc(db, 'upcoming_events', id);
+            const eventSnap = await getDoc(eventRef);
+            if (eventSnap.exists()) {
+                const eventData = eventSnap.data();
+                console.log(`[Store] Auto-healing missing guestlist doc for event: ${id}`);
+                await setDoc(docRef, {
+                    id: id,
+                    title: eventData.title || 'Event',
+                    date: eventData.date || null,
+                    status: 'Open',
+                    createdAt: new Date().toISOString(),
+                    isEmbedded: true,
+                    eventId: id,
+                    guestlistMode: eventData.guestlistMode || 'qr',
+                    perUserLimit: eventData.perUserLimit || 5,
+                    isGuestlistEnabled: true
+                });
+            } else {
+                console.error(`[Store] Guestlist ${id} does not exist. Aborting entry.`);
+                throw new Error("Guestlist no longer active.");
+            }
         }
 
         // 1. Add the entry to sub-collection

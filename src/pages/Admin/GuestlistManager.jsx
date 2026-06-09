@@ -37,6 +37,151 @@ import { cn } from '../../lib/utils';
 import StudioDatePicker from '../../components/ui/StudioDatePicker';
 import StudioSelect from '../../components/ui/StudioSelect';
 
+const GuestlistCard = ({ gl, navigate, updateGuestlist, deleteGuestlist, handleEdit }) => {
+    const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+    const handleMouseMove = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setMousePos({ x, y });
+    };
+
+    return (
+        <Card 
+            onMouseMove={handleMouseMove}
+            className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/30 transition-all duration-700 shadow-2xl flex flex-col h-[520px] relative"
+            style={{ 
+                background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gl.highlightColor || '#2ebfff'}10 0%, transparent 60%)`
+            }}
+        >
+            {/* Card Header Media */}
+            <div className="h-44 relative overflow-hidden">
+                {gl.image ? (
+                    <img 
+                        src={gl.image} 
+                        alt={gl.title} 
+                        className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" 
+                        style={{
+                            transform: `scale(${gl.imageTransform?.scale || 1.05})`,
+                            objectPosition: `${50 + (gl.imageTransform?.x || 0)}% ${50 + (gl.imageTransform?.y || 0)}%`
+                        }}
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                        <ListChecks size={48} className="text-white/10" />
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+                
+                <div className="absolute top-6 right-6 flex gap-2">
+                    <div className={cn(
+                        "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl",
+                        gl.status === 'Open' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+                    )}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-[0_0_8px_currentColor]" />
+                        {gl.status || 'ACTIVE'}
+                    </div>
+                    {!gl.guestlistEnabled && (
+                        <div className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400 text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl">
+                            <LinkIcon size={10} /> EXTERNAL
+                        </div>
+                    )}
+                </div>
+
+                <div className="absolute bottom-6 left-8 right-8">
+                    <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gl.title}</h3>
+                    <div className="flex items-center gap-4 mt-2 opacity-60">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <Calendar size={12} className="text-neon-blue" /> {gl.date || 'TBD'}
+                        </span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <MapPin size={12} className="text-neon-blue" /> {gl.location || 'VENUE'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Card Content */}
+            <div className="p-8 flex-grow flex flex-col justify-between">
+                <div className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4 text-white/20">
+                            <div className="w-10 h-[1px] bg-current" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
+                        </div>
+                        <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
+                            {gl.description || "No description provided."}
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5">
+                        <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                            <span className="flex items-center gap-2"><Users size={12} className="text-neon-blue" /> CAPACITY</span>
+                            <span className="text-white">{gl.currentSpots || 0} / {gl.maxSpots || '∞'}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-neon-blue transition-all duration-1000 shadow-[0_0_15px_rgba(46,191,255,0.4)]" 
+                                style={{ width: `${Math.min(((gl.currentSpots || 0) / (gl.maxSpots || 100)) * 100, 100)}%` }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => navigate(`/admin/ticketing?eventId=${gl.id}&tab=guestlist`)}
+                        className="w-full h-14 rounded-2xl border-white/5 bg-neon-blue/10 text-neon-blue hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4 group/btn shadow-lg"
+                    >
+                        <UserCheck size={26} className="group-hover/btn:scale-110 transition-transform" />
+                        <span className="text-[11px] font-black uppercase tracking-[0.3em] italic">MANAGE ENTRIES</span>
+                    </Button>
+
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                const newStatus = gl.status === 'Open' ? 'Closed' : 'Open';
+                                updateGuestlist(gl.id, { ...gl, status: newStatus });
+                            }}
+                            className={cn(
+                                "h-14 flex-1 rounded-2xl border-white/5 transition-all flex items-center justify-center",
+                                gl.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                            )}
+                            title={gl.status === 'Open' ? "Close Guestlist" : "Open Guestlist"}
+                        >
+                            {gl.status === 'Open' ? <Unlock size={24} /> : <Lock size={24} />}
+                        </Button>
+
+                        <Button 
+                            variant="outline" 
+                            onClick={() => handleEdit(gl)} 
+                            className="h-14 flex-1 rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                        >
+                            <Edit size={22} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT</span>
+                        </Button>
+
+                        <Button 
+                            variant="outline" 
+                            onClick={() => { if(confirm('Are you sure you want to permanently delete this guestlist?')) deleteGuestlist(gl.id); }}
+                            className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
+                        >
+                            <Trash2 size={26} />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Shimmer Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
+                style={{ background: `linear-gradient(${mousePos.x}deg, transparent 40%, ${gl.highlightColor || '#2ebfff'}05 50%, transparent 60%)` }}
+            />
+        </Card>
+    );
+};
+
 const GuestlistManager = () => {
     const navigate = useNavigate();
     const colorPresets = [
@@ -480,151 +625,16 @@ const GuestlistManager = () => {
             <div className="relative z-10 max-w-[1400px] mx-auto pb-32">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {guestlists && guestlists.length > 0 ? (
-                        guestlists.map((gl) => {
-                            const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-                            const handleMouseMove = (e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                                setMousePos({ x, y });
-                            };
-
-                            return (
-                                <Card 
-                                    key={gl.id} 
-                                    onMouseMove={handleMouseMove}
-                                    className="p-0 bg-zinc-950/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] overflow-hidden group hover:border-neon-blue/30 transition-all duration-700 shadow-2xl flex flex-col h-[520px] relative"
-                                    style={{ 
-                                        background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${gl.highlightColor || '#2ebfff'}10 0%, transparent 60%)`
-                                    }}
-                                >
-                                    {/* Card Header Media */}
-                                    <div className="h-44 relative overflow-hidden">
-                                        {gl.image ? (
-                                            <img 
-                                                src={gl.image} 
-                                                alt={gl.title} 
-                                                className="w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000" 
-                                                style={{
-                                                    transform: `scale(${gl.imageTransform?.scale || 1.05})`,
-                                                    objectPosition: `${50 + (gl.imageTransform?.x || 0)}% ${50 + (gl.imageTransform?.y || 0)}%`
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
-                                                <ListChecks size={48} className="text-white/10" />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                                        
-                                        <div className="absolute top-6 right-6 flex gap-2">
-                                            <div className={cn(
-                                                "px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl",
-                                                gl.status === 'Open' ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"
-                                            )}>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-[0_0_8px_currentColor]" />
-                                                {gl.status || 'ACTIVE'}
-                                            </div>
-                                            {!gl.guestlistEnabled && (
-                                                <div className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400 text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 backdrop-blur-3xl">
-                                                    <LinkIcon size={10} /> EXTERNAL
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="absolute bottom-6 left-8 right-8">
-                                            <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white truncate drop-shadow-2xl">{gl.title}</h3>
-                                            <div className="flex items-center gap-4 mt-2 opacity-60">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                    <Calendar size={12} className="text-neon-blue" /> {gl.date || 'TBD'}
-                                                </span>
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                    <MapPin size={12} className="text-neon-blue" /> {gl.location || 'VENUE'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card Content */}
-                                    <div className="p-8 flex-grow flex flex-col justify-between">
-                                        <div className="space-y-6">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4 text-white/20">
-                                                    <div className="w-10 h-[1px] bg-current" />
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.4em]">DESCRIPTION</span>
-                                                </div>
-                                                <p className="text-[12px] font-medium text-gray-400 uppercase tracking-widest line-clamp-2 italic leading-relaxed">
-                                                    {gl.description || "No description provided."}
-                                                </p>
-                                            </div>
-                                            
-                                            <div className="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5">
-                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                                    <span className="flex items-center gap-2"><Users size={12} className="text-neon-blue" /> CAPACITY</span>
-                                                    <span className="text-white">{gl.currentSpots || 0} / {gl.maxSpots || '∞'}</span>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-neon-blue transition-all duration-1000 shadow-[0_0_15px_rgba(46,191,255,0.4)]" 
-                                                        style={{ width: `${Math.min(((gl.currentSpots || 0) / (gl.maxSpots || 100)) * 100, 100)}%` }} 
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
-                                            <Button 
-                                                variant="outline" 
-                                                onClick={() => navigate(`/admin/ticketing?eventId=${gl.id}&tab=guestlist`)}
-                                                className="w-full h-14 rounded-2xl border-white/5 bg-neon-blue/10 text-neon-blue hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4 group/btn shadow-lg"
-                                            >
-                                                <UserCheck size={26} className="group-hover/btn:scale-110 transition-transform" />
-                                                <span className="text-[11px] font-black uppercase tracking-[0.3em] italic">MANAGE ENTRIES</span>
-                                            </Button>
-
-                                            <div className="flex items-center gap-3">
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => {
-                                                        const newStatus = gl.status === 'Open' ? 'Closed' : 'Open';
-                                                        updateGuestlist(gl.id, { ...gl, status: newStatus });
-                                                    }}
-                                                    className={cn(
-                                                        "h-14 flex-1 rounded-2xl border-white/5 transition-all flex items-center justify-center",
-                                                        gl.status === 'Open' ? "bg-neon-green/10 text-neon-green hover:bg-neon-green hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]" : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.1)]"
-                                                    )}
-                                                    title={gl.status === 'Open' ? "Close Guestlist" : "Open Guestlist"}
-                                                >
-                                                    {gl.status === 'Open' ? <Unlock size={24} /> : <Lock size={24} />}
-                                                </Button>
-
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => handleEdit(gl)} 
-                                                    className="h-14 flex-1 rounded-2xl border-white/5 bg-white/5 hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
-                                                >
-                                                    <Edit size={22} />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">EDIT</span>
-                                                </Button>
-
-                                                <Button 
-                                                    variant="outline" 
-                                                    onClick={() => { if(confirm('Are you sure you want to permanently delete this guestlist?')) deleteGuestlist(gl.id); }}
-                                                    className="h-14 w-14 rounded-2xl bg-red-500 text-white border-none hover:bg-red-600 transition-all flex items-center justify-center shrink-0 shadow-xl"
-                                                >
-                                                    <Trash2 size={26} />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Shimmer Overlay */}
-                                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"
-                                        style={{ background: `linear-gradient(${mousePos.x}deg, transparent 40%, ${gl.highlightColor || '#2ebfff'}05 50%, transparent 60%)` }}
-                                    />
-                                </Card>
-                            );
-                        })
+                        guestlists.map((gl) => (
+                            <GuestlistCard 
+                                key={gl.id} 
+                                gl={gl} 
+                                navigate={navigate} 
+                                updateGuestlist={updateGuestlist} 
+                                deleteGuestlist={deleteGuestlist} 
+                                handleEdit={handleEdit} 
+                            />
+                        ))
                     ) : (
                         <div className="col-span-full py-40 text-center">
                             <div className="w-20 h-20 bg-white/5 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 border border-dashed border-white/10">
