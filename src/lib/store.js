@@ -629,7 +629,8 @@ export const useStore = create((set, get) => ({
                     status: 'Open',
                     createdAt: new Date().toISOString(),
                     isEmbedded: true,
-                    eventId: docRef.id
+                    eventId: docRef.id,
+                    guestlistMode: event.guestlistMode || 'qr'
                 });
             }
         }
@@ -687,13 +688,15 @@ export const useStore = create((set, get) => ({
                     status: 'Open',
                     createdAt: new Date().toISOString(),
                     isEmbedded: true,
-                    eventId: id
+                    eventId: id,
+                    guestlistMode: updates.guestlistMode || 'qr'
                 }, { merge: true });
             } else {
                 // Update basic info if it exists
                 await updateDoc(glRef, {
                     title: updates.title,
-                    date: updates.date
+                    date: updates.date,
+                    guestlistMode: updates.guestlistMode || 'qr'
                 });
             }
         }
@@ -1512,6 +1515,41 @@ export const useStore = create((set, get) => ({
     },
     updateTicketOrderStatus: async (orderId, status) => {
         await updateDoc(doc(db, 'ticket_orders', orderId), { status });
+
+        if (status === 'dispatched') {
+            try {
+                const orderDoc = await getDoc(doc(db, 'ticket_orders', orderId));
+                if (orderDoc.exists()) {
+                    const orderData = orderDoc.data();
+                    let eventName = 'Event';
+                    if (orderData.eventId) {
+                        const eventDoc = await getDoc(doc(db, 'upcoming_events', orderData.eventId));
+                        if (eventDoc.exists()) {
+                            eventName = eventDoc.data().title || 'Event';
+                        }
+                    }
+                    
+                    const ticketsHtml = (orderData.items || []).map(item => `
+                        <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                            <strong>${item.name}</strong> x ${item.count}
+                        </div>
+                    `).join('');
+                    
+                    await sendBookingConfirmation({
+                        to_name: orderData.customerName,
+                        to_email: orderData.customerEmail,
+                        event_name: eventName,
+                        booking_ref: orderData.bookingRef,
+                        tickets_html: ticketsHtml,
+                        total_amount: orderData.totalAmount || 0,
+                        payment_ref: orderData.paymentRef || 'FREE',
+                        items: orderData.items || []
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to send booking confirmation email on dispatch:", err);
+            }
+        }
     },
 
     // Messages

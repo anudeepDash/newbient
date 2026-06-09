@@ -42,8 +42,8 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Your Tickets for ${eventName}`,
-            fromName: 'Newbi Tickets',
-            fromEmail: 'noreply@newbi.live',
+            fromName: 'Newbi Bookings',
+            fromEmail: 'booking@newbi.live',
             html: `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h2>Hi ${toName},</h2>
@@ -69,38 +69,181 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
 };
 
 /**
+ * Sends a guestlist RSVP confirmation email.
+ */
+export const sendGuestlistConfirmation = async (guestlistData) => {
+    try {
+        const { toName, toEmail, eventName, bookingRef, guestCount, date, location, guestlistMode } = guestlistData;
+        const isRSVPOnly = guestlistMode === 'rsvp';
+        
+        let htmlContent = '';
+        if (isRSVPOnly) {
+            htmlContent = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
+                    <h2 style="color: #000; font-style: italic; text-transform: uppercase;">RSVP Confirmed!</h2>
+                    <p>Hi ${toName},</p>
+                    <p>Your RSVP for <strong>${eventName}</strong> has been successfully registered.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
+                        <p style="margin: 5px 0;"><strong>Event:</strong> ${eventName}</p>
+                        <p style="margin: 5px 0;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
+                        <p style="margin: 5px 0;"><strong>Location:</strong> ${location || 'Venue'}</p>
+                        <p style="margin: 5px 0;"><strong>Guests:</strong> ${guestCount}</p>
+                        <p style="margin: 5px 0;"><strong>Reference ID:</strong> ${bookingRef}</p>
+                    </div>
+
+                    <p>We look forward to hosting you. We will reach out if there are any updates regarding the entry details.</p>
+                    
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
+                </div>
+            `;
+        } else {
+            const viewUrl = `https://newbi.live/ticket/${bookingRef}`;
+            htmlContent = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
+                    <h2 style="color: #000; font-style: italic; text-transform: uppercase;">Guestlist Entry Confirmed!</h2>
+                    <p>Hi ${toName},</p>
+                    <p>Your guestlist spot for <strong>${eventName}</strong> is secured. Below is your entry details and access pass.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
+                        <p style="margin: 5px 0;"><strong>Event:</strong> ${eventName}</p>
+                        <p style="margin: 5px 0;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
+                        <p style="margin: 5px 0;"><strong>Location:</strong> ${location || 'Venue'}</p>
+                        <p style="margin: 5px 0;"><strong>Guests:</strong> ${guestCount}</p>
+                        <p style="margin: 5px 0;"><strong>Access Code:</strong> ${bookingRef}</p>
+                    </div>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingRef)}" alt="Access QR Code" style="width: 150px; height: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;" />
+                        <p style="font-size: 11px; color: #666; margin-top: 10px;">Present this QR code at the gate for entry verification.</p>
+                    </div>
+
+                    <div style="margin: 30px 0; text-align: center;">
+                        <a href="${viewUrl}" style="background: #39FF14; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">Access Digital Pass</a>
+                    </div>
+                    
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
+                </div>
+            `;
+        }
+
+        const result = await apiFetch('/api/mail', {
+            to: toEmail,
+            subject: isRSVPOnly ? `RSVP Confirmed: ${eventName}` : `Guestlist Access Confirmed: ${eventName}`,
+            fromName: 'Newbi Bookings',
+            fromEmail: 'booking@newbi.live',
+            html: htmlContent
+        });
+
+        if (result.success) return { success: true };
+        throw new Error(result.error || 'Failed to send guestlist confirmation');
+    } catch (error) {
+        console.error('Failed to send guestlist email:', error);
+        return { success: false, error };
+    }
+};
+
+/**
  * Sends an event booking confirmation email.
  */
 export const sendBookingConfirmation = async (bookingData) => {
     try {
-        const { to_name, to_email, event_name, booking_ref, tickets_html, total_amount, payment_ref, ticket_url } = bookingData;
+        const { to_name, to_email, event_name, booking_ref, tickets_html, total_amount, payment_ref, ticket_url, items } = bookingData;
         const viewUrl = `https://newbi.live/ticket/${booking_ref}`;
+
+        let invoiceHtml = '';
+        if (items && Array.isArray(items) && total_amount > 0) {
+            const itemsRows = items.map(item => {
+                const rate = item.price || 0;
+                const amt = rate * (item.count || 1);
+                return `
+                    <tr style="border-bottom: 1px dashed #eee;">
+                        <td style="padding: 12px 0; font-weight: bold; text-align: left;">${item.name}</td>
+                        <td style="padding: 12px 0; text-align: center; color: #555;">${item.count}</td>
+                        <td style="padding: 12px 0; text-align: right; color: #555;">₹${rate}</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: bold;">₹${amt}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            invoiceHtml = `
+                <div style="margin: 30px 0; border: 1px solid #eaeaea; border-radius: 16px; overflow: hidden; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                    <div style="background: #000000; color: #ffffff; padding: 20px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 13px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">TAX INVOICE</h3>
+                            <span style="font-size: 10px; color: #888888; font-family: monospace;">Ref: ${booking_ref}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 9px; font-weight: 900; color: #39FF14; background: rgba(57, 255, 20, 0.1); border: 1px solid rgba(57, 255, 20, 0.2); padding: 6px 12px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;">PAID</span>
+                        </div>
+                    </div>
+                    <div style="padding: 20px; background: #fafafa; text-align: left;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #111111;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #eaeaea; font-weight: bold; color: #666666; text-transform: uppercase; font-size: 9px; letter-spacing: 1px;">
+                                    <th style="padding: 10px 0; text-align: left;">Item Description</th>
+                                    <th style="padding: 10px 0; text-align: center;">Qty</th>
+                                    <th style="padding: 10px 0; text-align: right;">Rate</th>
+                                    <th style="padding: 10px 0; text-align: right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsRows}
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eaeaea;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #111111;">
+                                <tr>
+                                    <td style="color: #666666; text-align: left;">Subtotal</td>
+                                    <td style="text-align: right; font-weight: 700;">₹${total_amount}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666666; padding-top: 8px; text-align: left;">GST (0%)</td>
+                                    <td style="text-align: right; font-weight: 700; padding-top: 8px;">₹0.00</td>
+                                </tr>
+                                <tr style="font-size: 14px; font-weight: 900;">
+                                    <td style="padding-top: 16px; border-top: 1px dashed #eaeaea; text-align: left; text-transform: uppercase; letter-spacing: 1px;">Total Paid</td>
+                                    <td style="text-align: right; padding-top: 16px; border-top: 1px dashed #eaeaea; color: #2bd93e;">₹${total_amount}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="margin-top: 24px; text-align: center; font-size: 9px; color: #999999; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px;">
+                            Thanks for booking with Newbi Entertainment!
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         const result = await apiFetch('/api/mail', {
             to: to_email,
             subject: `Booking Confirmed: ${event_name}`,
-            fromName: 'Newbi Tickets',
-            fromEmail: 'noreply@newbi.live',
+            fromName: 'Newbi Bookings',
+            fromEmail: 'booking@newbi.live',
             html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
-                    <h2 style="color: #000;">Booking Confirmed!</h2>
-                    <p>Hi ${to_name}, your payment for <strong>${event_name}</strong> has been verified successfully.</p>
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
+                    <h2 style="color: #000; font-style: italic; text-transform: uppercase; text-align: left;">Booking Confirmed!</h2>
+                    <p style="text-align: left;">Hi ${to_name}, your payment for <strong>${event_name}</strong> has been verified successfully.</p>
                     
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <p><strong>Booking Reference:</strong> ${booking_ref}</p>
-                        <p><strong>Total Amount:</strong> ₹${total_amount}</p>
-                        <p><strong>Payment Ref:</strong> ${payment_ref}</p>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
+                        <p style="margin: 5px 0;"><strong>Booking Reference:</strong> ${booking_ref}</p>
+                        <p style="margin: 5px 0;"><strong>Payment Ref:</strong> ${payment_ref}</p>
                     </div>
 
-                    <div style="margin: 20px 0;">
+                    ${invoiceHtml}
+
+                    <div style="margin: 20px 0; text-align: left;">
                         ${tickets_html}
                     </div>
 
                     <div style="margin: 30px 0; text-align: center;">
-                        <a href="${viewUrl}" style="background: #000; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Access Digital Tickets</a>
+                        <a href="${viewUrl}" style="background: #39FF14; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">Access Digital Tickets</a>
                     </div>
                     
-                    <p style="font-size: 12px; color: #999;">Newbi Entertainment &bull; Exclusive Experiences</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px; text-align: center;">Newbi Entertainment &bull; Exclusive Experiences</p>
                 </div>
             `
         });

@@ -53,7 +53,6 @@ const GuestlistManager = () => {
     const [previewType, setPreviewType] = useState('card');
     const [isUploading, setIsUploading] = useState(false);
 
-    // Form State
     const [formData, setFormData] = useState({
         title: '',
         date: '',
@@ -68,6 +67,7 @@ const GuestlistManager = () => {
         isPinned: false,
         imageTransform: { scale: 1.05, x: 0, y: 0 },
         guestlistEnabled: true,
+        guestlistMode: 'qr',
         externalLink: ''
     });
 
@@ -97,7 +97,7 @@ const GuestlistManager = () => {
         setFormData({ 
             title: '', date: '', location: '', description: '', status: 'Open', maxSpots: 100, currentSpots: 0, perUserLimit: 2,
             image: '', highlightColor: '#2ebfff', isPinned: false, imageTransform: { scale: 1.05, x: 0, y: 0 }, 
-            guestlistEnabled: true, externalLink: ''
+            guestlistEnabled: true, guestlistMode: 'qr', externalLink: ''
         });
         setIsAdding(false);
         setEditingId(null);
@@ -120,6 +120,7 @@ const GuestlistManager = () => {
             isPinned: gl.isPinned || false,
             imageTransform: gl.imageTransform || { scale: 1.05, x: 0, y: 0 },
             guestlistEnabled: gl.guestlistEnabled !== undefined ? gl.guestlistEnabled : true,
+            guestlistMode: gl.guestlistMode || 'qr',
             externalLink: gl.externalLink || ''
         });
         setEditingId(gl.id);
@@ -277,16 +278,31 @@ const GuestlistManager = () => {
                                         </div>
 
                                         {formData.guestlistEnabled ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">CAPACITY</label>
-                                                    <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} required 
-                                                        className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">CAPACITY</label>
+                                                        <Input type="number" value={formData.maxSpots} onChange={e => setFormData({ ...formData, maxSpots: parseInt(e.target.value) })} required 
+                                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">PER USER LIMIT</label>
+                                                        <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} required 
+                                                            className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">PER USER LIMIT</label>
-                                                    <Input type="number" value={formData.perUserLimit} onChange={e => setFormData({ ...formData, perUserLimit: parseInt(e.target.value) })} required 
-                                                        className="h-14 bg-black/60 border-white/5 rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:border-neon-blue/40" />
+                                                <div className="space-y-3 pt-4 border-t border-white/5">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-1">GUESTLIST SYSTEM</label>
+                                                    <div className="flex gap-4 p-1.5 bg-black/40 rounded-2xl border border-white/10">
+                                                        {[
+                                                            { id: 'qr', label: 'QR PASSES (AUTOMATED)', color: 'neon-blue' },
+                                                            { id: 'rsvp', label: 'RSVP ONLY (NO QR CODE)', color: 'neon-blue' }
+                                                        ].map(mode => (
+                                                            <button key={mode.id} type="button" onClick={() => setFormData({...formData, guestlistMode: mode.id})} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", (formData.guestlistMode || 'qr') === mode.id ? "bg-neon-blue text-black" : "text-gray-500 hover:text-white")}>
+                                                                {mode.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ) : (

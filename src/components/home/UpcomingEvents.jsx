@@ -80,6 +80,9 @@ const UpcomingEvents = () => {
         const cardElement = document.getElementById(`event-card-${event.id}`);
         if (!cardElement) return;
 
+        // Shared link defaults to home page with event param
+        const eventUrl = `${window.location.origin}/?event=${event.id}`;
+
         try {
             // Temporarily remove truncation and line-clamping for full title capture
             const titleEl = cardElement.querySelector('.event-title');
@@ -106,6 +109,24 @@ const UpcomingEvents = () => {
                             clonedTitle.style.webkitLineClamp = 'unset';
                             clonedTitle.style.display = 'block';
                         }
+
+                        // Embed registration URL directly inside the bottom area of the card image!
+                        const bottomArea = clonedCard.querySelector('.bg-gradient-to-t');
+                        if (bottomArea) {
+                            const linkFooter = clonedDoc.createElement('div');
+                            linkFooter.style.marginTop = '15px';
+                            linkFooter.style.paddingTop = '12px';
+                            linkFooter.style.borderTop = '1px dashed rgba(255,255,255,0.2)';
+                            linkFooter.style.textAlign = 'center';
+                            linkFooter.style.fontSize = '10px';
+                            linkFooter.style.fontWeight = '900';
+                            linkFooter.style.letterSpacing = '1px';
+                            linkFooter.style.color = '#39FF14'; // Neon Green
+                            linkFooter.style.fontFamily = 'monospace';
+                            linkFooter.innerText = `REGISTER AT: ${eventUrl.toUpperCase()}`;
+                            
+                            bottomArea.appendChild(linkFooter);
+                        }
                     }
                 }
             });
@@ -119,9 +140,6 @@ const UpcomingEvents = () => {
             const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
             const imageFile = new File([imageBlob], `${event.title.replace(/\s+/g, '_')}_event.png`, { type: 'image/png' });
             
-            // Shared link defaults to home page with event param
-            const eventUrl = `${window.location.origin}/?event=${event.id}`;
-            
             const shareData = {
                 title: event.title,
                 text: `${event.title} - ${event.date ? new Date(event.date).toLocaleDateString() : 'Upcoming Event'}\n\nView event: ${eventUrl}`,
@@ -129,7 +147,15 @@ const UpcomingEvents = () => {
                 files: [imageFile],
             };
 
+            // Copy to clipboard beforehand so if native share discards text/url (e.g. WhatsApp on mobile), the user can paste it directly in chat
+            try {
+                await navigator.clipboard.writeText(eventUrl);
+            } catch (clipErr) {
+                console.warn("Failed to copy link automatically:", clipErr);
+            }
+
             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+                useStore.getState().addToast("Link copied to clipboard! Paste it to share with the image.", 'success');
                 await navigator.share(shareData);
             } else {
                 const link = document.createElement('a');
@@ -137,13 +163,13 @@ const UpcomingEvents = () => {
                 link.download = `${event.title.replace(/\s+/g, '_')}_event.png`;
                 link.click();
                 
-                await navigator.clipboard.writeText(eventUrl);
                 useStore.getState().addToast("Image downloaded and event link copied to clipboard!", 'success');
             }
         } catch (error) {
             console.error("Share failed:", error);
-            const eventUrl = `${window.location.origin}/?event=${event.id}`;
-            await navigator.clipboard.writeText(eventUrl);
+            try {
+                await navigator.clipboard.writeText(eventUrl);
+            } catch (e2) {}
             useStore.getState().addToast("Link copied to clipboard!", 'success');
         }
     };

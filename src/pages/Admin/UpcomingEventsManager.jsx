@@ -66,9 +66,8 @@ const UpcomingEventsManager = () => {
         hubImage: '',
         link: '',
         venueLayout: '',
-        isTicketed: false,
-        ticketMode: 'qr',
         isGuestlistEnabled: false,
+        guestlistMode: 'qr',
         ticketCategories: [],
         alsoPostToAnnouncements: false,
         imageTransform: { scale: 1, x: 0, y: 0 },
@@ -104,7 +103,7 @@ const UpcomingEventsManager = () => {
     const resetForm = () => {
         setNewEvent({
             title: '', date: '', time: '', category: '', description: '', location: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
-            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, ticketCategories: [],
+            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
             hubImageTransform: { scale: 1, x: 0, y: 0 },
             artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff',
@@ -155,7 +154,8 @@ const UpcomingEventsManager = () => {
             ageLimit: item.ageLimit || 'ALL AGES',
             doorsOpen: item.doorsOpen || '',
             performanceType: item.performanceType || 'LIVE SHOW',
-            highlightColor: item.highlightColor || '#2ebfff'
+            highlightColor: item.highlightColor || '#2ebfff',
+            guestlistMode: item.guestlistMode || 'qr'
         });
     };
 
@@ -995,6 +995,22 @@ const UpcomingEventsManager = () => {
                                                                                 className="w-full min-h-[100px] bg-black/50 border border-white/5 rounded-2xl p-6 text-[10px] font-medium text-white focus:border-neon-green/40 outline-none transition-all"
                                                                             />
                                                                         </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {newEvent.isGuestlistEnabled && (
+                                                                <div className="space-y-4 bg-black/30 p-8 rounded-[2.5rem] border border-white/5">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Guestlist System</label>
+                                                                    <div className="flex gap-4 p-1.5 bg-black/40 rounded-2xl border border-white/10">
+                                                                        {[
+                                                                            { id: 'qr', label: 'QR PASSES (AUTOMATED)', color: 'neon-pink' },
+                                                                            { id: 'rsvp', label: 'RSVP ONLY (NO QR CODE)', color: 'neon-pink' }
+                                                                        ].map(mode => (
+                                                                            <button key={mode.id} type="button" onClick={() => setNewEvent({...newEvent, guestlistMode: mode.id})} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", (newEvent.guestlistMode || 'qr') === mode.id ? `bg-${mode.color} text-black` : "text-gray-500 hover:text-white")}>
+                                                                                    {mode.label}
+                                                                            </button>
+                                                                        ))}
                                                                     </div>
                                                                 </div>
                                                             )}

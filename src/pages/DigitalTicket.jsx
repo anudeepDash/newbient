@@ -65,6 +65,7 @@ const DigitalTicket = () => {
                         fetchedData.eventDate = eventData.date;
                         fetchedData.eventLocation = eventData.location;
                         fetchedData.eventTime = eventData.time;
+                        fetchedData.guestlistMode = eventData.guestlistMode || fetchedData.guestlistMode || 'qr';
                     }
                 }
 
@@ -100,6 +101,7 @@ const DigitalTicket = () => {
     const isVerified = type === 'guestlist' ? true : status === 'approved' || status === 'dispatched';
     
     // Compute QR Data
+    const isRSVPOnly = type === 'guestlist' && ticketData.guestlistMode === 'rsvp';
     const qrData = encodeURIComponent(JSON.stringify({ ref: id, type }));
 
     const handleDownloadPass = async () => {
@@ -142,8 +144,16 @@ const DigitalTicket = () => {
                 className="relative z-10 w-full max-w-md bg-zinc-900/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,255,100,0.1)]"
             >
                 {/* Header Strip */}
-                <div className={`p-8 border-b border-white/10 text-center ${isVerified ? 'bg-black/40' : 'bg-yellow-500/10'}`}>
-                    {isVerified ? (
+                <div className={`p-8 border-b border-white/10 text-center ${isRSVPOnly ? 'bg-neon-pink/10' : isVerified ? 'bg-black/40' : 'bg-yellow-500/10'}`}>
+                    {isRSVPOnly ? (
+                        <>
+                            <div className="w-16 h-16 bg-neon-pink/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-pink/20">
+                                <CheckCircle2 size={32} className="text-neon-pink animate-[pulse_2s_infinite]" />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase tracking-widest text-white">RSVP Confirmed</h2>
+                            <p className="text-[10px] text-neon-pink font-bold tracking-[0.2em] uppercase mt-1">No QR Code Required</p>
+                        </>
+                    ) : isVerified ? (
                         <>
                             <div className="w-16 h-16 bg-neon-green/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-neon-green/20">
                                 <CheckCircle2 size={32} className="text-neon-green" />
@@ -190,7 +200,13 @@ const DigitalTicket = () => {
 
                     {/* QR Code */}
                     <div className="flex flex-col items-center justify-center p-6 bg-white rounded-3xl relative overflow-hidden group">
-                        {ticketData.ticketMode === 'pdf' ? (
+                        {isRSVPOnly ? (
+                            <div className="w-48 h-48 flex flex-col items-center justify-center text-neon-pink gap-4 text-center">
+                                <CheckCircle2 size={48} className="opacity-80" />
+                                <span className="text-[10px] font-black uppercase tracking-widest px-4">RSVP CONFIRMED</span>
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Present name/reference at gate. No barcode check needed.</span>
+                            </div>
+                        ) : ticketData.ticketMode === 'pdf' ? (
                             <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 gap-4 text-center">
                                 <Ticket size={48} className="opacity-20" />
                                 <span className="text-[10px] font-black uppercase tracking-widest px-4">PDF Ticket Issued</span>
@@ -237,15 +253,17 @@ const DigitalTicket = () => {
             </motion.div>
 
             {/* Floating Action Button for Download (kept outside the canvas capture) */}
-            <motion.button 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                onClick={handleDownloadPass} 
-                className="relative z-20 mt-8 h-14 px-8 bg-white/5 rounded-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10 shadow-2xl"
-            >
-                <Download size={16} className="text-neon-green" /> DOWNLOAD DIGITAL PASS
-            </motion.button>
+            {!isRSVPOnly && (
+                <motion.button 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    onClick={handleDownloadPass} 
+                    className="relative z-20 mt-8 h-14 px-8 bg-white/5 rounded-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all border border-white/10 shadow-2xl"
+                >
+                    <Download size={16} className="text-neon-green" /> DOWNLOAD DIGITAL PASS
+                </motion.button>
+            )}
         </div>
     );
 };
