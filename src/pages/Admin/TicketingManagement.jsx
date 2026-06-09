@@ -426,11 +426,14 @@ const TicketingManagement = () => {
         }
     };
 
-    const escapeCSV = (val) => {
-        if (val === undefined || val === null) return '""';
-        let str = String(val);
-        // Escape double quotes by doubling them, and wrap in double quotes
-        return `"${str.replace(/"/g, '""')}"`;
+    const escapeHTML = (val) => {
+        if (val === undefined || val === null) return '';
+        return String(val)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     };
 
     const downloadSheets = () => {
@@ -522,20 +525,108 @@ const TicketingManagement = () => {
             rows = [...ticketRows, ...guestlistRows];
         }
 
-        const csvContent = [headers, ...rows]
-            .map(row => row.map(escapeCSV).join(","))
-            .join("\n");
+        const colCount = headers.length;
+        const eventTitle = event?.title || 'Event';
+        const formattedDate = new Date().toLocaleString();
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        let html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <!--[if gte mso 9]>
+        <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>Operations Report</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
+          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; font-style: italic; text-align: left; height: 40px; vertical-align: middle; }
+          .subtitle-row { background-color: #0A0A0A; color: #00FF66; font-size: 10pt; font-weight: bold; text-align: left; height: 25px; vertical-align: middle; }
+          .info-row { background-color: #0A0A0A; color: #888888; font-size: 9pt; text-align: left; height: 20px; vertical-align: middle; }
+          .header-cell { background-color: #1A1A1A; color: #FFFFFF; font-size: 10pt; font-weight: bold; border: 1px solid #333333; height: 35px; text-align: left; vertical-align: middle; padding: 5px; }
+          .data-cell { font-size: 10pt; border: 1px solid #E2E8F0; height: 25px; vertical-align: middle; padding: 5px; color: #1A202C; }
+          .zebra-cell { background-color: #F7FAFC; }
+          .badge-verified { background-color: #DEF7EC; color: #03543F; font-weight: bold; text-align: center; }
+          .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
+          .badge-dispatched { background-color: #E0F2FE; color: #0369A1; font-weight: bold; text-align: center; }
+          .badge-attended { background-color: #DEF7EC; color: #03543F; font-weight: bold; text-align: center; }
+          .badge-registered { background-color: #F3F4F6; color: #374151; font-weight: bold; text-align: center; }
+          .number-cell { text-align: right; }
+        </style>
+        </head>
+        <body>
+        <table>
+          <!-- Branded Banner Header -->
+          <tr>
+            <td colspan="${colCount}" class="title-row">&nbsp;&nbsp;NEWBI ENTERTAINMENTS</td>
+          </tr>
+          <tr>
+            <td colspan="${colCount}" class="subtitle-row">&nbsp;&nbsp;OPERATIONS REPORT: ${escapeHTML(eventTitle.toUpperCase())}</td>
+          </tr>
+          <tr>
+            <td colspan="${colCount}" class="info-row">&nbsp;&nbsp;Generated: ${escapeHTML(formattedDate)} | Total People: ${totalPeople}</td>
+          </tr>
+          <!-- Spacer Row -->
+          <tr style="height: 15px;">
+            <td colspan="${colCount}">&nbsp;</td>
+          </tr>
+          <!-- Table Headers -->
+          <tr>
+            ${headers.map(h => `<th class="header-cell">${escapeHTML(h)}</th>`).join('')}
+          </tr>
+          <!-- Table Data -->
+          ${rows.map((row, rIdx) => {
+              const isZebra = rIdx % 2 !== 0;
+              return `<tr>
+                  ${row.map((cell, cIdx) => {
+                      let cellClass = "data-cell";
+                      if (isZebra) cellClass += " zebra-cell";
+                      
+                      const headerName = headers[cIdx];
+                      const valStr = String(cell);
+
+                      // Style status badges
+                      if (headerName === "Status" || headerName === "Status / Attendance" || headerName === "Attendance Status") {
+                          if (valStr === "APPROVED" || valStr === "VERIFIED") cellClass += " badge-verified";
+                          else if (valStr === "PENDING") cellClass += " badge-pending";
+                          else if (valStr === "DISPATCHED") cellClass += " badge-dispatched";
+                          else if (valStr === "ATTENDED") cellClass += " badge-attended";
+                          else if (valStr === "REGISTERED") cellClass += " badge-registered";
+                      }
+                      
+                      // Align currency and numbers
+                      if (headerName === "Amount Paid" || headerName === "Total Guests") {
+                          cellClass += " number-cell";
+                      }
+
+                      return `<td class="${cellClass}">${escapeHTML(cell)}</td>`;
+                  }).join('')}
+              </tr>`;
+          }).join('')}
+        </table>
+        </body>
+        </html>
+        `;
+
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `${event?.title?.replace(/\s+/g, '_') || 'Event'}_Operations_Report.csv`);
+        link.setAttribute("download", `${eventTitle.replace(/\s+/g, '_')}_Operations_Report.xls`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        useStore.getState().addToast("Report downloaded successfully!", 'success');
+        useStore.getState().addToast("Branded spreadsheet downloaded successfully!", 'success');
     };
 
     const handleUpdateEventPayment = async (e) => {
