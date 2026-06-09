@@ -436,7 +436,22 @@ const TicketingManagement = () => {
             .replace(/'/g, '&#039;');
     };
 
-    const downloadSheets = () => {
+    const getBase64Image = async (url) => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error("Failed to load logo", e);
+            return null;
+        }
+    };
+
+    const downloadSheets = async () => {
         const hasTickets = event?.isTicketed;
         const hasGuestlist = event?.isGuestlistEnabled || event?.guestlistEnabled;
 
@@ -444,6 +459,9 @@ const TicketingManagement = () => {
             useStore.getState().addToast("No data to export.", 'error');
             return;
         }
+
+        // Fetch logo as base64
+        const logoBase64 = await getBase64Image('/logo_full.png');
 
         let headers = [];
         let rows = [];
@@ -549,7 +567,7 @@ const TicketingManagement = () => {
         <![endif]-->
         <style>
           body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; font-style: italic; text-align: left; height: 40px; vertical-align: middle; }
+          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; font-style: italic; text-align: left; height: 50px; vertical-align: middle; }
           .subtitle-row { background-color: #0A0A0A; color: #00FF66; font-size: 10pt; font-weight: bold; text-align: left; height: 25px; vertical-align: middle; }
           .info-row { background-color: #0A0A0A; color: #888888; font-size: 9pt; text-align: left; height: 20px; vertical-align: middle; }
           .header-cell { background-color: #1A1A1A; color: #FFFFFF; font-size: 10pt; font-weight: bold; border: 1px solid #333333; height: 35px; text-align: left; vertical-align: middle; padding: 5px; }
@@ -567,7 +585,9 @@ const TicketingManagement = () => {
         <table>
           <!-- Branded Banner Header -->
           <tr>
-            <td colspan="${colCount}" class="title-row">&nbsp;&nbsp;NEWBI ENTERTAINMENTS</td>
+            <td colspan="${colCount}" class="title-row" style="height: 60px; padding: 10px;">
+              ${logoBase64 ? `<img src="${logoBase64}" height="40" style="vertical-align: middle;">` : `&nbsp;&nbsp;NEWBI ENTERTAINMENTS`}
+            </td>
           </tr>
           <tr>
             <td colspan="${colCount}" class="subtitle-row">&nbsp;&nbsp;OPERATIONS REPORT: ${escapeHTML(eventTitle.toUpperCase())}</td>
