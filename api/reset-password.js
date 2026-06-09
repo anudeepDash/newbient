@@ -131,7 +131,7 @@ export default async function handler(req, res) {
                 <span class="preheader">Reset your Newbi Entertainment account password</span>
                 <div class="container">
                     <div class="header">
-                        <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                        <img src="${logoUrl}" alt="Newbi" style="display: block; margin: 0; height: 25px; width: auto; max-width: 180px; background: linear-gradient(#0a0a0a, #0a0a0a); background-color: #0a0a0a; padding: 4px 8px; border-radius: 6px;">
                     </div>
                     <div class="content">
                         <div class="category-badge">SECURITY</div>
@@ -144,9 +144,9 @@ export default async function handler(req, res) {
                     </div>
                     <div class="footer">
                         <div class="social-links">
-                            <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                            <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                            <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                            <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/instagram-new.png" class="social-img" alt="Instagram"></a>
+                            <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                            <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/888888/domain.png" class="social-img" alt="Website"></a>
                         </div>
                         <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
                     </div>
