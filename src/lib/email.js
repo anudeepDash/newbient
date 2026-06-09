@@ -6,6 +6,127 @@ const getBaseUrl = () => {
     return 'https://newbi.live';
 };
 
+/**
+ * Generates the HTML for an official Newbi communication.
+ * Cleaner, professional, and minimalist. Supports Dark/Light themes.
+ */
+export const generateOfficialHTML = (data) => {
+    const { 
+        headerText = "OFFICIAL COMMUNICATION", 
+        messageBody = "", 
+        category = "OFFICIAL",
+        ctaText = "", 
+        ctaUrl = "#",
+        theme = "light" 
+    } = data;
+
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#000000' : '#fcfcfc';
+    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
+    const textColor = isDark ? '#ffffff' : '#111111';
+    const subTextColor = isDark ? '#888888' : '#444444';
+    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
+    
+    // Brand Logos: Home (Dark) vs Document (Light)
+    const baseUrl = getBaseUrl();
+    
+    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
+    const headerBg = containerBg;
+    const headerBorder = borderColor;
+    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
+            <style>
+                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
+                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
+                .content { padding: 50px; text-align: left; }
+                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
+                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
+                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; transition: all 0.2s; }
+                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
+                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+                .social-links { margin-bottom: 20px; }
+                .social-icon { display: inline-block; margin: 0 12px; }
+                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
+                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
+                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
+
+                @media screen and (max-width: 600px) {
+                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
+                    .content { padding: 30px 20px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .footer { padding: 30px 20px !important; }
+                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
+                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
+                }
+
+                @media (prefers-color-scheme: dark) {
+                    body { background-color: #000000 !important; color: #ffffff !important; }
+                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
+                    .title { color: #ffffff !important; }
+                    .body-text { color: #888888 !important; }
+                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
+                    .social-img { filter: invert(1) !important; }
+                    .logo-light { display: none !important; }
+                    .logo-dark { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                }
+
+                @media (prefers-color-scheme: light) {
+                    body { background-color: #fcfcfc !important; color: #111111 !important; }
+                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
+                    .title { color: #111111 !important; }
+                    .body-text { color: #444444 !important; }
+                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
+                    .social-img { filter: none !important; }
+                    .logo-dark { display: none !important; }
+                    .logo-light { display: block !important; }
+                    .category-badge { background: ${NEWBI_GREEN} !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
+            <div class="container">
+                <div class="header">
+                    <!-- Light Mode Logo -->
+                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                    <!-- Dark Mode Logo -->
+                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
+                </div>
+                <div class="content">
+                    <div class="category-badge">${category}</div>
+                    <h1 class="title">${headerText}</h1>
+                    <div class="body-text">${messageBody}</div>
+                    ${ctaText ? `<a href="${ctaUrl}" class="cta-button">${ctaText}</a>` : ''}
+                </div>
+                <div class="footer">
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
+                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
+                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
+                    </div>
+                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
+                    <p class="footer-text" style="margin-top: 10px;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
 
 /**
  * Utility to get the current Firebase ID token for authenticated requests.
@@ -39,22 +160,26 @@ export const sendTicketEmail = async (toName, toEmail, ticketUrl, eventName, boo
     try {
         const ticketLink = Array.isArray(ticketUrl) ? ticketUrl[0] : ticketUrl;
         
+        const html = generateOfficialHTML({
+            headerText: 'Your Tickets are Ready!',
+            messageBody: `
+                <p>Hi <strong>${toName}</strong>,</p>
+                <p>Here are your tickets for <strong>${eventName}</strong>. We look forward to seeing you there!</p>
+                <p style="margin-top: 15px; font-size: 14px;"><strong>Booking Reference:</strong> <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bookingRef}</code></p>
+                <p style="font-size: 12px; color: #666; margin-top: 20px;">If the button doesn't work, copy and paste this link: <a href="${ticketLink}" style="color: ${NEWBI_GREEN}; text-decoration: underline;">${ticketLink}</a></p>
+            `,
+            category: 'TICKETING',
+            ctaText: 'View Your Tickets',
+            ctaUrl: ticketLink,
+            theme: 'light'
+        });
+
         const result = await apiFetch('/api/mail', {
             to: toEmail,
             subject: `Your Tickets for ${eventName}`,
             fromName: 'Newbi Bookings',
             fromEmail: 'booking@newbi.live',
-            html: `
-                <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                    <h2>Hi ${toName},</h2>
-                    <p>Here are your tickets for <strong>${eventName}</strong>. We look forward to seeing you there!</p>
-                    <p><strong>Booking Ref:</strong> ${bookingRef}</p>
-                    <div style="margin: 30px 0;">
-                        <a href="${ticketLink}" style="background: #39FF14; color: black; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Your Tickets</a>
-                    </div>
-                    <p style="font-size: 12px; color: #666;">If the button above doesn't work, copy and paste this link: ${ticketLink}</p>
-                </div>
-            `
+            html
         });
 
         if (result.success) {
@@ -78,55 +203,53 @@ export const sendGuestlistConfirmation = async (guestlistData) => {
         
         let htmlContent = '';
         if (isRSVPOnly) {
-            htmlContent = `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
-                    <h2 style="color: #000; font-style: italic; text-transform: uppercase;">RSVP Confirmed!</h2>
-                    <p>Hi ${toName},</p>
+            htmlContent = generateOfficialHTML({
+                headerText: 'RSVP Confirmed!',
+                messageBody: `
+                    <p>Hi <strong>${toName}</strong>,</p>
                     <p>Your RSVP for <strong>${eventName}</strong> has been successfully registered.</p>
                     
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
-                        <p style="margin: 5px 0;"><strong>Event:</strong> ${eventName}</p>
-                        <p style="margin: 5px 0;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
-                        <p style="margin: 5px 0;"><strong>Location:</strong> ${location || 'Venue'}</p>
-                        <p style="margin: 5px 0;"><strong>Guests:</strong> ${guestCount}</p>
-                        <p style="margin: 5px 0;"><strong>Reference ID:</strong> ${bookingRef}</p>
+                    <div style="background: #fafafa; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #eaeaea; text-align: left;">
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Event:</strong> ${eventName}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Location:</strong> ${location || 'Venue'}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Guests:</strong> ${guestCount}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Reference ID:</strong> <code style="font-family: monospace; background: #eaeaea; padding: 2px 6px; border-radius: 4px;">${bookingRef}</code></p>
                     </div>
 
                     <p>We look forward to hosting you. We will reach out if there are any updates regarding the entry details.</p>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
-                </div>
-            `;
+                `,
+                category: 'RSVP',
+                ctaText: '',
+                ctaUrl: '',
+                theme: 'light'
+            });
         } else {
             const viewUrl = `https://newbi.live/ticket/${bookingRef}`;
-            htmlContent = `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
-                    <h2 style="color: #000; font-style: italic; text-transform: uppercase;">Guestlist Entry Confirmed!</h2>
-                    <p>Hi ${toName},</p>
-                    <p>Your guestlist spot for <strong>${eventName}</strong> is secured. Below is your entry details and access pass.</p>
+            htmlContent = generateOfficialHTML({
+                headerText: 'Guestlist Confirmed!',
+                messageBody: `
+                    <p>Hi <strong>${toName}</strong>,</p>
+                    <p>Your guestlist spot for <strong>${eventName}</strong> is secured. Below are your entry details and access pass.</p>
                     
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
-                        <p style="margin: 5px 0;"><strong>Event:</strong> ${eventName}</p>
-                        <p style="margin: 5px 0;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
-                        <p style="margin: 5px 0;"><strong>Location:</strong> ${location || 'Venue'}</p>
-                        <p style="margin: 5px 0;"><strong>Guests:</strong> ${guestCount}</p>
-                        <p style="margin: 5px 0;"><strong>Access Code:</strong> ${bookingRef}</p>
+                    <div style="background: #fafafa; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #eaeaea; text-align: left;">
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Event:</strong> ${eventName}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Date:</strong> ${date || 'To Be Announced'}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Location:</strong> ${location || 'Venue'}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Guests:</strong> ${guestCount}</p>
+                        <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Access Code:</strong> <code style="font-family: monospace; background: #eaeaea; padding: 2px 6px; border-radius: 4px;">${bookingRef}</code></p>
                     </div>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingRef)}" alt="Access QR Code" style="width: 150px; height: 150px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff;" />
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingRef)}" alt="Access QR Code" style="width: 150px; height: 150px; border: 1px solid #eaeaea; padding: 10px; border-radius: 12px; background: #fff;" />
                         <p style="font-size: 11px; color: #666; margin-top: 10px;">Present this QR code at the gate for entry verification.</p>
                     </div>
-
-                    <div style="margin: 30px 0; text-align: center;">
-                        <a href="${viewUrl}" style="background: #39FF14; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">Access Digital Pass</a>
-                    </div>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px;">Newbi Entertainment &bull; Exclusive Experiences</p>
-                </div>
-            `;
+                `,
+                category: 'GUESTLIST',
+                ctaText: 'Access Digital Pass',
+                ctaUrl: viewUrl,
+                theme: 'light'
+            });
         }
 
         const result = await apiFetch('/api/mail', {
@@ -217,35 +340,36 @@ export const sendBookingConfirmation = async (bookingData) => {
             `;
         }
 
+        const html = generateOfficialHTML({
+            headerText: 'Booking Confirmed!',
+            messageBody: `
+                <p>Hi <strong>${to_name}</strong>,</p>
+                <p>Your payment for <strong>${event_name}</strong> has been verified successfully.</p>
+                
+                <div style="background: #fafafa; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #eaeaea; text-align: left;">
+                    <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Booking Reference:</strong> <code style="font-family: monospace; background: #eaeaea; padding: 2px 6px; border-radius: 4px;">${booking_ref}</code></p>
+                    <p style="margin: 8px 0; font-size: 14px; color: #111111;"><strong>Payment Ref:</strong> <code style="font-family: monospace; background: #eaeaea; padding: 2px 6px; border-radius: 4px;">${payment_ref}</code></p>
+                </div>
+
+                ${invoiceHtml}
+
+                <div style="margin: 25px 0; text-align: left;">
+                    <h3 style="font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; color: #111111;">Tickets Purchased</h3>
+                    ${tickets_html}
+                </div>
+            `,
+            category: 'TICKETING',
+            ctaText: 'Access Digital Tickets',
+            ctaUrl: viewUrl,
+            theme: 'light'
+        });
+
         const result = await apiFetch('/api/mail', {
             to: to_email,
             subject: `Booking Confirmed: ${event_name}`,
             fromName: 'Newbi Bookings',
             fromEmail: 'booking@newbi.live',
-            html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff; color: #111111;">
-                    <h2 style="color: #000; font-style: italic; text-transform: uppercase; text-align: left;">Booking Confirmed!</h2>
-                    <p style="text-align: left;">Hi ${to_name}, your payment for <strong>${event_name}</strong> has been verified successfully.</p>
-                    
-                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee; text-align: left;">
-                        <p style="margin: 5px 0;"><strong>Booking Reference:</strong> ${booking_ref}</p>
-                        <p style="margin: 5px 0;"><strong>Payment Ref:</strong> ${payment_ref}</p>
-                    </div>
-
-                    ${invoiceHtml}
-
-                    <div style="margin: 20px 0; text-align: left;">
-                        ${tickets_html}
-                    </div>
-
-                    <div style="margin: 30px 0; text-align: center;">
-                        <a href="${viewUrl}" style="background: #39FF14; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">Access Digital Tickets</a>
-                    </div>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                    <p style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px; text-align: center;">Newbi Entertainment &bull; Exclusive Experiences</p>
-                </div>
-            `
+            html
         });
 
         if (result.success) return { success: true };
@@ -629,126 +753,8 @@ export const sendPaymentDeclinedEmail = async (toEmail, clientName, invoiceNumbe
     }
 };
 
-/**
- * Generates the HTML for an official Newbi communication.
- * Cleaner, professional, and minimalist. Supports Dark/Light themes.
- */
-export const generateOfficialHTML = (data) => {
-    const { 
-        headerText = "OFFICIAL COMMUNICATION", 
-        messageBody = "", 
-        category = "OFFICIAL",
-        ctaText = "", 
-        ctaUrl = "#",
-        theme = "light" 
-    } = data;
+// Relocated generateOfficialHTML to top of file
 
-    const isDark = theme === 'dark';
-    const bgColor = isDark ? '#000000' : '#fcfcfc';
-    const containerBg = isDark ? '#0a0a0a' : '#ffffff';
-    const textColor = isDark ? '#ffffff' : '#111111';
-    const subTextColor = isDark ? '#888888' : '#444444';
-    const borderColor = isDark ? '#1a1a1a' : '#eaeaea';
-    
-    // Brand Logos: Home (Dark) vs Document (Light)
-    const baseUrl = getBaseUrl();
-    
-    // Header background and logo adapt to the theme to avoid a mismatched black header on light emails
-    const headerBg = containerBg;
-    const headerBorder = borderColor;
-    const logoUrl = isDark ? `${baseUrl}/logo_full.png` : `${baseUrl}/logo_document.png`;
-
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
-            <style>
-                .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; }
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; color: ${textColor}; margin: 0; padding: 0; }
-                .container { width: 100%; max-width: 600px; margin: 40px auto; background-color: ${containerBg}; border: 1px solid ${borderColor}; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-                .header { padding: 40px; background-color: ${headerBg}; border-bottom: 1px solid ${headerBorder}; text-align: left; }
-                .content { padding: 50px; text-align: left; }
-                .category-badge { display: inline-block; padding: 6px 12px; background: ${NEWBI_GREEN}; color: #000000; font-size: 9px; font-weight: 900; border-radius: 6px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
-                .title { font-size: 28px; font-weight: 800; color: ${textColor}; margin-bottom: 24px; line-height: 1.2; letter-spacing: -0.5px; }
-                .body-text { color: ${subTextColor}; font-size: 15px; line-height: 1.6; font-weight: 400; margin-bottom: 40px; }
-                .cta-button { display: inline-block; padding: 16px 30px; background-color: ${NEWBI_GREEN}; color: #000000 !important; text-decoration: none; font-weight: 700; font-size: 12px; border-radius: 10px; transition: all 0.2s; }
-                .footer { padding: 40px 50px; background-color: ${isDark ? '#050505' : '#fafafa'}; border-top: 1px solid ${borderColor}; text-align: center; }
-                .footer-text { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-                .social-links { margin-bottom: 20px; }
-                .social-icon { display: inline-block; margin: 0 12px; }
-                .social-img { width: 18px; height: 18px; opacity: 0.6; ${isDark ? 'filter: invert(1);' : ''} }
-                .logo-light { display: ${isDark ? 'none' : 'block'} !important; }
-                .logo-dark { display: ${isDark ? 'block' : 'none'} !important; }
-
-                @media screen and (max-width: 600px) {
-                    .container { margin: 0 !important; border-radius: 0 !important; border: none !important; width: 100% !important; }
-                    .content { padding: 30px 20px !important; }
-                    .header { padding: 30px 20px !important; }
-                    .footer { padding: 30px 20px !important; }
-                    .title { font-size: 24px !important; margin-bottom: 18px !important; }
-                    .body-text { font-size: 14px !important; line-height: 1.5 !important; }
-                }
-
-                @media (prefers-color-scheme: dark) {
-                    body { background-color: #000000 !important; color: #ffffff !important; }
-                    .container { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .header { background-color: #0a0a0a !important; border-color: #1a1a1a !important; }
-                    .title { color: #ffffff !important; }
-                    .body-text { color: #888888 !important; }
-                    .footer { background-color: #050505 !important; border-color: #1a1a1a !important; }
-                    .social-img { filter: invert(1) !important; }
-                    .logo-light { display: none !important; }
-                    .logo-dark { display: block !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                }
-
-                @media (prefers-color-scheme: light) {
-                    body { background-color: #fcfcfc !important; color: #111111 !important; }
-                    .container { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .header { background-color: #ffffff !important; border-color: #eaeaea !important; }
-                    .title { color: #111111 !important; }
-                    .body-text { color: #444444 !important; }
-                    .footer { background-color: #fafafa !important; border-color: #eaeaea !important; }
-                    .social-img { filter: none !important; }
-                    .logo-dark { display: none !important; }
-                    .logo-light { display: block !important; }
-                    .category-badge { background: ${NEWBI_GREEN} !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <span class="preheader">${messageBody.replace(/<[^>]*>?/gm, '').substring(0, 150)}</span>
-            <div class="container">
-                <div class="header">
-                    <!-- Light Mode Logo -->
-                    <img src="${baseUrl}/logo_document.png" class="logo-light" alt="Newbi" style="display: ${isDark ? 'none' : 'block'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
-                    <!-- Dark Mode Logo -->
-                    <img src="${baseUrl}/logo_full.png" class="logo-dark" alt="Newbi" style="display: ${isDark ? 'block' : 'none'}; margin: 0; height: 25px; width: auto; max-width: 180px;">
-                </div>
-                <div class="content">
-                    <div class="category-badge">${category}</div>
-                    <h1 class="title">${headerText}</h1>
-                    <div class="body-text">${messageBody}</div>
-                    ${ctaText ? `<a href="${ctaUrl}" class="cta-button">${ctaText}</a>` : ''}
-                </div>
-                <div class="footer">
-                    <div class="social-links">
-                        <a href="https://www.instagram.com/newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/instagram-new.png" class="social-img" alt="Instagram"></a>
-                        <a href="https://linkedin.com/company/newbi-ent" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/linkedin.png" class="social-img" alt="LinkedIn"></a>
-                        <a href="https://newbi.live" class="social-icon"><img src="https://img.icons8.com/material-outlined/48/domain.png" class="social-img" alt="Website"></a>
-                    </div>
-                    <p class="footer-text">© ${new Date().getFullYear()} NEWBI ENTERTAINMENT. ALL RIGHTS RESERVED.</p>
-                    <p class="footer-text" style="margin-top: 10px;"><a href="https://newbi.live/unsubscribe" style="color: #777; text-decoration: underline;">UNSUBSCRIBE FROM OFFICIAL LIST</a></p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-};
 
 /**
  * Generates the HTML for the Weekly Briefing by Concert Zone.
