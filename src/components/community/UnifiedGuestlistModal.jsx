@@ -161,7 +161,20 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
                 scrollX: 0,
                 scrollY: 0,
                 windowWidth: 800,
-                windowHeight: ticket.offsetHeight || 1200
+                windowHeight: ticket.offsetHeight || 1200,
+                onclone: (clonedDoc) => {
+                    const clonedSurface = clonedDoc.getElementById('ticket-download-surface');
+                    if (clonedSurface) {
+                        clonedSurface.style.backdropFilter = 'none';
+                        clonedSurface.style.webkitBackdropFilter = 'none';
+                        const parent = clonedSurface.parentElement;
+                        if (parent) {
+                            parent.style.position = 'relative';
+                            parent.style.left = '0';
+                            parent.style.top = '0';
+                        }
+                    }
+                }
             });
             
             const image = canvas.toDataURL("image/png", 1.0);
