@@ -323,14 +323,33 @@ const CreatorJoin = () => {
     // Typeform index state
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-    // Pre-fill email and name from auth user
+    // Pre-fill email, name, and phone from auth user
     useEffect(() => {
         if (user) {
-            setFormData(prev => ({
-                ...prev,
-                email: prev.email || user.email || '',
-                name: prev.name || user.displayName || ''
-            }));
+            setFormData(prev => {
+                const updates = {};
+                if (!prev.email && user.email) updates.email = user.email;
+                if (!prev.name && user.displayName) updates.name = user.displayName;
+                
+                if (!prev.phone && user.phoneNumber) {
+                    const cleanPhone = user.phoneNumber.replace(/\D/g, '');
+                    if (cleanPhone.length >= 10) {
+                        updates.phone = cleanPhone.slice(-10);
+                        const cc = user.phoneNumber.replace(updates.phone, '');
+                        if (cc && cc.startsWith('+')) {
+                            setCountryCode(cc);
+                        }
+                    } else {
+                        updates.phone = cleanPhone;
+                    }
+                    setPhoneVerified(true);
+                }
+                
+                if (Object.keys(updates).length > 0) {
+                    return { ...prev, ...updates };
+                }
+                return prev;
+            });
         }
     }, [user]);
 
@@ -345,7 +364,18 @@ const CreatorJoin = () => {
     }, [user, creators, loading, navigate]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        if (name === 'phone') {
+            const cleanInput = value.replace(/\D/g, '');
+            const cleanUserPhone = user?.phoneNumber?.replace(/\D/g, '') || '';
+            if (cleanInput && cleanUserPhone && cleanUserPhone.endsWith(cleanInput)) {
+                setPhoneVerified(true);
+            } else {
+                setPhoneVerified(false);
+            }
+        }
     };
 
     const handleImageUpload = async (e) => {
@@ -447,7 +477,12 @@ const CreatorJoin = () => {
         } catch (err) {
             console.error("OTP Verification Error:", err);
             if (err.code === 'auth/credential-already-in-use') {
-                useStore.getState().addToast("This phone number is already linked to another account.", 'error');
+                setPhoneVerified(true);
+                useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
+                // Auto advance
+                setTimeout(() => {
+                    handleNext();
+                }, 1200);
             } else {
                 useStore.getState().addToast("Invalid code. Please try again.", 'error');
             }
@@ -853,8 +888,17 @@ const CreatorJoin = () => {
                                                         </div>
                                                         
                                                         {isPhoneVerified ? (
-                                                            <div className="flex items-center gap-3 bg-neon-green/10 border border-neon-green/20 p-4 rounded-2xl text-neon-green text-sm font-bold w-fit">
-                                                                <ShieldCheck size={18} /> Phone Verified Successfully!
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                                                <div className="flex items-center gap-3 bg-neon-green/10 border border-neon-green/20 p-4 rounded-2xl text-neon-green text-sm font-bold w-fit">
+                                                                    <ShieldCheck size={18} /> Phone Verified Successfully!
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPhoneVerified(false)}
+                                                                    className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest mt-2 sm:mt-0 underline"
+                                                                >
+                                                                    Change Number
+                                                                </button>
                                                             </div>
                                                         ) : (
                                                             <button 

@@ -260,7 +260,9 @@ const CreatorSettingsView = ({ profile }) => {
         } catch (err) {
             console.error("OTP Verification Error:", err);
             if (err.code === 'auth/credential-already-in-use') {
-                useStore.getState().addToast("This phone number is already linked to another account.", 'error');
+                setIsPhoneVerified(true);
+                await updateCreator(profile.uid, { isPhoneVerified: true, phone: form.phone });
+                useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
             } else {
                 useStore.getState().addToast("Invalid code or verification expired. Please try again.", 'error');
             }

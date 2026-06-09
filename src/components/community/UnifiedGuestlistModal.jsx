@@ -43,7 +43,7 @@ const UnifiedGuestlistModal = ({ isOpen, onClose, guestlist }) => {
     const [bookingRef, setBookingRef] = useState('');
     const [isDownloading, setIsDownloading] = useState(false);
 
-    const maxPerUser = guestlist?.perUserLimit || 1;
+    const maxPerUser = guestlist?.perUserLimit || 5;
     const maxSpots = guestlist?.maxSpots || 0;
     const currentSpots = guestlist?.currentSpots || 0;
     const remainingSpots = Math.max(0, maxSpots - currentSpots);

@@ -68,6 +68,7 @@ const UpcomingEventsManager = () => {
         venueLayout: '',
         isGuestlistEnabled: false,
         guestlistMode: 'qr',
+        perUserLimit: 5,
         ticketCategories: [],
         alsoPostToAnnouncements: false,
         imageTransform: { scale: 1, x: 0, y: 0 },
@@ -103,7 +104,7 @@ const UpcomingEventsManager = () => {
     const resetForm = () => {
         setNewEvent({
             title: '', date: '', time: '', category: '', description: '', location: '', locationUrl: '', buttonText: '', image: '', hubImage: '', link: '', venueLayout: '', alsoPostToAnnouncements: false,
-            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', ticketCategories: [],
+            isTicketed: false, ticketMode: 'qr', isGuestlistEnabled: false, guestlistMode: 'qr', perUserLimit: 5, ticketCategories: [],
             imageTransform: { scale: 1, x: 0, y: 0 },
             hubImageTransform: { scale: 1, x: 0, y: 0 },
             artists: [], ageLimit: 'ALL AGES', doorsOpen: '', performanceType: 'LIVE SHOW', highlightColor: '#2ebfff',
@@ -155,7 +156,8 @@ const UpcomingEventsManager = () => {
             doorsOpen: item.doorsOpen || '',
             performanceType: item.performanceType || 'LIVE SHOW',
             highlightColor: item.highlightColor || '#2ebfff',
-            guestlistMode: item.guestlistMode || 'qr'
+            guestlistMode: item.guestlistMode || 'qr',
+            perUserLimit: item.perUserLimit || 5
         });
     };
 
@@ -1011,6 +1013,18 @@ const UpcomingEventsManager = () => {
                                                                                     {mode.label}
                                                                             </button>
                                                                         ))}
+                                                                    </div>
+                                                                    <div className="space-y-3 pt-4 border-t border-white/5">
+                                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Limit per Person / RSVP</label>
+                                                                        <Input 
+                                                                            type="number" 
+                                                                            min="1" 
+                                                                            placeholder="E.G. 5" 
+                                                                            value={newEvent.perUserLimit || ''} 
+                                                                            onChange={e => setNewEvent({...newEvent, perUserLimit: parseInt(e.target.value) || 1})} 
+                                                                            className="h-16 bg-black/50 border-white/5 rounded-2xl text-[10px] font-black tracking-widest px-6" 
+                                                                        />
+                                                                        <p className="text-[9px] text-gray-500 font-medium pl-1">Maximum number of guest list spots or RSVPs a single registrant can claim (defaults to 5 if not set).</p>
                                                                     </div>
                                                                 </div>
                                                             )}
