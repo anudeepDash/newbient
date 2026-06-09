@@ -19,6 +19,7 @@ import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import Percent from 'lucide-react/dist/esm/icons/percent';
 import Tag from 'lucide-react/dist/esm/icons/tag';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { useStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
