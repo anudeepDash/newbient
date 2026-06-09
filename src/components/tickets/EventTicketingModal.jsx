@@ -11,7 +11,7 @@ import { Input } from '../ui/Input';
 import { useStore } from '../../lib/store';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
@@ -188,16 +188,31 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setSelectedMapCategory(null);
             setTicketCount(1);
             setGuestCount(1);
+            
+            let phoneVal = '';
+            if (user?.phoneNumber) {
+                const cleanPhone = user.phoneNumber.replace(/\D/g, '');
+                if (cleanPhone.length >= 10) {
+                    phoneVal = cleanPhone.slice(-10);
+                    const cc = user.phoneNumber.replace(phoneVal, '');
+                    if (cc && cc.startsWith('+')) {
+                        setCountryCode(cc);
+                    }
+                } else {
+                    phoneVal = cleanPhone;
+                }
+            }
+
             setFormData({
                 name: user?.displayName || '',
                 email: user?.email || '',
-                phone: user?.phoneNumber?.replace(/^\+\d{2}/, '') || ''
+                phone: phoneVal
             });
             setConfirmationResult(null);
             setOtpCode('');
             setOtpValues(['', '', '', '', '', '']);
             setOtpSent(false);
-            setIsPhoneVerified(false);
+            setIsPhoneVerified(!!user?.phoneNumber);
             setPaymentRef('');
             setAppliedCoupon(null);
             setCouponInput('');
@@ -217,13 +232,41 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     // Non-destructive update of form data when user logs in or profile updates
     useEffect(() => {
         if (isOpen && user) {
-            setFormData(prev => ({
-                name: prev.name || user.displayName || '',
-                email: prev.email || user.email || '',
-                phone: prev.phone || user.phoneNumber?.replace(/^\+\d{2}/, '') || ''
-            }));
+            setFormData(prev => {
+                let phoneVal = prev.phone;
+                if (!phoneVal && user.phoneNumber) {
+                    const cleanPhone = user.phoneNumber.replace(/\D/g, '');
+                    if (cleanPhone.length >= 10) {
+                        phoneVal = cleanPhone.slice(-10);
+                        const cc = user.phoneNumber.replace(phoneVal, '');
+                        if (cc && cc.startsWith('+')) {
+                            setCountryCode(cc);
+                        }
+                    } else {
+                        phoneVal = cleanPhone;
+                    }
+                }
+                return {
+                    name: prev.name || user.displayName || '',
+                    email: prev.email || user.email || '',
+                    phone: phoneVal
+                };
+            });
         }
     }, [user, isOpen]);
+
+    // Sync isPhoneVerified status based on typed phone number and profile number
+    useEffect(() => {
+        if (isOpen && user && user.phoneNumber) {
+            const cleanUserPhone = user.phoneNumber.replace(/\D/g, '');
+            const cleanFormPhone = formData.phone ? formData.phone.replace(/\D/g, '') : '';
+            if (cleanUserPhone && cleanFormPhone && cleanUserPhone.endsWith(cleanFormPhone)) {
+                setIsPhoneVerified(true);
+            } else {
+                setIsPhoneVerified(false);
+            }
+        }
+    }, [user, isOpen, formData.phone]);
 
     const updateCart = (categoryId, delta) => {
         setCart(prev => {
@@ -342,8 +385,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             const cleanPhone = formData.phone.trim().replace(/\D/g, '');
             const phoneNumber = `${countryCode}${cleanPhone}`;
 
-            const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
-            setConfirmationResult(confirmation);
+            const phoneProvider = new PhoneAuthProvider(auth);
+            const verificationId = await phoneProvider.verifyPhoneNumber(
+                phoneNumber,
+                verifier
+            );
+            setConfirmationResult(verificationId);
             setOtpSent(true);
             useStore.getState().addToast("Verification code sent!", 'success');
         } catch (error) {
@@ -372,7 +419,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (!isLocal) {
                 if (!confirmationResult) throw new Error("No verification session found.");
-                await confirmationResult.confirm(fullCode);
+                const credential = PhoneAuthProvider.credential(confirmationResult, fullCode);
+                await linkWithCredential(auth.currentUser, credential);
             }
             
             setIsPhoneVerified(true);
@@ -400,7 +448,30 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
         } catch (error) {
             console.error("Verification error:", error);
-            useStore.getState().addToast("Invalid code. Please double-check and try again.", 'error', 'TKT-OTP-02');
+            if (error.code === 'auth/credential-already-in-use') {
+                setIsPhoneVerified(true);
+                useStore.getState().addToast("Phone verified! (Number linked to another account)", 'success');
+                
+                if (user?.uid) {
+                    const verifiedPhone = `${countryCode}${formData.phone}`;
+                    await useStore.getState().updateUserProfile(user.uid, { phoneNumber: verifiedPhone });
+                }
+
+                setTimeout(() => {
+                    if (activeTab === 'tickets') {
+                        if (currentAmount === 0) {
+                            submitTickets();
+                        } else {
+                            setLockedAmount(currentAmount);
+                            setStep('payment');
+                        }
+                    } else {
+                        submitGuestlist();
+                    }
+                }, 1200);
+            } else {
+                useStore.getState().addToast("Invalid code. Please double-check and try again.", 'error', 'TKT-OTP-02');
+            }
         } finally {
             setVerifying(false);
         }
@@ -949,12 +1020,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] flex flex-col items-center gap-10">
                                                 <div className="text-center">
                                                     <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2">Number of Guests</h4>
-                                                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Maximum 5 per entry</p>
+                                                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Maximum {event?.perUserLimit || 5} per entry</p>
                                                 </div>
                                                 <span className="text-8xl font-black italic tracking-tighter tabular-nums text-neon-pink drop-shadow-[0_0_20px_rgba(255,46,191,0.3)]">{guestCount}</span>
                                                 <div className="flex gap-10">
                                                     <button onClick={() => setGuestCount(g => Math.max(1, g - 1))} className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all"><Minus size={28}/></button>
-                                                    <button onClick={() => setGuestCount(g => Math.min(5, g + 1))} className="w-20 h-20 rounded-full bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"><Plus size={28}/></button>
+                                                    <button onClick={() => setGuestCount(g => Math.min(event?.perUserLimit || 5, g + 1))} className="w-20 h-20 rounded-full bg-neon-pink/10 border border-neon-pink/20 flex items-center justify-center text-neon-pink hover:bg-neon-pink hover:text-black transition-all"><Plus size={28}/></button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -1196,7 +1267,8 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                             <select 
                                                 value={countryCode} 
                                                 onChange={(e) => setCountryCode(e.target.value)} 
-                                                className="w-24 sm:w-36 h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-base sm:text-lg font-bold px-3 outline-none focus:border-neon-blue transition-all"
+                                                disabled={isPhoneVerified}
+                                                className="w-24 sm:w-36 h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-base sm:text-lg font-bold px-3 outline-none focus:border-neon-blue transition-all disabled:opacity-50"
                                             >
                                                 <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
                                                 <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
@@ -1210,12 +1282,28 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                     name="phone" 
                                                     value={formData.phone} 
                                                     onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
+                                                    disabled={isPhoneVerified}
                                                     placeholder="99999 99999" 
-                                                    className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
+                                                    className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue disabled:opacity-70" 
                                                     autoFocus
                                                 />
+                                                {isPhoneVerified && (
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-neon-green text-[9px] font-black tracking-widest bg-neon-green/10 border border-neon-green/20 px-2.5 py-1 rounded-md">
+                                                        <ShieldCheck size={10} /> VERIFIED
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
+                                        
+                                        {isPhoneVerified && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPhoneVerified(false)}
+                                                className="text-xs text-gray-500 hover:text-white font-bold uppercase tracking-widest underline"
+                                            >
+                                                Change Phone Number
+                                            </button>
+                                        )}
                                         
                                         <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
                                             <button 
@@ -1226,14 +1314,36 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                                                 <ChevronLeft size={14} /> Back
                                             </button>
 
-                                            <button
-                                                type="button"
-                                                onClick={handleSendOTP}
-                                                disabled={loading || !formData.phone || formData.phone.length < 10}
-                                                className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
-                                            >
-                                                {loading ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
-                                            </button>
+                                            {isPhoneVerified ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const currentAmount = totalAmount;
+                                                        if (activeTab === 'tickets') {
+                                                            if (currentAmount === 0) {
+                                                                submitTickets();
+                                                            } else {
+                                                                setLockedAmount(currentAmount);
+                                                                setStep('payment');
+                                                            }
+                                                        } else {
+                                                            submitGuestlist();
+                                                        }
+                                                    }}
+                                                    className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-neon-green text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(57,255,20,0.3)] animate-pulse"
+                                                >
+                                                    Continue <ArrowRight size={14} />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSendOTP}
+                                                    disabled={loading || !formData.phone || formData.phone.length < 10}
+                                                    className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
+                                                >
+                                                    {loading ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (

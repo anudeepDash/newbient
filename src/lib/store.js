@@ -630,7 +630,8 @@ export const useStore = create((set, get) => ({
                     createdAt: new Date().toISOString(),
                     isEmbedded: true,
                     eventId: docRef.id,
-                    guestlistMode: event.guestlistMode || 'qr'
+                    guestlistMode: event.guestlistMode || 'qr',
+                    perUserLimit: event.perUserLimit || 5
                 });
             }
         }
@@ -689,14 +690,16 @@ export const useStore = create((set, get) => ({
                     createdAt: new Date().toISOString(),
                     isEmbedded: true,
                     eventId: id,
-                    guestlistMode: updates.guestlistMode || 'qr'
+                    guestlistMode: updates.guestlistMode || 'qr',
+                    perUserLimit: updates.perUserLimit || 5
                 }, { merge: true });
             } else {
                 // Update basic info if it exists
                 await updateDoc(glRef, {
                     title: updates.title,
                     date: updates.date,
-                    guestlistMode: updates.guestlistMode || 'qr'
+                    guestlistMode: updates.guestlistMode || 'qr',
+                    perUserLimit: updates.perUserLimit || 5
                 });
             }
         }
