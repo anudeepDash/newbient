@@ -352,6 +352,27 @@ const TicketingManagement = () => {
     const pendingOrders = eventOrders.filter(o => o.status === 'pending');
     const approvedOrders = eventOrders.filter(o => o.status === 'approved' || o.status === 'dispatched');
 
+    // Calculate Stats for Ticketing Operations
+    const totalTicketPeople = useMemo(() => {
+        return approvedOrders.reduce((acc, order) => {
+            const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
+            const count = Array.isArray(order.items) 
+                ? items.reduce((a, b) => a + (b.count || 0), 0)
+                : items.reduce((a, b) => a + (b || 0), 0);
+            return acc + count;
+        }, 0);
+    }, [approvedOrders]);
+
+    const totalGuestlistPeople = useMemo(() => {
+        return guestlistEntries.reduce((acc, e) => acc + (e.guestsCount || 1), 0);
+    }, [guestlistEntries]);
+
+    const checkedInGuestlistPeople = useMemo(() => {
+        return guestlistEntries.filter(e => e.attended).reduce((acc, e) => acc + (e.guestsCount || 1), 0);
+    }, [guestlistEntries]);
+
+    const totalPeople = totalTicketPeople + totalGuestlistPeople;
+
     const handleApprove = async (orderId) => {
         if(window.confirm('Approve payment? User will be moved to verified queue awaiting dispatch.')) {
             try {
@@ -400,38 +421,106 @@ const TicketingManagement = () => {
         }
     };
 
+    const escapeCSV = (val) => {
+        if (val === undefined || val === null) return '""';
+        let str = String(val);
+        // Escape double quotes by doubling them, and wrap in double quotes
+        return `"${str.replace(/"/g, '""')}"`;
+    };
+
     const downloadSheets = () => {
-        // CSV generation for both tickets and guestlist
+        const hasTickets = event?.isTicketed;
+        const hasGuestlist = event?.isGuestlistEnabled || event?.guestlistEnabled;
+
         if (eventOrders.length === 0 && guestlistEntries.length === 0) {
             useStore.getState().addToast("No data to export.", 'error');
             return;
         }
 
-        const headers = ["Name", "Email", "Type", "Status", "Details", "Booking Ref", "Created At"];
-        const rows = [
-            ...eventOrders.map(o => [
-               o.customerName || o.name,
-               o.customerEmail || o.email,
-               "Ticket",
-               o.status,
-               Array.isArray(o.items) 
-                 ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
-                 : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | '),
-               o.bookingRef,
-               o.createdAt
-            ]),
-            ...guestlistEntries.map(e => [
-               e.customerName || e.name,
-               e.customerEmail || e.email,
-               "Guestlist",
-               e.attended ? "Attended" : "Registered",
-               `${e.guestsCount || 1} Guest(s)`,
-               e.bookingRef,
-               e.createdAt
-            ])
-        ];
+        let headers = [];
+        let rows = [];
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        // Formatting timestamps helper
+        const formatTime = (ts) => {
+            if (!ts) return '';
+            if (typeof ts === 'string') return ts;
+            if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleString();
+            return new Date(ts).toLocaleString();
+        };
+
+        if (hasTickets && !hasGuestlist) {
+            // Ticket-only event layout
+            headers = ["Booking Ref", "Name", "Email", "Phone", "Status", "UTR / Payment Ref", "Amount Paid", "Tickets Purchased", "Purchase Date"];
+            rows = eventOrders.map(o => {
+                const ticketDetails = Array.isArray(o.items) 
+                    ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
+                    : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | ');
+                return [
+                    o.bookingRef || o.id,
+                    o.customerName || o.name || '',
+                    o.customerEmail || o.email || '',
+                    o.customerPhone || o.phone || '',
+                    o.status ? o.status.toUpperCase() : 'PENDING',
+                    o.paymentRef || '',
+                    o.totalAmount !== undefined ? `₹${o.totalAmount}` : '₹0',
+                    ticketDetails,
+                    formatTime(o.createdAt)
+                ];
+            });
+        } else if (!hasTickets && hasGuestlist) {
+            // RSVP/Guestlist-only event layout
+            headers = ["Booking Ref", "Name", "Email", "Phone", "Total Guests", "Attendance Status", "RSVP Date"];
+            rows = guestlistEntries.map(e => [
+                e.bookingRef || e.id,
+                e.customerName || e.name || '',
+                e.customerEmail || e.email || '',
+                e.customerPhone || e.phone || '',
+                e.guestsCount || 1,
+                e.attended ? "ATTENDED" : "REGISTERED",
+                formatTime(e.createdAt)
+            ]);
+        } else {
+            // Hybrid event layout
+            headers = ["Booking Ref", "Type", "Name", "Email", "Phone", "Status / Attendance", "UTR / Payment Ref", "Amount Paid", "Details", "Date"];
+            
+            const ticketRows = eventOrders.map(o => {
+                const ticketDetails = Array.isArray(o.items) 
+                    ? o.items.map(i => `${i.count}x ${i.name}`).join(' | ')
+                    : Object.entries(o.items || {}).map(([k, v]) => `${v}x ${k}`).join(' | ');
+                return [
+                    o.bookingRef || o.id,
+                    "TICKET",
+                    o.customerName || o.name || '',
+                    o.customerEmail || o.email || '',
+                    o.customerPhone || o.phone || '',
+                    o.status ? o.status.toUpperCase() : 'PENDING',
+                    o.paymentRef || '',
+                    o.totalAmount !== undefined ? `₹${o.totalAmount}` : '₹0',
+                    ticketDetails,
+                    formatTime(o.createdAt)
+                ];
+            });
+
+            const guestlistRows = guestlistEntries.map(e => [
+                e.bookingRef || e.id,
+                "GUESTLIST / RSVP",
+                e.customerName || e.name || '',
+                e.customerEmail || e.email || '',
+                e.customerPhone || e.phone || '',
+                e.attended ? "ATTENDED" : "REGISTERED",
+                '-',
+                '-',
+                `${e.guestsCount || 1} Guest(s)`,
+                formatTime(e.createdAt)
+            ]);
+
+            rows = [...ticketRows, ...guestlistRows];
+        }
+
+        const csvContent = [headers, ...rows]
+            .map(row => row.map(escapeCSV).join(","))
+            .join("\n");
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -441,7 +530,7 @@ const TicketingManagement = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        useStore.getState().addToast("Report downloaded!", 'success');
+        useStore.getState().addToast("Report downloaded successfully!", 'success');
     };
 
     const handleUpdateEventPayment = async (e) => {
@@ -513,7 +602,7 @@ const TicketingManagement = () => {
                     <div className="flex flex-wrap gap-2 w-full md:w-auto bg-black/60 p-2 rounded-[2rem] border border-white/5">
                         {['buyers', 'guestlist', 'dispatch', 'attendance', 'coupons', 'sheets', 'settings'].map((tab) => {
                             if (isScanner && (tab === 'buyers' || tab === 'dispatch' || tab === 'guestlist' || tab === 'settings')) return null; 
-                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings')) return null;
+                            if (!event?.isTicketed && (tab === 'buyers' || tab === 'dispatch' || tab === 'settings' || tab === 'coupons')) return null;
                             if (!(event?.isGuestlistEnabled || event?.guestlistEnabled) && tab === 'guestlist') return null;
                             return (
                                 <button
@@ -991,34 +1080,92 @@ const TicketingManagement = () => {
                                         <Download size={20} className="mr-2" /> Download Master CSV
                                     </Button>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    {!isScanner && (
-                                        <div className="bg-black/60 p-8 rounded-3xl border border-white/5">
-                                            <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total Revenue</p>
-                                            <p className="text-4xl font-black text-neon-green italic tracking-tighter">
-                                                ₹{approvedOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    )}
-                                    <div className="bg-black/60 p-8 rounded-3xl border border-white/5">
-                                        <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Tickets Sold</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {/* Total People Card (Always Shown) */}
+                                    <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-neon-green/10 to-neon-blue/10 rounded-full blur-2xl" />
+                                        <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total People</p>
                                         <p className="text-4xl font-black text-white italic tracking-tighter">
-                                            {approvedOrders.reduce((acc, order) => {
-                                                const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
-                                                const count = Array.isArray(order.items) 
-                                                    ? items.reduce((a, b) => a + (b.count || 0), 0)
-                                                    : items.reduce((a, b) => a + (b || 0), 0);
-                                                return acc + count;
-                                            }, 0)}
+                                            {totalPeople}
                                         </p>
-                                    </div>
-                                    {!isScanner && (
-                                        <div className="bg-black/60 p-8 rounded-3xl border border-white/5">
-                                            <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Pending Verification</p>
-                                            <p className="text-4xl font-black text-yellow-500 italic tracking-tighter">
-                                                {pendingOrders.length}
+                                        {(event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                Tickets: <span className="text-white">{totalTicketPeople}</span> | RSVPs: <span className="text-white">{totalGuestlistPeople}</span>
                                             </p>
-                                        </div>
+                                        )}
+                                        {(!event?.isTicketed && (event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                All from Guestlist / RSVP entries
+                                            </p>
+                                        )}
+                                        {(event?.isTicketed && !(event?.isGuestlistEnabled || event?.guestlistEnabled)) && (
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                All from Ticket purchases
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Ticketed Stats */}
+                                    {event?.isTicketed && (
+                                        <>
+                                            {!isScanner && (
+                                                <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Total Revenue</p>
+                                                    <p className="text-4xl font-black text-neon-green italic tracking-tighter">
+                                                        ₹{approvedOrders.reduce((acc, order) => acc + (order.totalAmount || 0), 0).toLocaleString()}
+                                                    </p>
+                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                        From Verified Payments
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Tickets Sold</p>
+                                                <p className="text-4xl font-black text-white italic tracking-tighter">
+                                                    {totalTicketPeople}
+                                                </p>
+                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                    Across {approvedOrders.length} Approved Orders
+                                                </p>
+                                            </div>
+                                            {!isScanner && (
+                                                <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Pending Verification</p>
+                                                    <p className="text-4xl font-black text-yellow-500 italic tracking-tighter">
+                                                        {pendingOrders.length}
+                                                    </p>
+                                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                        Awaiting Admin Approval
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Guestlist/RSVP Stats */}
+                                    {(event?.isGuestlistEnabled || event?.guestlistEnabled) && (
+                                        <>
+                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">
+                                                    {event.guestlistMode === 'rsvp' ? 'RSVP' : 'Guestlist'} Entries
+                                                </p>
+                                                <p className="text-4xl font-black text-neon-pink italic tracking-tighter">
+                                                    {guestlistEntries.length}
+                                                </p>
+                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                    Total registered submissions
+                                                </p>
+                                            </div>
+                                            <div className="bg-black/60 p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-all duration-300">
+                                                <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4">Checked In</p>
+                                                <p className="text-4xl font-black text-neon-blue italic tracking-tighter">
+                                                    {checkedInGuestlistPeople}
+                                                </p>
+                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+                                                    Out of {totalGuestlistPeople} registered guests
+                                                </p>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </Card>
