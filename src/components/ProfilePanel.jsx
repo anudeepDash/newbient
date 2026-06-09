@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, User, Shield, Briefcase, Ticket, LogOut, ExternalLink, Settings, 
@@ -11,12 +11,14 @@ import { useStore } from '../lib/store';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { loginWithMeta } from '../lib/metaSDK';
+import { db } from '../lib/firebase';
+import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 
 const ProfilePanel = ({ isOpen, onClose }) => {
     const { 
         user, logout, creators, artists, addNotification, 
         resetPassword, updateDisplayName, verifyInstagramFollowers, 
-        ticketOrders, notifications, upcomingEvents, portfolio 
+        ticketOrders, notifications, upcomingEvents, portfolio, guestlists 
     } = useStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tickets', 'settings', 'security'
@@ -27,6 +29,34 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const [isEditingPhone, setIsEditingPhone] = useState(false);
     const [ticketSort, setTicketSort] = useState('booking'); // 'booking' or 'event'
     const [ticketFilter, setTicketFilter] = useState('upcoming'); // 'upcoming' or 'past'
+    const [guestlistEntries, setGuestlistEntries] = useState([]);
+    const [loadingEntries, setLoadingEntries] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !user?.uid) return;
+        
+        setLoadingEntries(true);
+        const fetchEntries = async () => {
+            try {
+                const q = query(collectionGroup(db, 'entries'), where('userId', '==', user.uid));
+                const snap = await getDocs(q);
+                const entries = snap.docs.map(doc => {
+                    const guestlistId = doc.ref.parent.parent?.id;
+                    return {
+                        id: doc.id,
+                        guestlistId,
+                        ...doc.data()
+                    };
+                });
+                setGuestlistEntries(entries);
+            } catch (err) {
+                console.error("Failed to fetch guestlist/RSVP entries for profile:", err);
+            } finally {
+                setLoadingEntries(false);
+            }
+        };
+        fetchEntries();
+    }, [isOpen, user?.uid]);
 
     if (!user) return null;
 
@@ -39,18 +69,37 @@ const ProfilePanel = ({ isOpen, onClose }) => {
     const isApprovedArtist = artistProfile?.profileStatus === 'approved';
 
     const allPossibleEvents = [...(upcomingEvents || []), ...(portfolio || [])];
-    const userTickets = (ticketOrders?.filter(order => order.userId === user.uid) || [])
+
+    const mappedGuestlistTickets = guestlistEntries.map(entry => {
+        const event = allPossibleEvents.find(e => e.id === entry.guestlistId);
+        const guestlistDoc = guestlists?.find(g => g.id === entry.guestlistId);
+        return {
+            ...entry,
+            isGuestlist: true,
+            eventId: entry.guestlistId,
+            eventTitle: event?.title || guestlistDoc?.title || entry.title || 'Guestlist Pass',
+            eventDate: event?.date || guestlistDoc?.date || entry.date || null,
+            status: entry.status || 'confirmed'
+        };
+    });
+
+    const mappedTicketOrders = (ticketOrders?.filter(order => order.userId === user.uid) || [])
         .map(order => {
             const event = allPossibleEvents.find(e => e.id === order.eventId);
             return {
                 ...order,
+                isGuestlist: false,
                 eventTitle: order.eventTitle || event?.title || 'Event Pass',
                 eventDate: order.eventDate || event?.date || null
             };
-        })
+        });
+
+    const userTickets = [...mappedTicketOrders, ...mappedGuestlistTickets]
         .filter(ticket => {
+            // Apply restrictions: only show "At the Terminal" and "Jazba Tere Ishq Ka" for regular paid tickets
+            if (ticket.isGuestlist) return true; // Always show guestlists/RSVPs
+            
             const title = (ticket.eventTitle || '').toLowerCase();
-            // Only leave "At the Terminal" and "Jazba Tere Ishq Ka"
             return title.includes('jazba') || title.includes('terminal');
         })
         .filter(ticket => {
@@ -69,11 +118,16 @@ const ProfilePanel = ({ isOpen, onClose }) => {
             if (ticketSort === 'event') {
                 const dateA = a.eventDate ? new Date(a.eventDate) : new Date(0);
                 const dateB = b.eventDate ? new Date(b.eventDate) : new Date(0);
-                return ticketFilter === 'upcoming' ? dateA - dateB : dateB - dateA; // Ascending for upcoming, Descending for past
+                return ticketFilter === 'upcoming' ? dateA - dateB : dateB - dateA;
             } else {
                 // Booking date (createdAt)
-                const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt || 0);
-                const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt || 0);
+                const parseDate = (d) => {
+                    if (!d) return new Date(0);
+                    if (d.seconds) return new Date(d.seconds * 1000);
+                    return new Date(d);
+                };
+                const dateA = parseDate(a.createdAt);
+                const dateB = parseDate(b.createdAt);
                 return dateB - dateA; // Newest booking first
             }
         });
@@ -499,14 +553,27 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                 </div>
                                             </div>
 
-                                            {userTickets.length > 0 ? (
+                                            {loadingEntries ? (
+                                                <div className="flex flex-col items-center justify-center py-20">
+                                                    <Loader2 className="w-8 h-8 text-neon-pink animate-spin" />
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-4">Retrieving Passes...</p>
+                                                </div>
+                                            ) : userTickets.length > 0 ? (
                                                 <div className="grid grid-cols-1 gap-4">
                                                     {userTickets.map((ticket, i) => (
                                                         <div key={i} className="group relative overflow-hidden rounded-[2rem] bg-white/5 border border-white/10 hover:border-neon-pink/30 transition-all p-6">
                                                             <div className="absolute top-0 right-0 w-32 h-32 bg-neon-pink/5 blur-3xl pointer-events-none" />
                                                             <div className="flex items-center gap-6">
                                                                 <div className="w-16 h-16 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center shrink-0">
-                                                                    <ImageIcon size={30} className="text-gray-700" />
+                                                                    {ticket.isGuestlist ? (
+                                                                        ticket.guestlistMode === 'rsvp' ? (
+                                                                            <Check size={26} className="text-neon-blue" />
+                                                                        ) : (
+                                                                            <Ticket size={26} className="text-neon-pink" />
+                                                                        )
+                                                                    ) : (
+                                                                        <Ticket size={26} className="text-neon-green" />
+                                                                    )}
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <h4 className="text-lg font-black text-white uppercase italic truncate">{ticket.eventTitle}</h4>
@@ -519,11 +586,19 @@ const ProfilePanel = ({ isOpen, onClose }) => {
                                                                     </div>
                                                                     <div className="mt-2 flex items-center gap-2">
                                                                         <div className={cn(
-                                                                            "w-1.5 h-1.5 rounded-full",
-                                                                            ticket.status === 'confirmed' || ticket.status === 'dispatched' ? "bg-neon-green" : "bg-yellow-500"
+                                                                            "w-1.5 h-1.5 rounded-full animate-pulse",
+                                                                            ticket.isGuestlist ? (
+                                                                                ticket.guestlistMode === 'rsvp' ? "bg-neon-blue animate-pulse shadow-[0_0_8px_#38b6ff]" : "bg-neon-pink animate-pulse shadow-[0_0_8px_#ff007f]"
+                                                                            ) : (
+                                                                                ticket.status === 'confirmed' || ticket.status === 'dispatched' ? "bg-neon-green animate-pulse shadow-[0_0_8px_#39FF14]" : "bg-yellow-500"
+                                                                            )
                                                                         )} />
-                                                                        <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest">
-                                                                            {ticket.status === 'confirmed' || ticket.status === 'dispatched' ? 'Verified' : 'Pending Verification'}
+                                                                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">
+                                                                            {ticket.isGuestlist ? (
+                                                                                ticket.guestlistMode === 'rsvp' ? "RSVP Confirmed" : "Guestlist Access"
+                                                                            ) : (
+                                                                                ticket.status === 'confirmed' || ticket.status === 'dispatched' ? "Ticket Verified" : "Pending Verification"
+                                                                            )}
                                                                         </span>
                                                                     </div>
                                                                 </div>
