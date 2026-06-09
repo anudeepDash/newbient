@@ -15,6 +15,97 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import html2canvas from 'html2canvas';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
+const OTPVerificationSuccess = () => {
+    return (
+        <div className="relative py-4 flex flex-row items-center justify-start text-left gap-6">
+            <div className="absolute inset-y-0 left-0 w-64 h-full bg-neon-green/5 blur-[60px] pointer-events-none rounded-full" />
+            
+            <div className="relative flex items-center justify-center w-16 h-16 shrink-0">
+                {/* Shockwave Rings */}
+                <motion.div 
+                    initial={{ scale: 0.5, opacity: 1 }}
+                    animate={{ scale: 2.2, opacity: 0 }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+                    className="absolute w-16 h-16 rounded-full border border-neon-green/30"
+                />
+                <motion.div 
+                    initial={{ scale: 0.5, opacity: 0.8 }}
+                    animate={{ scale: 1.6, opacity: 0 }}
+                    transition={{ duration: 1.2, delay: 0.4, repeat: Infinity, ease: "easeOut" }}
+                    className="absolute w-16 h-16 rounded-full border-2 border-neon-green/20"
+                />
+
+                {/* Rotating gear/shield behind check */}
+                <motion.div 
+                    initial={{ rotate: 0 }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute w-14 h-14 border border-dashed border-neon-green/40 rounded-full"
+                />
+
+                {/* Solid core with custom spring-loaded check icon */}
+                <motion.div
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 15 }}
+                    className="relative w-12 h-12 rounded-full bg-[#020202] border border-neon-green flex items-center justify-center shadow-[0_0_30px_rgba(57,255,20,0.3)] z-10"
+                >
+                    <svg className="w-6 h-6 text-neon-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                        <motion.path
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                        />
+                    </svg>
+                </motion.div>
+
+                {/* Floating particle embers */}
+                {[...Array(4)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 0, x: 0, scale: 0.8 }}
+                        animate={{ 
+                            opacity: [0, 1, 0], 
+                            y: -35 - Math.random() * 25, 
+                            x: (Math.random() - 0.5) * 50,
+                            scale: [0.8, 1.2, 0.4] 
+                        }}
+                        transition={{ 
+                            duration: 1.5, 
+                            repeat: Infinity, 
+                            delay: i * 0.35, 
+                            ease: "easeOut" 
+                        }}
+                        className="absolute w-1 h-1 rounded-full bg-neon-green shadow-[0_0_6px_rgba(57,255,20,0.8)]"
+                    />
+                ))}
+            </div>
+
+            <div className="space-y-1 relative z-10">
+                <motion.h4 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-xl font-black font-heading tracking-widest uppercase italic text-neon-green"
+                >
+                    Phone Verified
+                </motion.h4>
+                <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]"
+                >
+                    Verification successful. Proceeding to next step...
+                </motion.p>
+            </div>
+        </div>
+    );
+};
+
 const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => {
     const user = useStore(state => state.user);
     const setAuthModal = useStore(state => state.setAuthModal);
@@ -53,8 +144,12 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
     const [confirmationResult, setConfirmationResult] = useState(null);
     const [countryCode, setCountryCode] = useState('+91');
     const [otpCode, setOtpCode] = useState('');
+    const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
+    const [otpSent, setOtpSent] = useState(false);
+    const [isPhoneVerified, setIsPhoneVerified] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [recaptchaVerifier, setRecaptchaVerifier] = useState(null);
+    const otpRefs = useRef([]);
 
     // Payment state
     const [paymentRef, setPaymentRef] = useState('');
@@ -100,6 +195,9 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             });
             setConfirmationResult(null);
             setOtpCode('');
+            setOtpValues(['', '', '', '', '', '']);
+            setOtpSent(false);
+            setIsPhoneVerified(false);
             setPaymentRef('');
             setAppliedCoupon(null);
             setCouponInput('');
@@ -230,6 +328,14 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
         setLoading(true);
         try {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                setOtpSent(true);
+                useStore.getState().addToast("Local mode: use any 6-digit code to verify.", 'success');
+                setLoading(false);
+                return;
+            }
+
             const verifier = await setupRecaptcha();
             if (!verifier) throw new Error("Verification system failed to initialize.");
 
@@ -238,7 +344,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
 
             const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
             setConfirmationResult(confirmation);
-            setStep('otp');
+            setOtpSent(true);
             useStore.getState().addToast("Verification code sent!", 'success');
         } catch (error) {
             console.error("OTP Error:", error);
@@ -253,33 +359,45 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         }
     };
 
-    const handleVerifyOTP = async () => {
-        if (otpCode.length !== 6 || !confirmationResult) return;
-        setVerifying(true);
+    const handleVerifyOTP = async (codeToVerify) => {
+        const fullCode = typeof codeToVerify === 'string' ? codeToVerify : otpValues.join('');
+        if (fullCode.length !== 6) {
+            return useStore.getState().addToast("Please enter the 6-digit verification code.", 'error');
+        }
         
-        // Capture totalAmount before await to ensure we use the correct value 
-        // even if a re-render/store-update happens during verification
+        setVerifying(true);
         const currentAmount = totalAmount;
 
         try {
-            await confirmationResult.confirm(otpCode);
-            useStore.getState().addToast("Phone verified!", 'success');
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (!isLocal) {
+                if (!confirmationResult) throw new Error("No verification session found.");
+                await confirmationResult.confirm(fullCode);
+            }
+            
+            setIsPhoneVerified(true);
+            useStore.getState().addToast("Phone verified successfully!", 'success');
             
             // Save phone to profile if user exists
             if (user?.uid) {
                 const verifiedPhone = `${countryCode}${formData.phone}`;
                 await useStore.getState().updateUserProfile(user.uid, { phoneNumber: verifiedPhone });
             }
-            
-            if (activeTab === 'tickets') {
-                if (currentAmount === 0) submitTickets();
-                else {
-                    setLockedAmount(currentAmount); // Lock the price
-                    setStep('payment');
+
+            // Auto-advance after showing success screen briefly
+            setTimeout(() => {
+                if (activeTab === 'tickets') {
+                    if (currentAmount === 0) {
+                        submitTickets();
+                    } else {
+                        setLockedAmount(currentAmount); // Lock the price
+                        setStep('payment');
+                    }
+                } else {
+                    submitGuestlist();
                 }
-            } else {
-                submitGuestlist();
-            }
+            }, 1200);
+
         } catch (error) {
             console.error("Verification error:", error);
             useStore.getState().addToast("Invalid code. Please double-check and try again.", 'error', 'TKT-OTP-02');
@@ -287,6 +405,91 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             setVerifying(false);
         }
     };
+
+    const handleOtpChange = (val, idx) => {
+        if (isNaN(val)) return;
+        const newOtp = [...otpValues];
+        newOtp[idx] = val;
+        setOtpValues(newOtp);
+        
+        // Autotab forward
+        if (val !== '' && idx < 5) {
+            otpRefs.current[idx + 1]?.focus();
+        }
+
+        // Auto verify when 6 digits are filled
+        if (val !== '' && newOtp.every(digit => digit !== '')) {
+            handleVerifyOTP(newOtp.join(''));
+        }
+    };
+
+    const handleOtpKeyDown = (e, idx) => {
+        if (e.key === 'Backspace') {
+            if (otpValues[idx] === '' && idx > 0) {
+                otpRefs.current[idx - 1]?.focus();
+                const newOtp = [...otpValues];
+                newOtp[idx - 1] = '';
+                setOtpValues(newOtp);
+            } else {
+                const newOtp = [...otpValues];
+                newOtp[idx] = '';
+                setOtpValues(newOtp);
+            }
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text').trim();
+        if (pasteData.length === 6 && !isNaN(pasteData)) {
+            const digits = pasteData.split('');
+            setOtpValues(digits);
+            otpRefs.current[5]?.focus();
+            handleVerifyOTP(pasteData);
+        }
+    };
+
+    const progressPercent = useMemo(() => {
+        switch (step) {
+            case 'map': return 10;
+            case 'selection': return 25;
+            case 'identity-name': return 45;
+            case 'identity-email': return 65;
+            case 'identity-phone': return 85;
+            case 'payment': return 95;
+            case 'success': return 100;
+            default: return 0;
+        }
+    }, [step]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Enter') {
+                if (step === 'identity-name') {
+                    e.preventDefault();
+                    if (formData.name.trim()) setStep('identity-email');
+                } else if (step === 'identity-email') {
+                    e.preventDefault();
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (emailRegex.test(formData.email.trim())) setStep('identity-phone');
+                } else if (step === 'identity-phone') {
+                    e.preventDefault();
+                    if (!isPhoneVerified) {
+                        if (otpSent) {
+                            handleVerifyOTP();
+                        } else {
+                            if (formData.phone && formData.phone.length >= 10) {
+                                handleSendOTP();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [step, formData, otpSent, otpValues, isPhoneVerified, countryCode]);
 
     const submitGuestlist = async () => {
         setLoading(true);
@@ -432,7 +635,20 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                 backgroundColor: '#000000',
                 scale: 2,
                 useCORS: true,
-                logging: false
+                logging: false,
+                onclone: (clonedDoc) => {
+                    const clonedSurface = clonedDoc.getElementById('ticket-download-surface');
+                    if (clonedSurface) {
+                        clonedSurface.style.backdropFilter = 'none';
+                        clonedSurface.style.webkitBackdropFilter = 'none';
+                        const parent = clonedSurface.parentElement;
+                        if (parent) {
+                            parent.style.position = 'relative';
+                            parent.style.left = '0';
+                            parent.style.top = '0';
+                        }
+                    }
+                }
             });
             const link = document.createElement('a');
             link.download = `NEWBI_PASS_${bookingRef}.png`;
@@ -461,12 +677,7 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
             if (activeTab === 'tickets' && cartTotalCount === 0 && hasCategories) {
                 return useStore.getState().addToast("Please select at least one ticket to continue.", 'error', 'TKT-VAL-02');
             }
-            setStep('identity');
-        } else if (step === 'identity') {
-            if (!formData.name || !formData.phone || formData.phone.length < 10) {
-                return useStore.getState().addToast("Please provide your name and a valid phone number.", 'error', 'TKT-VAL-03');
-            }
-            handleSendOTP();
+            setStep('identity-name');
         }
     };
 
@@ -474,9 +685,20 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
         if (step === 'selection') {
             if (hasLayout && activeTab === 'tickets') setStep('map');
         }
-        else if (step === 'identity') setStep('selection');
-        else if (step === 'otp') setStep('identity');
-        else if (step === 'payment') setStep('identity');
+        else if (step === 'identity-name') setStep('selection');
+        else if (step === 'identity-email') setStep('identity-name');
+        else if (step === 'identity-phone') {
+            setStep('identity-email');
+            setOtpSent(false);
+            setOtpValues(['','','','','','']);
+            setIsPhoneVerified(false);
+        }
+        else if (step === 'payment') {
+            setStep('identity-phone');
+            setOtpSent(false);
+            setOtpValues(['','','','','','']);
+            setIsPhoneVerified(false);
+        }
     };
 
     const modalContent = (
@@ -548,6 +770,16 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                     "flex-1 overflow-y-auto p-4 md:p-12 scrollbar-hide",
                     isEmbedded && "pt-12 md:pt-16"
                 )}>
+                    {step !== 'success' && (
+                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-12 shrink-0">
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPercent}%` }}
+                                transition={{ duration: 0.3 }}
+                                className="h-full bg-gradient-to-r from-neon-blue to-neon-pink"
+                            />
+                        </div>
+                    )}
                     <AnimatePresence mode="wait">
                         {step === 'map' && (
                             <motion.div key="map" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full flex flex-col">
@@ -831,86 +1063,235 @@ const EventTicketingModal = ({ isOpen, onClose, event, isEmbedded = false }) => 
                             </motion.div>
                         )}
 
-                        {step === 'identity' && (
-                            <motion.div key="identity" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col h-full">
-                                <div className="space-y-2 mb-6">
-                                    <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all mb-2">
-                                        <ChevronLeft size={14} /> Back to Selection
-                                    </button>
-                                    <h3 className="text-2xl md:text-4xl font-black font-heading text-white italic uppercase tracking-tighter">Your Details</h3>
-                                    <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest italic whitespace-nowrap">Provide your information for identity verification.</p>
+                        {step === 'identity-name' && (
+                            <motion.div 
+                                key="identity-name" 
+                                initial={{ opacity: 0, y: 30 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0, y: -30 }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                                className="flex flex-col justify-center h-full space-y-8"
+                            >
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 1 OF 3</span>
+                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
+                                        What is your full name?
+                                    </h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Stage or Legal Name for the pass</p>
                                 </div>
-
-                                <div className="space-y-4 flex-1">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">FULL NAME</p>
-                                            <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-16 bg-white/5 border-white/10 text-sm rounded-2xl" placeholder="NAME" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">EMAIL ADDRESS</p>
-                                            <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-16 bg-white/5 border-white/10 text-sm rounded-2xl" placeholder="EMAIL" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">PHONE NUMBER</p>
-                                        <div className="flex gap-4">
-                                            <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="w-28 h-16 bg-white/5 border border-white/10 rounded-2xl text-white text-sm px-3 outline-none focus:border-neon-blue transition-all">
-                                                <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
-                                                <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
-                                                <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
-                                            </select>
-                                            <Input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-16 bg-white/5 border-white/10 flex-1 text-sm rounded-2xl" placeholder="PHONE" />
-                                        </div>
-                                    </div>
+                                <div className="relative">
+                                    <Input 
+                                        name="name" 
+                                        value={formData.name} 
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                                        placeholder="Full Name" 
+                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
+                                        autoFocus
+                                    />
+                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
                                 </div>
-
-                                <div className="mt-8 mb-4">
-                                    <Button 
-                                        onClick={handleNext} 
-                                        disabled={loading || !formData.name || !formData.phone}
-                                        className="w-full h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-2xl md:rounded-3xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                                
+                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                    <button 
+                                        type="button" 
+                                        onClick={handleBack} 
+                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
                                     >
-                                        {loading ? <LoadingSpinner size="xs" color="#000000" /> : 'VERIFY & CONTINUE'}
-                                        <ArrowRight size={20} />
-                                    </Button>
+                                        <ChevronLeft size={14} /> Back
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!formData.name.trim()) {
+                                                return useStore.getState().addToast("Please enter your full name.", 'error');
+                                            }
+                                            setStep('identity-email');
+                                        }}
+                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                                    >
+                                        Continue <ArrowRight size={14} />
+                                    </button>
                                 </div>
                             </motion.div>
                         )}
 
-                        {step === 'otp' && (
-                            <motion.div key="otp_verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-col items-center justify-center h-full max-w-md mx-auto space-y-12">
-                                <div className="text-center space-y-4">
-                                    <div className="w-20 h-20 bg-neon-blue/10 border border-neon-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <Lock size={32} className="text-neon-blue" />
-                                    </div>
-                                    <h3 className="text-2xl md:text-4xl font-black font-heading italic uppercase text-white tracking-tighter">Verify Phone</h3>
-                                    <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest italic">Enter the 6-digit code sent to your phone to confirm your identity.</p>
+                        {step === 'identity-email' && (
+                            <motion.div 
+                                key="identity-email" 
+                                initial={{ opacity: 0, y: 30 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0, y: -30 }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                                className="flex flex-col justify-center h-full space-y-8"
+                            >
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 2 OF 3</span>
+                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
+                                        What is your email address?
+                                    </h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">We will send your ticket confirmation here</p>
                                 </div>
-                                <div className="w-full space-y-8">
+                                <div className="relative">
                                     <Input 
-                                        type="text" 
-                                        maxLength={6} 
-                                        value={otpCode} 
-                                        onChange={e => {
-                                            const val = e.target.value.replace(/[^0-9]/g, '');
-                                            setOtpCode(val);
-                                        }} 
-                                        className="h-24 bg-white/5 border-white/10 text-center text-5xl font-black tracking-[0.5em] rounded-[2rem] focus:border-neon-blue focus:shadow-[0_0_30px_rgba(46,191,255,0.2)] transition-all" 
-                                        placeholder="000000" 
+                                        type="email"
+                                        name="email" 
+                                        value={formData.email} 
+                                        onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                                        placeholder="email@example.com" 
+                                        className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
+                                        autoFocus
                                     />
-                                    <div className="flex flex-col gap-4">
-                                        <Button onClick={handleVerifyOTP} disabled={verifying || otpCode.length !== 6} className="h-16 md:h-20 bg-neon-blue text-black font-black uppercase tracking-[0.2em] text-[10px] md:text-xs rounded-2xl md:rounded-3xl">
-                                            {verifying ? <LoadingSpinner size="xs" color="#000000" /> : 'VERIFY CODE'}
-                                        </Button>
-                                        <button 
-                                            onClick={() => { setStep('identity'); setConfirmationResult(null); setOtpCode(''); }} 
-                                            className="text-[10px] font-black text-gray-600 hover:text-white uppercase tracking-[0.2em] transition-all"
-                                        >
-                                            Change Number
-                                        </button>
-                                    </div>
+                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">press Enter ↵</span>
                                 </div>
+                                
+                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                    <button 
+                                        type="button" 
+                                        onClick={handleBack} 
+                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                    >
+                                        <ChevronLeft size={14} /> Back
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                            if (!emailRegex.test(formData.email.trim())) {
+                                                return useStore.getState().addToast("Please enter a valid email address.", 'error');
+                                            }
+                                            setStep('identity-phone');
+                                        }}
+                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                                    >
+                                        Continue <ArrowRight size={14} />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 'identity-phone' && (
+                            <motion.div 
+                                key="identity-phone" 
+                                initial={{ opacity: 0, y: 30 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0, y: -30 }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                                className="flex flex-col justify-center h-full space-y-8"
+                            >
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">STEP 3 OF 3</span>
+                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight">
+                                        {!otpSent ? "What is your contact number?" : "Verify Phone"}
+                                    </h3>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        {!otpSent ? "We will verify this number via SMS OTP" : `Enter the code sent to ${countryCode} ${formData.phone}`}
+                                    </p>
+                                </div>
+
+                                {!otpSent ? (
+                                    <div className="space-y-6">
+                                        <div className="flex gap-4">
+                                            <select 
+                                                value={countryCode} 
+                                                onChange={(e) => setCountryCode(e.target.value)} 
+                                                className="w-24 sm:w-36 h-16 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-base sm:text-lg font-bold px-3 outline-none focus:border-neon-blue transition-all"
+                                            >
+                                                <option value="+91" className="bg-zinc-900">🇮🇳 +91</option>
+                                                <option value="+1" className="bg-zinc-900">🇺🇸 +1</option>
+                                                <option value="+44" className="bg-zinc-900">🇬🇧 +44</option>
+                                                <option value="+971" className="bg-zinc-900">🇦🇪 +971</option>
+                                                <option value="+61" className="bg-zinc-900">🇦🇺 +61</option>
+                                            </select>
+                                            <div className="relative flex-1">
+                                                <Input 
+                                                    type="tel"
+                                                    name="phone" 
+                                                    value={formData.phone} 
+                                                    onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })} 
+                                                    placeholder="99999 99999" 
+                                                    className="h-16 sm:h-20 bg-white/[0.02] border-white/10 rounded-2xl text-lg sm:text-xl font-bold px-6 sm:px-8 focus:border-neon-blue" 
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                            <button 
+                                                type="button" 
+                                                onClick={handleBack} 
+                                                className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+                                            >
+                                                <ChevronLeft size={14} /> Back
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={handleSendOTP}
+                                                disabled={loading || !formData.phone || formData.phone.length < 10}
+                                                className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-white text-black hover:bg-neon-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-30 disabled:pointer-events-none"
+                                            >
+                                                {loading ? <LoadingSpinner size="xs" color="black" /> : 'Send OTP'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {isPhoneVerified ? (
+                                            <OTPVerificationSuccess />
+                                        ) : (
+                                            <div className="flex flex-col gap-6">
+                                                <div className="relative flex gap-1.5 sm:gap-3 p-1">
+                                                    {verifying && (
+                                                        <motion.div 
+                                                            initial={{ top: '0%' }}
+                                                            animate={{ top: ['0%', '100%', '0%'] }}
+                                                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                                            className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-neon-pink to-transparent shadow-[0_0_12px_rgba(255,0,127,0.8)] z-20 pointer-events-none"
+                                                        />
+                                                    )}
+                                                    {otpValues.map((digit, idx) => (
+                                                        <input
+                                                            key={idx}
+                                                            ref={el => otpRefs.current[idx] = el}
+                                                            type="text"
+                                                            maxLength={1}
+                                                            value={digit}
+                                                            disabled={verifying}
+                                                            onChange={e => handleOtpChange(e.target.value, idx)}
+                                                            onKeyDown={e => handleOtpKeyDown(e, idx)}
+                                                            onPaste={handleOtpPaste}
+                                                            className={cn(
+                                                                "w-9 h-12 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-white/[0.02] border-2 rounded-xl sm:rounded-2xl text-center text-lg sm:text-2xl font-black text-white focus:border-neon-blue focus:shadow-[0_0_25px_rgba(0,240,255,0.2)] focus:outline-none transition-all",
+                                                                verifying ? "border-neon-pink/40 animate-pulse" : "border-white/10"
+                                                            )}
+                                                            autoFocus={idx === 0}
+                                                        />
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex justify-between items-center pt-8 border-t border-white/5 shrink-0 select-none">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setOtpSent(false); setOtpValues(['','','','','','']); }}
+                                                        className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.3em]"
+                                                    >
+                                                        Back / Resend
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVerifyOTP()}
+                                                        disabled={verifying || otpValues.join('').length !== 6}
+                                                        className="h-16 px-10 rounded-2xl text-[10px] font-black font-heading uppercase tracking-[0.2em] bg-neon-pink text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                                                    >
+                                                        {verifying ? <LoadingSpinner size="xs" color="black" /> : 'Confirm Code'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </motion.div>
                         )}
 

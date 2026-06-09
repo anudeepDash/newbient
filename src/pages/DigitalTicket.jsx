@@ -58,14 +58,36 @@ const DigitalTicket = () => {
                 }
 
                 // Fetch event details
-                if (fetchedData.eventId) {
-                    const eventDoc = await getDoc(doc(db, 'upcoming_events', fetchedData.eventId));
+                let eventOrGuestlistId = fetchedData.eventId || fetchedData.guestlistId;
+                if (!eventOrGuestlistId && typeof entriesSnapshot !== 'undefined' && !entriesSnapshot.empty) {
+                    try {
+                        eventOrGuestlistId = entriesSnapshot.docs[0].ref.parent.parent.id;
+                    } catch (e) {
+                        console.error("Failed to extract parent doc ID:", e);
+                    }
+                }
+
+                if (eventOrGuestlistId) {
+                    // 1. Try to fetch from upcoming_events
+                    const eventDoc = await getDoc(doc(db, 'upcoming_events', eventOrGuestlistId));
                     if (eventDoc.exists()) {
                         const eventData = eventDoc.data();
                         fetchedData.eventDate = eventData.date;
                         fetchedData.eventLocation = eventData.location;
                         fetchedData.eventTime = eventData.time;
                         fetchedData.guestlistMode = eventData.guestlistMode || fetchedData.guestlistMode || 'qr';
+                        fetchedData.eventTitle = eventData.title || fetchedData.title;
+                    } else {
+                        // 2. Try to fetch from guestlists (for standalone guestlists)
+                        const guestlistDoc = await getDoc(doc(db, 'guestlists', eventOrGuestlistId));
+                        if (guestlistDoc.exists()) {
+                            const glData = guestlistDoc.data();
+                            fetchedData.eventDate = glData.date;
+                            fetchedData.eventLocation = glData.location;
+                            fetchedData.eventTime = glData.time;
+                            fetchedData.guestlistMode = glData.guestlistMode || glData.guestlistMode || 'qr';
+                            fetchedData.eventTitle = glData.title || fetchedData.title;
+                        }
                     }
                 }
 
@@ -95,7 +117,11 @@ const DigitalTicket = () => {
         );
     }
 
-    const { type, status, customerName, eventTitle, eventDate, eventLocation, eventTime, items, guestsCount } = ticketData;
+    const { type, status, customerName, items, guestsCount } = ticketData;
+    const eventTitle = ticketData.eventTitle || ticketData.title || 'Event';
+    const eventDate = ticketData.eventDate || ticketData.date;
+    const eventLocation = ticketData.eventLocation || ticketData.location;
+    const eventTime = ticketData.eventTime || '';
     
     // For paid tickets, check if verified
     const isVerified = type === 'guestlist' ? true : status === 'approved' || status === 'dispatched';
@@ -113,7 +139,15 @@ const DigitalTicket = () => {
                 scale: 3,
                 useCORS: true,
                 backgroundColor: '#020202',
-                logging: false
+                logging: false,
+                onclone: (clonedDoc) => {
+                    const clonedCard = clonedDoc.getElementById('digital-pass-card');
+                    if (clonedCard) {
+                        clonedCard.style.backdropFilter = 'none';
+                        clonedCard.style.webkitBackdropFilter = 'none';
+                        clonedCard.style.background = '#18181b'; // solid dark background
+                    }
+                }
             });
             
             const image = canvas.toDataURL("image/png");
