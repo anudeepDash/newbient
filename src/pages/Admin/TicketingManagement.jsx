@@ -436,22 +436,7 @@ const TicketingManagement = () => {
             .replace(/'/g, '&#039;');
     };
 
-    const getBase64Image = async (url) => {
-        try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) {
-            console.error("Failed to load logo", e);
-            return null;
-        }
-    };
-
-    const downloadSheets = async () => {
+    const downloadSheets = () => {
         const hasTickets = event?.isTicketed;
         const hasGuestlist = event?.isGuestlistEnabled || event?.guestlistEnabled;
 
@@ -460,18 +445,22 @@ const TicketingManagement = () => {
             return;
         }
 
-        // Fetch logo as base64
-        const logoBase64 = await getBase64Image('/logo_full.png');
-
         let headers = [];
         let rows = [];
 
         // Formatting timestamps helper
         const formatTime = (ts) => {
             if (!ts) return '';
-            if (typeof ts === 'string') return ts;
-            if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleString();
-            return new Date(ts).toLocaleString();
+            let dateVal;
+            if (ts.seconds) {
+                dateVal = new Date(ts.seconds * 1000);
+            } else {
+                dateVal = new Date(ts);
+            }
+            if (!isNaN(dateVal.getTime())) {
+                return dateVal.toLocaleString();
+            }
+            return String(ts);
         };
 
         if (hasTickets && !hasGuestlist) {
@@ -547,6 +536,26 @@ const TicketingManagement = () => {
         const eventTitle = event?.title || 'Event';
         const formattedDate = new Date().toLocaleString();
 
+        const getColWidth = (header) => {
+            switch (header) {
+                case "Booking Ref": return "140";
+                case "Name": return "200";
+                case "Email": return "250";
+                case "Phone": return "150";
+                case "Status":
+                case "Attendance Status":
+                case "Status / Attendance": return "150";
+                case "UTR / Payment Ref": return "180";
+                case "Amount Paid": return "120";
+                case "Tickets Purchased":
+                case "Details": return "300";
+                case "Purchase Date":
+                case "RSVP Date":
+                case "Date": return "180";
+                default: return "120";
+            }
+        };
+
         let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
@@ -567,12 +576,14 @@ const TicketingManagement = () => {
         <![endif]-->
         <style>
           body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; font-style: italic; text-align: left; height: 50px; vertical-align: middle; }
+          .title-row { background-color: #0A0A0A; color: #FFFFFF; font-size: 16pt; font-weight: bold; text-align: left; height: 50px; vertical-align: middle; }
           .subtitle-row { background-color: #0A0A0A; color: #00FF66; font-size: 10pt; font-weight: bold; text-align: left; height: 25px; vertical-align: middle; }
           .info-row { background-color: #0A0A0A; color: #888888; font-size: 9pt; text-align: left; height: 20px; vertical-align: middle; }
-          .header-cell { background-color: #1A1A1A; color: #FFFFFF; font-size: 10pt; font-weight: bold; border: 1px solid #333333; height: 35px; text-align: left; vertical-align: middle; padding: 5px; }
-          .data-cell { font-size: 10pt; border: 1px solid #E2E8F0; height: 25px; vertical-align: middle; padding: 5px; color: #1A202C; }
+          .header-cell { background-color: #1A1A1A; color: #FFFFFF; font-size: 10pt; font-weight: bold; border: 1px solid #333333; height: 35px; text-align: left; vertical-align: middle; padding: 8px 10px; }
+          .data-cell { font-size: 10pt; border: 1px solid #E2E8F0; height: 28px; vertical-align: middle; padding: 6px 10px; color: #1A202C; }
           .zebra-cell { background-color: #F7FAFC; }
+          .phone-cell { mso-number-format: "\\@"; text-align: left; }
+          .text-cell { mso-number-format: "\\@"; }
           .badge-verified { background-color: #DEF7EC; color: #03543F; font-weight: bold; text-align: center; }
           .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
           .badge-dispatched { background-color: #E0F2FE; color: #0369A1; font-weight: bold; text-align: center; }
@@ -586,7 +597,7 @@ const TicketingManagement = () => {
           <!-- Branded Banner Header -->
           <tr>
             <td colspan="${colCount}" class="title-row" style="height: 60px; padding: 10px;">
-              ${logoBase64 ? `<img src="${logoBase64}" height="40" style="vertical-align: middle;">` : `&nbsp;&nbsp;NEWBI ENTERTAINMENTS`}
+              <img src="https://newbi.live/logo_full.png" height="40" style="vertical-align: middle;">
             </td>
           </tr>
           <tr>
@@ -601,7 +612,7 @@ const TicketingManagement = () => {
           </tr>
           <!-- Table Headers -->
           <tr>
-            ${headers.map(h => `<th class="header-cell">${escapeHTML(h)}</th>`).join('')}
+            ${headers.map(h => `<th class="header-cell" width="${getColWidth(h)}">${escapeHTML(h)}</th>`).join('')}
           </tr>
           <!-- Table Data -->
           ${rows.map((row, rIdx) => {
@@ -626,6 +637,13 @@ const TicketingManagement = () => {
                       // Align currency and numbers
                       if (headerName === "Amount Paid" || headerName === "Total Guests") {
                           cellClass += " number-cell";
+                      }
+
+                      // Handle text formatting to avoid scientific notation
+                      if (headerName === "Phone") {
+                          cellClass += " phone-cell";
+                      } else if (headerName === "Booking Ref" || headerName === "UTR / Payment Ref") {
+                          cellClass += " text-cell";
                       }
 
                       return `<td class="${cellClass}">${escapeHTML(cell)}</td>`;
