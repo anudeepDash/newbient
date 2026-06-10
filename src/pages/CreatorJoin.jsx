@@ -12,6 +12,8 @@ import Instagram from 'lucide-react/dist/esm/icons/instagram';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Camera from 'lucide-react/dist/esm/icons/camera';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import Upload from 'lucide-react/dist/esm/icons/upload';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
@@ -294,10 +296,13 @@ const CreatorJoin = () => {
         customNiche: '',
         collegeName: '',
         bio: '',
+        primaryPlatform: 'instagram',
         instagram: '',
         instagramFollowers: '',
         youtube: '',
         twitter: '',
+        linkedin: '',
+        linkedinFollowers: '',
         portfolioInfo: '',
         profilePicture: '',
         referredBy: ''
@@ -556,8 +561,11 @@ const CreatorJoin = () => {
         { id: 'city', label: 'Operating City', type: 'city', field: 'city', description: 'Which city are you from?', required: true },
         { id: 'categories', label: 'Content Niche', type: 'niche', field: 'categories', description: 'What is your content niche?', required: true },
         { id: 'collegeName', label: 'College / University Name', type: 'college', field: 'collegeName', placeholder: 'e.g. Delhi University, IIT', description: 'Which college do you study in?', required: (data) => data.categories === 'Student/ Campus Creator' || data.categories === 'Student Creator/ Campus Creator' || data.categories === 'College Pages' },
-        { id: 'instagram', label: 'Instagram Handle', type: 'text', field: 'instagram', placeholder: '@yourhandle', description: 'What is your Instagram handle?', required: true },
-        { id: 'instagramFollowers', label: 'Instagram Followers', type: 'number', field: 'instagramFollowers', placeholder: 'e.g. 5000', description: 'How many Instagram followers do you have?', required: true },
+        { id: 'primaryPlatform', label: 'Primary Platform', type: 'platform_choice', field: 'primaryPlatform', description: 'What is your primary platform?', required: true },
+        { id: 'instagram', label: 'Instagram Handle', type: 'text', field: 'instagram', placeholder: '@yourhandle', description: 'What is your Instagram handle?', required: true, conditional: (data) => data.primaryPlatform === 'instagram' || data.primaryPlatform === 'both' },
+        { id: 'instagramFollowers', label: 'Instagram Followers', type: 'number', field: 'instagramFollowers', placeholder: 'e.g. 5000', description: 'How many Instagram followers do you have?', required: true, conditional: (data) => data.primaryPlatform === 'instagram' || data.primaryPlatform === 'both' },
+        { id: 'linkedin', label: 'LinkedIn Profile URL', type: 'text', field: 'linkedin', placeholder: 'https://linkedin.com/in/username', description: 'What is your LinkedIn Profile link?', required: true, conditional: (data) => data.primaryPlatform === 'linkedin' || data.primaryPlatform === 'both' },
+        { id: 'linkedinFollowers', label: 'LinkedIn Connections', type: 'number', field: 'linkedinFollowers', placeholder: 'e.g. 500', description: 'How many LinkedIn connections/followers do you have?', required: true, conditional: (data) => data.primaryPlatform === 'linkedin' || data.primaryPlatform === 'both' },
         { id: 'youtube', label: 'YouTube URL', type: 'text', field: 'youtube', placeholder: 'Channel URL (Optional)', description: 'What is your YouTube channel link? (Optional)', required: false },
         { id: 'twitter', label: 'X / Website URL', type: 'text', field: 'twitter', placeholder: 'X handle or link (Optional)', description: 'What is your Twitter/X or website link? (Optional)', required: false },
         { id: 'bio', label: 'Professional Bio', type: 'textarea', field: 'bio', placeholder: 'Describe your content niche and why brands should collaborate with you...', description: 'Tell us about yourself (Bio)', required: true },
@@ -595,6 +603,11 @@ const CreatorJoin = () => {
                     return "Please enter only the Instagram username/handle, not a full link.";
                 }
             }
+            if (q.field === 'linkedin') {
+                if (val && !val.includes('linkedin.com/')) {
+                    return "Please enter a valid LinkedIn Profile URL.";
+                }
+            }
             if (!val || (typeof val === 'string' && val.trim() === '')) {
                 return `${q.label} is required.`;
             }
@@ -605,8 +618,8 @@ const CreatorJoin = () => {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(val)) return "Please enter a valid email address.";
             }
-            if (q.field === 'instagramFollowers' && Number(val) < 0) {
-                return "Followers count cannot be negative.";
+            if ((q.field === 'instagramFollowers' || q.field === 'linkedinFollowers') && Number(val) < 0) {
+                return "Followers/Connections count cannot be negative.";
             }
         }
         return null;
@@ -665,7 +678,8 @@ const CreatorJoin = () => {
         try {
             const finalCity = formData.city === 'Others' ? formData.customCity : formData.city;
             const finalNiche = formData.categories === 'Others' ? formData.customNiche : formData.categories;
-            const cleanInstagram = formData.instagram.trim().replace(/^@/, '');
+            const cleanInstagram = formData.instagram ? formData.instagram.trim().replace(/^@/, '') : '';
+            const cleanLinkedin = formData.linkedin ? formData.linkedin.trim() : '';
 
             await addCreator({
                 uid: user.uid,
@@ -674,6 +688,7 @@ const CreatorJoin = () => {
                 profileStatus: 'pending',
                 ...formData,
                 instagram: cleanInstagram,
+                linkedin: cleanLinkedin,
                 city: finalCity,
                 categories: finalNiche,
                 specializations: [finalNiche],
@@ -1123,6 +1138,31 @@ const CreatorJoin = () => {
                                             </div>
                                         )}
 
+                                        {currentQuestion.type === 'platform_choice' && (
+                                            <div className="space-y-6 w-full">
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
+                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
+                                                        {currentQuestion.description}
+                                                    </h3>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <CustomSelect
+                                                        value={formData[currentQuestion.field]}
+                                                        onChange={handleChange}
+                                                        options={[
+                                                            { value: 'instagram', label: 'Instagram' },
+                                                            { value: 'linkedin', label: 'LinkedIn' },
+                                                            { value: 'both', label: 'Both Instagram & LinkedIn' }
+                                                        ]}
+                                                        name={currentQuestion.field}
+                                                        placeholder="Select Primary Platform"
+                                                        icon={Globe}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {currentQuestion.type === 'textarea' && (
                                             <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
@@ -1220,10 +1260,18 @@ const CreatorJoin = () => {
                                                             <p className="font-bold text-white text-base truncate">{formData.collegeName}</p>
                                                         </div>
                                                     )}
-                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
-                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
-                                                        <p className="font-bold text-neon-pink text-base truncate">{formData.instagram} ({Number(formData.instagramFollowers).toLocaleString()} followers)</p>
-                                                    </div>
+                                                    {(formData.primaryPlatform === 'instagram' || formData.primaryPlatform === 'both') && formData.instagram && (
+                                                        <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
+                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Instagram</p>
+                                                            <p className="font-bold text-neon-pink text-base truncate">{formData.instagram} ({Number(formData.instagramFollowers || 0).toLocaleString()} followers)</p>
+                                                        </div>
+                                                    )}
+                                                    {(formData.primaryPlatform === 'linkedin' || formData.primaryPlatform === 'both') && formData.linkedin && (
+                                                        <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
+                                                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">LinkedIn</p>
+                                                            <p className="font-bold text-neon-blue text-base truncate">{formData.linkedin} ({Number(formData.linkedinFollowers || 0).toLocaleString()} connections)</p>
+                                                        </div>
+                                                    )}
                                                     {(() => {
                                                         if (!formData.referredBy) return null;
                                                         const referrer = creators.find(c => 

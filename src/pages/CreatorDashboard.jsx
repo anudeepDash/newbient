@@ -26,6 +26,7 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
 import Twitter from 'lucide-react/dist/esm/icons/twitter';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
 import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Copy from 'lucide-react/dist/esm/icons/copy';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
@@ -61,6 +62,7 @@ const TASK_TYPES = {
 
 const PLATFORMS = {
     instagram: { label: 'Instagram', icon: Instagram },
+    linkedin: { label: 'LinkedIn', icon: Linkedin },
     youtube: { label: 'YouTube', icon: Youtube },
     twitter: { label: 'Twitter / X', icon: Twitter },
     other: { label: 'Other', icon: Globe },
@@ -670,7 +672,8 @@ const CreatorReferralsView = ({ profile }) => {
     const myReferrals = creators.filter(c => 
         c.referredBy === profile.uid || 
         (profile.creatorId && c.referredBy && c.referredBy.toUpperCase() === profile.creatorId.toUpperCase()) ||
-        (profile.instagram && c.referredBy && c.referredBy.toLowerCase() === profile.instagram.toLowerCase())
+        (profile.instagram && c.referredBy && c.referredBy.toLowerCase() === profile.instagram.toLowerCase()) ||
+        (profile.linkedin && c.referredBy && c.referredBy.toLowerCase() === profile.linkedin.toLowerCase())
     );
 
     const approvedCount = myReferrals.filter(c => c.profileStatus === 'approved').length;
@@ -683,7 +686,8 @@ const CreatorReferralsView = ({ profile }) => {
                 const referrer = creators.find(rc => 
                     rc.uid === c.referredBy || 
                     (rc.creatorId && rc.creatorId.toUpperCase() === c.referredBy.toUpperCase()) ||
-                    (rc.instagram && rc.instagram.toLowerCase() === c.referredBy.toLowerCase())
+                    (rc.instagram && rc.instagram.toLowerCase() === c.referredBy.toLowerCase()) ||
+                    (rc.linkedin && rc.linkedin.toLowerCase() === c.referredBy.toLowerCase())
                 );
                 if (referrer) {
                     counts[referrer.uid] = (counts[referrer.uid] || 0) + 1;
@@ -1136,6 +1140,54 @@ const CreatorDashboard = () => {
                                             <span>{badge}</span>
                                         </span>
                                     ))}
+                                </div>
+
+                                {/* Connected Social Profiles */}
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mt-3">
+                                    {profile.instagram && (
+                                        <a 
+                                            href={profile.instagram.includes('instagram.com') ? profile.instagram : `https://instagram.com/${profile.instagram.replace(/^@/, '').trim()}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-pink/5 hover:bg-neon-pink/15 border border-neon-pink/20 text-neon-pink text-[9px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            <Instagram size={11} />
+                                            <span>Instagram</span>
+                                        </a>
+                                    )}
+                                    {profile.linkedin && (
+                                        <a 
+                                            href={profile.linkedin.includes('http') ? profile.linkedin : `https://${profile.linkedin}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-neon-blue/5 hover:bg-neon-blue/15 border border-neon-blue/20 text-neon-blue text-[9px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            <Linkedin size={11} />
+                                            <span>LinkedIn</span>
+                                        </a>
+                                    )}
+                                    {profile.youtube && (
+                                        <a 
+                                            href={profile.youtube.includes('http') ? profile.youtube : `https://${profile.youtube}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-500/5 hover:bg-red-500/15 border border-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            <Youtube size={11} />
+                                            <span>YouTube</span>
+                                        </a>
+                                    )}
+                                    {profile.twitter && (
+                                        <a 
+                                            href={profile.twitter.includes('http') ? profile.twitter : `https://${profile.twitter}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-400/5 hover:bg-sky-400/15 border border-sky-400/20 text-sky-400 text-[9px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            <Twitter size={11} />
+                                            <span>Twitter</span>
+                                        </a>
+                                    )}
                                 </div>
                                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-6">
                                     <button

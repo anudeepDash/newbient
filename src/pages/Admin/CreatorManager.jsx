@@ -18,6 +18,8 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
 import Filter from 'lucide-react/dist/esm/icons/filter';
 import Globe from 'lucide-react/dist/esm/icons/globe';
 import Youtube from 'lucide-react/dist/esm/icons/youtube';
+import Linkedin from 'lucide-react/dist/esm/icons/linkedin';
+import Twitter from 'lucide-react/dist/esm/icons/twitter';
 import Zap from 'lucide-react/dist/esm/icons/zap';
 import X from 'lucide-react/dist/esm/icons/x';
 import Clock from 'lucide-react/dist/esm/icons/clock';
@@ -241,7 +243,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 return normalizedNiche === filterNiche;
             });
                 
-            const followers = Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0));
+            const followers = Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0));
             const matchesMin = !minFollowers || followers >= Number(minFollowers);
             const matchesMax = !maxFollowers || followers <= Number(maxFollowers);
             const matchesFollowers = matchesMin && matchesMax;
@@ -277,7 +279,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
 
     const stats = useMemo(() => {
         const approvedCount = creators.filter(c => c.profileStatus === 'approved').length;
-        const totalFollowers = creators.reduce((sum, c) => sum + Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0)), 0);
+        const totalFollowers = creators.reduce((sum, c) => sum + Math.max(Number(c.instagramFollowers || 0), Number(c.youtubeSubscribers || 0), Number(c.linkedinFollowers || 0)), 0);
         
         return {
             total: creators.length,
@@ -316,7 +318,7 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
     };
     
     const exportToCSV = () => {
-        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
+        const headers = ['Name', 'Email', 'Phone', 'City', 'Instagram', 'Instagram Followers', 'LinkedIn', 'LinkedIn Connections', 'YouTube', 'YouTube Subs', 'Specializations', 'Status'];
         const csvRows = [
             headers.join(','),
             ...filteredCreators.map(c => [
@@ -326,6 +328,8 @@ const CreatorManager = ({ showLeaderboardOnly = false }) => {
                 `"${(c.city || '').replace(/"/g, '""')}"`,
                 `"${c.instagram ? (c.instagram.includes('http') ? c.instagram : `https://instagram.com/${c.instagram.replace(/^@/, '').trim()}`) : ''}"`,
                 `"${c.instagramFollowers || 0}"`,
+                `"${c.linkedin ? (c.linkedin.includes('http') ? c.linkedin : `https://${c.linkedin}`) : ''}"`,
+                `"${c.linkedinFollowers || 0}"`,
                 `"${c.youtube || ''}"`,
                 `"${c.youtubeSubscribers || 0}"`,
                 `"${(c.specializations || c.niches || []).join(', ').replace(/"/g, '""')}"`,
@@ -905,7 +909,7 @@ const CreatorBadgeCard = ({ creator, onSelect }) => {
                         </div>
                         <div className="flex items-center gap-1.5 text-neon-blue/80 text-[9px] font-black uppercase tracking-[0.15em] bg-neon-blue/5 px-3 py-1.5 rounded-xl border border-neon-blue/10">
                             <TrendingUp size={10} className="animate-pulse" />
-                            <span>{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()} FLW</span>
+                            <span>{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()} FLW</span>
                         </div>
                     </div>
 
@@ -941,22 +945,48 @@ const CreatorBadgeCard = ({ creator, onSelect }) => {
 
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                     <div>
-                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">INSTAGRAM HUB</p>
-                        {creator.instagram ? (
-                            <a 
-                                href={instagramUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1.5 text-neon-pink hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-3 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
-                            >
-                                <Instagram size={12} />
-                                <span>{instagramHandle}</span>
-                                <ExternalLink size={8} className="opacity-60" />
-                            </a>
-                        ) : (
-                            <span className="text-[9px] font-black text-gray-500 tracking-wider">N/A</span>
-                        )}
+                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1.5">PLATFORM CONNECT</p>
+                        <div className="flex gap-2">
+                            {creator.instagram && (
+                                <a 
+                                    href={instagramUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1.5 text-neon-pink hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-2.5 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
+                                    title={instagramHandle}
+                                >
+                                    <Instagram size={11} />
+                                </a>
+                            )}
+                            {creator.linkedin && (
+                                <a 
+                                    href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1.5 text-neon-blue hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 hover:bg-neon-blue/10 px-2.5 py-1.5 rounded-xl border border-neon-blue/10 transition-all"
+                                    title="LinkedIn Profile"
+                                >
+                                    <Linkedin size={11} />
+                                </a>
+                            )}
+                            {creator.youtube && (
+                                <a 
+                                    href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1.5 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-[0.2em] bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl border border-red-500/10 transition-all"
+                                    title="YouTube Channel"
+                                >
+                                    <Youtube size={11} />
+                                </a>
+                            )}
+                            {!creator.instagram && !creator.linkedin && !creator.youtube && (
+                                <span className="text-[9px] font-black text-gray-500 tracking-wider">N/A</span>
+                            )}
+                        </div>
                     </div>
                     <div className="flex gap-2">
                         <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all shrink-0">
@@ -1018,25 +1048,48 @@ const CreatorListItem = ({ creator, onSelect }) => {
                 )}
             </div>
 
-            <div className="w-full lg:w-48 shrink-0">
+            <div className="w-full lg:w-48 shrink-0 flex gap-2 flex-wrap">
                 {creator.instagram && (
                     <a
                         href={instagramUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-2 text-neon-pink hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-3 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
+                        className="inline-flex items-center gap-1.5 text-neon-pink hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-neon-pink/5 hover:bg-neon-pink/10 px-2.5 py-1.5 rounded-xl border border-neon-pink/10 transition-all"
+                        title={instagramHandle}
                     >
                         <Instagram size={12} />
-                        <span>{instagramHandle}</span>
-                        <ExternalLink size={8} />
+                    </a>
+                )}
+                {creator.linkedin && (
+                    <a
+                        href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-neon-blue hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-neon-blue/5 hover:bg-neon-blue/10 px-2.5 py-1.5 rounded-xl border border-neon-blue/10 transition-all"
+                        title="LinkedIn Profile"
+                    >
+                        <Linkedin size={12} />
+                    </a>
+                )}
+                {creator.youtube && (
+                    <a
+                        href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl border border-red-500/10 transition-all"
+                        title="YouTube Channel"
+                    >
+                        <Youtube size={12} />
                     </a>
                 )}
             </div>
 
             <div className="hidden lg:block w-40 text-right pr-4">
                 <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-0.5">FOLLOWERS</p>
-                <p className="text-base font-black text-white font-mono">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0)).toLocaleString()}</p>
+                <p className="text-base font-black text-white font-mono">{Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0), Number(creator.linkedinFollowers || 0)).toLocaleString()}</p>
             </div>
 
             <div className="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-48 shrink-0">
@@ -1360,6 +1413,21 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                         </a>
                                     </div>
                                 )}
+                                {creator.linkedin && (
+                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-neon-blue/40 rounded-2xl flex items-center justify-between transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-neon-blue/10 flex items-center justify-center text-neon-blue"><Linkedin size={16} /></div>
+                                            <div>
+                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">LinkedIn</p>
+                                                <p className="text-xs font-black text-white truncate">Profile</p>
+                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider">{Number(creator.linkedinFollowers || 0).toLocaleString()} Connections</p>
+                                            </div>
+                                        </div>
+                                        <a href={creator.linkedin.includes('http') ? creator.linkedin : `https://${creator.linkedin}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    </div>
+                                )}
                                 {creator.youtube && (
                                     <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-red-500/40 rounded-2xl flex items-center justify-between transition-all">
                                         <div className="flex items-center gap-3">
@@ -1371,6 +1439,20 @@ const CreatorDetailModal = ({ creator, onClose, onUpdateStatus, onDelete, isUpda
                                             </div>
                                         </div>
                                         <a href={creator.youtube.includes('http') ? creator.youtube : `https://${creator.youtube}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    </div>
+                                )}
+                                {creator.twitter && (
+                                    <div className="p-4 bg-[#0A0A0A] border border-white/5 hover:border-sky-400/40 rounded-2xl flex items-center justify-between transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-sky-400/10 flex items-center justify-center text-sky-400"><Twitter size={16} /></div>
+                                            <div>
+                                                <p className="text-[7px] font-black text-gray-600 uppercase tracking-widest">Twitter / X / Web</p>
+                                                <p className="text-xs font-black text-white truncate">Link</p>
+                                            </div>
+                                        </div>
+                                        <a href={creator.twitter.includes('http') ? creator.twitter : `https://${creator.twitter}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:bg-white hover:text-black transition-all">
                                             <ExternalLink size={12} />
                                         </a>
                                     </div>
@@ -1560,6 +1642,8 @@ const AddCreatorModal = ({ onClose }) => {
         instagramFollowers: '',
         youtube: '',
         twitter: '',
+        linkedin: '',
+        linkedinFollowers: '',
         profilePicture: ''
     });
 
@@ -1614,6 +1698,8 @@ const AddCreatorModal = ({ onClose }) => {
                 instagramFollowers: form.instagramFollowers || '0',
                 youtube: form.youtube || '',
                 twitter: form.twitter || '',
+                linkedin: form.linkedin || '',
+                linkedinFollowers: form.linkedinFollowers || '0',
                 profilePicture: form.profilePicture || '',
                 profileStatus: 'approved',
                 isPhoneVerified: true
@@ -1726,6 +1812,28 @@ const AddCreatorModal = ({ onClose }) => {
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Profile URL</label>
+                            <input name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">LinkedIn Connections</label>
+                            <input name="linkedinFollowers" type="number" value={form.linkedinFollowers} onChange={handleChange} placeholder="e.g. 500 (Optional)" className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">YouTube URL</label>
+                            <input name="youtube" value={form.youtube} onChange={handleChange} placeholder="https://youtube.com/..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Twitter / X URL</label>
+                            <input name="twitter" value={form.twitter} onChange={handleChange} placeholder="https://twitter.com/..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
+                        </div>
+                    </div>
+
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Profile Picture URL</label>
                         <input name="profilePicture" value={form.profilePicture} onChange={handleChange} placeholder="https://..." className="w-full h-12 bg-black border border-white/10 rounded-xl px-4 text-sm font-bold text-white focus:border-neon-blue outline-none transition-all" />
@@ -1801,7 +1909,8 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
     const filteredLeaderboard = useMemo(() => {
         return leaderboard.filter(c => 
             c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase()))
+            (c.instagram && c.instagram.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (c.linkedin && c.linkedin.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [leaderboard, searchTerm]);
 
@@ -1810,7 +1919,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
         const topReferrer = leaderboard[0];
         const totalNetworkFollowers = leaderboard.reduce((acc, c) => {
             const referredFollowers = c.referredCreators.reduce((sum, rc) => {
-                return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0));
+                return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
             }, 0);
             return acc + referredFollowers;
         }, 0);
@@ -1893,7 +2002,7 @@ const ReferralLeaderboard = ({ creators, onSelectCreator }) => {
                             {filteredLeaderboard.map((referrer, index) => {
                                 const isExpanded = expandedUid === referrer.uid;
                                 const totalReach = referrer.referredCreators.reduce((sum, rc) => {
-                                    return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0));
+                                    return sum + Math.max(Number(rc.instagramFollowers || 0), Number(rc.youtubeSubscribers || 0), Number(rc.linkedinFollowers || 0));
                                 }, 0);
 
                                 let medal = `${index + 1}`;

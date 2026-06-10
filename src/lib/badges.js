@@ -114,7 +114,8 @@ export const getReferralsForCreator = (creator, allCreators) => {
     return allCreators.filter(c => 
         c.referredBy === creator.uid || 
         (creator.creatorId && c.referredBy && c.referredBy.toUpperCase() === creator.creatorId.toUpperCase()) ||
-        (creator.instagram && c.referredBy && c.referredBy.toLowerCase() === creator.instagram.toLowerCase())
+        (creator.instagram && c.referredBy && c.referredBy.toLowerCase() === creator.instagram.toLowerCase()) ||
+        (creator.linkedin && c.referredBy && c.referredBy.toLowerCase() === creator.linkedin.toLowerCase())
     );
 };
 
@@ -161,7 +162,11 @@ export const getEarnedBadges = (creator, allCreators, campaigns) => {
     }
 
     // Followers Milestones
-    const followers = Math.max(Number(creator.instagramFollowers || 0), Number(creator.youtubeSubscribers || 0));
+    const followers = Math.max(
+        Number(creator.instagramFollowers || 0), 
+        Number(creator.youtubeSubscribers || 0),
+        Number(creator.linkedinFollowers || 0)
+    );
     if (followers >= 1000000) {
         badges.push(MILESTONE_BADGES.megalodon);
     } else if (followers >= 100000) {
