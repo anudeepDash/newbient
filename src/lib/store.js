@@ -1601,7 +1601,8 @@ export const useStore = create((set, get) => ({
             const referrer = creators.find(c => 
                 c.uid === referredBy || 
                 (c.creatorId && c.creatorId.toUpperCase() === referredBy.toUpperCase()) ||
-                (c.instagram && c.instagram.toLowerCase() === referredBy.toLowerCase())
+                (c.instagram && c.instagram.toLowerCase() === referredBy.toLowerCase()) ||
+                (c.linkedin && c.linkedin.toLowerCase() === referredBy.toLowerCase())
             );
 
             if (referrer) {
