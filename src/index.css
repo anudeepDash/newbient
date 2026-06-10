@@ -595,6 +595,180 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   letter-spacing: 0.1em;
 }
 
+/* --- Premium Admin UI Redesign Utilities --- */
+
+/* Premium Responsive Table Container */
+.premium-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(5, 5, 5, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.premium-table-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+/* Table styling helpers */
+.premium-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.premium-table th {
+  padding: 1.25rem 1.5rem;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: #9ca3af; /* text-gray-400 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.premium-table td {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.875rem; /* text-sm */
+  color: #d1d5db; /* text-gray-300 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s ease;
+}
+
+.premium-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+  color: #ffffff;
+}
+
+/* Glassmorphism custom styling helpers */
+.glass-panel {
+  background: rgba(10, 10, 10, 0.4) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 2rem !important;
+}
+
+.glass-panel-glow {
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+/* --- Global Admin Hub Sub-page Aesthetic Skinning --- */
+
+/* Translucent container panel skinning */
+.admin-hub-content-container div[class*="bg-[#0A0A0A]"],
+.admin-hub-content-container div[class*="bg-[#050505]"],
+.admin-hub-content-container div[class*="bg-[#0a0a0a]"],
+.admin-hub-content-container div[class*="bg-[#050505]/"],
+.admin-hub-content-container div[class*="bg-zinc-900"] {
+  background: rgba(10, 10, 10, 0.35) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 2rem !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Form controls & Input groups glassmorphism */
+.admin-hub-content-container input[type="text"],
+.admin-hub-content-container input[type="email"],
+.admin-hub-content-container input[type="tel"],
+.admin-hub-content-container input[type="number"],
+.admin-hub-content-container input[type="date"],
+.admin-hub-content-container input[type="time"],
+.admin-hub-content-container select,
+.admin-hub-content-container textarea {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 1rem !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-hub-content-container input:focus,
+.admin-hub-content-container select:focus,
+.admin-hub-content-container textarea:focus {
+  border-color: rgba(0, 240, 255, 0.4) !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.05) !important;
+  outline: none !important;
+}
+
+/* Table aesthetic alignment */
+.admin-hub-content-container table {
+  width: 100%;
+  border-collapse: collapse !important;
+  text-align: left !important;
+}
+
+.admin-hub-content-container table th {
+  padding: 1.25rem 1.5rem !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.25em !important;
+  color: #9ca3af !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.admin-hub-content-container table td {
+  padding: 1.25rem 1.5rem !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #d1d5db !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.2s ease !important;
+}
+
+.admin-hub-content-container table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: #ffffff !important;
+}
+
+/* Upgrade buttons to capsule pills */
+.admin-hub-content-container button,
+.admin-hub-content-container input[type="submit"] {
+  border-radius: 9999px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.15em !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.admin-hub-content-container button:hover,
+.admin-hub-content-container input[type="submit"]:hover {
+  transform: translateY(-1px) scale(1.02) !important;
+}
+
+.admin-hub-content-container button:active,
+.admin-hub-content-container input[type="submit"]:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Exceptions for small toggle/close buttons and icon-only buttons */
+.admin-hub-content-container button:has(svg:only-child),
+.admin-hub-content-container button.w-10.h-10,
+.admin-hub-content-container button.w-12.h-6 {
+  border-radius: 9999px !important; /* Keep round but skip large text padding */
+  padding: 0 !important;
+}
+
+/* Typography styles */
+.admin-hub-content-container h2,
+.admin-hub-content-container h3,
+.admin-hub-content-container h4 {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  font-style: italic !important;
+  letter-spacing: 0.05em !important;
+}
+
+
+
 
 
 

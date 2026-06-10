@@ -38,7 +38,6 @@ import { collection, query, where, onSnapshot, getDocs, addDoc } from 'firebase/
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../../lib/firebase';
 import { useStore } from '../../lib/store';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import AdminCarousel from '../../components/admin/AdminCarousel';
@@ -60,7 +59,7 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
     <section className="relative">
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-10 md:mb-12">
             <div className="flex items-center gap-4">
-                <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40", gradient.includes('neon-green') ? 'group-hover:text-neon-green' : (gradient.includes('neon-pink') ? 'group-hover:text-neon-pink' : 'group-hover:text-neon-blue'))}>
+                <div className={cn("p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/40 transition-colors duration-500", gradient.includes('neon-green') ? 'group-hover:text-neon-green' : (gradient.includes('neon-pink') ? 'group-hover:text-neon-pink' : 'group-hover:text-neon-blue'))}>
                     {icon}
                 </div>
                 <h2 className={cn("text-xl md:text-3xl font-black font-heading tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r pr-6", gradient)}>
@@ -72,13 +71,13 @@ const DashboardSection = ({ title, gradient, children, icon }) => (
         <div className="relative group/section">
             <button 
                 onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-40 w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white lg:hidden opacity-100 transition-opacity"
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white lg:hidden opacity-0 group-hover/section:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
             >
                 <ChevronLeft size={20} />
             </button>
             <button 
                 onClick={() => scrollContainer(`section-${title.replace(/\s+/g, '-').toLowerCase()}`, 'right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-40 w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white lg:hidden opacity-100 transition-opacity"
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white lg:hidden opacity-0 group-hover/section:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
             >
                 <ChevronRight size={20} />
             </button>
@@ -108,19 +107,32 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
         }
     };
 
+    const getBorderHoverColor = () => {
+        switch(color) {
+            case 'neon-green': return 'group-hover:border-neon-green/30';
+            case 'neon-blue': return 'group-hover:border-neon-blue/30';
+            case 'neon-purple': return 'group-hover:border-neon-purple/30';
+            case 'neon-pink': return 'group-hover:border-neon-pink/30';
+            case 'yellow-400': return 'group-hover:border-yellow-400/30';
+            default: return 'group-hover:border-white/20';
+        }
+    };
+
     return (
         <Link to={(isHidden || comingSoon) ? '#' : (link || '#')} className={cn("group relative block h-full", (isHidden || comingSoon) && "pointer-events-none")}>
             {/* Glow Effect */}
             <div className={cn(
-                "absolute inset-0 rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-all duration-700 blur-2xl",
+                "absolute inset-0 rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-15 transition-all duration-700 blur-2xl",
                 getGlowColor()
             )} />
         
-            <Card className={cn(
-                "relative p-5 sm:p-8 md:p-10 h-full border-white/5 transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden border backdrop-blur-3xl",
+            <div className={cn(
+                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-2xl",
                 isHidden 
-                    ? "bg-[#0a0a0a] opacity-40 grayscale" 
-                    : (comingSoon ? "bg-zinc-900/60 opacity-60 grayscale border-white/5" : "bg-zinc-900/40 hover:bg-zinc-800/40 hover:border-white/10 shadow-2xl")
+                    ? "bg-[#0a0a0a]/40 border-white/5 opacity-40 grayscale" 
+                    : (comingSoon 
+                        ? "bg-zinc-900/20 border-white/5 opacity-60 grayscale border-white/5" 
+                        : cn("bg-[#050505]/40 border-white/5 hover:bg-[#080808]/60", getBorderHoverColor()))
             )}>
                 {/* New Signal */}
                 {isNew && !isHidden && !comingSoon && (
@@ -140,8 +152,13 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
                 )}
 
                 <div className={cn(
-                    "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
-                    color === 'neon-green' ? 'text-[#39FF14]' : (color === 'neon-blue' ? 'text-[#00F0FF]' : (color === 'neon-purple' ? 'text-[#A855F7]' : (color === 'neon-pink' ? 'text-[#FF4F8B]' : (color === 'yellow-400' ? 'text-yellow-400' : 'text-white'))))
+                    "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl border flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-700 relative",
+                    color === 'neon-green' ? 'bg-[#39FF14]/5 border-[#39FF14]/10 text-[#39FF14] group-hover:border-[#39FF14]/30' : 
+                    (color === 'neon-blue' ? 'bg-[#00F0FF]/5 border-[#00F0FF]/10 text-[#00F0FF] group-hover:border-[#00F0FF]/30' : 
+                    (color === 'neon-purple' ? 'bg-[#A855F7]/5 border-[#A855F7]/10 text-[#A855F7] group-hover:border-[#A855F7]/30' : 
+                    (color === 'neon-pink' ? 'bg-[#FF4F8B]/5 border-[#FF4F8B]/10 text-[#FF4F8B] group-hover:border-[#FF4F8B]/30' : 
+                    (color === 'yellow-400' ? 'bg-yellow-400/5 border-yellow-400/10 text-yellow-400 group-hover:border-yellow-400/30' : 
+                    'bg-white/5 border-white/10 text-white group-hover:border-white/20'))))
                 )}>
                     <div className="absolute inset-0 bg-current opacity-0 group-hover:opacity-10 rounded-3xl blur-md transition-opacity" />
                     {logo ? (
@@ -161,7 +178,7 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
                 )}
                 
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent group-hover:via-white/20 transition-all duration-700" />
-            </Card>
+            </div>
 
             {isHidden && (
                 <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
@@ -181,7 +198,7 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-pink/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-neon-blue/5 blur-[120px] rounded-full animate-pulse delay-1000" />
         
-        <Card className="p-8 sm:p-12 w-full max-w-lg border-white/10 bg-zinc-900/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+        <div className="p-8 sm:p-12 w-full max-w-lg border border-white/5 bg-[#050505]/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
             
             <div className="text-center mb-8 sm:mb-12">
@@ -198,7 +215,7 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
             <form onSubmit={handleLogin} className="space-y-6 sm:space-y-8">
                 <div className="space-y-3">
                     <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Identity Endpoint</label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-14 sm:h-16 bg-black/40 border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@newbi.live" className="h-14 sm:h-16 bg-black/40 border border-white/5 focus:border-neon-pink/40 rounded-xl sm:rounded-2xl text-sm font-medium transition-all" required />
                 </div>
                 <div className="space-y-3">
                     <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] pl-2">Security Key</label>
@@ -213,7 +230,7 @@ const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setI
                 <button onClick={() => setIsResetting(!isResetting)} className="text-gray-600 hover:text-white transition-colors">LOST ACCESS?</button>
                 <button onClick={() => setIsRegistering(!isRegistering)} className="text-neon-blue hover:underline underline-offset-8 decoration-2">{isRegistering ? 'BACK TO PORTAL' : 'REQUEST ENTRY'}</button>
             </div>
-        </Card>
+        </div>
     </div>
 );
 
@@ -425,57 +442,68 @@ const Dashboard = () => {
                 <div className="relative group/metrics mb-16 md:mb-24">
                     <button 
                         onClick={() => scrollContainer('metrics-hub', 'left')}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-40 w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white md:hidden opacity-100 transition-opacity"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white md:hidden opacity-0 group-hover/metrics:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
                     >
                         <ChevronLeft size={20} />
                     </button>
                     <button 
                         onClick={() => scrollContainer('metrics-hub', 'right')}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-40 w-10 h-10 rounded-full bg-black/80 border border-white/10 flex items-center justify-center text-white md:hidden opacity-100 transition-opacity"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-white md:hidden opacity-0 group-hover/metrics:opacity-100 transition-all duration-300 active:scale-90 shadow-xl"
                     >
                         <ChevronRight size={20} />
                     </button>
                     <div id="metrics-hub" className="flex overflow-x-auto lg:overflow-x-visible md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 pb-6 md:pb-0 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
-                    {stats.map((stat, i) => (
-                        <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="group relative min-w-[85vw] md:min-w-0 snap-center"
-                        >
-                            <Link to={stat.link}>
-                                <div className={cn("absolute -inset-px rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-20 transition-opacity blur-xl bg-gradient-to-br", 
-                                    stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
-                                    (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
-                                    (stat.color === 'neon-purple' ? 'from-neon-purple to-indigo-500' : 
-                                    (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500')))
-                                )} />
-                                <Card className="p-6 md:p-8 h-full bg-zinc-900/40 backdrop-blur-3xl border-white/5 hover:border-white/10 transition-all rounded-3xl md:rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-2xl">
-                                    <div className="flex items-start justify-between mb-8">
-                                        <div className={cn("p-4 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500", 
-                                            stat.color === 'neon-green' ? 'text-neon-green' : (stat.color === 'neon-blue' ? 'text-neon-blue' : (stat.color === 'neon-purple' ? 'text-neon-purple' : (stat.color === 'neon-pink' ? 'text-neon-pink' : 'text-yellow-400')))
-                                        )}>
-                                            <stat.icon size={24} />
+                    {stats.map((stat, i) => {
+                        const hoverBorder = stat.color === 'neon-green' ? 'group-hover:border-neon-green/30' :
+                                            (stat.color === 'neon-blue' ? 'group-hover:border-neon-blue/30' :
+                                            (stat.color === 'neon-pink' ? 'group-hover:border-neon-pink/30' :
+                                            (stat.color === 'neon-purple' ? 'group-hover:border-neon-purple/30' : 'group-hover:border-yellow-400/30')));
+                        return (
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="group relative min-w-[85vw] md:min-w-0 snap-center"
+                            >
+                                <Link to={stat.link}>
+                                    <div className={cn("absolute -inset-px rounded-3xl md:rounded-[2.5rem] opacity-0 group-hover:opacity-15 transition-opacity blur-xl bg-gradient-to-br", 
+                                        stat.color === 'neon-green' ? 'from-neon-green to-emerald-500' : 
+                                        (stat.color === 'neon-blue' ? 'from-neon-blue to-cyan-500' : 
+                                        (stat.color === 'neon-purple' ? 'from-neon-purple to-indigo-500' : 
+                                        (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500')))
+                                    )} />
+                                    <div className={cn(
+                                        "p-6 md:p-8 h-full bg-[#050505]/40 backdrop-blur-3xl border border-white/5 transition-all rounded-3xl md:rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-2xl",
+                                        hoverBorder
+                                    )}>
+                                        <div className="flex items-start justify-between mb-8">
+                                            <div className={cn("p-4 rounded-2xl border flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500", 
+                                                stat.color === 'neon-green' ? 'text-[#39FF14] bg-[#39FF14]/5 border-[#39FF14]/10 group-hover:border-[#39FF14]/30' : 
+                                                (stat.color === 'neon-blue' ? 'text-[#00F0FF] bg-[#00F0FF]/5 border-[#00F0FF]/10 group-hover:border-[#00F0FF]/30' : 
+                                                (stat.color === 'neon-purple' ? 'text-[#A855F7] bg-[#A855F7]/5 border-[#A855F7]/10 group-hover:border-[#A855F7]/30' : 
+                                                (stat.color === 'neon-pink' ? 'text-[#FF4F8B] bg-[#FF4F8B]/5 border-[#FF4F8B]/10 group-hover:border-[#FF4F8B]/30' : 'text-yellow-400 bg-yellow-400/5 border-yellow-400/10 group-hover:border-yellow-400/30')))
+                                            )}>
+                                                <stat.icon size={24} />
+                                            </div>
                                         </div>
-
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl md:text-5xl font-black font-heading tracking-tighter text-white mb-2 leading-none uppercase italic">{stat.value}</h3>
-                                        <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
-                                        <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                                            <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
+                                        <div>
+                                            <h3 className="text-3xl md:text-5xl font-black font-heading tracking-tighter text-white mb-2 leading-none uppercase italic">{stat.value}</h3>
+                                            <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.3em]">{stat.label}</p>
+                                            <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+                                                <p className="text-gray-600 text-[9px] font-bold uppercase tracking-widest">{stat.detail}</p>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
+                                            <stat.icon size={160} />
                                         </div>
                                     </div>
-                                    <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.05] transition-opacity pointer-events-none transform translate-x-4 -translate-y-4">
-                                        <stat.icon size={160} />
-                                    </div>
-                                </Card>
-                            </Link>
-                        </motion.div>
-                    ))}
+                                </Link>
+                            </motion.div>
+                        );
+                    })}
+                    </div>
                 </div>
-            </div>
 
             {/* Operational Modules */}
             <div className="space-y-32">
