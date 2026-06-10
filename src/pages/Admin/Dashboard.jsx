@@ -127,12 +127,12 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
             )} />
         
             <div className={cn(
-                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-2xl",
+                "relative p-5 sm:p-8 md:p-10 h-full border transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col items-center text-center group overflow-hidden backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                 isHidden 
-                    ? "bg-[#0a0a0a]/40 border-white/5 opacity-40 grayscale" 
+                    ? "bg-black/40 border-white/5 opacity-40 grayscale" 
                     : (comingSoon 
-                        ? "bg-zinc-900/20 border-white/5 opacity-60 grayscale border-white/5" 
-                        : cn("bg-[#050505]/40 border-white/5 hover:bg-[#080808]/60", getBorderHoverColor()))
+                        ? "bg-zinc-950/20 border-white/5 opacity-60 grayscale border-white/5" 
+                        : cn("bg-zinc-950/35 border-white/[0.08] hover:bg-zinc-950/50", getBorderHoverColor()))
             )}>
                 {/* New Signal */}
                 {isNew && !isHidden && !comingSoon && (
@@ -192,13 +192,13 @@ const ControlCard = ({ title, desc, icon: IconComponent, logo, color, link, coun
 };
 
 const AuthSection = ({ email, setEmail, password, setPassword, isResetting, setIsResetting, isRegistering, setIsRegistering, handleLogin }) => (
-    <div className="min-h-screen bg-[#020202] flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-dark flex items-center justify-center px-4 relative overflow-hidden">
         {/* Cinematic Backdrop */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-pink/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-neon-blue/5 blur-[120px] rounded-full animate-pulse delay-1000" />
         
-        <div className="p-8 sm:p-12 w-full max-w-lg border border-white/5 bg-[#050505]/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden">
+        <div className="p-8 sm:p-12 w-full max-w-lg border border-white/[0.08] bg-zinc-950/35 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[3.5rem] relative z-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-pink to-transparent" />
             
             <div className="text-center mb-8 sm:mb-12">
@@ -354,7 +354,7 @@ const Dashboard = () => {
     if (!user) return <AuthSection email={email} setEmail={setEmail} password={password} setPassword={setPassword} isResetting={isResetting} setIsResetting={setIsResetting} isRegistering={isRegistering} setIsRegistering={setIsRegistering} handleLogin={handleLogin} />;
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden pb-32 selection:bg-neon-green selection:text-black">
+        <div className="min-h-screen bg-dark text-white overflow-x-hidden pb-32 selection:bg-neon-green selection:text-black">
             {/* Cinematic Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
@@ -474,7 +474,7 @@ const Dashboard = () => {
                                         (stat.color === 'neon-pink' ? 'from-neon-pink to-purple-500' : 'from-yellow-400 to-orange-500')))
                                     )} />
                                     <div className={cn(
-                                        "p-6 md:p-8 h-full bg-[#050505]/40 backdrop-blur-3xl border border-white/5 transition-all rounded-3xl md:rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-2xl",
+                                        "p-6 md:p-8 h-full bg-zinc-950/35 backdrop-blur-3xl border border-white/[0.08] transition-all duration-500 rounded-3xl md:rounded-[2.5rem] flex flex-col justify-between overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                                         hoverBorder
                                     )}>
                                         <div className="flex items-start justify-between mb-8">

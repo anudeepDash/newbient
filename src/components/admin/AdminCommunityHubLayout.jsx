@@ -95,7 +95,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
     ];
 
     return (
-        <div className="min-h-screen bg-[#020202] text-white pt-32 md:pt-48 pb-32 relative overflow-x-clip selection:bg-neon-green selection:text-black">
+        <div className="min-h-screen bg-dark text-white pt-32 md:pt-48 pb-32 relative overflow-x-clip selection:bg-neon-green selection:text-black">
             {/* Cinematic Background Atmosphere */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
@@ -175,7 +175,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container (Redesigned with Premium Glassmorphism) */}
-                <div className="admin-hub-content-container bg-[#050505]/40 border border-white/5 rounded-[2.5rem] md:rounded-[3.5rem] p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                <div className="admin-hub-content-container bg-zinc-950/35 border border-white/[0.08] rounded-[2.5rem] md:rounded-[3.5rem] p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
                     {/* Decorative radial gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                     
