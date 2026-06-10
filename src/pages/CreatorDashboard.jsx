@@ -114,6 +114,12 @@ const NICHES = [
     'Beauty & Fitness',
     'Food & Beverage',
     'College Pages',
+    'Startup',
+    'Finance',
+    'Business',
+    'Real Estate',
+    'Career',
+    'Entrepreneurship',
     'Others'
 ];
 
