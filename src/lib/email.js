@@ -2289,6 +2289,38 @@ export const generateStaffAuthorizedHTML = (role) => {
         </body>
         </html>
     `;
+
 };
+
+/**
+ * Sends a direct partnership email to a single creator.
+ */
+export const sendCreatorDirectEmail = async (toEmail, subject, messageBody, creatorName = 'Creator') => {
+    try {
+        const html = generateOfficialHTML({
+            headerText: subject,
+            messageBody: `
+                <p>Hi <strong>${creatorName}</strong>,</p>
+                <div style="line-height: 1.8; font-size: 15px; margin-top: 15px; color: #444444;">
+                    ${messageBody.replace(/\n/g, '<br />')}
+                </div>
+            `,
+            category: 'DIRECT MESSAGE',
+            theme: 'light'
+        });
+        const result = await apiFetch('/api/mail', {
+            to: toEmail,
+            subject: subject,
+            fromName: 'Newbi Partnership',
+            fromEmail: 'partnership@newbi.live',
+            html
+        });
+        return result.success ? { success: true } : { success: false, error: result.error };
+    } catch (error) {
+        console.error('Failed to send direct email to creator:', error);
+        return { success: false, error };
+    }
+};
+
 
 

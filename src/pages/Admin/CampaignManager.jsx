@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../lib/store';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import { notifySpecificUser, notifyAllUsers } from '../../lib/notificationTriggers';
 import { PREDEFINED_CITIES } from '../../lib/constants';
 import { Card } from '../../components/ui/Card';
@@ -472,6 +473,7 @@ const CampaignManager = () => {
     const personnelTabs = [
         { name: 'Creators', path: '/admin/creators', icon: Star },
         { name: 'Campaigns', path: '/admin/campaigns', icon: Target },
+        { name: 'Leaderboard', path: '/admin/creators/leaderboard', icon: Trophy },
     ];
 
     const [formData, setFormData] = useState({

@@ -42,6 +42,7 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { getEarnedBadges } from '../lib/badges';
 import GlobalLoader from '../components/ui/GlobalLoader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CampaignCard from '../components/ui/CampaignCard';
@@ -1112,6 +1113,30 @@ const CreatorDashboard = () => {
                                 <h2 className="text-2xl sm:text-4xl md:text-6xl font-black font-heading tracking-tight uppercase italic leading-tight text-white pr-4 overflow-visible whitespace-nowrap">
                                     Hello, <span className="inline pr-12 -mr-12 italic text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-500">{profile?.name?.split(' ')[0] || 'Creator'}</span>
                                 </h2>
+                                
+                                {/* Dynamic Milestones & Admin Badges */}
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
+                                    {getEarnedBadges(profile, creators, campaigns).map(badge => (
+                                        <span 
+                                            key={badge.id} 
+                                            title={badge.desc}
+                                            className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border backdrop-blur-3xl shadow-[0_0_20px_rgba(255,255,255,0.02)] transition-all hover:scale-[1.02]", badge.bg)}
+                                        >
+                                            <span>{badge.icon}</span>
+                                            <span>{badge.label}</span>
+                                        </span>
+                                    ))}
+                                    {(profile.adminBadges || []).map((badge, idx) => (
+                                        <span 
+                                            key={`custom-${idx}`} 
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-neon-purple/10 border border-neon-purple/35 text-neon-purple rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:scale-[1.02] transition-all"
+                                            title={`Assigned by Newbi Admin: ${badge}`}
+                                        >
+                                            <span>🏅</span>
+                                            <span>{badge}</span>
+                                        </span>
+                                    ))}
+                                </div>
                                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-6">
                                     <button
                                         onClick={() => {
