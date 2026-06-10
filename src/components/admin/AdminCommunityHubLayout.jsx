@@ -119,13 +119,13 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                                     )}
                                     {!studioHeader.logo && <span className={cn(studioHeader.accentClass, "text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em]")}>Operations Hub</span>}
                                 </div>
-                                <h1 className="text-2xl sm:text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
+                                <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white flex flex-wrap items-center gap-x-3 gap-y-1 leading-none">
                                     {studioHeader.title} <span className={studioHeader.accentClass}>{studioHeader.subtitle}.</span>
                                 </h1>
                             </div>
                         ) : (
                             <div>
-                                <h1 className="text-3xl md:text-6xl font-black font-heading tracking-tighter uppercase italic pr-4 leading-none">
+                                <h1 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-white pr-4 leading-none">
                                     COMMUNITY <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-white">HUB.</span>
                                 </h1>
                                 <p className="text-gray-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mt-2">Management & Engagement Systems</p>
@@ -175,7 +175,7 @@ const AdminCommunityHubLayout = ({ children, title, description, action, studioH
                 </div>
 
                 {/* Content Container (Redesigned with Premium Glassmorphism) */}
-                <div className="admin-hub-content-container bg-zinc-950/35 border border-white/[0.08] rounded-[2.5rem] md:rounded-[3.5rem] p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                <div className="admin-hub-content-container bg-zinc-950/35 border border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 backdrop-blur-3xl min-h-[60vh] shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative overflow-hidden">
                     {/* Decorative radial gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                     
