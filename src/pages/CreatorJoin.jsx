@@ -302,6 +302,8 @@ const CreatorJoin = () => {
         customNiche: '',
         collegeName: '',
         bio: '',
+        doBarter: '',
+        commercials: '',
         primaryPlatform: 'instagram',
         instagram: '',
         instagramFollowers: '',
@@ -575,6 +577,8 @@ const CreatorJoin = () => {
         { id: 'youtube', label: 'YouTube URL', type: 'text', field: 'youtube', placeholder: 'Channel URL (Optional)', description: 'What is your YouTube channel link? (Optional)', required: false },
         { id: 'twitter', label: 'X / Website URL', type: 'text', field: 'twitter', placeholder: 'X handle or link (Optional)', description: 'What is your Twitter/X or website link? (Optional)', required: false },
         { id: 'bio', label: 'Professional Bio', type: 'textarea', field: 'bio', placeholder: 'Describe your content niche and why brands should collaborate with you...', description: 'Tell us about yourself (Bio)', required: true },
+        { id: 'doBarter', label: 'Barter Collaborations', type: 'barter_choice', field: 'doBarter', description: 'Do you do barter collaborations?', required: true },
+        { id: 'commercials', label: 'Commercial Rates', type: 'text', field: 'commercials', placeholder: 'e.g. 5k/Reel, 2k/Story or Open to discuss', description: 'What are your standard commercial rates?', required: true },
         { id: 'profilePicture', label: 'Profile Picture', type: 'image', field: 'profilePicture', description: 'Upload your profile picture', required: false },
         { id: 'referredBy', label: 'Referral Code', type: 'text', field: 'referredBy', placeholder: 'UID or Username of referrer (Optional)', description: 'Were you referred by another creator? (Optional)', required: false },
         { id: 'submit', label: 'Review & Submit', type: 'submit' }
@@ -1169,6 +1173,31 @@ const CreatorJoin = () => {
                                             </div>
                                         )}
 
+                                        {currentQuestion.type === 'barter_choice' && (
+                                            <div className="space-y-6 w-full">
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] font-black text-neon-pink uppercase tracking-[0.3em]">QUESTION {currentQuestionIndex} OF {activeQuestions.length - 2}</span>
+                                                    <h3 className="text-3xl md:text-4xl font-black font-heading uppercase italic tracking-tight text-white leading-tight pr-4">
+                                                        {currentQuestion.description}
+                                                    </h3>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <CustomSelect
+                                                        value={formData[currentQuestion.field]}
+                                                        onChange={handleChange}
+                                                        options={[
+                                                            { value: 'yes', label: 'Yes, I do barter collaborations' },
+                                                            { value: 'no', label: 'No, I only do paid collaborations' },
+                                                            { value: 'selective', label: 'Selective (Depends on brand/product)' }
+                                                        ]}
+                                                        name={currentQuestion.field}
+                                                        placeholder="Select Barter Preference"
+                                                        icon={Zap}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {currentQuestion.type === 'textarea' && (
                                             <div className="space-y-6 w-full">
                                                 <div className="space-y-1">
@@ -1259,6 +1288,16 @@ const CreatorJoin = () => {
                                                         <p className="font-bold text-white text-base truncate">
                                                             {formData.categories === 'Others' ? formData.customNiche : formData.categories}
                                                         </p>
+                                                    </div>
+                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
+                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Barter Preference</p>
+                                                        <p className="font-bold text-white text-base truncate">
+                                                            {formData.doBarter === 'yes' ? 'Yes' : formData.doBarter === 'no' ? 'No Only Paid' : 'Selective'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
+                                                        <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Commercial Rates</p>
+                                                        <p className="font-bold text-white text-base truncate">{formData.commercials}</p>
                                                     </div>
                                                     {formData.collegeName && (
                                                         <div className="space-y-1.5 p-3 rounded-xl hover:bg-white/[0.02] transition-all">
